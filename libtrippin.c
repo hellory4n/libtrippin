@@ -30,4 +30,35 @@
  * For more information, please refer to <https://unlicense.org/>
  */
 
+#include <stdio.h>
+#include <stdlib.h>
 #include "libtrippin.h"
+
+void* trippin_new(size_t size)
+{
+	void* val = malloc(size);
+	if (val == NULL) {
+		printf("libtrippin panic: couldn't allocate memory\n");
+		fflush(stdout);
+		exit(1);
+	}
+	return val;
+}
+
+void trippin_retain(void* ptr)
+{
+	// scary!
+	TrippinRef* rc = (TrippinRef*)ptr;
+	rc->count++;
+}
+
+void trippin_release(void* ptr)
+{
+	// scary!
+	TrippinRef* rc = (TrippinRef*)ptr;
+	rc->count--;
+	if (rc->count <= 1) {
+		free(ptr);
+	}
+	printf("it's dead.\n");
+}
