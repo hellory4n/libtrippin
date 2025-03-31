@@ -32,6 +32,7 @@
 
 #ifndef TRIPPIN_H
 #define TRIPPIN_H
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,7 +43,10 @@ extern "C" {
 #define TRIPPIN_VERSION "v0.1.0"
 #endif
 
-
+/// Reference count. Put at the start of your structs so they can reference count.
+typedef struct {
+	size_t count;
+} TrippinRef;
 
 #ifdef __cplusplus
 }
