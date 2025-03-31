@@ -38,32 +38,33 @@
 extern "C" {
 #endif
 
-/// Idk why I added this
+// Idk why I added this
 #define TRIPPIN_VERSION "v0.1.0"
 
-/// I love exploiting the compiler
+// I love exploiting the compiler
 #define TRIPPIN_DESTRUCTOR(func) __attribute__((cleanup(func)))
 
-/// Default destructor thingy
+// Default destructor thingy
 #define TRIPPIN_REF TRIPPIN_DESTRUCTOR(trippin_release)
 
+// Makes it look more like a spicy modern language
 #ifndef TRIPPIN_NO_SHORTHAND
-/// Makes it look more like a spicy modern language
 #define ref TRIPPIN_REF
+#define new(type) trippin_new(sizeof(type))
 #endif
 
-/// Reference count. Put at the start of your structs so they can reference count.
+// Reference count. Put at the start of your structs so they can reference count.
 typedef struct {
 	size_t count;
 } TrippinRef;
 
-/// Literally just malloc with a check
+// Literally just malloc with a check
 void* trippin_new(size_t size);
 
-/// Increases the reference count
+// Increases the reference count
 void trippin_retain(void* ptr);
 
-/// Decreases the reference count, and frees the data
+// Decreases the reference count, and frees the data
 void trippin_release(void* ptr);
 
 #ifdef __cplusplus

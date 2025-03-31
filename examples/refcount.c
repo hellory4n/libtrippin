@@ -9,6 +9,6 @@ typedef struct {
 } MyHandsomeStruct;
 
 int main(void) {
-	ref MyHandsomeStruct* mate = trippin_new(sizeof(MyHandsomeStruct));
+	ref MyHandsomeStruct* mate = new(MyHandsomeStruct);
 	return 0;
 }

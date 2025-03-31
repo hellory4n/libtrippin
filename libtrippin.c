@@ -32,32 +32,41 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "libtrippin.h"
 
 void* trippin_new(size_t size)
 {
-	void* val = malloc(size);
+	// pointer fuckery for less annoyance
+	void* val = calloc(1, sizeof(TrippinRef) + size);
 	if (val == NULL) {
 		printf("libtrippin panic: couldn't allocate memory\n");
 		fflush(stdout);
 		exit(1);
 	}
-	return val;
+	// you don't get something and then immediately throw it in the trash
+	trippin_retain(val);
+
+	// without the TrippinRef header
+	return (void*)((char*)val + sizeof(TrippinRef));
 }
 
 void trippin_retain(void* ptr)
 {
+	// go back to the header
 	// scary!
-	TrippinRef* rc = (TrippinRef*)ptr;
+	TrippinRef* rc = (TrippinRef*)((char*)ptr - sizeof(TrippinRef));
 	rc->count++;
 }
 
 void trippin_release(void* ptr)
 {
 	// scary!
-	TrippinRef* rc = (TrippinRef*)ptr;
+	TrippinRef* rc = (TrippinRef*)((char*)ptr - sizeof(TrippinRef));
+	printf("%li\n", rc->count);
 	rc->count--;
 	if (rc->count <= 1) {
+		printf("or is it\n");
 		free(ptr);
 	}
 	printf("it's dead.\n");

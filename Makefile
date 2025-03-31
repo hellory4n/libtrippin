@@ -1,5 +1,5 @@
 CC = clang
-CFLAGS = -std=c99 -Wall -Wextra -Wpedantic -Wshadow -fsanitize=address -g -I.
+CFLAGS = -std=c99 -Wall -Wextra -Wpedantic -Wshadow -g -I. -O0
 
 # just copy for every example lmao
 refcount: examples/refcount.c
