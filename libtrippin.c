@@ -69,3 +69,15 @@ void trippin_release(void* ptr)
 		free(*((void**)ptr));
 	}
 }
+
+TrippinContext* trippin_init(const char* log_file)
+{
+	// no tref because whoever calls this is supposed to deal with it, not us
+	TrippinContext* ctx = tnew(TrippinContext);
+	strncpy(ctx->log_path, log_file, 256);
+	return ctx;
+}
+
+void trippin_free(TrippinContext* ctx)
+{
+}

@@ -8,7 +8,7 @@ i'll remove the checklist when it's done
 
 - [x] Reference counting through a compiler hack (supported by gcc and clang)
 - [ ] Math functions
-- [ ] Basic vectors (the math kind)
+- [x] Basic vectors (the math kind)
 - [ ] Logging, assert, panic
 - Sexually attractive macros that makes C sexually attractive
 - Not lists or hashmaps, use [stb_ds](https://github.com/nothings/stb/blob/master/stb_ds.h)

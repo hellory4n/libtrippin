@@ -33,7 +33,9 @@
 #ifndef TRIPPIN_H
 #define TRIPPIN_H
 #include <stdint.h>
-#include <stddef.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <stdio.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -41,6 +43,23 @@ extern "C" {
 
 // Idk why I added this
 #define TRIPPIN_VERSION "v0.1.0"
+
+// Reference count deez.
+typedef struct {
+	size_t count;
+} TrippinRefHeader;
+
+typedef struct {
+	TrippinRefHeader mate;
+	char log_path[256];
+	FILE* log_file;
+} TrippinContext;
+
+// It initializes libtrippin.
+TrippinContext* trippin_init(const char* log_file);
+
+// It frees libtrippin.
+void trippin_free(TrippinContext* ctx);
 
 // I love exploiting the compiler
 #define TRIPPIN_DESTRUCTOR(func) __attribute__((cleanup(func)))
@@ -56,11 +75,6 @@ extern "C" {
 #define tnil NULL
 #define tpass(var) trippin_reference(var)
 #endif
-
-// Reference count deez.
-typedef struct {
-	size_t count;
-} TrippinRefHeader;
 
 // Literally just malloc with a check
 void* trippin_new(size_t size);
@@ -153,6 +167,25 @@ typedef struct {
 #define tv3_gt(a, b)   TRIPPIN_GTV3(a, b)
 #define tv3_gte(a, b)  TRIPPIN_GTEV3(a, b)
 #endif
+
+// logging
+
+typedef enum {
+	// literally just for use with raylib
+	TRIPPIN_LOG_LIB_INFO,
+	TRIPPIN_LOG_INFO,
+	TRIPPIN_LOG_WARNING,
+	TRIPPIN_LOG_ERROR,
+} TrippinLogLevel;
+
+// Log.
+void trippin_log(TrippinLogLevel level, const char* fmt, ...);
+
+// Formatted assert?!!!??!?!??!?1
+void trippin_assert(bool x, const char* msg, ...);
+
+// uh oh
+void trippin_panic(const char* msg, ...);
 
 #ifdef __cplusplus
 }
