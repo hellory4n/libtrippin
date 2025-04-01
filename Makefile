@@ -1,5 +1,5 @@
 CC = clang
-CFLAGS = -std=c99 -Wall -Wextra -Wpedantic -Wshadow -fno-strict-aliasing -g -I. -O0
+CFLAGS = -std=c11 -Wall -Wextra -Wpedantic -Wshadow -fno-strict-aliasing -g -I. -O0
 
 ifeq ($(asan),true)
 	CFLAGS += -fsanitize=address
@@ -9,5 +9,8 @@ endif
 refcount: examples/refcount.c
 	$(CC) $(CFLAGS) -o examples/refcount examples/refcount.c libtrippin.c
 
+vectors: examples/vectors.c
+	$(CC) $(CFLAGS) -o examples/vectors examples/vectors.c libtrippin.c
+
 clean:
-	rm examples/refcount
+	rm examples/refcount examples/vectors

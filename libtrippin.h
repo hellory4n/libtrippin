@@ -32,6 +32,7 @@
 
 #ifndef TRIPPIN_H
 #define TRIPPIN_H
+#include <stdint.h>
 #include <stddef.h>
 
 #ifdef __cplusplus
@@ -44,10 +45,11 @@ extern "C" {
 // I love exploiting the compiler
 #define TRIPPIN_DESTRUCTOR(func) __attribute__((cleanup(func)))
 
+// reference counting
+
 // Default destructor thingy
 #define TRIPPIN_REF TRIPPIN_DESTRUCTOR(trippin_release)
 
-// Makes it look more like a spicy modern language
 #ifndef TRIPPIN_NO_SHORTHAND
 #define tref TRIPPIN_REF
 #define tnew(type) trippin_new(sizeof(type))
@@ -68,6 +70,32 @@ void* trippin_reference(void* ptr);
 
 // Decreases the reference count, and frees the data.
 void trippin_release(void* ptr);
+
+// vectors
+
+typedef struct {
+	double x;
+	double y;
+} TrippinVec2f;
+
+typedef struct {
+	int64_t x;
+	int64_t y;
+} TrippinVec2i;
+
+typedef struct {
+	double x;
+	double y;
+	double z;
+} TrippinVec3f;
+
+typedef struct {
+	int64_t x;
+	int64_t y;
+	int64_t z;
+} TrippinVec3i;
+
+#define TRIPPIN_ADDV2(a, b) {a.x + b.x, a.y + b.y}
 
 #ifdef __cplusplus
 }
