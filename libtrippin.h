@@ -49,9 +49,10 @@ extern "C" {
 
 // Makes it look more like a spicy modern language
 #ifndef TRIPPIN_NO_SHORTHAND
-#define t_ref TRIPPIN_REF
-#define t_new(type) trippin_new(sizeof(type))
-#define t_nil NULL
+#define tref TRIPPIN_REF
+#define tnew(type) trippin_new(sizeof(type))
+#define tnil NULL
+#define tpass(var) trippin_reference(var)
 #endif
 
 // Reference count deez.
@@ -62,8 +63,8 @@ typedef struct {
 // Literally just malloc with a check
 void* trippin_new(size_t size);
 
-// Increases the reference count
-void trippin_retain(void* ptr);
+// Similar to just passing the pointer, except this also increases the reference count.
+void* trippin_reference(void* ptr);
 
 // Decreases the reference count, and frees the data.
 void trippin_release(void* ptr);

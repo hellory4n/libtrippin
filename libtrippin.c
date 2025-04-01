@@ -51,13 +51,12 @@ void* trippin_new(size_t size)
 	return val;
 }
 
-void trippin_retain(void* ptr)
+void* trippin_reference(void* ptr)
 {
 	// scary!
 	TrippinRefHeader* rc = ((TrippinRefHeader*)(ptr));
-	printf("%zu\n", rc->count);
 	rc->count++;
-	printf("%zu\n", rc->count);
+	return ptr;
 }
 
 void trippin_release(void* ptr)
@@ -65,13 +64,8 @@ void trippin_release(void* ptr)
 	// scary!
 	// apparently attribute cleanup returns a pointer to the pointer, not the actual pointer
 	TrippinRefHeader* rc = ((TrippinRefHeader*)(*(void**)ptr));
-	printf("%zu\n", rc->count);
 	rc->count--;
-	printf("%zu\n", rc->count);
 	if (rc->count <= 0) {
-		printf("or is it\n");
 		free(*((void**)ptr));
-		printf("it's dead.\n");
 	}
-	printf("may dead\n");
 }
