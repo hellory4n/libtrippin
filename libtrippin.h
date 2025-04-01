@@ -51,6 +51,7 @@ extern "C" {
 #ifndef TRIPPIN_NO_SHORTHAND
 #define t_ref TRIPPIN_REF
 #define t_new(type) trippin_new(sizeof(type))
+#define t_nil NULL
 #endif
 
 // Reference count deez.

@@ -10,6 +10,8 @@ typedef struct {
 
 int main(void)
 {
+	// if you run `make asan=true refcount && ./examples/refcount`
+	// you'll see there's no leaks
 	t_ref MyHandsomeStruct* mate = t_new(MyHandsomeStruct);
 	mate->state_secrets = 69420;
 	return 0;
