@@ -20,4 +20,4 @@ Libtrippin provides several handsome macros that make C look like a modern langu
 apply
 
 You can disable the macros by defining `TRIPPIN_NO_SHORTHAND` before including `libtrippin.h`, and you
-won't lose any functionality by doing so, only sex appeal
+won't lose any functionality by doing so, only sex appeal (it's still available either through functions or longer macros)

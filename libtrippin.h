@@ -95,7 +95,64 @@ typedef struct {
 	int64_t z;
 } TrippinVec3i;
 
-#define TRIPPIN_ADDV2(a, b) {a.x + b.x, a.y + b.y}
+#define TRIPPIN_ADDV2(a, b)  {a.x + b.x, a.y + b.y}
+#define TRIPPIN_SUBV2(a, b)  {a.x - b.x, a.y - b.y}
+#define TRIPPIN_MULV2(a, b)  {a.x * b.x, a.y * b.y}
+#define TRIPPIN_SMULV2(a, b) {a.x * b,   a.y * b}
+#define TRIPPIN_DIVV2(a, b)  {a.x / b.x, a.y / b.y}
+#define TRIPPIN_SDIVV2(a, b) {a.x / b,   a.y / b}
+
+#define TRIPPIN_EQV2(a, b)  (a.x == b.x && a.y == b.y)
+#define TRIPPIN_NEQV2(a, b) (a.x != b.x && a.y != b.y)
+#define TRIPPIN_LTV2(a, b)  (a.x < b.x  && a.y < b.y)
+#define TRIPPIN_LTEV2(a, b) (a.x <= b.x && a.y <= b.y)
+// shout out to lua
+#define TRIPPIN_GTV2(a, b)  TRIPPIN_LTV2(b, a)
+#define TRIPPIN_GTEV2(a, b) TRIPPIN_LTEV2(b, a)
+
+#define TRIPPIN_ADDV3(a, b)  {a.x + b.x, a.y + b.y, a.z + b.z}
+#define TRIPPIN_SUBV3(a, b)  {a.x - b.x, a.y - b.y, a.z - b.z}
+#define TRIPPIN_MULV3(a, b)  {a.x * b.x, a.y * b.y, a.z * b.z}
+#define TRIPPIN_SMULV3(a, b) {a.x * b,   a.y * b,   a.z * b}
+#define TRIPPIN_DIVV3(a, b)  {a.x / b.x, a.y / b.y, a.z / b.z}
+#define TRIPPIN_SDIVV3(a, b) {a.x / b,   a.y / b,   a.z / b}
+
+#define TRIPPIN_EQV3(a, b)  (a.x == b.x && a.y == b.y && a.z == b.z)
+#define TRIPPIN_NEQV3(a, b) (a.x != b.x && a.y != b.y && a.z != b.z)
+#define TRIPPIN_LTV3(a, b)  (a.x < b.x  && a.y < b.y  && a.z <  b.z)
+#define TRIPPIN_LTEV3(a, b) (a.x <= b.x && a.y <= b.y && a.z <= b.z)
+// shout out to lua
+#define TRIPPIN_GTV3(a, b)  TRIPPIN_LTV3(b, a)
+#define TRIPPIN_GTEV3(a, b) TRIPPIN_LTEV3(b, a)
+
+// lmao
+#ifndef TRIPPIN_NO_SHORTHAND
+#define tv2_add(a, b)  TRIPPIN_ADDV2(a, b)
+#define tv2_sub(a, b)  TRIPPIN_SUBV2(a, b)
+#define tv2_mul(a, b)  TRIPPIN_MULV2(a, b)
+#define tv2_smul(a, b) TRIPPIN_SMULV2(a, b)
+#define tv2_div(a, b)  TRIPPIN_DIVV2(a, b)
+#define tv2_sdiv(a, b) TRIPPIN_SDIVV2(a, b)
+#define tv2_eq(a, b)   TRIPPIN_EQV2(a, b)
+#define tv2_neq(a, b)  TRIPPIN_NEQV2(a, b)
+#define tv2_lt(a, b)   TRIPPIN_LTV2(a, b)
+#define tv2_lte(a, b)  TRIPPIN_LTEV2(a, b)
+#define tv2_gt(a, b)   TRIPPIN_GTV2(a, b)
+#define tv2_gte(a, b)  TRIPPIN_GTEV2(a, b)
+
+#define tv3_add(a, b)  TRIPPIN_ADDV3(a, b)
+#define tv3_sub(a, b)  TRIPPIN_SUBV3(a, b)
+#define tv3_mul(a, b)  TRIPPIN_MULV3(a, b)
+#define tv3_smul(a, b) TRIPPIN_SMULV3(a, b)
+#define tv3_div(a, b)  TRIPPIN_DIVV3(a, b)
+#define tv3_sdiv(a, b) TRIPPIN_SDIVV3(a, b)
+#define tv3_eq(a, b)   TRIPPIN_EQV3(a, b)
+#define tv3_neq(a, b)  TRIPPIN_NEQV3(a, b)
+#define tv3_lt(a, b)   TRIPPIN_LTV3(a, b)
+#define tv3_lte(a, b)  TRIPPIN_LTEV3(a, b)
+#define tv3_gt(a, b)   TRIPPIN_GTV3(a, b)
+#define tv3_gte(a, b)  TRIPPIN_GTEV3(a, b)
+#endif
 
 #ifdef __cplusplus
 }
