@@ -49,14 +49,14 @@ extern "C" {
 
 // Makes it look more like a spicy modern language
 #ifndef TRIPPIN_NO_SHORTHAND
-#define ref TRIPPIN_REF
-#define new(type) trippin_new(sizeof(type))
+#define t_ref TRIPPIN_REF
+#define t_new(type) trippin_new(sizeof(type))
 #endif
 
-// Reference count. Put at the start of your structs so they can reference count.
+// Reference count deez.
 typedef struct {
 	size_t count;
-} TrippinRef;
+} TrippinRefHeader;
 
 // Literally just malloc with a check
 void* trippin_new(size_t size);
@@ -64,7 +64,7 @@ void* trippin_new(size_t size);
 // Increases the reference count
 void trippin_retain(void* ptr);
 
-// Decreases the reference count, and frees the data
+// Decreases the reference count, and frees the data.
 void trippin_release(void* ptr);
 
 #ifdef __cplusplus
