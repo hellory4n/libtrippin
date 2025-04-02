@@ -12,3 +12,4 @@ compile_commands.json
 # example executables
 examples/refcount
 examples/vectors
+examples/log

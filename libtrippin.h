@@ -32,6 +32,7 @@
 
 #ifndef TRIPPIN_H
 #define TRIPPIN_H
+#include <__stdarg_va_list.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -170,6 +171,11 @@ typedef struct {
 
 // logging
 
+#define TRIPPIN_CONSOLE_COLOR_RESET    "\033[0m"
+#define TRIPPIN_CONSOLE_COLOR_LIB_INFO "\033[0;90m"
+#define TRIPPIN_CONSOLE_COLOR_WARN     "\033[0;93m"
+#define TRIPPIN_CONSOLE_COLOR_ERROR    "\033[0;91m"
+
 typedef enum {
 	// literally just for use with raylib
 	TRIPPIN_LOG_LIB_INFO,
@@ -178,14 +184,17 @@ typedef enum {
 	TRIPPIN_LOG_ERROR,
 } TrippinLogLevel;
 
+// Log without formatting
+void trippin_print(TrippinContext* ctx, TrippinLogLevel level, const char* text);
+
 // Log.
-void trippin_log(TrippinLogLevel level, const char* fmt, ...);
+void trippin_log(TrippinContext* ctx, TrippinLogLevel level, const char* fmt, ...);
 
 // Formatted assert?!!!??!?!??!?1
-void trippin_assert(bool x, const char* msg, ...);
+void trippin_assert(TrippinContext* ctx, bool x, const char* msg, ...);
 
 // uh oh
-void trippin_panic(const char* msg, ...);
+void trippin_panic(TrippinContext* ctx, const char* msg, ...);
 
 #ifdef __cplusplus
 }
