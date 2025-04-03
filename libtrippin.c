@@ -41,6 +41,23 @@
 #include <time.h>
 #include "libtrippin.h"
 
+FILE* trippin_log_file;
+
+void trippin_init(const char* log_file)
+{
+	trippin_log_file = fopen(log_file, "w");
+	trippin_assert(log_file != NULL, "couldn't open %s", log_file);
+
+	trippin_log(TRIPPIN_LOG_LIB_INFO, "initialized libtrippin %s", TRIPPIN_VERSION);
+}
+
+void trippin_free(void)
+{
+	fclose(trippin_log_file);
+
+	trippin_log(TRIPPIN_LOG_LIB_INFO, "deinitialized libtrippin");
+}
+
 void* trippin_new(size_t size)
 {
 	void* val = calloc(1, size);
@@ -82,28 +99,7 @@ void trippin_release(void* ptr)
 	}
 }
 
-TrippinContext* trippin_init(const char* log_file)
-{
-	// no tref because whoever calls this is supposed to deal with it, not us
-	TrippinContext* ctx = tnew(TrippinContext);
-
-	strncpy(ctx->log_path, log_file, 256);
-
-	ctx->log_file = fopen(log_file, "w");
-	trippin_assert(ctx, ctx->log_file != NULL, "couldn't open %s", log_file);
-
-	trippin_log(ctx, TRIPPIN_LOG_LIB_INFO, "initialized libtrippin %s", TRIPPIN_VERSION);
-	return ctx;
-}
-
-void trippin_free(TrippinContext* ctx)
-{
-	fclose(ctx->log_file);
-
-	trippin_log(ctx, TRIPPIN_LOG_LIB_INFO, "deinitialized libtrippin");
-}
-
-void trippin_log(TrippinContext* ctx, TrippinLogLevel level, const char* fmt, ...)
+void trippin_log(TrippinLogLevel level, const char* fmt, ...)
 {
 	// you understand mechanical hands are the ruler of everything (ah)
 	char timestr[32];
@@ -117,7 +113,7 @@ void trippin_log(TrippinContext* ctx, TrippinLogLevel level, const char* fmt, ..
 	va_start(args, fmt);
 	vsnprintf(buf, sizeof(buf), fmt, args);
 
-	fprintf(ctx->log_file, "[%s] %s\n", timestr, buf);
+	fprintf(trippin_log_file, "[%s] %s\n", timestr, buf);
 	switch (level) {
 	case TRIPPIN_LOG_LIB_INFO:
 		printf(TRIPPIN_CONSOLE_COLOR_LIB_INFO "[%s] %s\n" TRIPPIN_CONSOLE_COLOR_RESET, timestr, buf);
@@ -132,13 +128,13 @@ void trippin_log(TrippinContext* ctx, TrippinLogLevel level, const char* fmt, ..
 		printf(TRIPPIN_CONSOLE_COLOR_ERROR "[%s] %s\n" TRIPPIN_CONSOLE_COLOR_RESET, timestr, buf);
 		break;
 	}
-	fflush(ctx->log_file);
+	fflush(trippin_log_file);
 	fflush(stdout);
 
 	va_end(args);
 }
 
-void trippin_assert(TrippinContext* ctx, bool x, const char* msg, ...)
+void trippin_assert(bool x, const char* msg, ...)
 {
 	if (x) {
 		return;
@@ -156,9 +152,9 @@ void trippin_assert(TrippinContext* ctx, bool x, const char* msg, ...)
 	va_start(args, msg);
 	vsnprintf(buf, sizeof(buf), msg, args);
 
-	fprintf(ctx->log_file, "[%s] %s\n", timestr, buf);
+	fprintf(trippin_log_file, "[%s] %s\n", timestr, buf);
 	printf(TRIPPIN_CONSOLE_COLOR_ERROR "[%s] failed assert: %s\n" TRIPPIN_CONSOLE_COLOR_RESET, timestr, buf);
-	fflush(ctx->log_file);
+	fflush(trippin_log_file);
 	fflush(stdout);
 
 	va_end(args);
@@ -170,7 +166,7 @@ void trippin_assert(TrippinContext* ctx, bool x, const char* msg, ...)
 	#endif
 }
 
-void trippin_panic(TrippinContext* ctx, const char* msg, ...)
+void trippin_panic(const char* msg, ...)
 {
 	// you understand mechanical hands are the ruler of everything (ah)
 	char timestr[32];
@@ -184,9 +180,9 @@ void trippin_panic(TrippinContext* ctx, const char* msg, ...)
 	va_start(args, msg);
 	vsnprintf(buf, sizeof(buf), msg, args);
 
-	fprintf(ctx->log_file, "[%s] %s\n", timestr, buf);
+	fprintf(trippin_log_file, "[%s] %s\n", timestr, buf);
 	printf(TRIPPIN_CONSOLE_COLOR_ERROR "[%s] panic: %s\n" TRIPPIN_CONSOLE_COLOR_RESET, timestr, buf);
-	fflush(ctx->log_file);
+	fflush(trippin_log_file);
 	fflush(stdout);
 
 	va_end(args);

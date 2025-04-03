@@ -50,17 +50,11 @@ typedef struct {
 	size_t count;
 } TrippinRefHeader;
 
-typedef struct {
-	TrippinRefHeader mate;
-	char log_path[256];
-	FILE* log_file;
-} TrippinContext;
-
 // It initializes libtrippin.
-TrippinContext* trippin_init(const char* log_file);
+void trippin_init(const char* log_file);
 
 // It frees libtrippin.
-void trippin_free(TrippinContext* ctx);
+void trippin_free(void);
 
 // I love exploiting the compiler
 #define TRIPPIN_DESTRUCTOR(func) __attribute__((cleanup(func)))
@@ -184,16 +178,16 @@ typedef enum {
 } TrippinLogLevel;
 
 // Log without formatting
-void trippin_print(TrippinContext* ctx, TrippinLogLevel level, const char* text);
+void trippin_print(TrippinLogLevel level, const char* text);
 
 // Log.
-void trippin_log(TrippinContext* ctx, TrippinLogLevel level, const char* fmt, ...);
+void trippin_log(TrippinLogLevel level, const char* fmt, ...);
 
 // Formatted assert?!!!??!?!??!?1
-void trippin_assert(TrippinContext* ctx, bool x, const char* msg, ...);
+void trippin_assert(bool x, const char* msg, ...);
 
 // uh oh
-void trippin_panic(TrippinContext* ctx, const char* msg, ...);
+void trippin_panic(const char* msg, ...);
 
 // slices
 
