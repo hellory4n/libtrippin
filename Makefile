@@ -15,5 +15,8 @@ vectors: examples/vectors.c
 log: examples/log.c
 	$(CC) $(CFLAGS) -o examples/log examples/log.c libtrippin.c
 
+slice: examples/slice.c
+	$(CC) $(CFLAGS) -o examples/slice examples/slice.c libtrippin.c
+
 clean:
-	rm examples/refcount examples/vectors
+	rm examples/refcount examples/vectors examples/log examples/slice

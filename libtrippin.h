@@ -73,7 +73,6 @@ void trippin_free(TrippinContext* ctx);
 #ifndef TRIPPIN_NO_SHORTHAND
 #define tref TRIPPIN_REF
 #define tnew(type) trippin_new(sizeof(type))
-#define tnil NULL
 #define tpass(var) trippin_reference(var)
 #endif
 
@@ -195,6 +194,25 @@ void trippin_assert(TrippinContext* ctx, bool x, const char* msg, ...);
 
 // uh oh
 void trippin_panic(TrippinContext* ctx, const char* msg, ...);
+
+// slices
+
+typedef struct {
+	size_t length;
+	size_t elem_size;
+	void* buffer;
+} TrippinSlice;
+
+// Creates a new slice. The element size is supposed to be used with sizeof, e.g. sizeof(int) for a
+// slice of ints.
+TrippinSlice trippin_slice_new(size_t length, size_t elem_size);
+
+// Frees a slice.
+void trippin_slice_free(TrippinSlice slice);
+
+// Gets the element at the specified index. Note this returns a pointer to the element so this is also
+// how you change elements.
+void* trippin_slice_at(TrippinSlice slice, size_t idx);
 
 #ifdef __cplusplus
 }

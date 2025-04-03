@@ -197,3 +197,33 @@ void trippin_panic(TrippinContext* ctx, const char* msg, ...)
 	exit(1);
 	#endif
 }
+
+TrippinSlice trippin_slice_new(size_t length, size_t elem_size)
+{
+	TrippinSlice slicema = {.length = length, .elem_size = elem_size};
+	slicema.buffer = malloc(length * elem_size);
+	return slicema;
+}
+
+void trippin_slice_free(TrippinSlice slice)
+{
+	free(slice.buffer);
+	slice.buffer = NULL;
+}
+
+void* trippin_slice_at(TrippinSlice slice, size_t idx)
+{
+	if (idx >= slice.length) {
+		printf(TRIPPIN_CONSOLE_COLOR_ERROR "index out of range: %zu\n" TRIPPIN_CONSOLE_COLOR_RESET, idx);
+		fflush(stdout);
+
+		#ifdef DEBUG
+		raise(SIGTRAP);
+		#else
+		exit(1);
+		#endif
+	}
+
+	size_t offset = slice.elem_size * idx;
+	return (void*)((char*)slice.buffer + offset);
+}
