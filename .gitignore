@@ -13,3 +13,7 @@ compile_commands.json
 examples/refcount
 examples/vectors
 examples/log
+
+# log deez
+log.txt
+examples/log.txt

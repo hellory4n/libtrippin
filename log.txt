@@ -1,7 +1,0 @@
-[2025-04-02 17:17:02] initialized libtrippin v0.1.0
-[2025-04-02 17:17:02] im having a stroke
-[2025-04-02 17:17:02] im having a stroke (not libtrippin)
-[2025-04-02 17:17:02] we will all die.
-[2025-04-02 17:17:02] im died
-[2025-04-02 17:17:02] seems bad
-[2025-04-02 17:17:02] AAAAAAAHHHH

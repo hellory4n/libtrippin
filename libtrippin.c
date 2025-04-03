@@ -34,6 +34,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+// so clang shuts up
+#ifdef DEBUG
+#include <signal.h>
+#endif
 #include <time.h>
 #include "libtrippin.h"
 
@@ -41,9 +45,14 @@ void* trippin_new(size_t size)
 {
 	void* val = calloc(1, size);
 	if (val == NULL) {
-		printf("libtrippin panic: couldn't allocate memory\n");
+		printf(TRIPPIN_CONSOLE_COLOR_ERROR "libtrippin panic: couldn't allocate memory\n" TRIPPIN_CONSOLE_COLOR_RESET);
 		fflush(stdout);
+		
+		#ifdef DEBUG
+		raise(SIGTRAP);
+		#else
 		exit(1);
+		#endif
 	}
 
 	// you don't get something and then immediately throw it in the trash
@@ -69,6 +78,7 @@ void trippin_release(void* ptr)
 	rc->count--;
 	if (rc->count <= 0) {
 		free(*((void**)ptr));
+		ptr = NULL;
 	}
 }
 
@@ -152,6 +162,12 @@ void trippin_assert(TrippinContext* ctx, bool x, const char* msg, ...)
 	fflush(stdout);
 
 	va_end(args);
+
+	#ifdef DEBUG
+	raise(SIGTRAP);
+	#else
+	exit(1);
+	#endif
 }
 
 void trippin_panic(TrippinContext* ctx, const char* msg, ...)
@@ -174,4 +190,10 @@ void trippin_panic(TrippinContext* ctx, const char* msg, ...)
 	fflush(stdout);
 
 	va_end(args);
+
+	#ifdef DEBUG
+	raise(SIGTRAP);
+	#else
+	exit(1);
+	#endif
 }
