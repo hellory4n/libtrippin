@@ -59,25 +59,29 @@ void trippin_free(void);
 // I love exploiting the compiler
 #define TRIPPIN_DESTRUCTOR(func) __attribute__((cleanup(func)))
 
-// reference counting
+// arenas
 
-// Default destructor thingy
-#define TRIPPIN_REF TRIPPIN_DESTRUCTOR(trippin_release)
+// Kilobytes to bytes
+#define TRIPPIN_KB(b) ((b) * 1024)
+// Megabytes to bytes
+#define TRIPPIN_MB(b) (TRIPPIN_KB((b)) * 1024)
+// Gigabytes to bytes
+#define TRIPPIN_GB(b) (TRIPPIN_MB((b)) * 1024)
 
-#ifndef TRIPPIN_NO_SHORTHAND
-#define tref TRIPPIN_REF
-#define tnew(type) trippin_new(sizeof(type))
-#define tpass(var) trippin_reference(var)
-#endif
+typedef struct {
+	size_t size;
+	size_t alloc_pos;
+	void* buffer;
+} TrippinArena;
 
-// Literally just malloc with a check
-void* trippin_new(size_t size);
+// Makes a new arena :)
+TrippinArena trippin_arena_new(size_t size);
 
-// Similar to just passing the pointer, except this also increases the reference count.
-void* trippin_reference(void* ptr);
+// Frees the arena and everything inside it.
+void trippin_arena_free(TrippinArena arena);
 
-// Decreases the reference count, and frees the data.
-void trippin_release(void* ptr);
+// Allocates space in the arena.
+void* trippin_arena_alloc(TrippinArena arena, size_t size);
 
 // vectors
 
@@ -197,16 +201,39 @@ typedef struct {
 	void* buffer;
 } TrippinSlice;
 
-// Creates a new slice. The element size is supposed to be used with sizeof, e.g. sizeof(int) for a
-// slice of ints.
-TrippinSlice trippin_slice_new(size_t length, size_t elem_size);
-
-// Frees a slice.
-void trippin_slice_free(TrippinSlice slice);
+// Creates a new slice in an arena. The element size is supposed to be used with sizeof,
+// e.g. sizeof(int) for a slice of ints.
+TrippinSlice trippin_slice_new(TrippinArena arena, size_t length, size_t elem_size);
 
 // Gets the element at the specified index. Note this returns a pointer to the element so this is also
 // how you change elements.
 void* trippin_slice_at(TrippinSlice slice, size_t idx);
+
+// // We love strings
+// typedef struct {
+// 	size_t length;
+// 	char* buffer;
+// } TrippinStr;
+
+// // Makes a string duh. Adds 1 extra character for the null terminator so it's easier to pass it around
+// TrippinStr trippin_str_new(const char* lit);
+
+// // Returns a new string with string B at the end of string A
+// TrippinStr trippin_str_concat(TrippinStr a, TrippinStr b);
+
+// // If true, the 2 strings have the same contents.
+// bool trippin_str_equal(TrippinStr a, TrippinStr b);
+
+// // Expands a string for use with formatted functions like printf and trippin_log. Meant to be used
+// // with %.*s
+// #define TRIPPIN_STR2PRINTF(str) str.length, str.buffer
+
+#ifndef TRIPPIN_NO_SHORTHAND
+#define tref TRIPPIN_REF
+#define tfree(func) TRIPPIN_DESTRUCTOR(func)
+#define tpass(var) trippin_reference(var)
+#define tstr(str) trippin_str_new(str)
+#endif
 
 #ifdef __cplusplus
 }

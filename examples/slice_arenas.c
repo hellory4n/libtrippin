@@ -3,7 +3,10 @@
 #include "libtrippin.h"
 
 int main(void) {
-	TrippinSlice slicema = trippin_slice_new(4, sizeof(int32_t));
+	// slices require an arena
+	TrippinArena arena = trippin_arena_new(TRIPPIN_MB(1));
+
+	TrippinSlice slicema = trippin_slice_new(arena, 4, sizeof(int32_t));
 
 	// set items
 	*(int32_t*)trippin_slice_at(slicema, 0) = 11;
@@ -19,5 +22,6 @@ int main(void) {
 	// will panic without mysteriously dying
 	printf("%i\n", *(int32_t*)trippin_slice_at(slicema, 8268286804));
 
-	trippin_slice_free(slicema);
+	// you free the entire arena at once
+	trippin_arena_free(arena);
 }

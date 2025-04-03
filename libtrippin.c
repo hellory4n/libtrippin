@@ -58,47 +58,6 @@ void trippin_free(void)
 	trippin_log(TRIPPIN_LOG_LIB_INFO, "deinitialized libtrippin");
 }
 
-void* trippin_new(size_t size)
-{
-	void* val = calloc(1, size);
-	if (val == NULL) {
-		printf(TRIPPIN_CONSOLE_COLOR_ERROR "libtrippin panic: couldn't allocate memory\n" TRIPPIN_CONSOLE_COLOR_RESET);
-		fflush(stdout);
-		
-		#ifdef DEBUG
-		raise(SIGTRAP);
-		#else
-		exit(1);
-		#endif
-	}
-
-	// you don't get something and then immediately throw it in the trash
-	((TrippinRefHeader*)val)->count = 1;
-
-	// scary!
-	return val;
-}
-
-void* trippin_reference(void* ptr)
-{
-	// scary!
-	TrippinRefHeader* rc = ((TrippinRefHeader*)(ptr));
-	rc->count++;
-	return ptr;
-}
-
-void trippin_release(void* ptr)
-{
-	// scary!
-	// apparently attribute cleanup returns a pointer to the pointer, not the actual pointer
-	TrippinRefHeader* rc = ((TrippinRefHeader*)(*(void**)ptr));
-	rc->count--;
-	if (rc->count <= 0) {
-		free(*((void**)ptr));
-		ptr = NULL;
-	}
-}
-
 void trippin_log(TrippinLogLevel level, const char* fmt, ...)
 {
 	// you understand mechanical hands are the ruler of everything (ah)
@@ -194,22 +153,41 @@ void trippin_panic(const char* msg, ...)
 	#endif
 }
 
-TrippinSlice trippin_slice_new(size_t length, size_t elem_size)
+TrippinArena trippin_arena_new(size_t size)
 {
-	TrippinSlice slicema = {.length = length, .elem_size = elem_size};
-	slicema.buffer = malloc(length * elem_size);
-	return slicema;
+	TrippinArena arena = {.size = size};
+	arena.buffer = calloc(1, size);
+	return arena;
 }
 
-void trippin_slice_free(TrippinSlice slice)
+void trippin_arena_free(TrippinArena arena)
 {
-	free(slice.buffer);
-	slice.buffer = NULL;
+	free(arena.buffer);
+}
+
+void* trippin_arena_alloc(TrippinArena arena, size_t size)
+{
+	// it's gonna segfault anyway
+	// might as well complain instead of mysteriously dying
+	size_t end = (size_t)arena.alloc_pos + size;
+	if (end >= arena.size) {
+		trippin_panic("allocation out of bounds of the arena");
+	}
+
+	void* data = (void*)((char*)arena.buffer + arena.alloc_pos);
+	return data;
+}
+
+TrippinSlice trippin_slice_new(TrippinArena arena, size_t length, size_t elem_size)
+{
+	TrippinSlice slicema = {.length = length, .elem_size = elem_size};
+	slicema.buffer = trippin_arena_alloc(arena, length * elem_size);
+	return slicema;
 }
 
 void* trippin_slice_at(TrippinSlice slice, size_t idx)
 {
-	if (idx >= slice.length) {
+	if (idx >= slice.length || idx < 0) {
 		printf(TRIPPIN_CONSOLE_COLOR_ERROR "index out of range: %zu\n" TRIPPIN_CONSOLE_COLOR_RESET, idx);
 		fflush(stdout);
 

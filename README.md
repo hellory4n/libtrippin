@@ -20,7 +20,7 @@ i'll remove the checklist when it's done
 - [x] reference counting
 - [x] vectors
 - [x] logging
-- [ ] slices
+- [x] slices
 - [ ] strings
 - [ ] 2d slices
 - [ ] more math
