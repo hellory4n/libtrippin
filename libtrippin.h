@@ -1,7 +1,7 @@
 /*
  * libtrippin
  *
- * Some utilities craps because the C standard library is tiny
+ * Most biggest most massive standard library thing for C of all time
  * More information at https://github.com/hellory4n/libtrippin
  *
  * This is free and unencumbered software released into the public domain.
@@ -30,13 +30,11 @@
  * For more information, please refer to <https://unlicense.org/>
  */
 
-#ifndef TR_H
-#define TR_H
-#include <__stdarg_va_list.h>
+#ifndef TRIPPIN_H
+#define TRIPPIN_H
 #include <stdint.h>
-#include <stdlib.h>
 #include <stdbool.h>
-#include <stdio.h>
+#include <stdlib.h>
 
 #ifdef __cplusplus
 extern "C" {

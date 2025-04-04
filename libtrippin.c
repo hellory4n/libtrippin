@@ -1,7 +1,7 @@
 /*
  * libtrippin
  *
- * Some utilities craps because the C standard library is tiny
+ * Most biggest most massive standard library thing for C of all time
  * More information at https://github.com/hellory4n/libtrippin
  *
  * This is free and unencumbered software released into the public domain.
@@ -30,7 +30,6 @@
  * For more information, please refer to <https://unlicense.org/>
  */
 
-#include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
