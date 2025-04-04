@@ -43,22 +43,22 @@
 
 FILE* trippin_log_file;
 
-void trippin_init(const char* log_file)
+void tr_init(const char* log_file)
 {
 	trippin_log_file = fopen(log_file, "w");
-	trippin_assert(log_file != NULL, "couldn't open %s", log_file);
+	tr_assert(log_file != NULL, "couldn't open %s", log_file);
 
-	trippin_log(TRIPPIN_LOG_LIB_INFO, "initialized libtrippin %s", TRIPPIN_VERSION);
+	tr_log(TR_LOG_LIB_INFO, "initialized libtr %s", TR_VERSION);
 }
 
-void trippin_free(void)
+void tr_free(void)
 {
 	fclose(trippin_log_file);
 
-	trippin_log(TRIPPIN_LOG_LIB_INFO, "deinitialized libtrippin");
+	tr_log(TR_LOG_LIB_INFO, "deinitialized libtr");
 }
 
-void trippin_log(TrippinLogLevel level, const char* fmt, ...)
+void tr_log(TrLogLevel level, const char* fmt, ...)
 {
 	// you understand mechanical hands are the ruler of everything (ah)
 	char timestr[32];
@@ -74,17 +74,17 @@ void trippin_log(TrippinLogLevel level, const char* fmt, ...)
 
 	fprintf(trippin_log_file, "[%s] %s\n", timestr, buf);
 	switch (level) {
-	case TRIPPIN_LOG_LIB_INFO:
-		printf(TRIPPIN_CONSOLE_COLOR_LIB_INFO "[%s] %s\n" TRIPPIN_CONSOLE_COLOR_RESET, timestr, buf);
+	case TR_LOG_LIB_INFO:
+		printf(TR_CONSOLE_COLOR_LIB_INFO "[%s] %s\n" TR_CONSOLE_COLOR_RESET, timestr, buf);
 		break;
-	case TRIPPIN_LOG_INFO:
+	case TR_LOG_INFO:
 		printf("[%s] %s\n", timestr, buf);
 		break;
-	case TRIPPIN_LOG_WARNING:
-		printf(TRIPPIN_CONSOLE_COLOR_WARN "[%s] %s\n" TRIPPIN_CONSOLE_COLOR_RESET, timestr, buf);
+	case TR_LOG_WARNING:
+		printf(TR_CONSOLE_COLOR_WARN "[%s] %s\n" TR_CONSOLE_COLOR_RESET, timestr, buf);
 		break;
-	case TRIPPIN_LOG_ERROR:
-		printf(TRIPPIN_CONSOLE_COLOR_ERROR "[%s] %s\n" TRIPPIN_CONSOLE_COLOR_RESET, timestr, buf);
+	case TR_LOG_ERROR:
+		printf(TR_CONSOLE_COLOR_ERROR "[%s] %s\n" TR_CONSOLE_COLOR_RESET, timestr, buf);
 		break;
 	}
 	fflush(trippin_log_file);
@@ -93,7 +93,7 @@ void trippin_log(TrippinLogLevel level, const char* fmt, ...)
 	va_end(args);
 }
 
-void trippin_assert(bool x, const char* msg, ...)
+void tr_assert(bool x, const char* msg, ...)
 {
 	if (x) {
 		return;
@@ -112,7 +112,7 @@ void trippin_assert(bool x, const char* msg, ...)
 	vsnprintf(buf, sizeof(buf), msg, args);
 
 	fprintf(trippin_log_file, "[%s] %s\n", timestr, buf);
-	printf(TRIPPIN_CONSOLE_COLOR_ERROR "[%s] failed assert: %s\n" TRIPPIN_CONSOLE_COLOR_RESET, timestr, buf);
+	printf(TR_CONSOLE_COLOR_ERROR "[%s] failed assert: %s\n" TR_CONSOLE_COLOR_RESET, timestr, buf);
 	fflush(trippin_log_file);
 	fflush(stdout);
 
@@ -125,7 +125,7 @@ void trippin_assert(bool x, const char* msg, ...)
 	#endif
 }
 
-void trippin_panic(const char* msg, ...)
+void tr_panic(const char* msg, ...)
 {
 	// you understand mechanical hands are the ruler of everything (ah)
 	char timestr[32];
@@ -140,7 +140,7 @@ void trippin_panic(const char* msg, ...)
 	vsnprintf(buf, sizeof(buf), msg, args);
 
 	fprintf(trippin_log_file, "[%s] %s\n", timestr, buf);
-	printf(TRIPPIN_CONSOLE_COLOR_ERROR "[%s] panic: %s\n" TRIPPIN_CONSOLE_COLOR_RESET, timestr, buf);
+	printf(TR_CONSOLE_COLOR_ERROR "[%s] panic: %s\n" TR_CONSOLE_COLOR_RESET, timestr, buf);
 	fflush(trippin_log_file);
 	fflush(stdout);
 
@@ -153,42 +153,42 @@ void trippin_panic(const char* msg, ...)
 	#endif
 }
 
-TrippinArena trippin_arena_new(size_t size)
+TrArena tr_arena_new(size_t size)
 {
-	TrippinArena arena = {.size = size};
+	TrArena arena = {.size = size};
 	arena.buffer = calloc(1, size);
 	return arena;
 }
 
-void trippin_arena_free(TrippinArena arena)
+void tr_arena_free(TrArena arena)
 {
 	free(arena.buffer);
 }
 
-void* trippin_arena_alloc(TrippinArena arena, size_t size)
+void* tr_arena_alloc(TrArena arena, size_t size)
 {
 	// it's gonna segfault anyway
 	// might as well complain instead of mysteriously dying
 	size_t end = (size_t)arena.alloc_pos + size;
 	if (end >= arena.size) {
-		trippin_panic("allocation out of bounds of the arena");
+		tr_panic("allocation out of bounds of the arena");
 	}
 
 	void* data = (void*)((char*)arena.buffer + arena.alloc_pos);
 	return data;
 }
 
-TrippinSlice trippin_slice_new(TrippinArena arena, size_t length, size_t elem_size)
+TrSlice tr_slice_new(TrArena arena, size_t length, size_t elem_size)
 {
-	TrippinSlice slicema = {.length = length, .elem_size = elem_size};
-	slicema.buffer = trippin_arena_alloc(arena, length * elem_size);
+	TrSlice slicema = {.length = length, .elem_size = elem_size};
+	slicema.buffer = tr_arena_alloc(arena, length * elem_size);
 	return slicema;
 }
 
-void* trippin_slice_at(TrippinSlice slice, size_t idx)
+void* tr_slice_at(TrSlice slice, size_t idx)
 {
 	if (idx >= slice.length || idx < 0) {
-		printf(TRIPPIN_CONSOLE_COLOR_ERROR "index out of range: %zu\n" TRIPPIN_CONSOLE_COLOR_RESET, idx);
+		printf(TR_CONSOLE_COLOR_ERROR "index out of range: %zu\n" TR_CONSOLE_COLOR_RESET, idx);
 		fflush(stdout);
 
 		#ifdef DEBUG
@@ -200,68 +200,4 @@ void* trippin_slice_at(TrippinSlice slice, size_t idx)
 
 	size_t offset = slice.elem_size * idx;
 	return (void*)((char*)slice.buffer + offset);
-}
-
-TrippinStr trippin_str_new(TrippinArena arena, const char* lit)
-{
-	size_t len = strlen(lit);
-	TrippinStr str = {.length = len + 1};
-	str.buffer = trippin_arena_alloc(arena, (len + 1) * sizeof(char));
-	return str;
-}
-
-TrippinStr trippin_str_copy(TrippinArena arena, TrippinStr str)
-{
-	TrippinStr new = {.length = str.length};
-	new.buffer = trippin_arena_alloc(arena, (str.length) * sizeof(char));
-	memcpy(new.buffer, str.buffer, str.length);
-	return new;
-}
-
-TrippinStr trippin_str_concat(TrippinArena arena, TrippinStr a, TrippinStr b)
-{
-	// the lengths include the null terminator so we remove 1 to not have 2 of those
-	TrippinStr new = {.length = a.length + b.length - 1};
-	new.buffer = trippin_arena_alloc(arena, (new.length) * sizeof(char));
-	memcpy(new.buffer, a.buffer, new.length);
-	strncat(new.buffer, b.buffer, new.length);
-	return new;
-}
-
-bool trippin_str_equal(TrippinStr a, TrippinStr b)
-{
-	if (a.length != b.length) {
-		return false;
-	}
-
-	for (size_t i = 0; i < a.length; i++) {
-		char ca = trippin_str_at(a, i);
-		char cb = trippin_str_at(b, i);
-		if (ca != cb) {
-			return false;
-		}
-	}
-
-	return true;
-}
-
-TrippinStr trippin_str_substr(TrippinArena arena, TrippinStr str, size_t start, size_t len)
-{
-	TrippinStr new = {.length = len + 1};
-	new.buffer = trippin_arena_alloc(arena, (new.length) * sizeof(char));
-	memcpy(new.buffer, str.buffer + start, len);
-	return new;
-}
-
-char trippin_str_at(TrippinStr str, size_t idx)
-{
-	if (idx >= str.length || idx < 0) {
-		trippin_panic("index out of range: %zu\n", idx);
-	}
-	return str.buffer[idx];
-}
-
-char* trippin_str_to_cstr(TrippinStr str)
-{
-	return str.buffer;
 }

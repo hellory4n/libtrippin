@@ -5,7 +5,7 @@ ifeq ($(debug),true)
 	CFLAGS += -fsanitize=address -DDEBUG -g
 endif
 
-all: vectors log slice_arenas string
+all: vectors log slice_arenas
 
 # just copy for every example lmao
 vectors: examples/vectors.c
@@ -17,8 +17,5 @@ log: examples/log.c
 slice_arenas: examples/slice_arenas.c
 	$(CC) $(CFLAGS) -o examples/slice_arenas examples/slice_arenas.c libtrippin.c
 
-string: examples/string.c
-	$(CC) $(CFLAGS) -o examples/string examples/string.c libtrippin.c
-
 clean:
-	rm examples/refcount examples/vectors examples/log examples/slice examples/string
+	rm examples/vectors examples/log examples/slice_arenas log.txt
