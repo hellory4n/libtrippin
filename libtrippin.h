@@ -1,5 +1,5 @@
 /*
- * libtrippin
+ * libtrippin v1.0.0
  *
  * Most biggest most massive standard library thing for C of all time
  * More information at https://github.com/hellory4n/libtrippin
@@ -41,12 +41,7 @@ extern "C" {
 #endif
 
 // Idk why I added this
-#define TR_VERSION "v0.1.0"
-
-// Reference count deez.
-typedef struct {
-	size_t count;
-} TrRefHeader;
+#define TR_VERSION "v1.0.0"
 
 // It initializes libtrippin.
 void tr_init(const char* log_file);
