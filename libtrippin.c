@@ -201,3 +201,27 @@ void* tr_slice_at(TrSlice slice, size_t idx)
 	size_t offset = slice.elem_size * idx;
 	return (void*)((char*)slice.buffer + offset);
 }
+
+TrSlice2D tr_slice2d_new(TrArena arena, size_t width, size_t height, size_t elem_size)
+{
+	TrSlice2D slicema = {.elem_size = elem_size, .width = width, .height = height};
+	slicema.buffer = tr_arena_alloc(arena, width * height * elem_size);
+	return slicema;
+}
+
+void* tr_slice2d_at(TrSlice2D slice, size_t x, size_t y)
+{
+	if (x >= slice.width || x < 0 || y >= slice.height || y < 0) {
+		printf(TR_CONSOLE_COLOR_ERROR "index out of range: %zu, %zu\n" TR_CONSOLE_COLOR_RESET, x, y);
+		fflush(stdout);
+
+		#ifdef DEBUG
+		raise(SIGTRAP);
+		#else
+		exit(1);
+		#endif
+	}
+
+	size_t offset = slice.elem_size * (slice.width * x + y);
+	return (void*)((char*)slice.buffer + offset);
+}
