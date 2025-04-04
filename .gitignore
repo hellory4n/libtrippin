@@ -13,6 +13,7 @@ compile_commands.json
 examples/vectors
 examples/log
 examples/slice_arenas
+examples/math
 
 # log deez
 log.txt

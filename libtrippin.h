@@ -193,6 +193,39 @@ TrSlice2D tr_slice2d_new(TrArena arena, size_t width, size_t height, size_t elem
 // how you change elements.
 void* tr_slice2d_at(TrSlice2D slice, size_t x, size_t y);
 
+// rectnagle
+
+typedef struct {
+	double x;
+	double y;
+	double w;
+	double h;
+} TrRect;
+
+// Returns the area of the rectangle
+double tr_rect_area(TrRect r);
+
+/// If true, the 2 rects intersect
+bool tr_rect_intersects(TrRect a, TrRect b);
+
+/// If true, the rect, in fact, has that point
+bool tr_rect_has_point(TrRect rect, TrVec2f point);
+
+// meth
+
+// lo
+typedef struct {
+	uint64_t s[4];
+} TrRand;
+
+// yea
+TrRand* tr_default_rand(void);
+
+TrRand tr_rand_new(uint64_t seed);
+
+// Gets a random number in a range :)
+double tr_rand_f64(TrRand* rand, double min, double max);
+
 #ifdef __cplusplus
 }
 #endif

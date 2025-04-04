@@ -1,11 +1,11 @@
 CC = clang
-CFLAGS = -std=c11 -Wall -Wextra -Wpedantic -Wshadow -fno-strict-aliasing -I. -O0
+CFLAGS = -std=c99 -Wall -Wextra -Wpedantic -Wshadow -fno-strict-aliasing -I. -O0
 
 ifeq ($(debug),true)
 	CFLAGS += -fsanitize=address -DDEBUG -g
 endif
 
-all: vectors log slice_arenas
+all: vectors log slice_arenas math
 
 # just copy for every example lmao
 vectors: examples/vectors.c
@@ -17,5 +17,8 @@ log: examples/log.c
 slice_arenas: examples/slice_arenas.c
 	$(CC) $(CFLAGS) -o examples/slice_arenas examples/slice_arenas.c libtrippin.c
 
+math: examples/math.c
+	$(CC) $(CFLAGS) -o examples/math examples/math.c libtrippin.c
+
 clean:
-	rm examples/vectors examples/log examples/slice_arenas log.txt
+	rm examples/vectors examples/log examples/slice_arenas examples/math log.txt
