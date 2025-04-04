@@ -149,9 +149,6 @@ typedef enum {
 	TR_LOG_ERROR,
 } TrLogLevel;
 
-// Log without formatting
-void tr_print(TrLogLevel level, const char* text);
-
 // Log.
 void tr_log(TrLogLevel level, const char* fmt, ...);
 
@@ -223,7 +220,9 @@ TrColor tr_rgb(uint8_t r, uint8_t g, uint8_t b);
 // format is 0xRRGGBBAA for red, green, blue, and alpha respectively
 TrColor tr_hex_rgba(int32_t hex);
 
-#define TR_WHITE tr_
+#define TR_WHITE tr_hex_rgba(0xffffffff)
+#define TR_BLACK tr_hex_rgba(0x000000ff)
+#define TR_TRANSPARENT tr_hex_rgba(0x00000000)
 
 // meth
 

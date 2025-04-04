@@ -60,7 +60,8 @@ void tr_free(void)
 {
 	fclose(logfile);
 
-	tr_log(TR_LOG_LIB_INFO, "deinitialized libtripping");
+	// this causes a leak??????????????????????? according to asan
+	// tr_log(TR_LOG_LIB_INFO, "deinitialized libtripping");
 }
 
 void tr_log(TrLogLevel level, const char* fmt, ...)
