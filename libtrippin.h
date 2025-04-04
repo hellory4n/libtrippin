@@ -211,6 +211,20 @@ bool tr_rect_intersects(TrRect a, TrRect b);
 /// If true, the rect, in fact, has that point
 bool tr_rect_has_point(TrRect rect, TrVec2f point);
 
+// mate
+typedef struct {
+	uint8_t r, g, b, a;
+} TrColor;
+
+TrColor tr_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+
+TrColor tr_rgb(uint8_t r, uint8_t g, uint8_t b);
+
+// format is 0xRRGGBBAA for red, green, blue, and alpha respectively
+TrColor tr_hex_rgba(int32_t hex);
+
+#define TR_WHITE tr_
+
 // meth
 
 // lo
@@ -223,8 +237,36 @@ TrRand* tr_default_rand(void);
 
 TrRand tr_rand_new(uint64_t seed);
 
-// Gets a random number in a range :)
-double tr_rand_f64(TrRand* rand, double min, double max);
+// Gets a random double in a range :)
+double tr_rand_double(TrRand* rand, double min, double max);
+
+// Gets a random uint64 in a range :)
+uint64_t tr_rand_u64(TrRand* rand, uint64_t min, uint64_t max);
+
+// Gets a random int64 in a range :)
+int64_t tr_rand_i64(TrRand* rand, int64_t min, int64_t max);
+
+#ifndef PI
+#define PI 3.141592653589793238463
+#endif
+
+// Converts degrees to radians
+double tr_deg2rad(double deg);
+
+// Converts radians to degrees
+double tr_rad2deg(double rad);
+
+// clamp
+double tr_clamp(double val, double min, double max);
+
+// lerp
+double tr_lerp(double a, double b, double t);
+
+// Similar to lerp, but inverse.
+double tr_inverse_lerp(double a, double b, double v);
+
+// Converts a number from one scale to another
+double tr_remap(double v, double src_min, double src_max, double dst_min, double dst_max);
 
 #ifdef __cplusplus
 }

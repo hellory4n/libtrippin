@@ -30,6 +30,7 @@
  * For more information, please refer to <https://unlicense.org/>
  */
 
+#include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -39,6 +40,7 @@
 #include <signal.h>
 #endif
 #include <time.h>
+#include <math.h>
 #include "libtrippin.h"
 
 static FILE* logfile;
@@ -295,7 +297,7 @@ static inline uint64_t rotl(const uint64_t x, int k) {
 	return (x << k) | (x >> (64 - k));
 }
 
-double tr_rand_f64(TrRand* rand, double min, double max)
+double tr_rand_double(TrRand* rand, double min, double max)
 {
 	// theft
 	const uint64_t result = rand->s[0] + rand->s[3];
@@ -317,4 +319,66 @@ double tr_rand_f64(TrRand* rand, double min, double max)
 	// clang was complaining
 	double man = (double)result / 18446744073709551616.0;
 	return (man * max) + min;
+}
+
+uint64_t tr_rand_u64(TrRand* rand, uint64_t min, uint64_t max)
+{
+	return (uint64_t)round(tr_rand_double(rand, (double)min, (double)max));
+}
+
+int64_t tr_rand_i64(TrRand* rand, int64_t min, int64_t max)
+{
+	return (int64_t)round(tr_rand_double(rand, (double)min, (double)max));
+}
+
+double tr_deg2rad(double deg)
+{
+	return deg * (PI / 180.0);
+}
+
+double tr_rad2deg(double rad)
+{
+	return rad * (180 / PI);
+}
+
+double tr_clamp(double val, double min, double max)
+{
+	if (val < min) return min;
+	else if (val > max) return max;
+	else return val;
+}
+
+double tr_lerp(double a, double b, double t)
+{
+	return (1.0 - t) * a + t * b;
+}
+
+double tr_inverse_lerp(double a, double b, double v)
+{
+	return (v - a) / (b - a);
+}
+
+double st_remap(double v, double src_min, double src_max, double dst_min, double dst_max)
+{
+	return tr_lerp(dst_min, dst_max, tr_inverse_lerp(src_min, src_max, v));
+}
+
+TrColor tr_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+{
+	return (TrColor){.r = r, .g = g, .b = b, .a = a};
+}
+
+TrColor tr_rgb(uint8_t r, uint8_t g, uint8_t b)
+{
+	return (TrColor){.r = r, .g = g, .b = b, .a = 255};
+}
+
+TrColor tr_hex_rgba(int32_t hex)
+{
+	return (TrColor){
+		.r = (hex >> 24) & 0xFF,
+		.g = (hex >> 16) & 0xFF,
+		.b = (hex >> 8) & 0xFF,
+		.a = hex & 0xFF,
+	};
 }

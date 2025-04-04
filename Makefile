@@ -1,5 +1,5 @@
 CC = clang
-CFLAGS = -std=c99 -Wall -Wextra -Wpedantic -Wshadow -fno-strict-aliasing -I. -O0
+CFLAGS = -std=c99 -Wall -Wextra -Wpedantic -Wshadow -fno-strict-aliasing -I. -O0 -lm
 
 ifeq ($(debug),true)
 	CFLAGS += -fsanitize=address -DDEBUG -g
