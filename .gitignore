@@ -10,10 +10,10 @@
 compile_commands.json
 
 # example executables
-examples/refcount
 examples/vectors
 examples/log
 examples/slice_arenas
+examples/string
 
 # log deez
 log.txt

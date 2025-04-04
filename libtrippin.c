@@ -201,3 +201,67 @@ void* trippin_slice_at(TrippinSlice slice, size_t idx)
 	size_t offset = slice.elem_size * idx;
 	return (void*)((char*)slice.buffer + offset);
 }
+
+TrippinStr trippin_str_new(TrippinArena arena, const char* lit)
+{
+	size_t len = strlen(lit);
+	TrippinStr str = {.length = len + 1};
+	str.buffer = trippin_arena_alloc(arena, (len + 1) * sizeof(char));
+	return str;
+}
+
+TrippinStr trippin_str_copy(TrippinArena arena, TrippinStr str)
+{
+	TrippinStr new = {.length = str.length};
+	new.buffer = trippin_arena_alloc(arena, (str.length) * sizeof(char));
+	memcpy(new.buffer, str.buffer, str.length);
+	return new;
+}
+
+TrippinStr trippin_str_concat(TrippinArena arena, TrippinStr a, TrippinStr b)
+{
+	// the lengths include the null terminator so we remove 1 to not have 2 of those
+	TrippinStr new = {.length = a.length + b.length - 1};
+	new.buffer = trippin_arena_alloc(arena, (new.length) * sizeof(char));
+	memcpy(new.buffer, a.buffer, new.length);
+	strncat(new.buffer, b.buffer, new.length);
+	return new;
+}
+
+bool trippin_str_equal(TrippinStr a, TrippinStr b)
+{
+	if (a.length != b.length) {
+		return false;
+	}
+
+	for (size_t i = 0; i < a.length; i++) {
+		char ca = trippin_str_at(a, i);
+		char cb = trippin_str_at(b, i);
+		if (ca != cb) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+TrippinStr trippin_str_substr(TrippinArena arena, TrippinStr str, size_t start, size_t len)
+{
+	TrippinStr new = {.length = len + 1};
+	new.buffer = trippin_arena_alloc(arena, (new.length) * sizeof(char));
+	memcpy(new.buffer, str.buffer + start, len);
+	return new;
+}
+
+char trippin_str_at(TrippinStr str, size_t idx)
+{
+	if (idx >= str.length || idx < 0) {
+		trippin_panic("index out of range: %zu\n", idx);
+	}
+	return str.buffer[idx];
+}
+
+char* trippin_str_to_cstr(TrippinStr str)
+{
+	return str.buffer;
+}

@@ -209,30 +209,39 @@ TrippinSlice trippin_slice_new(TrippinArena arena, size_t length, size_t elem_si
 // how you change elements.
 void* trippin_slice_at(TrippinSlice slice, size_t idx);
 
-// // We love strings
-// typedef struct {
-// 	size_t length;
-// 	char* buffer;
-// } TrippinStr;
+// We love strings
+typedef struct {
+	// includes one extra character for the null terminator
+	size_t length;
+	char* buffer;
+} TrippinStr;
 
-// // Makes a string duh. Adds 1 extra character for the null terminator so it's easier to pass it around
-// TrippinStr trippin_str_new(const char* lit);
+// Makes a string duh. Adds 1 extra character for the null terminator so it's easier to pass it around
+TrippinStr trippin_str_new(TrippinArena arena, const char* lit);
 
-// // Returns a new string with string B at the end of string A
-// TrippinStr trippin_str_concat(TrippinStr a, TrippinStr b);
+// Copies a string into a new one :)
+TrippinStr trippin_str_copy(TrippinArena arena, TrippinStr str);
 
-// // If true, the 2 strings have the same contents.
-// bool trippin_str_equal(TrippinStr a, TrippinStr b);
+// Returns a new string with string B at the end of string A
+TrippinStr trippin_str_concat(TrippinArena arena, TrippinStr a, TrippinStr b);
 
-// // Expands a string for use with formatted functions like printf and trippin_log. Meant to be used
-// // with %.*s
-// #define TRIPPIN_STR2PRINTF(str) str.length, str.buffer
+// If true, the 2 strings have the same contents.
+bool trippin_str_equal(TrippinStr a, TrippinStr b);
+
+// Substring lmao. This copies the string
+TrippinStr trippin_str_substr(TrippinArena arena, TrippinStr str, size_t start, size_t len);
+
+// Gets the character at the specified index. NOTE: This WILL break with unicode.
+char trippin_str_at(TrippinStr str, size_t idx);
+
+// Creates a new string from the trippin string. If it's smaller than 512, allocates it on the stack.
+// Otherwise, it's allocated on the heap.
+char* trippin_str_to_cstr(TrippinStr str);
 
 #ifndef TRIPPIN_NO_SHORTHAND
-#define tref TRIPPIN_REF
 #define tfree(func) TRIPPIN_DESTRUCTOR(func)
 #define tpass(var) trippin_reference(var)
-#define tstr(str) trippin_str_new(str)
+#define tstr(arena, str) trippin_str_new(arena, str)
 #endif
 
 #ifdef __cplusplus
