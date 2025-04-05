@@ -1,4 +1,4 @@
-# libtrippin v1.0.0
+# libtrippin v1.0.1
 
 Most biggest most massive standard library thing for C of all time
 

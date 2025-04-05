@@ -1,5 +1,5 @@
 /*
- * libtrippin v1.0.0
+ * libtrippin v1.0.1
  *
  * Most biggest most massive standard library thing for C of all time
  * More information at https://github.com/hellory4n/libtrippin
@@ -59,7 +59,7 @@ void tr_free(void)
 {
 	fclose(logfile);
 
-	// this causes a leak??????????????????????? according to asan
+	// this causes a leak in the math example??????????????????????? according to asan
 	// tr_log(TR_LOG_LIB_INFO, "deinitialized libtripping");
 }
 
@@ -162,6 +162,9 @@ TrArena tr_arena_new(size_t size)
 {
 	TrArena arena = {.size = size};
 	arena.buffer = calloc(1, size);
+	if (arena.buffer == NULL) {
+		tr_panic("couldn't allocate arena");
+	}
 	return arena;
 }
 
@@ -176,7 +179,7 @@ void* tr_arena_alloc(TrArena arena, size_t size)
 	// might as well complain instead of mysteriously dying
 	size_t end = (size_t)arena.alloc_pos + size;
 	if (end >= arena.size) {
-		tr_panic("allocation out of bounds of the arena");
+		tr_panic("arena allocation out of bounds");
 	}
 
 	void* data = (void*)((char*)arena.buffer + arena.alloc_pos);
@@ -193,14 +196,7 @@ TrSlice tr_slice_new(TrArena arena, size_t length, size_t elem_size)
 void* tr_slice_at(TrSlice slice, size_t idx)
 {
 	if (idx >= slice.length || idx < 0) {
-		printf(TR_CONSOLE_COLOR_ERROR "index out of range: %zu\n" TR_CONSOLE_COLOR_RESET, idx);
-		fflush(stdout);
-
-		#ifdef DEBUG
-		raise(SIGTRAP);
-		#else
-		exit(1);
-		#endif
+		tr_panic("index out of range: %zu", idx);
 	}
 
 	size_t offset = slice.elem_size * idx;
@@ -217,14 +213,7 @@ TrSlice2D tr_slice2d_new(TrArena arena, size_t width, size_t height, size_t elem
 void* tr_slice2d_at(TrSlice2D slice, size_t x, size_t y)
 {
 	if (x >= slice.width || x < 0 || y >= slice.height || y < 0) {
-		printf(TR_CONSOLE_COLOR_ERROR "index out of range: %zu, %zu\n" TR_CONSOLE_COLOR_RESET, x, y);
-		fflush(stdout);
-
-		#ifdef DEBUG
-		raise(SIGTRAP);
-		#else
-		exit(1);
-		#endif
+		tr_panic("index out of range: %zu, %zu", x, y);
 	}
 
 	size_t offset = slice.elem_size * (slice.width * x + y);
