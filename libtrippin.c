@@ -1,5 +1,5 @@
 /*
- * libtrippin v1.0.1
+ * libtrippin v1.0.2
  *
  * Most biggest most massive standard library thing for C of all time
  * More information at https://github.com/hellory4n/libtrippin
@@ -178,7 +178,7 @@ void* tr_arena_alloc(TrArena arena, size_t size)
 	// it's gonna segfault anyway
 	// might as well complain instead of mysteriously dying
 	size_t end = (size_t)arena.alloc_pos + size;
-	if (end >= arena.size) {
+	if (end > arena.size) {
 		tr_panic("arena allocation out of bounds");
 	}
 
