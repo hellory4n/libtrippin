@@ -34,9 +34,9 @@ int main(void)
 	tr_init("log.txt");
 	TrArena arena = tr_arena_new(TR_MB(1));
 	TrSlice slicema = tr_slice_new(arena, 4, sizeof(TrVec2f));
-	TrRand rand = tr_rand_new(123456789)
+	TrRand rand = tr_rand_new(123456789);
 
-	TrVec2f vecdeez = {tr_rand_double(rand, 1, 10), tr_rand_double(rand, 1, 10)};
+	TrVec2f vecdeez = {tr_rand_double(&rand, 1, 10), tr_rand_double(&rand, 1, 10)};
 	*(TrVec2f*)tr_slice_at(slicema, 0) = (TrVec2f){1, 2};
 	*(TrVec2f*)tr_slice_at(slicema, 1) = vecdeez;
 	*(TrVec2f*)tr_slice_at(slicema, 2) = TR_V2_ADD(vecdeez, vecdeez);
@@ -54,10 +54,10 @@ int main(void)
 
 ## FAQ
 
-### Why?
-
-That's enough questions.
-
 ### Have you tried \[language] you fucking moron
 
 No fuck off.
+
+### Why?
+
+That's enough questions.
