@@ -1,4 +1,4 @@
-# libtrippin v1.0.2
+# libtrippin v1.1.0
 
 Most biggest most massive standard library thing for C of all time
 
@@ -20,7 +20,7 @@ Tell your build system to compile libtrippin.c.
 
 If you have debug builds make sure you have `DEBUG` defined (it doesn't change a whole lot but i mean why not)
 
-If you get an error about the `round` function make sure you have `-lm` in your flags
+On Linux make sure you linked the math library `-lm`
 
 ## Example
 
