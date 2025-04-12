@@ -31,24 +31,24 @@ Look at the examples folder for something comprehensible
 
 int main(void)
 {
-	tr_init("log.txt");
-	TrArena arena = tr_arena_new(TR_MB(1));
-	TrSlice slicema = tr_slice_new(arena, 4, sizeof(TrVec2f));
-	TrRand rand = tr_rand_new(123456789);
+    tr_init("log.txt");
+    TrArena arena = tr_arena_new(TR_MB(1));
+    TrSlice_Vec2f slicema = tr_slice_new(arena, 4, sizeof(TrVec2f));
+    TrRand rand = tr_rand_new(123456789);
 
-	TrVec2f vecdeez = {tr_rand_double(&rand, 1, 10), tr_rand_double(&rand, 1, 10)};
-	*(TrVec2f*)tr_slice_at(slicema, 0) = (TrVec2f){1, 2};
-	*(TrVec2f*)tr_slice_at(slicema, 1) = vecdeez;
-	*(TrVec2f*)tr_slice_at(slicema, 2) = TR_V2_ADD(vecdeez, vecdeez);
-	*(TrVec2f*)tr_slice_at(slicema, 3) = TR_V2_SMUL(vecdeez, 2);
+    TrVec2f vecdeez = {tr_rand_double(&rand, 1, 10), tr_rand_double(&rand, 1, 10)};
+    *(TrVec2f*)tr_slice_at(slicema, 0) = (TrVec2f){1, 2};
+    *(TrVec2f*)tr_slice_at(slicema, 1) = vecdeez;
+    *(TrVec2f*)tr_slice_at(slicema, 2) = TR_V2_ADD(vecdeez, vecdeez);
+    *(TrVec2f*)tr_slice_at(slicema, 3) = TR_V2_SMUL(vecdeez, 2);
 
-	for (size_t i = 0; i < slicema.length; i++) {
-		TrVec2f vecm = *(TrVec2f*)tr_slice_at(slicema, i);
-		tr_log(TR_LOG_INFO, "%f, %f", vecm.x, vecm.y);
-	}
+    for (size_t i = 0; i < slicema.length; i++) {
+        TrVec2f vecm = *(TrVec2f*)tr_slice_at(slicema, i);
+        tr_log( "%f, %f", vecm.x, vecm.y);
+    }
 
-	tr_arena_free(arena);
-	tr_free();
+    tr_arena_free(arena);
+    tr_free();
 }
 ```
 
