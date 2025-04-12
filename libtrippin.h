@@ -193,28 +193,89 @@ typedef struct {
 } TrRect;
 
 // Returns the area of the rectangle
-double tr_rect_area(TrRect r);
+inline double tr_rect_area(TrRect r)
+{
+	return r.w * r.h;
+}
 
 // If true, the 2 rects intersect
-bool tr_rect_intersects(TrRect a, TrRect b);
+inline bool tr_rect_intersects(TrRect a, TrRect b)
+{
+	// man
+	if (a.x >= (b.x + b.w)) {
+		return false;
+	}
+	if ((a.x + a.w) <= b.y) {
+		return false;
+	}
+	if (a.y >= (b.y + b.h)) {
+		return false;
+	}
+	if ((a.y + a.h) <= b.y) {
+		return false;
+	}
+	return true;
+}
 
 // If true, the rect, in fact, has that point
-bool tr_rect_has_point(TrRect rect, TrVec2f point);
+inline bool tr_rect_has_point(TrRect rect, TrVec2f point)
+{
+	if (point.x < rect.x) {
+		return false;
+	}
+	if (point.y < rect.y) {
+		return false;
+	}
+
+	if (point.x >= (rect.x + rect.w)) {
+		return false;
+	}
+	if (point.y >= (rect.y + rect.h)) {
+		return false;
+	}
+
+	return true;
+}
 
 // mate
 typedef struct {
 	uint8_t r, g, b, a;
 } TrColor;
 
-TrColor tr_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+inline TrColor tr_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+{
+	return (TrColor){.r = r, .g = g, .b = b, .a = a};
+}
 
-TrColor tr_rgb(uint8_t r, uint8_t g, uint8_t b);
+inline TrColor tr_rgb(uint8_t r, uint8_t g, uint8_t b)
+{
+	return (TrColor){.r = r, .g = g, .b = b, .a = 255};
+}
 
 // format is 0xRRGGBBAA for red, green, blue, and alpha respectively
-TrColor tr_hex_rgba(uint32_t hex);
+inline TrColor tr_hex_rgba(uint32_t hex)
+{
+	return (TrColor){
+		.r = (hex >> 24) & 0xFF,
+		.g = (hex >> 16) & 0xFF,
+		.b = (hex >> 8) & 0xFF,
+		.a = hex & 0xFF,
+	};
+}
 
-#define TR_WHITE tr_hex_rgba(0xffffffff)
-#define TR_BLACK tr_hex_rgba(0x000000ff)
+// format is 0xRRGGBB for red, green, and blue respectively
+inline TrColor tr_hex_rgb(uint32_t hex)
+{
+	return (TrColor){
+		.r = (hex >> 16) & 0xFF,
+		.g = (hex >> 8) & 0xFF,
+		.b = hex & 0xFF,
+		.a = 255,
+	};
+}
+
+#define TR_WHITE tr_hex_rgb(0xffffff)
+#define TR_BLACK tr_hex_rgb(0x000000)
 #define TR_TRANSPARENT tr_hex_rgba(0x00000000)
 
 // meth
@@ -243,22 +304,42 @@ int64_t tr_rand_i64(TrRand* rand, int64_t min, int64_t max);
 #endif
 
 // Converts degrees to radians
-double tr_deg2rad(double deg);
+inline double tr_deg2rad(double deg)
+{
+	return deg * (PI / 180.0);
+}
 
 // Converts radians to degrees
-double tr_rad2deg(double rad);
+inline double tr_rad2deg(double rad)
+{
+	return rad * (180 / PI);
+}
 
 // clamp
-double tr_clamp(double val, double min, double max);
+inline double tr_clamp(double val, double min, double max)
+{
+	if (val < min) return min;
+	else if (val > max) return max;
+	else return val;
+}
 
 // lerp
-double tr_lerp(double a, double b, double t);
+inline double tr_lerp(double a, double b, double t)
+{
+	return (1.0 - t) * a + t * b;
+}
 
 // Similar to lerp, but inverse.
-double tr_inverse_lerp(double a, double b, double v);
+inline double tr_inverse_lerp(double a, double b, double v)
+{
+	return (v - a) / (b - a);
+}
 
 // Converts a number from one scale to another
-double tr_remap(double v, double src_min, double src_max, double dst_min, double dst_max);
+inline double tr_remap(double v, double src_min, double src_max, double dst_min, double dst_max)
+{
+	return tr_lerp(dst_min, dst_max, tr_inverse_lerp(src_min, src_max, v));
+}
 
 #ifdef __cplusplus
 }

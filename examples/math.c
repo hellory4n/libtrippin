@@ -10,7 +10,7 @@ int main(void) {
 	}
 
 	// you can make some colors
-	TrColor color = tr_hex_rgba(0x448AFFFF);
+	TrColor color = tr_hex_rgb(0x448aff);
 	tr_log("%.2X%.2X%.2X%.2X", color.r, color.g, color.b, color.a);
 
 	tr_free();

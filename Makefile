@@ -21,4 +21,4 @@ math: examples/math.c
 	$(CC) $(CFLAGS) -o examples/math examples/math.c libtrippin.c
 
 clean:
-	rm examples/vectors examples/log examples/slice_arenas examples/math log.txt
+	rm -f examples/vectors examples/log examples/slice_arenas examples/math log.txt

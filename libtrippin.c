@@ -255,48 +255,6 @@ void* tr_slice2d_at(TrSlice2D slice, size_t x, size_t y)
 	return (void*)((char*)slice.buffer + offset);
 }
 
-double tr_rect_area(TrRect r)
-{
-	return r.w * r.h;
-}
-
-bool tr_rect_intersects(TrRect a, TrRect b)
-{
-	// man
-	if (a.x >= (b.x + b.w)) {
-		return false;
-	}
-	if ((a.x + a.w) <= b.y) {
-		return false;
-	}
-	if (a.y >= (b.y + b.h)) {
-		return false;
-	}
-	if ((a.y + a.h) <= b.y) {
-		return false;
-	}
-	return true;
-}
-
-bool tr_rect_has_point(TrRect rect, TrVec2f point)
-{
-	if (point.x < rect.x) {
-		return false;
-	}
-	if (point.y < rect.y) {
-		return false;
-	}
-
-	if (point.x >= (rect.x + rect.w)) {
-		return false;
-	}
-	if (point.y >= (rect.y + rect.h)) {
-		return false;
-	}
-
-	return true;
-}
-
 TrRand* tr_default_rand(void)
 {
 	return &tr_randdeez;
@@ -355,54 +313,17 @@ int64_t tr_rand_i64(TrRand* rand, int64_t min, int64_t max)
 	return (int64_t)round(tr_rand_double(rand, (double)min, (double)max));
 }
 
-double tr_deg2rad(double deg)
-{
-	return deg * (PI / 180.0);
-}
-
-double tr_rad2deg(double rad)
-{
-	return rad * (180 / PI);
-}
-
-double tr_clamp(double val, double min, double max)
-{
-	if (val < min) return min;
-	else if (val > max) return max;
-	else return val;
-}
-
-double tr_lerp(double a, double b, double t)
-{
-	return (1.0 - t) * a + t * b;
-}
-
-double tr_inverse_lerp(double a, double b, double v)
-{
-	return (v - a) / (b - a);
-}
-
-double st_remap(double v, double src_min, double src_max, double dst_min, double dst_max)
-{
-	return tr_lerp(dst_min, dst_max, tr_inverse_lerp(src_min, src_max, v));
-}
-
-TrColor tr_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
-{
-	return (TrColor){.r = r, .g = g, .b = b, .a = a};
-}
-
-TrColor tr_rgb(uint8_t r, uint8_t g, uint8_t b)
-{
-	return (TrColor){.r = r, .g = g, .b = b, .a = 255};
-}
-
-TrColor tr_hex_rgba(uint32_t hex)
-{
-	return (TrColor){
-		.r = (hex >> 24) & 0xFF,
-		.g = (hex >> 16) & 0xFF,
-		.b = (hex >> 8) & 0xFF,
-		.a = hex & 0xFF,
-	};
-}
+// apparently the linker has a skill issue so we have to put inline functions here
+double tr_rect_area(TrRect r);
+bool tr_rect_intersects(TrRect a, TrRect b);
+bool tr_rect_has_point(TrRect rect, TrVec2f point);
+TrColor tr_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+TrColor tr_rgb(uint8_t r, uint8_t g, uint8_t b);
+TrColor tr_hex_rgba(uint32_t hex);
+TrColor tr_hex_rgb(uint32_t hex);
+double tr_deg2rad(double deg);
+double tr_rad2deg(double rad);
+double tr_clamp(double val, double min, double max);
+double tr_lerp(double a, double b, double t);
+double tr_inverse_lerp(double a, double b, double v);
+double tr_remap(double v, double src_min, double src_max, double dst_min, double dst_max);
