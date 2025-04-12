@@ -135,7 +135,16 @@ typedef enum {
 } TrLogLevel;
 
 // Log.
-void tr_log(TrLogLevel level, const char* fmt, ...);
+void tr_log(const char* fmt, ...);
+
+// Log but for libraries that use libtrippin so your log isn't flooded with crap.
+void tr_liblog(const char* fmt, ...);
+
+// Oh nose.
+void tr_warn(const char* fmt, ...);
+
+// Oh god oh fuck.
+void tr_error(const char* fmt, ...);
 
 // Formatted assert?!!!??!?!??!?1
 void tr_assert(bool x, const char* msg, ...);

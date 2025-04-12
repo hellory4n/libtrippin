@@ -41,7 +41,7 @@ void tr_init(const char* log_file)
 
 	tr_randdeez = tr_rand_new(time(NULL));
 
-	tr_log(TR_LOG_LIB_INFO, "initialized libtrippin %s", TR_VERSION);
+	tr_liblog("initialized libtrippin %s", TR_VERSION);
 }
 
 void tr_free(void)
@@ -49,10 +49,13 @@ void tr_free(void)
 	fclose(tr_logfile);
 
 	// this causes a leak in the math example??????????????????????? according to asan
-	// tr_log(TR_LOG_LIB_INFO, "deinitialized libtripping");
+	// tr_liblog("deinitialized libtripping");
 }
 
-void tr_log(TrLogLevel level, const char* fmt, ...)
+// TODO maybe don't copy the same function 6 times with slightly different formatting and
+// sometimes it dies
+
+void tr_log(const char* fmt, ...)
 {
 	// you understand mechanical hands are the ruler of everything (ah)
 	char timestr[32];
@@ -67,20 +70,73 @@ void tr_log(TrLogLevel level, const char* fmt, ...)
 	vsnprintf(buf, sizeof(buf), fmt, args);
 
 	fprintf(tr_logfile, "[%s] %s\n", timestr, buf);
-	switch (level) {
-	case TR_LOG_LIB_INFO:
-		printf(TR_CONSOLE_COLOR_LIB_INFO "[%s] %s\n" TR_CONSOLE_COLOR_RESET, timestr, buf);
-		break;
-	case TR_LOG_INFO:
-		printf("[%s] %s\n", timestr, buf);
-		break;
-	case TR_LOG_WARNING:
-		printf(TR_CONSOLE_COLOR_WARN "[%s] %s\n" TR_CONSOLE_COLOR_RESET, timestr, buf);
-		break;
-	case TR_LOG_ERROR:
-		printf(TR_CONSOLE_COLOR_ERROR "[%s] %s\n" TR_CONSOLE_COLOR_RESET, timestr, buf);
-		break;
-	}
+	printf("[%s] %s\n", timestr, buf);
+	fflush(tr_logfile);
+	fflush(stdout);
+
+	va_end(args);
+}
+
+void tr_liblog(const char* fmt, ...)
+{
+	// you understand mechanical hands are the ruler of everything (ah)
+	char timestr[32];
+	time_t now = time(NULL);
+	struct tm* tm_info = localtime(&now);
+	strftime(timestr, sizeof(timestr), "%Y-%m-%d %H:%M:%S", tm_info);
+
+	// TODO maybe increase in the future?
+	char buf[256];
+	va_list args;
+	va_start(args, fmt);
+	vsnprintf(buf, sizeof(buf), fmt, args);
+
+	fprintf(tr_logfile, "[%s] %s\n", timestr, buf);
+	printf(TR_CONSOLE_COLOR_LIB_INFO "[%s] %s\n" TR_CONSOLE_COLOR_RESET, timestr, buf);
+	fflush(tr_logfile);
+	fflush(stdout);
+
+	va_end(args);
+}
+
+void tr_warn(const char* fmt, ...)
+{
+	// you understand mechanical hands are the ruler of everything (ah)
+	char timestr[32];
+	time_t now = time(NULL);
+	struct tm* tm_info = localtime(&now);
+	strftime(timestr, sizeof(timestr), "%Y-%m-%d %H:%M:%S", tm_info);
+
+	// TODO maybe increase in the future?
+	char buf[256];
+	va_list args;
+	va_start(args, fmt);
+	vsnprintf(buf, sizeof(buf), fmt, args);
+
+	fprintf(tr_logfile, "[%s] %s\n", timestr, buf);
+	printf(TR_CONSOLE_COLOR_WARN "[%s] %s\n" TR_CONSOLE_COLOR_RESET, timestr, buf);
+	fflush(tr_logfile);
+	fflush(stdout);
+
+	va_end(args);
+}
+
+void tr_error(const char* fmt, ...)
+{
+	// you understand mechanical hands are the ruler of everything (ah)
+	char timestr[32];
+	time_t now = time(NULL);
+	struct tm* tm_info = localtime(&now);
+	strftime(timestr, sizeof(timestr), "%Y-%m-%d %H:%M:%S", tm_info);
+
+	// TODO maybe increase in the future?
+	char buf[256];
+	va_list args;
+	va_start(args, fmt);
+	vsnprintf(buf, sizeof(buf), fmt, args);
+
+	fprintf(tr_logfile, "[%s] %s\n", timestr, buf);
+	printf(TR_CONSOLE_COLOR_ERROR "[%s] %s\n" TR_CONSOLE_COLOR_RESET, timestr, buf);
 	fflush(tr_logfile);
 	fflush(stdout);
 
