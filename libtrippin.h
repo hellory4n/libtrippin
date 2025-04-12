@@ -89,50 +89,83 @@ typedef struct {
 	int64_t z;
 } TrVec3i;
 
-#define TR_V2_ADD(a, b)  {a.x + b.x, a.y + b.y}
-#define TR_V2_SUB(a, b)  {a.x - b.x, a.y - b.y}
-#define TR_V2_MUL(a, b)  {a.x * b.x, a.y * b.y}
-#define TR_V2_SMUL(a, b) {a.x * b,   a.y * b}
-#define TR_V2_DIV(a, b)  {a.x / b.x, a.y / b.y}
-#define TR_V2_SDIV(a, b) {a.x / b,   a.y / b}
+typedef struct {
+	double x;
+	double y;
+	double z;
+	double w;
+} TrVec4f;
+
+typedef struct {
+	int64_t x;
+	int64_t y;
+	int64_t z;
+	int64_t w;
+} TrVec4i;
+
+#define TR_V2_ADD(a, b)  { a.x + b.x, a.y + b.y}
+#define TR_V2_SUB(a, b)  { a.x - b.x, a.y - b.y}
+#define TR_V2_MUL(a, b)  { a.x * b.x, a.y * b.y}
+#define TR_V2_SMUL(a, b) { a.x * b,   a.y * b}
+#define TR_V2_DIV(a, b)  { a.x / b.x, a.y / b.y}
+#define TR_V2_SDIV(a, b) { a.x / b,   a.y / b}
+#define TR_V2_NEG(a, b)  {-a.x,      -a.y}
 
 #define TR_V2_EQ(a, b)   (a.x == b.x && a.y == b.y)
-#define TR_V2_NEQ(a, b)  (a.x != b.x && a.y != b.y)
+#define TR_V2_NEQ(a, b)  !TR_V2_EQ(a, b)
 #define TR_V2_LT(a, b)   (a.x < b.x  && a.y < b.y)
 #define TR_V2_LTE(a, b)  (a.x <= b.x && a.y <= b.y)
 // shout out to lua
 #define TR_V2_GT(a, b)   TR_V2_LT(b, a)
 #define TR_V2_GTE(a, b)  TR_V2_LTE(b, a)
 
-#define TR_V3_ADD(a, b)  {a.x + b.x, a.y + b.y, a.z + b.z}
-#define TR_V3_SUB(a, b)  {a.x - b.x, a.y - b.y, a.z - b.z}
-#define TR_V3_MUL(a, b)  {a.x * b.x, a.y * b.y, a.z * b.z}
-#define TR_V3_SMUL(a, b) {a.x * b,   a.y * b,   a.z * b}
-#define TR_V3_DIV(a, b)  {a.x / b.x, a.y / b.y, a.z / b.z}
-#define TR_V3_SDIV(a, b) {a.x / b,   a.y / b,   a.z / b}
+#define TR_V3_ADD(a, b)  { a.x + b.x, a.y + b.y, a.z + b.z}
+#define TR_V3_SUB(a, b)  { a.x - b.x, a.y - b.y, a.z - b.z}
+#define TR_V3_MUL(a, b)  { a.x * b.x, a.y * b.y, a.z * b.z}
+#define TR_V3_SMUL(a, b) { a.x * b,   a.y * b,   a.z * b}
+#define TR_V3_DIV(a, b)  { a.x / b.x, a.y / b.y, a.z / b.z}
+#define TR_V3_SDIV(a, b) { a.x / b,   a.y / b,   a.z / b}
+#define TR_V3_NEG(a, b)  {-a.x,      -a.y,      -a.z}
 
 #define TR_V3_EQ(a, b)   (a.x == b.x && a.y == b.y && a.z == b.z)
-#define TR_V3_NEQ(a, b)  (a.x != b.x && a.y != b.y && a.z != b.z)
+#define TR_V3_NEQ(a, b)  !TR_V3_EQ(a, b)
 #define TR_V3_LT(a, b)   (a.x <  b.x && a.y <  b.y && a.z <  b.z)
 #define TR_V3_LTE(a, b)  (a.x <= b.x && a.y <= b.y && a.z <= b.z)
 // shout out to lua
 #define TR_V3_GT(a, b)   TR_V3_LT(b, a)
 #define TR_V3_GTE(a, b)  TR_V3_LTE(b, a)
 
+// idk why you would need those on vec4s but ok
+#define TR_V4_ADD(a, b)  { a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w}
+#define TR_V4_SUB(a, b)  { a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w}
+#define TR_V4_MUL(a, b)  { a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w}
+#define TR_V4_SMUL(a, b) { a.x * b,   a.y * b,   a.z * b,   a.w * b}
+#define TR_V4_DIV(a, b)  { a.x / b.x, a.y / b.y, a.z / b.z, a.w / b.w}
+#define TR_V4_SDIV(a, b) { a.x / b,   a.y / b,   a.z / b,   a.w / b}
+#define TR_V4_NEG(a, b)  {-a.x,      -a.y,      -a.z,      -a.w}
+
+#define TR_V4_EQ(a, b)   (a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w)
+#define TR_V4_NEQ(a, b)  !TR_V4_EQ(a, b)
+#define TR_V4_LT(a, b)   (a.x <  b.x && a.y <  b.y && a.z <  b.z && a.w <  b.w)
+#define TR_V4_LTE(a, b)  (a.x <= b.x && a.y <= b.y && a.z <= b.z && a.w <= b.w)
+// shout out to lua
+#define TR_V4_GT(a, b)   TR_V4_LT(b, a)
+#define TR_V4_GTE(a, b)  TR_V4_LTE(b, a)
+
 // logging
 
+// TODO colored output doesn't work on windows and i can't be bothered to fix it
+#ifndef _WIN32
 #define TR_CONSOLE_COLOR_RESET    "\033[0m"
 #define TR_CONSOLE_COLOR_LIB_INFO "\033[0;90m"
 #define TR_CONSOLE_COLOR_WARN     "\033[0;93m"
 #define TR_CONSOLE_COLOR_ERROR    "\033[0;91m"
-
-typedef enum {
-	// literally just for use with raylib
-	TR_LOG_LIB_INFO,
-	TR_LOG_INFO,
-	TR_LOG_WARNING,
-	TR_LOG_ERROR,
-} TrLogLevel;
+#else
+#define TR_CONSOLE_COLOR_RESET
+#define TR_CONSOLE_COLOR_LIB_INFO
+#define TR_CONSOLE_COLOR_WARN
+#define TR_CONSOLE_COLOR_ERROR
+#endif
 
 // Log.
 void tr_log(const char* fmt, ...);
@@ -183,6 +216,38 @@ TrSlice2D tr_slice2d_new(TrArena arena, size_t width, size_t height, size_t elem
 // Gets the element at the specified index. Note this returns a pointer to the element so this is
 // also how you change elements.
 void* tr_slice2d_at(TrSlice2D slice, size_t x, size_t y);
+
+// these aren't really necessary, it's just for clarity
+typedef TrSlice TrSlice_int64;
+typedef TrSlice TrSlice_uint64;
+typedef TrSlice TrSlice_int32;
+typedef TrSlice TrSlice_uint32;
+typedef TrSlice TrSlice_int16;
+typedef TrSlice TrSlice_uint16;
+typedef TrSlice TrSlice_int8;
+typedef TrSlice TrSlice_uint8;
+typedef TrSlice TrSlice_double;
+typedef TrSlice TrSlice_float;
+typedef TrSlice TrString;
+typedef TrSlice TrSlice_Vec2f;
+typedef TrSlice TrSlice_Vec2i;
+typedef TrSlice TrSlice_Vec3f;
+typedef TrSlice TrSlice_Vec3i;
+typedef TrSlice TrSlice_Vec4f;
+typedef TrSlice TrSlice_Vec4i;
+
+// idk why you would need 2d slices for anything else
+// idk if i'm gonna keep 2d slices lmao
+typedef TrSlice2D TrSlice2D_int64;
+typedef TrSlice2D TrSlice2D_uint64;
+typedef TrSlice2D TrSlice2D_int32;
+typedef TrSlice2D TrSlice2D_uint32;
+typedef TrSlice2D TrSlice2D_int16;
+typedef TrSlice2D TrSlice2D_uint16;
+typedef TrSlice2D TrSlice2D_int8;
+typedef TrSlice2D TrSlice2D_uint8;
+typedef TrSlice2D TrSlice2D_double;
+typedef TrSlice2D TrSlice2D_float;
 
 // rectnagle
 typedef struct {

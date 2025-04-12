@@ -26,7 +26,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifndef _WIN32
 #include <signal.h>
+#endif
 #include <time.h>
 #include <math.h>
 #include "libtrippin.h"
@@ -167,7 +169,10 @@ void tr_assert(bool x, const char* msg, ...)
 	fflush(stdout);
 
 	va_end(args);
+	// TODO there's probably a windows equivalent but i don't care
+	#ifndef _WIN32
 	raise(SIGTRAP);
+	#endif
 }
 
 void tr_panic(const char* msg, ...)
@@ -190,7 +195,10 @@ void tr_panic(const char* msg, ...)
 	fflush(stdout);
 
 	va_end(args);
+	// TODO there's probably a windows equivalent but i don't care
+	#ifndef _WIN32
 	raise(SIGTRAP);
+	#endif
 }
 
 TrArena tr_arena_new(size_t size)
@@ -230,7 +238,7 @@ TrSlice tr_slice_new(TrArena arena, size_t length, size_t elem_size)
 
 void* tr_slice_at(TrSlice slice, size_t idx)
 {
-	if (idx >= slice.length || idx < 0) {
+	if (idx >= slice.length) {
 		tr_panic("index out of range: %zu", idx);
 	}
 
@@ -247,7 +255,7 @@ TrSlice2D tr_slice2d_new(TrArena arena, size_t width, size_t height, size_t elem
 
 void* tr_slice2d_at(TrSlice2D slice, size_t x, size_t y)
 {
-	if (x >= slice.width || x < 0 || y >= slice.height || y < 0) {
+	if (x >= slice.width || y >= slice.height) {
 		tr_panic("index out of range: %zu, %zu", x, y);
 	}
 

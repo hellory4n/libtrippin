@@ -20,5 +20,6 @@ slice_arenas: examples/slice_arenas.c
 math: examples/math.c
 	$(CC) $(CFLAGS) -o examples/math examples/math.c libtrippin.c
 
+# man
 clean:
-	rm -f examples/vectors examples/log examples/slice_arenas examples/math log.txt
+	rm -f log.txt examples/vectors examples/log examples/slice_arenas examples/math examples/vectors.exe examples/log.exe examples/slice_arenas.exe examples/math.exe
