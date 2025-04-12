@@ -26,30 +26,27 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-// so clang shuts up
-#ifdef DEBUG
 #include <signal.h>
-#endif
 #include <time.h>
 #include <math.h>
 #include "libtrippin.h"
 
-static FILE* logfile;
-static TrRand randdeez;
+static FILE* tr_logfile;
+static TrRand tr_randdeez;
 
 void tr_init(const char* log_file)
 {
-	logfile = fopen(log_file, "w");
+	tr_logfile = fopen(log_file, "w");
 	tr_assert(log_file != NULL, "couldn't open %s", log_file);
 
-	randdeez = tr_rand_new(time(NULL));
+	tr_randdeez = tr_rand_new(time(NULL));
 
 	tr_log(TR_LOG_LIB_INFO, "initialized libtrippin %s", TR_VERSION);
 }
 
 void tr_free(void)
 {
-	fclose(logfile);
+	fclose(tr_logfile);
 
 	// this causes a leak in the math example??????????????????????? according to asan
 	// tr_log(TR_LOG_LIB_INFO, "deinitialized libtripping");
@@ -69,7 +66,7 @@ void tr_log(TrLogLevel level, const char* fmt, ...)
 	va_start(args, fmt);
 	vsnprintf(buf, sizeof(buf), fmt, args);
 
-	fprintf(logfile, "[%s] %s\n", timestr, buf);
+	fprintf(tr_logfile, "[%s] %s\n", timestr, buf);
 	switch (level) {
 	case TR_LOG_LIB_INFO:
 		printf(TR_CONSOLE_COLOR_LIB_INFO "[%s] %s\n" TR_CONSOLE_COLOR_RESET, timestr, buf);
@@ -84,7 +81,7 @@ void tr_log(TrLogLevel level, const char* fmt, ...)
 		printf(TR_CONSOLE_COLOR_ERROR "[%s] %s\n" TR_CONSOLE_COLOR_RESET, timestr, buf);
 		break;
 	}
-	fflush(logfile);
+	fflush(tr_logfile);
 	fflush(stdout);
 
 	va_end(args);
@@ -108,18 +105,13 @@ void tr_assert(bool x, const char* msg, ...)
 	va_start(args, msg);
 	vsnprintf(buf, sizeof(buf), msg, args);
 
-	fprintf(logfile, "[%s] %s\n", timestr, buf);
+	fprintf(tr_logfile, "[%s] %s\n", timestr, buf);
 	printf(TR_CONSOLE_COLOR_ERROR "[%s] failed assert: %s\n" TR_CONSOLE_COLOR_RESET, timestr, buf);
-	fflush(logfile);
+	fflush(tr_logfile);
 	fflush(stdout);
 
 	va_end(args);
-
-	#ifdef DEBUG
 	raise(SIGTRAP);
-	#else
-	exit(1);
-	#endif
 }
 
 void tr_panic(const char* msg, ...)
@@ -136,18 +128,13 @@ void tr_panic(const char* msg, ...)
 	va_start(args, msg);
 	vsnprintf(buf, sizeof(buf), msg, args);
 
-	fprintf(logfile, "[%s] %s\n", timestr, buf);
+	fprintf(tr_logfile, "[%s] %s\n", timestr, buf);
 	printf(TR_CONSOLE_COLOR_ERROR "[%s] panic: %s\n" TR_CONSOLE_COLOR_RESET, timestr, buf);
-	fflush(logfile);
+	fflush(tr_logfile);
 	fflush(stdout);
 
 	va_end(args);
-
-	#ifdef DEBUG
 	raise(SIGTRAP);
-	#else
-	exit(1);
-	#endif
 }
 
 TrArena tr_arena_new(size_t size)
@@ -174,7 +161,7 @@ void* tr_arena_alloc(TrArena arena, size_t size)
 		tr_panic("arena allocation out of bounds");
 	}
 
-	void* data = (void*)((char*)arena.buffer + arena.alloc_pos);
+	void* data = (void*)((uint8_t*)arena.buffer + arena.alloc_pos);
 	return data;
 }
 
@@ -256,7 +243,7 @@ bool tr_rect_has_point(TrRect rect, TrVec2f point)
 
 TrRand* tr_default_rand(void)
 {
-	return &randdeez;
+	return &tr_randdeez;
 }
 
 TrRand tr_rand_new(uint64_t seed)
@@ -354,7 +341,7 @@ TrColor tr_rgb(uint8_t r, uint8_t g, uint8_t b)
 	return (TrColor){.r = r, .g = g, .b = b, .a = 255};
 }
 
-TrColor tr_hex_rgba(int32_t hex)
+TrColor tr_hex_rgba(uint32_t hex)
 {
 	return (TrColor){
 		.r = (hex >> 24) & 0xFF,

@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef TRIPPIN_H
-#define TRIPPIN_H
+#ifndef _TRIPPIN_H
+#define _TRIPPIN_H
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -113,7 +113,7 @@ typedef struct {
 
 #define TR_V3_EQ(a, b)   (a.x == b.x && a.y == b.y && a.z == b.z)
 #define TR_V3_NEQ(a, b)  (a.x != b.x && a.y != b.y && a.z != b.z)
-#define TR_V3_LT(a, b)   (a.x < b.x  && a.y < b.y  && a.z <  b.z)
+#define TR_V3_LT(a, b)   (a.x <  b.x && a.y <  b.y && a.z <  b.z)
 #define TR_V3_LTE(a, b)  (a.x <= b.x && a.y <= b.y && a.z <= b.z)
 // shout out to lua
 #define TR_V3_GT(a, b)   TR_V3_LT(b, a)
@@ -155,8 +155,8 @@ typedef struct {
 // e.g. sizeof(int) for a slice of ints.
 TrSlice tr_slice_new(TrArena arena, size_t length, size_t elem_size);
 
-// Gets the element at the specified index. Note this returns a pointer to the element so this is also
-// how you change elements.
+// Gets the element at the specified index. Note this returns a pointer to the element so this is
+// also how you change elements.
 void* tr_slice_at(TrSlice slice, size_t idx);
 
 // slice but 2d lmao
@@ -171,12 +171,11 @@ typedef struct {
 // e.g. sizeof(int) for a slice of ints.
 TrSlice2D tr_slice2d_new(TrArena arena, size_t width, size_t height, size_t elem_size);
 
-// Gets the element at the specified index. Note this returns a pointer to the element so this is also
-// how you change elements.
+// Gets the element at the specified index. Note this returns a pointer to the element so this is
+// also how you change elements.
 void* tr_slice2d_at(TrSlice2D slice, size_t x, size_t y);
 
 // rectnagle
-
 typedef struct {
 	double x;
 	double y;
@@ -187,10 +186,10 @@ typedef struct {
 // Returns the area of the rectangle
 double tr_rect_area(TrRect r);
 
-/// If true, the 2 rects intersect
+// If true, the 2 rects intersect
 bool tr_rect_intersects(TrRect a, TrRect b);
 
-/// If true, the rect, in fact, has that point
+// If true, the rect, in fact, has that point
 bool tr_rect_has_point(TrRect rect, TrVec2f point);
 
 // mate
@@ -203,7 +202,7 @@ TrColor tr_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 TrColor tr_rgb(uint8_t r, uint8_t g, uint8_t b);
 
 // format is 0xRRGGBBAA for red, green, blue, and alpha respectively
-TrColor tr_hex_rgba(int32_t hex);
+TrColor tr_hex_rgba(uint32_t hex);
 
 #define TR_WHITE tr_hex_rgba(0xffffffff)
 #define TR_BLACK tr_hex_rgba(0x000000ff)
