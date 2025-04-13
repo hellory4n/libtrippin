@@ -2,7 +2,7 @@
 #include "libtrippin.h"
 
 int main(void) {
-	// tr_init("log.txt");
+	tr_init("log.txt");
 
 	// slices require an arena
 	TrArena arena = tr_arena_new(TR_MB(1));
@@ -10,36 +10,46 @@ int main(void) {
 	TrSlice slicema = tr_slice_new(&arena, 4, sizeof(int32_t));
 
 	// set items
-	*(int32_t*)tr_slice_at(&slicema, 0) = 11;
-	*(int32_t*)tr_slice_at(&slicema, 1) = 22;
-	*(int32_t*)tr_slice_at(&slicema, 2) = 33;
-	*(int32_t*)tr_slice_at(&slicema, 3) = 44;
+	*tr_at(slicema, int32_t, 0) = 11;
+	*tr_at(slicema, int32_t, 1) = 22;
+	*tr_at(slicema, int32_t, 2) = 33;
+	*tr_at(slicema, int32_t, 3) = 44;
+
+	// or use the shorthand
+	slicema = (TrSlice){0};
+	tr_setslice(&arena, &slicema, int32_t, 12, 23, 34, 45);
+	tr_log("%i", slicema.length);
+	/*
+	{
+	int32_t tmp[] = {12, 23, 34, 45};
+	memcpy(&slicema->buffer, tmp, sizeof(tmp));
+	&slicema->length = sizeof(tmp) / sizeof(int32_t);
+	}*/
 
 	// iterate
 	for (size_t i = 0; i < slicema.length; i++) {
-		tr_log("%i", *(int32_t*)tr_slice_at(&slicema, i));
+		tr_log("%i", *tr_at(slicema, int32_t, i));
 	}
 	// will panic without mysteriously dying
-	tr_log("%i\n", *(int32_t*)tr_slice_at(&slicema, 8268286804));
+	tr_log("%i\n", *tr_at(slicema, int32_t, 842852357635735));
 
 	// 2d slice
 	TrSlice2D slicema2d = tr_slice2d_new(&arena, 4, 4, sizeof(int32_t));
 
 	// set items
-	*(int32_t*)tr_slice2d_at(&slicema2d, 0, 0) = 11;
-	*(int32_t*)tr_slice2d_at(&slicema2d, 1, 1) = 22;
-	*(int32_t*)tr_slice2d_at(&slicema2d, 2, 2) = 33;
-	*(int32_t*)tr_slice2d_at(&slicema2d, 3, 3) = 44;
+	*tr_at2d(slicema2d, int32_t, 0, 0) = 11;
+	*tr_at2d(slicema2d, int32_t, 1, 1) = 22;
+	*tr_at2d(slicema2d, int32_t, 2, 2) = 33;
+	*tr_at2d(slicema2d, int32_t, 3, 3) = 44;
 
 	// iterate
 	for (size_t y = 0; y < slicema2d.height; y++) {
 		for (size_t x = 0; x < slicema2d.width; x++) {
-			tr_log("%i", *(int32_t*)tr_slice2d_at(&slicema2d, x, y));
+			tr_log("%i", *tr_at2d(slicema2d, int32_t, x, y));
 		}
 	}
 	// will panic without mysteriously dying
-	tr_log("%i\n", *(int32_t*)tr_slice2d_at(&slicema2d, 8268286804,
-		6247235784864));
+	tr_log("%i\n", *tr_at2d(slicema2d, int32_t, 6396903, 26464262));
 
 	// you free the entire arena at once
 	tr_arena_free(&arena);

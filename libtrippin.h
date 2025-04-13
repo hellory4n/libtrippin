@@ -27,6 +27,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -248,6 +249,23 @@ typedef TrSlice2D TrSlice2D_int8;
 typedef TrSlice2D TrSlice2D_uint8;
 typedef TrSlice2D TrSlice2D_double;
 typedef TrSlice2D TrSlice2D_float;
+
+// also not really necessary
+// it's just that the regular function is quite the mouthful
+
+// apparently doing & and + 0 makes clangd get rid of the inlay hints
+// i don't want to disable them entirely
+// but i do want to disable them in this case
+#define tr_at(slice, type, idx) ((type*)tr_slice_at(&slice, (idx + 0)))
+
+#define tr_at2d(slice, type, x, y) ((type*)tr_slice2d_at(&slice, (x + 0), (y + 0)))
+
+#define tr_setslice(arena, slice, type, ...) do { \
+		type tmp[] = {__VA_ARGS__}; \
+		(slice)->length = sizeof(tmp) / sizeof(type); \
+		*(slice) = tr_slice_new(arena, (slice)->length, sizeof(type)); \
+		memcpy((slice)->buffer, tmp, sizeof(tmp)); \
+	} while (false)
 
 // rectnagle
 typedef struct {

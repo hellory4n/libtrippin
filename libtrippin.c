@@ -312,7 +312,7 @@ void* tr_slice_at(TrSlice* slice, size_t idx)
 	}
 
 	size_t offset = slice->elem_size * idx;
-	return (void*)((char*)slice->buffer + offset);
+	return (void*)((uint8_t*)slice->buffer + offset);
 }
 
 TrSlice2D tr_slice2d_new(TrArena* arena, size_t width, size_t height, size_t elem_size)
@@ -329,7 +329,7 @@ void* tr_slice2d_at(TrSlice2D* slice, size_t x, size_t y)
 	}
 
 	size_t offset = slice->elem_size * (slice->width * x + y);
-	return (void*)((char*)slice->buffer + offset);
+	return (void*)((uint8_t*)slice->buffer + offset);
 }
 
 TrRand* tr_default_rand(void)
