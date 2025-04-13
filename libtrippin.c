@@ -48,10 +48,11 @@ void tr_init(const char* log_file)
 
 void tr_free(void)
 {
-	fclose(tr_logfile);
-
-	// this causes a leak in the math example??????????????????????? according to asan
-	// tr_liblog("deinitialized libtripping");
+	// liblog requires that file so we close it after
+	tr_liblog("deinitialized libtrippin");
+	if (tr_logfile != NULL) {
+		fclose(tr_logfile);
+	}
 }
 
 // TODO maybe don't copy the same function 6 times with slightly different formatting and
@@ -71,9 +72,20 @@ void tr_log(const char* fmt, ...)
 	va_start(args, fmt);
 	vsnprintf(buf, sizeof(buf), fmt, args);
 
-	fprintf(tr_logfile, "[%s] %s\n", timestr, buf);
+	if (tr_logfile == NULL) {
+		printf(
+			TR_CONSOLE_COLOR_WARN
+			"[%s] no log file available. did you forget to call tr_init()?\n"
+			TR_CONSOLE_COLOR_RESET,
+			timestr
+		);
+	}
+	else {
+		fprintf(tr_logfile, "[%s] %s\n", timestr, buf);
+		fflush(tr_logfile);
+	}
+
 	printf("[%s] %s\n", timestr, buf);
-	fflush(tr_logfile);
 	fflush(stdout);
 
 	va_end(args);
@@ -93,9 +105,20 @@ void tr_liblog(const char* fmt, ...)
 	va_start(args, fmt);
 	vsnprintf(buf, sizeof(buf), fmt, args);
 
-	fprintf(tr_logfile, "[%s] %s\n", timestr, buf);
+	if (tr_logfile == NULL) {
+		printf(
+			TR_CONSOLE_COLOR_WARN
+			"[%s] no log file available. did you forget to call tr_init()?\n"
+			TR_CONSOLE_COLOR_RESET,
+			timestr
+		);
+	}
+	else {
+		fprintf(tr_logfile, "[%s] %s\n", timestr, buf);
+		fflush(tr_logfile);
+	}
+
 	printf(TR_CONSOLE_COLOR_LIB_INFO "[%s] %s\n" TR_CONSOLE_COLOR_RESET, timestr, buf);
-	fflush(tr_logfile);
 	fflush(stdout);
 
 	va_end(args);
@@ -115,9 +138,20 @@ void tr_warn(const char* fmt, ...)
 	va_start(args, fmt);
 	vsnprintf(buf, sizeof(buf), fmt, args);
 
-	fprintf(tr_logfile, "[%s] %s\n", timestr, buf);
+	if (tr_logfile == NULL) {
+		printf(
+			TR_CONSOLE_COLOR_WARN
+			"[%s] no log file available. did you forget to call tr_init()?\n"
+			TR_CONSOLE_COLOR_RESET,
+			timestr
+		);
+	}
+	else {
+		fprintf(tr_logfile, "[%s] %s\n", timestr, buf);
+		fflush(tr_logfile);
+	}
+
 	printf(TR_CONSOLE_COLOR_WARN "[%s] %s\n" TR_CONSOLE_COLOR_RESET, timestr, buf);
-	fflush(tr_logfile);
 	fflush(stdout);
 
 	va_end(args);
@@ -137,9 +171,20 @@ void tr_error(const char* fmt, ...)
 	va_start(args, fmt);
 	vsnprintf(buf, sizeof(buf), fmt, args);
 
-	fprintf(tr_logfile, "[%s] %s\n", timestr, buf);
+	if (tr_logfile == NULL) {
+		printf(
+			TR_CONSOLE_COLOR_WARN
+			"[%s] no log file available. did you forget to call tr_init()?\n"
+			TR_CONSOLE_COLOR_RESET,
+			timestr
+		);
+	}
+	else {
+		fprintf(tr_logfile, "[%s] %s\n", timestr, buf);
+		fflush(tr_logfile);
+	}
+
 	printf(TR_CONSOLE_COLOR_ERROR "[%s] %s\n" TR_CONSOLE_COLOR_RESET, timestr, buf);
-	fflush(tr_logfile);
 	fflush(stdout);
 
 	va_end(args);
@@ -163,9 +208,20 @@ void tr_assert(bool x, const char* msg, ...)
 	va_start(args, msg);
 	vsnprintf(buf, sizeof(buf), msg, args);
 
-	fprintf(tr_logfile, "[%s] %s\n", timestr, buf);
+	if (tr_logfile == NULL) {
+		printf(
+			TR_CONSOLE_COLOR_WARN
+			"[%s] no log file available. did you forget to call tr_init()?\n"
+			TR_CONSOLE_COLOR_RESET,
+			timestr
+		);
+	}
+	else {
+		fprintf(tr_logfile, "[%s] %s\n", timestr, buf);
+		fflush(tr_logfile);
+	}
+
 	printf(TR_CONSOLE_COLOR_ERROR "[%s] failed assert: %s\n" TR_CONSOLE_COLOR_RESET, timestr, buf);
-	fflush(tr_logfile);
 	fflush(stdout);
 
 	va_end(args);
@@ -189,9 +245,20 @@ void tr_panic(const char* msg, ...)
 	va_start(args, msg);
 	vsnprintf(buf, sizeof(buf), msg, args);
 
-	fprintf(tr_logfile, "[%s] %s\n", timestr, buf);
+	if (tr_logfile == NULL) {
+		printf(
+			TR_CONSOLE_COLOR_WARN
+			"[%s] no log file available. did you forget to call tr_init()?\n"
+			TR_CONSOLE_COLOR_RESET,
+			timestr
+		);
+	}
+	else {
+		fprintf(tr_logfile, "[%s] %s\n", timestr, buf);
+		fflush(tr_logfile);
+	}
+
 	printf(TR_CONSOLE_COLOR_ERROR "[%s] panic: %s\n" TR_CONSOLE_COLOR_RESET, timestr, buf);
-	fflush(tr_logfile);
 	fflush(stdout);
 
 	va_end(args);
@@ -211,56 +278,58 @@ TrArena tr_arena_new(size_t size)
 	return arena;
 }
 
-void tr_arena_free(TrArena arena)
+void tr_arena_free(TrArena* arena)
 {
-	free(arena.buffer);
+	free(arena->buffer);
+	arena->buffer = NULL;
 }
 
-void* tr_arena_alloc(TrArena arena, size_t size)
+void* tr_arena_alloc(TrArena* arena, size_t size)
 {
 	// it's gonna segfault anyway
 	// might as well complain instead of mysteriously dying
-	size_t end = (size_t)arena.alloc_pos + size;
-	if (end > arena.size) {
+	size_t end = (size_t)arena->alloc_pos + size;
+	if (end > arena->size) {
 		tr_panic("arena allocation out of bounds");
 	}
 
-	void* data = (void*)((uint8_t*)arena.buffer + arena.alloc_pos);
+	void* data = (void*)((uint8_t*)arena->buffer + arena->alloc_pos);
+	arena->alloc_pos += size;
 	return data;
 }
 
-TrSlice tr_slice_new(TrArena arena, size_t length, size_t elem_size)
+TrSlice tr_slice_new(TrArena* arena, size_t length, size_t elem_size)
 {
 	TrSlice slicema = {.length = length, .elem_size = elem_size};
 	slicema.buffer = tr_arena_alloc(arena, length * elem_size);
 	return slicema;
 }
 
-void* tr_slice_at(TrSlice slice, size_t idx)
+void* tr_slice_at(TrSlice* slice, size_t idx)
 {
-	if (idx >= slice.length) {
+	if (idx >= slice->length) {
 		tr_panic("index out of range: %zu", idx);
 	}
 
-	size_t offset = slice.elem_size * idx;
-	return (void*)((char*)slice.buffer + offset);
+	size_t offset = slice->elem_size * idx;
+	return (void*)((char*)slice->buffer + offset);
 }
 
-TrSlice2D tr_slice2d_new(TrArena arena, size_t width, size_t height, size_t elem_size)
+TrSlice2D tr_slice2d_new(TrArena* arena, size_t width, size_t height, size_t elem_size)
 {
 	TrSlice2D slicema = {.elem_size = elem_size, .width = width, .height = height};
 	slicema.buffer = tr_arena_alloc(arena, width * height * elem_size);
 	return slicema;
 }
 
-void* tr_slice2d_at(TrSlice2D slice, size_t x, size_t y)
+void* tr_slice2d_at(TrSlice2D* slice, size_t x, size_t y)
 {
-	if (x >= slice.width || y >= slice.height) {
+	if (x >= slice->width || y >= slice->height) {
 		tr_panic("index out of range: %zu, %zu", x, y);
 	}
 
-	size_t offset = slice.elem_size * (slice.width * x + y);
-	return (void*)((char*)slice.buffer + offset);
+	size_t offset = slice->elem_size * (slice->width * x + y);
+	return (void*)((char*)slice->buffer + offset);
 }
 
 TrRand* tr_default_rand(void)
