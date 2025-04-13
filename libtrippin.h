@@ -1,5 +1,5 @@
 /*
- * libtrippin v1.1.0
+ * libtrippin v1.2.0
  *
  * Most biggest most massive standard library thing for C of all time
  * More information at https://github.com/hellory4n/libtrippin
@@ -33,7 +33,7 @@ extern "C" {
 #endif
 
 // Idk why I added this
-#define TR_VERSION "v1.1.0"
+#define TR_VERSION "v1.2.0"
 
 // It initializes libtrippin.
 void tr_init(const char* log_file);

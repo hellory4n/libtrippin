@@ -1,5 +1,5 @@
 /*
- * libtrippin v1.1.0
+ * libtrippin v1.2.0
  *
  * Most biggest most massive standard library thing for C of all time
  * More information at https://github.com/hellory4n/libtrippin
