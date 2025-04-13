@@ -1,4 +1,4 @@
-# libtrippin v1.1.0
+# libtrippin v1.2.0
 
 Most biggest most massive standard library thing for C of all time
 
@@ -37,13 +37,15 @@ int main(void)
     TrRand rand = tr_rand_new(123456789);
 
     TrVec2f vecdeez = {tr_rand_double(&rand, 1, 10), tr_rand_double(&rand, 1, 10)};
-    *(TrVec2f*)tr_slice_at(slicema, 0) = (TrVec2f){1, 2};
-    *(TrVec2f*)tr_slice_at(slicema, 1) = vecdeez;
-    *(TrVec2f*)tr_slice_at(slicema, 2) = TR_V2_ADD(vecdeez, vecdeez);
-    *(TrVec2f*)tr_slice_at(slicema, 3) = TR_V2_SMUL(vecdeez, 2);
+    TR_SET_SLICE(&arena, &slicema, TrVec2f,
+        (TrVec2f){1, 2},
+        vecdeez,
+        TR_V2_ADD(vecdeez, vecdeez),
+        TR_V2_SMUL(vecdeez, 2),
+    );
 
     for (size_t i = 0; i < slicema.length; i++) {
-        TrVec2f vecm = *(TrVec2f*)tr_slice_at(slicema, i);
+        TrVec2f vecm = *TR_AT(slicema, TrVec2f, i);
         tr_log( "%f, %f", vecm.x, vecm.y);
     }
 
