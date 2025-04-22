@@ -18,7 +18,7 @@ int main(void) {
 	// or use the shorthand
 	slicema = (TrSlice){0};
 	TR_SET_SLICE(&arena, &slicema, int32_t, 12, 23, 34, 45);
-	tr_log("%i", slicema.length);
+	tr_log("%zu", slicema.length);
 	/*
 	{
 	int32_t tmp[] = {12, 23, 34, 45};
