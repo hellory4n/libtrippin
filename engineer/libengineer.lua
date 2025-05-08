@@ -32,8 +32,12 @@ eng = {
 
 	-- Table of strings with functions (no arguments, no returns)
 	recipes = {},
+	-- Table of strings and more strings
+	recipe_description = {},
 	-- Table of strings with functions (no arguments, no returns)
 	options = {},
+	-- Table of strings and more strings
+	option_description = {},
 
 	-- constants
 	CONSOLE_COLOR_RESET = "\27[0m",
@@ -130,8 +134,6 @@ end
 
 -- Initializes engineer™
 function eng.init()
-	print(eng.CONSOLE_COLOR_LIB .. "Engineer v0.1.0" .. eng.CONSOLE_COLOR_RESET)
-
 	-- get c compiler
 	local cc = os.getenv("CC")
 	if cc ~= nil and cc ~= "" then
@@ -164,22 +166,61 @@ function eng.init()
 		end
 	end
 
-	-- TODO default "help" recipe
+	-- default help recipe
+	eng.recipe("help", "Shows this crap", function()
+		print("Engineer v0.1.0\n")
+		print("Recipes:")
+
+		-- some sorting lamo
+		local rkeys = {}
+		for recipe, _ in pairs(eng.recipe_description) do
+			table.insert(rkeys, recipe)
+		end
+		table.sort(rkeys)
+
+		-- actually list the shitfuck
+		for _, recipe in ipairs(rkeys) do
+			-- print does some aligning??
+			print("- " .. recipe .. ": ", eng.recipe_description[recipe])
+		end
+
+		-- mate
+		print("\nOptions: (usage: <option>=<value>)")
+		local okeys = {}
+		for option, _ in pairs(eng.option_description) do
+			table.insert(okeys, option)
+		end
+		table.sort(okeys)
+
+		for _, option in ipairs(okeys) do
+			-- print does some aligning??
+			print("- " .. option .. ": ", eng.option_description[option])
+		end
+	end)
 end
 
--- Makes a recipe. The callback will be called when the recipe is used.
-function eng.recipe(name, callback)
+-- Makes a recipe. The callback will be called when the recipe is used. The description will be used for
+-- the default help recipe.
+function eng.recipe(name, description, callback)
 	eng.recipes[name] = callback
+	eng.recipe_description[name] = description
 end
 
 -- Adds an option. The callback takes in whatever value the option has (string), and is only called
--- if that option is used.
-function eng.option(name, callback)
+-- if that option is used. The description will be used for the default help recipe.
+function eng.option(name, description, callback)
 	eng.options[name] = callback
+	eng.option_description[name] = description
 end
 
 -- Put this at the end of your build script so it actually does something
 function eng.run()
+	-- if theres no arguments just show the help crap
+	if #arg == 0 then
+		eng.recipes["help"]()
+		return
+	end
+
 	local opts = {}
 	local recipes = {}
 
@@ -212,10 +253,6 @@ function eng.run()
 			print(eng.CONSOLE_COLOR_WARN .. "unknown recipe \"" .. recipema .. "\"" .. eng.CONSOLE_COLOR_RESET)
 		end
 	end
-
-	-- put this here instead of eng.init() so you can manually change the compiler and see it change
-	print(eng.CONSOLE_COLOR_LIB .. "C compiler: " .. eng.cc .. eng.CONSOLE_COLOR_RESET)
-	print(eng.CONSOLE_COLOR_LIB .. "C++ compiler: " .. eng.cxx .. eng.CONSOLE_COLOR_RESET)
 end
 
 -- project metatable
