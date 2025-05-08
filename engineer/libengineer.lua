@@ -42,6 +42,7 @@ eng = {
 	-- constants
 	CONSOLE_COLOR_RESET = "\27[0m",
 	CONSOLE_COLOR_LIB = "\27[0;90m",
+	CONSOLE_COLOR_BLUE = "\27[0;34m",
 	CONSOLE_COLOR_WARN = "\27[0;93m",
 	CONSOLE_COLOR_ERROR = "\27[0;91m",
 }
@@ -130,6 +131,10 @@ function eng.util.print_table(node)
     output_str = table.concat(output)
 
     print(output_str)
+end
+
+function eng.util.endswith(str, suffix)
+	return str:sub(-#suffix) == suffix
 end
 
 -- Initializes engineer™
@@ -275,6 +280,7 @@ function eng.newproj(name, type)
 	t.includes = {}
 	t.builddir = "build"
 	t.staticdeps = {}
+	t.target = name
 	return t
 end
 
@@ -294,7 +300,7 @@ end
 -- so for example use "trippin" instead of "libtrippin.so", "trippin.dll", "libtrippin", "Ltrippin", etc
 function project_methods.link_dynamic(proj, libs)
 	for _, lib in ipairs(libs) do
-		proj.ldflags = proj.ldflags .. " -L" .. lib .. " "
+		proj.ldflags = proj.ldflags .. " -l" .. lib .. " "
 	end
 end
 
@@ -325,9 +331,64 @@ function project_methods.build_dir(proj, dir)
 	proj.build_dir = dir
 end
 
+-- Sets the project's target. e.g. crapplication.exe, libfaffery.so, etc
+function project_methods.target(proj, target)
+	proj.target = target
+end
+
 -- Builds and links the entire project
 function project_methods.build(proj)
-	error("i didnt make this lol")
+	print("Compiling " .. proj.name .. " with " .. eng.cc .. "/" .. eng.cxx)
+
+	-- folder? i hardly know 'er!
+	eng.util.silentexec("mkdir " .. proj.builddir)
+	eng.util.silentexec("mkdir " .. proj.builddir .. "/obj")
+	eng.util.silentexec("mkdir " .. proj.builddir .. "/" .. proj.name)
+
+	-- compile the bloody files
+	local objs = {}
+	for i, src in ipairs(proj.sources) do
+		-- i appreciate c++
+		local compiler = ""
+		if eng.util.endswith(src, ".c") then
+			compiler = eng.cc
+		elseif eng.util.endswith(src, ".cpp") or eng.util.endswith(src, ".cc") or
+		eng.util.endswith(src, ".cxx") or eng.util.endswith(src, ".c++") then
+			compiler = eng.cxx
+		else
+			print(eng.CONSOLE_COLOR_WARN .. "unexpected extension in " .. src .. ", using " .. eng.cc .. eng.CONSOLE_COLOR_RESET)
+			compiler = eng.cc
+		end
+
+		local obj = proj.builddir .. "/obj/" .. src:gsub("/", "_") .. ".o"
+		-- pretty output
+		print(eng.CONSOLE_COLOR_BLUE .. "[" .. i .. "/" .. #proj.sources .. "] " .. src .. eng.CONSOLE_COLOR_RESET)
+
+		-- compile frfrfr ong no cap ngl tbh
+		local success = os.execute(compiler .. proj.cflags .. " -o " .. obj .. " -c " .. src)
+		if not success then
+			error(eng.CONSOLE_COLOR_ERROR .. "compiling " .. src .. " failed" .. eng.CONSOLE_COLOR_RESET)
+		end
+		table.insert(objs, obj)
+	end
+
+	-- link :)
+	-- as an executable
+	if proj.type == "executable" then
+		local objma = ""
+		for _, obj in ipairs(objs) do
+			objma = objma .. obj .. " "
+		end
+
+		print("Linking " .. proj.name)
+		local success = os.execute(
+			-- the ldflags must come last lamo
+			eng.cc .. " " .. objma .. " -o " .. proj.builddir .. "/" .. proj.name .. "/" .. proj.target .. " " .. proj.ldflags
+		)
+		if not success then
+			error(eng.CONSOLE_COLOR_ERROR .. "linking " .. proj.name .. " failed" .. eng.CONSOLE_COLOR_RESET)
+		end
+	end
 end
 
 -- As the name implies, it cleans the project

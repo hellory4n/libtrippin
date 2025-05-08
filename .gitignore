@@ -10,6 +10,7 @@
 compile_commands.json
 # man
 .vscode
+build
 
 # example executables
 examples/vectors

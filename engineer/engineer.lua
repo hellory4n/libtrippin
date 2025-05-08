@@ -7,7 +7,7 @@ project:add_ldflags("-L. -Wl,-rpath=.")
 project:link_dynamic({"m"})
 
 project:add_includes({"."})
-project:add_sources({"main.c"})
+project:add_sources({"src/main.c", "src/test.c"})
 
 eng.option("crosscomp", "Compiles to another platform. Only supported option is \"windows\"", function(val)
 	-- we only support 2 platforms

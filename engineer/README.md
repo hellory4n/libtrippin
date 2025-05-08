@@ -7,6 +7,8 @@ This works by pretty much just being Make, but in Lua. (no esoteric language)
 > [!WARNING]
 > Engineer currently only works on Linux, and maybe Mac if you're lucky.
 
+All of the C files are just for testing, they're not part of Engineer™
+
 ## FAQ
 
 ### Isn't that just Premake?
