@@ -182,8 +182,8 @@ end
 
 -- Put this at the end of your build script so it actually does something
 function eng.run()
-	opts = {}
-	recipes = {}
+	local opts = {}
+	local recipes = {}
 
 	for _, argma in ipairs(arg) do
 		local key, val = argma:match("^(%w+)=?(%S*)$")
@@ -214,6 +214,77 @@ function eng.run()
 			print(eng.CONSOLE_COLOR_WARN .. "unknown recipe \"" .. recipema .. "\"" .. eng.CONSOLE_COLOR_RESET)
 		end
 	end
+end
+
+-- project metatable
+local project_methods = {}
+local project = {
+	__index = project_methods,
+}
+
+-- Creates a new project. The type can be either "executable", "sharedlib", or "staticlib"
+function eng.newproj(name, type)
+	assert(type == "executable" or type == "sharedlib" or type == "staticlib",
+		eng.CONSOLE_COLOR_ERROR .. "type must be executable, sharedlib, or staticlib" .. eng.CONSOLE_COLOR_RESET)
+
+	local t = setmetatable({}, project)
+	t.name = name
+	t.type = type
+	t.cflags = ""
+	t.ldflags = ""
+	t.sources = {}
+	t.includes = {}
+	t.builddir = "build"
+	return t
+end
+
+-- Adds compile flags to the project. It's recommended to use project methods instead of manually adding
+-- flags wherever possible.
+function project_methods.add_cflags(proj, cflags)
+	proj.cflags = proj.cflags .. " " .. cflags
+end
+
+-- Adds linker flags to the project. It's recommended to use project methods instead of manually adding
+-- flags wherever possible.
+function project_methods.add_ldflags(proj, ldflags)
+	proj.ldflags = proj.ldflags .. " " .. ldflags
+end
+
+-- Links multiple libraries to the project (it's a list). This shouldn't have any prefixes/suffixes, so
+-- for example use "trippin" instead of "libtrippin.so", "trippin.dll", "libtrippin", "Ltrippin", etc
+function project_methods.link(proj, libs)
+	for _, lib in ipairs(libs) do
+		proj.ldflags = proj.ldflags .. " -L" .. lib .. " "
+	end
+end
+
+-- Adds multiple source files to the project (it's a list).
+function project_methods.add_sources(proj, srcs)
+	for _, src in ipairs(srcs) do
+		table.insert(proj.sources, src)
+	end
+end
+
+-- Adds multiple include directories to the project (it's a list).
+function project_methods.add_includes(proj, incs)
+	for _, inc in ipairs(incs) do
+		table.insert(proj.includes, inc)
+	end
+end
+
+-- Sets the project's build directory. By default this is "build"
+function project_methods.build_dir(proj, dir)
+	proj.build_dir = dir
+end
+
+-- Builds and links the entire project
+function project_methods.build(proj)
+	error("i didnt make this lol")
+end
+
+-- As the name implies, it cleans the project
+function project_methods.clean(proj)
+	error("i didnt make this lol")
 end
 
 return eng
