@@ -147,7 +147,6 @@ function eng.init()
 				eng.CONSOLE_COLOR_RESET)
 		end
 	end
-	print(eng.CONSOLE_COLOR_LIB .. "C compiler: " .. eng.cc .. eng.CONSOLE_COLOR_RESET)
 
 	-- get c++ compiler
 	local cxx = os.getenv("CXX") or os.getenv("CPP")
@@ -164,7 +163,6 @@ function eng.init()
 				eng.CONSOLE_COLOR_RESET)
 		end
 	end
-	print(eng.CONSOLE_COLOR_LIB .. "C++ compiler: " .. eng.cxx .. eng.CONSOLE_COLOR_RESET)
 
 	-- TODO default "help" recipe
 end
@@ -214,6 +212,10 @@ function eng.run()
 			print(eng.CONSOLE_COLOR_WARN .. "unknown recipe \"" .. recipema .. "\"" .. eng.CONSOLE_COLOR_RESET)
 		end
 	end
+
+	-- put this here instead of eng.init() so you can manually change the compiler and see it change
+	print(eng.CONSOLE_COLOR_LIB .. "C compiler: " .. eng.cc .. eng.CONSOLE_COLOR_RESET)
+	print(eng.CONSOLE_COLOR_LIB .. "C++ compiler: " .. eng.cxx .. eng.CONSOLE_COLOR_RESET)
 end
 
 -- project metatable
@@ -235,6 +237,7 @@ function eng.newproj(name, type)
 	t.sources = {}
 	t.includes = {}
 	t.builddir = "build"
+	t.staticdeps = {}
 	return t
 end
 
@@ -250,11 +253,19 @@ function project_methods.add_ldflags(proj, ldflags)
 	proj.ldflags = proj.ldflags .. " " .. ldflags
 end
 
--- Links multiple libraries to the project (it's a list). This shouldn't have any prefixes/suffixes, so
--- for example use "trippin" instead of "libtrippin.so", "trippin.dll", "libtrippin", "Ltrippin", etc
-function project_methods.link(proj, libs)
+-- Links multiple dynamic libraries to the project (it's a list). This shouldn't have any prefixes/suffixes,
+-- so for example use "trippin" instead of "libtrippin.so", "trippin.dll", "libtrippin", "Ltrippin", etc
+function project_methods.link_dynamic(proj, libs)
 	for _, lib in ipairs(libs) do
 		proj.ldflags = proj.ldflags .. " -L" .. lib .. " "
+	end
+end
+
+-- Links multiple static libraries to the project (it's a list). This shouldn't have any prefixes/suffixes,
+-- so for example use "trippin" instead of "libtrippin", "libtrippin.a", etc
+function project_methods.link_static(proj, libs)
+	for _, lib in ipairs(libs) do
+		table.insert(proj.staticdeps, lib)
 	end
 end
 
