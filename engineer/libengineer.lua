@@ -137,6 +137,15 @@ function eng.util.endswith(str, suffix)
 	return str:sub(-#suffix) == suffix
 end
 
+-- As the name implies, it gets a file's checksum. Note this includes a newline at the end
+function eng.util.get_checksum(file)
+	local fh = assert(io.popen("sha256sum " .. file, "r"))
+	local out = fh:read("*a")
+	fh:close()
+	-- take only the hex faffery
+	return out:match("^(%S+)")
+end
+
 -- Initializes engineer™
 function eng.init()
 	-- get c compiler
@@ -172,7 +181,7 @@ function eng.init()
 	end
 
 	-- default help recipe
-	eng.recipe("help", "Shows this crap", function()
+	eng.recipe("help", "Shows what you're seeing right now", function()
 		print("Engineer v0.1.0\n")
 		print("Recipes:")
 
@@ -185,8 +194,7 @@ function eng.init()
 
 		-- actually list the shitfuck
 		for _, recipe in ipairs(rkeys) do
-			-- print does some aligning??
-			print("- " .. recipe .. ": ", eng.recipe_description[recipe])
+			print(string.format("%-16s", "- " .. recipe .. ": ") .. eng.recipe_description[recipe])
 		end
 
 		-- mate
@@ -198,8 +206,7 @@ function eng.init()
 		table.sort(okeys)
 
 		for _, option in ipairs(okeys) do
-			-- print does some aligning??
-			print("- " .. option .. ": ", eng.option_description[option])
+			print(string.format("%-16s", "- " .. option .. ": ") .. eng.option_description[option])
 		end
 	end)
 end
@@ -258,6 +265,11 @@ function eng.run()
 			print(eng.CONSOLE_COLOR_WARN .. "unknown recipe \"" .. recipema .. "\"" .. eng.CONSOLE_COLOR_RESET)
 		end
 	end
+end
+
+-- Forces a recipe to run
+function eng.run_recipe(recipe)
+	eng.recipes[recipe]()
 end
 
 -- project metatable
@@ -338,6 +350,53 @@ function project_methods.target(proj, target)
 	proj.targetma = target
 end
 
+-- Returns a list of source files that changed.
+function project_methods.get_changed_files(proj)
+	local cachepath = proj.builddir.."/"..proj.name..".cache"
+
+	-- parse old cache
+	local old = {}
+	do
+		local f = io.open(cachepath, "r")
+		if f then
+		for line in f:lines() do
+			local sep = line:find("=")
+			if sep then
+			local src = line:sub(1, sep-1)
+			local sum = line:sub(sep+1)
+			old[src] = sum
+			end
+		end
+		f:close()
+		end
+	end
+
+	-- check if anything changed
+	local changed = {}
+	local newcache = {}
+
+	for _, src in ipairs(proj.sources) do
+		local newsum = eng.util.get_checksum(src)
+		table.insert(newcache, src.."="..newsum)
+		if old[src] ~= newsum then
+		table.insert(changed, src)
+		end
+	end
+
+	-- make a new cache
+	local f, err = io.open(cachepath, "w")
+	assert(f, err)
+	f:write(table.concat(newcache, "\n"), "\n")
+	f:close()
+
+	-- if there was no old cache then everythings new
+	if next(old) == nil then
+		return proj.sources
+	end
+
+	return changed
+end
+
 -- Builds and links the entire project
 function project_methods.build(proj)
 	print("Compiling " .. proj.name .. " with " .. eng.cc .. "/" .. eng.cxx)
@@ -350,7 +409,14 @@ function project_methods.build(proj)
 
 	-- compile the bloody files
 	local objs = {}
-	for i, src in ipairs(proj.sources) do
+	local srcs = proj:get_changed_files()
+	-- na
+	if #srcs == 0 then
+		print(proj.name .. " is already up to date; nothing to do")
+		return
+	end
+
+	for i, src in ipairs(srcs) do
 		-- i appreciate c++
 		local compiler = ""
 		if eng.util.endswith(src, ".c") then
@@ -368,6 +434,9 @@ function project_methods.build(proj)
 		print(eng.CONSOLE_COLOR_BLUE .. "[" .. i .. "/" .. #proj.sources .. "] " .. src .. eng.CONSOLE_COLOR_RESET)
 
 		-- compile frfrfr ong no cap ngl tbh
+		if proj.type == "sharedlib" then
+			proj.cflags = proj.cflags .. " -fPIC"
+		end
 		local success = os.execute(compiler .. proj.cflags .. " -o " .. obj .. " -c " .. src)
 		if not success then
 			error(eng.CONSOLE_COLOR_ERROR .. "compiling " .. src .. " failed" .. eng.CONSOLE_COLOR_RESET)
@@ -376,13 +445,14 @@ function project_methods.build(proj)
 	end
 
 	-- link :)
-	-- as an executable
-	if proj.type == "executable" then
-		local objma = ""
-		for _, obj in ipairs(objs) do
-			objma = objma .. obj .. " "
-		end
+	-- first get the object files
+	local objma = ""
+	for _, src in ipairs(proj.sources) do
+		objma = objma .. proj.builddir .. "/obj/" .. src:gsub("/", "_") .. ".o "
+	end
 
+	-- link executable
+	if proj.type == "executable" then
 		print("Linking " .. proj.name)
 		local success = os.execute(
 			-- the ldflags must come last lamo
@@ -393,24 +463,14 @@ function project_methods.build(proj)
 		end
 	end
 
-	-- as a static library
+	-- link static library
 	if proj.type == "staticlib" then
-		local objma = ""
-		for _, obj in ipairs(objs) do
-			objma = objma .. obj .. " "
-		end
-
 		print("Linking " .. proj.name)
 		os.execute("ar rcs " .. proj.builddir .. "/static/" .. proj.targetma .. " " .. objma)
 	end
 
-	-- as a shared lib
+	-- link shared library
 	if proj.type == "sharedlib" then
-		local objma = ""
-		for _, obj in ipairs(objs) do
-			objma = objma .. obj .. " "
-		end
-
 		local success = os.execute(
 			-- the ldflags must come last lamo
 			eng.cc .. " -shared " .. objma .. " -o " .. proj.builddir .. "/bin/" .. proj.targetma .. " " .. proj.ldflags
@@ -425,7 +485,8 @@ end
 
 -- As the name implies, it cleans the project
 function project_methods.clean(proj)
-	error("i didnt make this lol")
+	-- Scary!
+	os.execute("rm -rf " .. proj.builddir)
 end
 
 return eng
