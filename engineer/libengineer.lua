@@ -274,13 +274,14 @@ function eng.newproj(name, type)
 	local t = setmetatable({}, project)
 	t.name = name
 	t.type = type
+	t.builddir = "build"
 	t.cflags = ""
-	t.ldflags = ""
+	-- so static and shared libraries just work :)
+	t.ldflags = "-L. -L" .. t.builddir .. "/static -L" .. t.builddir .. "/bin -Wl,-rpath=. -Wl,-rpath=./build/bin "
 	t.sources = {}
 	t.includes = {}
-	t.builddir = "build"
 	t.staticdeps = {}
-	t.target = name
+	t.targetma = name
 	return t
 end
 
@@ -296,8 +297,8 @@ function project_methods.add_ldflags(proj, ldflags)
 	proj.ldflags = proj.ldflags .. " " .. ldflags
 end
 
--- Links multiple dynamic libraries to the project (it's a list). This shouldn't have any prefixes/suffixes,
--- so for example use "trippin" instead of "libtrippin.so", "trippin.dll", "libtrippin", "Ltrippin", etc
+-- Links multiple libraries to the project (it's a list). This shouldn't have any prefixes/suffixes, so
+-- for example use "trippin" instead of "libtrippin", "trippin.dll", "libtrippin.a", etc
 function project_methods.link_dynamic(proj, libs)
 	for _, lib in ipairs(libs) do
 		proj.ldflags = proj.ldflags .. " -l" .. lib .. " "
@@ -329,11 +330,12 @@ end
 -- Sets the project's build directory. By default this is "build"
 function project_methods.build_dir(proj, dir)
 	proj.build_dir = dir
+	proj.ldflags = proj.ldflags .. "-L" .. proj.builddir .. "/static -L" .. proj.builddir .. "/bin"
 end
 
 -- Sets the project's target. e.g. crapplication.exe, libfaffery.so, etc
 function project_methods.target(proj, target)
-	proj.target = target
+	proj.targetma = target
 end
 
 -- Builds and links the entire project
@@ -343,7 +345,8 @@ function project_methods.build(proj)
 	-- folder? i hardly know 'er!
 	eng.util.silentexec("mkdir " .. proj.builddir)
 	eng.util.silentexec("mkdir " .. proj.builddir .. "/obj")
-	eng.util.silentexec("mkdir " .. proj.builddir .. "/" .. proj.name)
+	eng.util.silentexec("mkdir " .. proj.builddir .. "/static")
+	eng.util.silentexec("mkdir " .. proj.builddir .. "/bin")
 
 	-- compile the bloody files
 	local objs = {}
@@ -383,12 +386,41 @@ function project_methods.build(proj)
 		print("Linking " .. proj.name)
 		local success = os.execute(
 			-- the ldflags must come last lamo
-			eng.cc .. " " .. objma .. " -o " .. proj.builddir .. "/" .. proj.name .. "/" .. proj.target .. " " .. proj.ldflags
+			eng.cc .. " " .. objma .. " -o " .. proj.builddir .. "/bin/" .. proj.targetma .. " " .. proj.ldflags
 		)
 		if not success then
 			error(eng.CONSOLE_COLOR_ERROR .. "linking " .. proj.name .. " failed" .. eng.CONSOLE_COLOR_RESET)
 		end
 	end
+
+	-- as a static library
+	if proj.type == "staticlib" then
+		local objma = ""
+		for _, obj in ipairs(objs) do
+			objma = objma .. obj .. " "
+		end
+
+		print("Linking " .. proj.name)
+		os.execute("ar rcs " .. proj.builddir .. "/static/" .. proj.targetma .. " " .. objma)
+	end
+
+	-- as a shared lib
+	if proj.type == "sharedlib" then
+		local objma = ""
+		for _, obj in ipairs(objs) do
+			objma = objma .. obj .. " "
+		end
+
+		local success = os.execute(
+			-- the ldflags must come last lamo
+			eng.cc .. " -shared " .. objma .. " -o " .. proj.builddir .. "/bin/" .. proj.targetma .. " " .. proj.ldflags
+		)
+		if not success then
+			error(eng.CONSOLE_COLOR_ERROR .. "linking " .. proj.name .. " failed" .. eng.CONSOLE_COLOR_RESET)
+		end
+	end
+
+	print("Built " .. proj.name .. " successfully")
 end
 
 -- As the name implies, it cleans the project
