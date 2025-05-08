@@ -1,2 +1,2 @@
-engineer = require("libengineer")
-engineer.init()
+eng = require("libengineer")
+eng.init()
