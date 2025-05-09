@@ -41,7 +41,7 @@ void tr_init(const char* log_file)
 	tr_logfile = fopen(log_file, "w");
 	tr_assert(log_file != NULL, "couldn't open %s", log_file);
 
-	tr_randdeez = tr_rand_new(time(NULL));
+	tr_randdeez = tr_rand_new((uint64_t)time(NULL));
 
 	tr_liblog("initialized libtrippin %s", TR_VERSION);
 }

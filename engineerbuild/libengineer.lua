@@ -237,7 +237,7 @@ function eng.run()
 	local recipes = {}
 
 	for _, argma in ipairs(arg) do
-		local key, val = argma:match("^(%w+)=?(%S*)$")
+		local key, val = argma:match("^([%w%-_]+)=?(%S*)$")
 		-- man.
 		if key == "" then key = nil end
 		if val == "" then val = nil end
@@ -278,8 +278,9 @@ local project = {
 	__index = project_methods,
 }
 
--- Creates a new project. The type can be either "executable", "sharedlib", or "staticlib"
-function eng.newproj(name, type)
+-- Creates a new project. The type can be either "executable", "sharedlib", or "staticlib". The standard
+-- is all lowercase, e.g. c99
+function eng.newproj(name, type, std)
 	assert(type == "executable" or type == "sharedlib" or type == "staticlib",
 		eng.CONSOLE_COLOR_ERROR.."type must be executable, sharedlib, or staticlib"..eng.CONSOLE_COLOR_RESET)
 
@@ -287,7 +288,7 @@ function eng.newproj(name, type)
 	t.name = name
 	t.type = type
 	t.builddir = "build"
-	t.cflags = ""
+	t.cflags = " -std="..std.." "
 	-- so static and shared libraries just work :)
 	t.ldflags = "-L. -L"..t.builddir.."/static -L"..t.builddir.."/bin -Wl,-rpath=. -Wl,-rpath=./build/bin "
 	t.sources = {}
@@ -309,17 +310,9 @@ end
 
 -- Links multiple libraries to the project (it's a list). This shouldn't have any prefixes/suffixes, so
 -- for example use "trippin" instead of "libtrippin", "trippin.dll", "libtrippin.a", etc
-function project_methods.link_dynamic(proj, libs)
+function project_methods.link(proj, libs)
 	for _, lib in ipairs(libs) do
 		proj.ldflags = proj.ldflags.." -l"..lib.." "
-	end
-end
-
--- Links multiple static libraries to the project (it's a list). This shouldn't have any prefixes/suffixes,
--- so for example use "trippin" instead of "libtrippin", "libtrippin.a", etc
-function project_methods.link_static(proj, libs)
-	for _, lib in ipairs(libs) do
-		table.insert(proj.staticdeps, lib)
 	end
 end
 
@@ -338,14 +331,40 @@ function project_methods.add_includes(proj, incs)
 end
 
 -- Sets the project's build directory. By default this is "build"
-function project_methods.build_dir(proj, dir)
-	proj.build_dir = dir
-	proj.ldflags = proj.ldflags.."-L"..proj.builddir.."/static -L"..proj.builddir.."/bin"
-end
+--function project_methods.build_dir(proj, dir)
+--	proj.build_dir = dir
+--	proj.ldflags = proj.ldflags.."-L"..proj.builddir.."/static -L"..proj.builddir.."/bin"
+--end
 
 -- Sets the project's target. e.g. crapplication.exe, libfaffery.so, etc
 function project_methods.target(proj, target)
 	proj.targetma = target
+end
+
+-- Adds common flags to make the compiler more obnoxious
+function project_methods.pedantic(proj)
+	proj.cflags = proj.cflags.." -Werror -Wall -Wextra -pedantic-errors -Wconversion -Wsign-conversion "
+end
+
+-- Enables debug info
+function project_methods.debug(proj)
+	proj.cflags = proj.cflags.." -g "
+end
+
+-- Sets the optimization level, from 0 (no optimization) to 3 (max optimization)
+function project_methods.optimization(proj, level)
+	if level == 0 then proj.cflags = proj.cflags.." -O0 "
+	elseif level == 1 then proj.cflags = proj.cflags.." -O1 "
+	elseif level == 2 then proj.cflags = proj.cflags.." -O2 "
+	elseif level == 3 then proj.cflags = proj.cflags.." -O3 "
+	else error(eng.CONSOLE_COLOR_ERROR.."you bloody scoundrel that's not a valid level"..eng.CONSOLE_COLOR_RESET) end
+end
+
+-- Adds multiple defines (it's a list) to the project
+function project_methods.define(proj, defines)
+	for _, def in ipairs(defines) do
+		proj.cflags = proj.cflags.." -D"..def.." "
+	end
 end
 
 -- Returns a list of source files that changed.

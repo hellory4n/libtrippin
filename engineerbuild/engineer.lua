@@ -1,20 +1,27 @@
+-- this isn't an example build script
+-- it's supposed to test the entire build system
+
 eng = require("libengineer")
 eng.init()
 
-exeproj = eng.newproj("sir™", "executable")
---exeproj:add_cflags("-Wall -Weverything -Wpedantic -Wshadow")
-exeproj:link_dynamic({"m", "staticma", "sharedma"})
+exeproj = eng.newproj("sir™", "executable", "c99")
+exeproj:link({"m", "staticma", "sharedma"})
+exeproj:pedantic()
+exeproj:define({"STIGMA"})
+exeproj:debug()
+exeproj:optimization(2)
+
 exeproj:add_includes({"src", ".."})
 exeproj:add_sources({"src/main.c", "src/test.c"})
 exeproj:gen_compile_commands()
 
-staticlib = eng.newproj("staticma", "staticlib")
+staticlib = eng.newproj("staticma", "staticlib", "c99")
 --staticlib:add_cflags("-Wall -Weverything -Wpedantic -Wshadow")
 staticlib:add_includes({"src"})
 staticlib:add_sources({"src/staticlib.c"})
 staticlib:target("libstaticma.a")
 
-sharedlib = eng.newproj("sharedma", "sharedlib")
+sharedlib = eng.newproj("sharedma", "sharedlib", "c99")
 --sharedlib:add_cflags("-Wall -Weverything -Wpedantic -Wshadow")
 sharedlib:add_includes({"src"})
 sharedlib:add_sources({"src/sharedlib.c"})
