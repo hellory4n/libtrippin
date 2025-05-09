@@ -18,16 +18,6 @@ Most biggest most massive C library of all time. I'm insane.
     - Incremental builds
     - Support for clangd's `compile_commands.json`
 
-## Features
-
-- Arenas
-- Math functions, custom random functions (xoshiro256+ (i probably won't remember what algorithm i used))
-- Basic vectors and colors (the math kind)
-- Logging, assert, panic
-- Not lists or hashmaps, use [stb_ds](https://nothings.org/stb_ds)
-- Slices and 2d slices (slices are arrays but stb calls their lists arrays so that'd be weird, btw stb arrays are more like a stack/queue, did you even read that link? our relationship isn't working out.)
-- The whole thing is 2 files with no external dependencies, only C99
-
 ## Usage
 
 Just add `libtrippin.c` to your project
@@ -35,6 +25,8 @@ Just add `libtrippin.c` to your project
 If you have debug builds make sure you have `DEBUG` defined (it doesn't change a whole lot but i mean why not)
 
 On Linux make sure you linked the math library `-lm`
+
+If some for reason you want to use engineer then [read this](./engineerbuild/README.md)
 
 ## Example
 

@@ -1,5 +1,4 @@
-# theres code examples in markdown files
-[*.c, *.h]
+[*.c, *.h, *.lua]
 indent_style = tab
 tab_size = 4
 

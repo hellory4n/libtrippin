@@ -12,12 +12,6 @@ compile_commands.json
 .vscode
 build
 
-# example executables
-examples/vectors
-examples/log
-examples/slice_arenas
-examples/math
-
 # log deez
 log.txt
 examples/log.txt
