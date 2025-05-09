@@ -50,7 +50,7 @@ eng = {
 -- Runs a command with no output
 function eng.util.silentexec(command)
 	-- TODO this will definitely break at some point
-	return os.execute(command .. " > /dev/null 2>&1")
+	return os.execute(command.." > /dev/null 2>&1")
 end
 
 -- Prints a table for debugging. This entire function is stolen.
@@ -70,9 +70,9 @@ function eng.util.print_table(node)
             if (cache[node] == nil) or (cur_index >= cache[node]) then
 
                 if (string.find(output_str,"}",output_str:len())) then
-                    output_str = output_str .. ",\n"
+                    output_str = output_str..",\n"
                 elseif not (string.find(output_str,"\n",output_str:len())) then
-                    output_str = output_str .. "\n"
+                    output_str = output_str.."\n"
                 end
 
                 -- This is necessary for working with HUGE tables otherwise we run out of memory using concat on huge strings
@@ -87,26 +87,26 @@ function eng.util.print_table(node)
                 end
 
                 if (type(v) == "number" or type(v) == "boolean") then
-                    output_str = output_str .. string.rep('\t',depth) .. key .. " = "..tostring(v)
+                    output_str = output_str..string.rep('\t',depth)..key.." = "..tostring(v)
                 elseif (type(v) == "table") then
-                    output_str = output_str .. string.rep('\t',depth) .. key .. " = {\n"
+                    output_str = output_str..string.rep('\t',depth)..key.." = {\n"
                     table.insert(stack,node)
                     table.insert(stack,v)
                     cache[node] = cur_index+1
                     break
                 else
-                    output_str = output_str .. string.rep('\t',depth) .. eng.CONSOLE_COLOR_RESET .. key .. eng.CONSOLE_COLOR_RESET .. " = '"..tostring(v).."'"
+                    output_str = output_str..string.rep('\t',depth)..eng.CONSOLE_COLOR_RESET..key..eng.CONSOLE_COLOR_RESET.." = '"..tostring(v).."'"
                 end
 
                 if (cur_index == size) then
-                    output_str = output_str .. "\n" .. string.rep('\t',depth-1) .. "}"
+                    output_str = output_str.."\n"..string.rep('\t',depth-1).."}"
                 else
-                    output_str = output_str .. ","
+                    output_str = output_str..","
                 end
             else
                 -- close the table
                 if (cur_index == size) then
-                    output_str = output_str .. "\n" .. string.rep('\t',depth-1) .. "}"
+                    output_str = output_str.."\n"..string.rep('\t',depth-1).."}"
                 end
             end
 
@@ -114,7 +114,7 @@ function eng.util.print_table(node)
         end
 
         if (size == 0) then
-            output_str = output_str .. "\n" .. string.rep('\t',depth-1) .. "}"
+            output_str = output_str.."\n"..string.rep('\t',depth-1).."}"
         end
 
         if (#stack > 0) then
@@ -139,7 +139,7 @@ end
 
 -- As the name implies, it gets a file's checksum. Note this includes a newline at the end
 function eng.util.get_checksum(file)
-	local fh = assert(io.popen("sha256sum " .. file, "r"))
+	local fh = assert(io.popen("sha256sum "..file, "r"))
 	local out = fh:read("*a")
 	fh:close()
 	-- take only the hex faffery
@@ -194,7 +194,7 @@ function eng.init()
 
 		-- actually list the shitfuck
 		for _, recipe in ipairs(rkeys) do
-			print(string.format("%-16s", "- " .. recipe .. ": ") .. eng.recipe_description[recipe])
+			print(string.format("%-16s", "- "..recipe..": ")..eng.recipe_description[recipe])
 		end
 
 		-- mate
@@ -206,7 +206,7 @@ function eng.init()
 		table.sort(okeys)
 
 		for _, option in ipairs(okeys) do
-			print(string.format("%-16s", "- " .. option .. ": ") .. eng.option_description[option])
+			print(string.format("%-16s", "- "..option..": ")..eng.option_description[option])
 		end
 	end)
 end
@@ -254,7 +254,7 @@ function eng.run()
 		if eng.options[mate.key] ~= nil then
 			eng.options[mate.key](mate.val)
 		else
-			print(eng.CONSOLE_COLOR_WARN .. "unknown option \"" .. mate.key .. "\"" .. eng.CONSOLE_COLOR_RESET)
+			print(eng.CONSOLE_COLOR_WARN.."unknown option \""..mate.key.."\""..eng.CONSOLE_COLOR_RESET)
 		end
 	end
 
@@ -262,7 +262,7 @@ function eng.run()
 		if eng.recipes[recipema] ~= nil then
 			eng.recipes[recipema]()
 		else
-			print(eng.CONSOLE_COLOR_WARN .. "unknown recipe \"" .. recipema .. "\"" .. eng.CONSOLE_COLOR_RESET)
+			print(eng.CONSOLE_COLOR_WARN.."unknown recipe \""..recipema.."\""..eng.CONSOLE_COLOR_RESET)
 		end
 	end
 end
@@ -281,7 +281,7 @@ local project = {
 -- Creates a new project. The type can be either "executable", "sharedlib", or "staticlib"
 function eng.newproj(name, type)
 	assert(type == "executable" or type == "sharedlib" or type == "staticlib",
-		eng.CONSOLE_COLOR_ERROR .. "type must be executable, sharedlib, or staticlib" .. eng.CONSOLE_COLOR_RESET)
+		eng.CONSOLE_COLOR_ERROR.."type must be executable, sharedlib, or staticlib"..eng.CONSOLE_COLOR_RESET)
 
 	local t = setmetatable({}, project)
 	t.name = name
@@ -289,10 +289,8 @@ function eng.newproj(name, type)
 	t.builddir = "build"
 	t.cflags = ""
 	-- so static and shared libraries just work :)
-	t.ldflags = "-L. -L" .. t.builddir .. "/static -L" .. t.builddir .. "/bin -Wl,-rpath=. -Wl,-rpath=./build/bin "
+	t.ldflags = "-L. -L"..t.builddir.."/static -L"..t.builddir.."/bin -Wl,-rpath=. -Wl,-rpath=./build/bin "
 	t.sources = {}
-	t.includes = {}
-	t.staticdeps = {}
 	t.targetma = name
 	return t
 end
@@ -300,20 +298,20 @@ end
 -- Adds compile flags to the project. It's recommended to use project methods instead of manually adding
 -- flags wherever possible.
 function project_methods.add_cflags(proj, cflags)
-	proj.cflags = proj.cflags .. " " .. cflags
+	proj.cflags = proj.cflags.." "..cflags
 end
 
 -- Adds linker flags to the project. It's recommended to use project methods instead of manually adding
 -- flags wherever possible.
 function project_methods.add_ldflags(proj, ldflags)
-	proj.ldflags = proj.ldflags .. " " .. ldflags
+	proj.ldflags = proj.ldflags.." "..ldflags
 end
 
 -- Links multiple libraries to the project (it's a list). This shouldn't have any prefixes/suffixes, so
 -- for example use "trippin" instead of "libtrippin", "trippin.dll", "libtrippin.a", etc
 function project_methods.link_dynamic(proj, libs)
 	for _, lib in ipairs(libs) do
-		proj.ldflags = proj.ldflags .. " -l" .. lib .. " "
+		proj.ldflags = proj.ldflags.." -l"..lib.." "
 	end
 end
 
@@ -335,14 +333,14 @@ end
 -- Adds multiple include directories to the project (it's a list).
 function project_methods.add_includes(proj, incs)
 	for _, inc in ipairs(incs) do
-		table.insert(proj.includes, inc)
+		proj.cflags = proj.cflags.." -I"..inc.." "
 	end
 end
 
 -- Sets the project's build directory. By default this is "build"
 function project_methods.build_dir(proj, dir)
 	proj.build_dir = dir
-	proj.ldflags = proj.ldflags .. "-L" .. proj.builddir .. "/static -L" .. proj.builddir .. "/bin"
+	proj.ldflags = proj.ldflags.."-L"..proj.builddir.."/static -L"..proj.builddir.."/bin"
 end
 
 -- Sets the project's target. e.g. crapplication.exe, libfaffery.so, etc
@@ -399,20 +397,20 @@ end
 
 -- Builds and links the entire project
 function project_methods.build(proj)
-	print("Compiling " .. proj.name .. " with " .. eng.cc .. "/" .. eng.cxx)
+	print("Compiling "..proj.name.." with "..eng.cc.."/"..eng.cxx)
 
 	-- folder? i hardly know 'er!
-	eng.util.silentexec("mkdir " .. proj.builddir)
-	eng.util.silentexec("mkdir " .. proj.builddir .. "/obj")
-	eng.util.silentexec("mkdir " .. proj.builddir .. "/static")
-	eng.util.silentexec("mkdir " .. proj.builddir .. "/bin")
+	eng.util.silentexec("mkdir "..proj.builddir)
+	eng.util.silentexec("mkdir "..proj.builddir.."/obj")
+	eng.util.silentexec("mkdir "..proj.builddir.."/static")
+	eng.util.silentexec("mkdir "..proj.builddir.."/bin")
 
 	-- compile the bloody files
 	local objs = {}
 	local srcs = proj:get_changed_files()
 	-- na
 	if #srcs == 0 then
-		print(proj.name .. " is already up to date; nothing to do")
+		print(proj.name.." is already up to date; nothing to do")
 		return
 	end
 
@@ -425,21 +423,21 @@ function project_methods.build(proj)
 		eng.util.endswith(src, ".cxx") or eng.util.endswith(src, ".c++") then
 			compiler = eng.cxx
 		else
-			print(eng.CONSOLE_COLOR_WARN .. "unexpected extension in " .. src .. ", using " .. eng.cc .. eng.CONSOLE_COLOR_RESET)
+			print(eng.CONSOLE_COLOR_WARN.."unexpected extension in "..src..", using "..eng.cc..eng.CONSOLE_COLOR_RESET)
 			compiler = eng.cc
 		end
 
-		local obj = proj.builddir .. "/obj/" .. src:gsub("/", "_") .. ".o"
+		local obj = proj.builddir.."/obj/"..src:gsub("/", "_")..".o"
 		-- pretty output
-		print(eng.CONSOLE_COLOR_BLUE .. "[" .. i .. "/" .. #proj.sources .. "] " .. src .. eng.CONSOLE_COLOR_RESET)
+		print(eng.CONSOLE_COLOR_BLUE.."["..i.."/"..#proj.sources.."] "..src..eng.CONSOLE_COLOR_RESET)
 
 		-- compile frfrfr ong no cap ngl tbh
 		if proj.type == "sharedlib" then
-			proj.cflags = proj.cflags .. " -fPIC"
+			proj.cflags = proj.cflags.." -fPIC"
 		end
-		local success = os.execute(compiler .. proj.cflags .. " -o " .. obj .. " -c " .. src)
+		local success = os.execute(compiler..proj.cflags.." -o "..obj.." -c "..src)
 		if not success then
-			error(eng.CONSOLE_COLOR_ERROR .. "compiling " .. src .. " failed" .. eng.CONSOLE_COLOR_RESET)
+			error(eng.CONSOLE_COLOR_ERROR.."compiling "..src.." failed"..eng.CONSOLE_COLOR_RESET)
 		end
 		table.insert(objs, obj)
 	end
@@ -448,45 +446,90 @@ function project_methods.build(proj)
 	-- first get the object files
 	local objma = ""
 	for _, src in ipairs(proj.sources) do
-		objma = objma .. proj.builddir .. "/obj/" .. src:gsub("/", "_") .. ".o "
+		objma = objma..proj.builddir.."/obj/"..src:gsub("/", "_")..".o "
 	end
 
 	-- link executable
 	if proj.type == "executable" then
-		print("Linking " .. proj.name)
+		print("Linking "..proj.name)
 		local success = os.execute(
 			-- the ldflags must come last lamo
-			eng.cc .. " " .. objma .. " -o " .. proj.builddir .. "/bin/" .. proj.targetma .. " " .. proj.ldflags
+			eng.cc.." "..objma.." -o "..proj.builddir.."/bin/"..proj.targetma.." "..proj.ldflags
 		)
 		if not success then
-			error(eng.CONSOLE_COLOR_ERROR .. "linking " .. proj.name .. " failed" .. eng.CONSOLE_COLOR_RESET)
+			error(eng.CONSOLE_COLOR_ERROR.."linking "..proj.name.." failed"..eng.CONSOLE_COLOR_RESET)
 		end
 	end
 
 	-- link static library
 	if proj.type == "staticlib" then
-		print("Linking " .. proj.name)
-		os.execute("ar rcs " .. proj.builddir .. "/static/" .. proj.targetma .. " " .. objma)
+		print("Linking "..proj.name)
+		os.execute("ar rcs "..proj.builddir.."/static/"..proj.targetma.." "..objma)
 	end
 
 	-- link shared library
 	if proj.type == "sharedlib" then
 		local success = os.execute(
 			-- the ldflags must come last lamo
-			eng.cc .. " -shared " .. objma .. " -o " .. proj.builddir .. "/bin/" .. proj.targetma .. " " .. proj.ldflags
+			eng.cc.." -shared "..objma.." -o "..proj.builddir.."/bin/"..proj.targetma.." "..proj.ldflags
 		)
 		if not success then
-			error(eng.CONSOLE_COLOR_ERROR .. "linking " .. proj.name .. " failed" .. eng.CONSOLE_COLOR_RESET)
+			error(eng.CONSOLE_COLOR_ERROR.."linking "..proj.name.." failed"..eng.CONSOLE_COLOR_RESET)
 		end
 	end
 
-	print("Built " .. proj.name .. " successfully")
+	print("Built "..proj.name.." successfully")
 end
 
 -- As the name implies, it cleans the project
 function project_methods.clean(proj)
 	-- Scary!
-	os.execute("rm -rf " .. proj.builddir)
+	os.execute("rm -rf "..proj.builddir)
+end
+
+-- Generates a compile_commands.json file for clangd to use
+function project_methods.gen_compile_commands(proj)
+	-- i won't even bother making it formatted
+	local commands = "["
+	for i, src in ipairs(proj.sources) do
+		commands = commands.."{"
+
+		-- lua doesn't have a function to get the working directory
+		local fh = assert(io.popen("pwd", "r"))
+		-- there's a newline and it makes json crash and die
+		local cwd = fh:read("*a"):sub(1, -2)
+		fh:close()
+
+		-- i appreciate c++
+		local compiler = ""
+		if eng.util.endswith(src, ".c") then
+			compiler = eng.cc
+		elseif eng.util.endswith(src, ".cpp") or eng.util.endswith(src, ".cc") or
+		eng.util.endswith(src, ".cxx") or eng.util.endswith(src, ".c++") then
+			compiler = eng.cxx
+		else
+			print(eng.CONSOLE_COLOR_WARN.."unexpected extension in "..src..", using "..eng.cc..eng.CONSOLE_COLOR_RESET)
+			compiler = eng.cc
+		end
+
+		-- man
+		local obj = proj.builddir.."/obj/"..src:gsub("/", "_")..".o"
+		commands = commands.."\"directory\": \""..cwd.."\",\"file\": \""..cwd.."/"..src.."\", \"command\": \""
+		commands = commands..compiler..proj.cflags.." -o "..obj.." -c "..src
+		commands = commands.."\"}"
+
+		-- why tf doesn't json support trailing commas
+		if i < #proj.sources then
+			commands = commands..","
+		end
+	end
+	commands = commands.."]"
+
+	-- mate
+	local f = io.open("compile_commands.json", "w")
+	assert(f)
+	f:write(commands)
+	f:close()
 end
 
 return eng
