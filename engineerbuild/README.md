@@ -150,12 +150,12 @@ I sure love documentation.
 -- Initializes engineer™
 function eng.init()
 
--- Makes a recipe. The callback will be called when the recipe is used. The description will be used for
--- the default help recipe.
+-- Makes a recipe. The callback will be called when the recipe is used. The description will
+-- be used for the default help recipe.
 function eng.recipe(name: string, description: string, callback: function)
 
--- Adds an option. The callback takes in whatever value the option has (string), and is only called
--- if that option is used. The description will be used for the default help recipe.
+-- Adds an option. The callback takes in whatever value the option has (string), and is only
+-- called if that option is used. The description will be used for the default help recipe.
 function eng.option(name: string, description: string, callback: function)
 
 -- Put this at the end of your build script so it actually does something
@@ -168,20 +168,21 @@ function eng.run_recipe(recipe: string)
     PROJECTS
 ]]
 
--- Creates a new project. The type can be either "executable", "sharedlib", or "staticlib". The standard
--- is all lowercase, e.g. c99, c++11
+-- Creates a new project. The type can be either "executable", "sharedlib", or "staticlib".
+-- The standard is all lowercase, e.g. c99, c++11
 function eng.newproj(name: string, type: string, std: string): project
 
--- Adds compile flags to the project. It's recommended to use project methods instead of manually adding
--- flags wherever possible.
+-- Adds compile flags to the project. It's recommended to use project methods instead of
+-- manually adding flags wherever possible.
 function project:add_cflags(cflags: string)
 
--- Adds linker flags to the project. It's recommended to use project methods instead of manually adding
--- flags wherever possible.
+-- Adds linker flags to the project. It's recommended to use project methods instead of
+-- manually adding flags wherever possible.
 function project:add_ldflags(ldflags: string)
 
--- Links multiple libraries to the project (it's a list). This shouldn't have any prefixes/suffixes, so
--- for example use "trippin" instead of "libtrippin", "trippin.dll", "libtrippin.a", etc
+-- Links multiple libraries to the project (it's a list). This shouldn't have any prefixes/
+-- suffixes, so for example use "trippin" instead of "libtrippin", "trippin.dll",
+-- "libtrippin.a", etc
 function project:link(libs: string[])
 
 -- Adds multiple source files to the project (it's a list).
@@ -205,7 +206,8 @@ function project:optimization(level: integer)
 -- Adds multiple defines (it's a list) to the project
 function project:define(defines: string[])
 
--- Returns a list of source files that changed. Internal utility for incremental builds to work.
+-- Returns a list of source files that changed. Internal utility for incremental builds to
+-- work.
 function project:get_changed_files(): string[]
 
 -- Builds and links the entire project
