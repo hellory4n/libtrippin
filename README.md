@@ -1,6 +1,22 @@
-# libtrippin v1.2.1
+# libtrippin
 
-Most biggest most massive standard library thing for C of all time
+Most biggest most massive C library of all time. I'm insane.
+
+## Featuring
+
+- [libtrippin](./libtrippin.h) v1.2.2: Most massive standard library
+    - Arenas
+    - Math functions and stuff
+    - Logging
+    - Slices
+    - Pure C99 with no external dependencies
+- [engineer](./engineerbuild/README.md) v1.0.0: Build system of all time
+    - No esoteric language
+    - Only external dependency is lua
+    - You can specify options and stuff
+    - You can control the entire build process
+    - Incremental builds
+    - Support for clangd's `compile_commands.json`
 
 ## Features
 
@@ -14,9 +30,7 @@ Most biggest most massive standard library thing for C of all time
 
 ## Usage
 
-Put libtrippin.h and libtrippin.c somewhere in your project.
-
-Tell your build system to compile libtrippin.c.
+Just add `libtrippin.c` to your project
 
 If you have debug builds make sure you have `DEBUG` defined (it doesn't change a whole lot but i mean why not)
 

@@ -16,6 +16,7 @@ function libtrippin.lib(debug)
 	else
 		project:optimization(2)
 	end
+
 	project:add_sources({"libtrippin.c"})
 	project:target("libtrippin.a")
 	return project

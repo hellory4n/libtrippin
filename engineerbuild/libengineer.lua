@@ -1,5 +1,5 @@
 --[[
-	Engineer v0.1.0
+	Engineer v1.0.0
 
 	Bestest build system ever
 	More information at https://github.com/hellory4n/libtrippin/blob/engineer/README.md
@@ -137,7 +137,7 @@ function eng.util.endswith(str, suffix)
 	return str:sub(-#suffix) == suffix
 end
 
--- As the name implies, it gets a file's checksum. Note this includes a newline at the end
+-- As the name implies, it gets a file's checksum.
 function eng.util.get_checksum(file)
 	local fh = assert(io.popen("sha256sum "..file, "r"))
 	local out = fh:read("*a")
@@ -182,7 +182,7 @@ function eng.init()
 
 	-- default help recipe
 	eng.recipe("help", "Shows what you're seeing right now", function()
-		print("Engineer v0.1.0\n")
+		print("Engineer v1.0.0\n")
 		print("Recipes:")
 
 		-- some sorting lamo
@@ -279,7 +279,7 @@ local project = {
 }
 
 -- Creates a new project. The type can be either "executable", "sharedlib", or "staticlib". The standard
--- is all lowercase, e.g. c99
+-- is all lowercase, e.g. c99, c++11
 function eng.newproj(name, type, std)
 	assert(type == "executable" or type == "sharedlib" or type == "staticlib",
 		eng.CONSOLE_COLOR_ERROR.."type must be executable, sharedlib, or staticlib"..eng.CONSOLE_COLOR_RESET)
