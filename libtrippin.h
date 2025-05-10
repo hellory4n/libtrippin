@@ -1,5 +1,5 @@
 /*
- * libtrippin v1.2.2
+ * libtrippin v1.2.3
  *
  * Most biggest most massive standard library thing for C of all time
  * More information at https://github.com/hellory4n/libtrippin
@@ -34,7 +34,7 @@ extern "C" {
 #endif
 
 // Idk why I added this
-#define TR_VERSION "v1.2.2"
+#define TR_VERSION "v1.2.3"
 
 // It initializes libtrippin.
 void tr_init(const char* log_file);
@@ -209,7 +209,7 @@ static inline TrColor tr_hex_rgb(uint32_t hex)
 #define TR_CONSOLE_COLOR_ERROR
 #endif
 
-#if defined(__GNUC__) || defined(__clang__)
+#if (defined(__GNUC__) || defined(__clang__)) && !defined(_WIN32)
 // counting starts at 1 lmao
 #define TR_LOG_FUNC(fmt_idx, varargs_idx) __attribute__((format(printf, fmt_idx, varargs_idx)))
 #else

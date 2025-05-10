@@ -4,7 +4,7 @@ Most biggest most massive C library of all time. I'm insane.
 
 ## Featuring
 
-- [libtrippin](./libtrippin.h) v1.2.2: Most massive standard library
+- [libtrippin](./libtrippin.h) v1.2.3: Most massive standard library
     - Arenas
     - Math functions and stuff
     - Logging
