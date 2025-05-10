@@ -5,8 +5,8 @@ eng.init()
 
 -- Returns the libtrippin project as a static library. Intended to be used for projects that use libtrippin.
 -- Just link with "trippin" and build this before your own projects. `debug` is a bool. On linux you have to
--- link with "m" too
-function libtrippin.lib(debug)
+-- link with "m" too. `trippinsrc` is where you put libtrippin.c
+function libtrippin.lib(debug, trippinsrc)
 	-- just trippin so it doesn't become "liblibtrippin.a"
 	local project = eng.newproj("trippin", "staticlib", "c99")
 	project:pedantic()
@@ -17,11 +17,11 @@ function libtrippin.lib(debug)
 		project:optimization(2)
 	end
 
-	project:add_sources({"libtrippin.c"})
+	project:add_sources({trippinsrc})
 	project:target("libtrippin.a")
 	return project
 end
-local trippin = libtrippin.lib(false)
+local trippin = libtrippin.lib(false, "libtrippin.c")
 
 -- example projects :(
 local example_log = eng.newproj("example_log", "executable", "c99")

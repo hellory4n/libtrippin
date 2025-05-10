@@ -10,7 +10,7 @@ Most biggest most massive C library of all time. I'm insane.
     - Logging
     - Slices
     - Pure C99 with no external dependencies
-- [engineer](./engineerbuild/README.md) v1.0.0: Build system of all time
+- [engineer](./engineerbuild/README.md) v1.0.1: Build system of all time
     - No esoteric language
     - Only external dependency is lua
     - You can specify options and stuff
