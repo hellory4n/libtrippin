@@ -10,7 +10,7 @@ Most biggest most massive C library of all time. I'm insane.
     - Logging
     - Slices
     - Pure C99 with no external dependencies
-- [engineer](./engineerbuild/README.md) v1.0.1: Build system of all time
+- [engineer](./engineerbuild/README.md) v1.0.2: Build system of all time
     - No esoteric language
     - Only external dependency is lua
     - You can specify options and stuff
@@ -52,7 +52,7 @@ int main(void)
 
     for (size_t i = 0; i < slicema.length; i++) {
         TrVec2f vecm = *TR_AT(slicema, TrVec2f, i);
-        tr_log( "%f, %f", vecm.x, vecm.y);
+        tr_log("%f, %f", vecm.x, vecm.y);
     }
 
     tr_arena_free(arena);
