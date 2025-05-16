@@ -2,7 +2,7 @@
 	Engineer v1.0.2
 
 	Bestest build system ever
-	More information at https://github.com/hellory4n/libtrippin/blob/engineer/README.md
+	More information at https://github.com/hellory4n/libtrippin/tree/main/engineerbuild
 
 	Copyright (C) 2025 by hellory4n <hellory4n@gmail.com>
 
