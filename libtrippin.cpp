@@ -32,12 +32,8 @@ namespace tr {
 
 FILE* logfile;
 
-void init(const char* logfile)
+void init()
 {
-	tr::logfile = fopen(logfile, "w");
-	tr::assert(tr::logfile != nullptr,
-		"couldn't open %s, either the path is inaccessible or there's no permissions to write here", logfile);
-
 	tr::liblog("initialized libtrippin %s", tr::VERSION);
 }
 
@@ -45,6 +41,15 @@ void free()
 {
 	tr::liblog("deinitialized libtrippin");
 	fclose(tr::logfile);
+}
+
+void use_log_file(const char* path)
+{
+	tr::logfile = fopen(path, "w");
+	tr::assert(tr::logfile != nullptr,
+		"couldn't open %s, either the path is inaccessible or there's no permissions to write here", path);
+
+	tr::liblog("using log file \"%s\"", path);
 }
 
 static void __log(const char* color, const char* prefix, bool panic, const char* fmt, va_list arg)

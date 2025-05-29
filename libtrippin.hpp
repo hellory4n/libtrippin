@@ -24,6 +24,7 @@
 
 #ifndef _TRIPPIN_H
 #define _TRIPPIN_H
+#include <cmath>
 #include <cstdint>
 #include <cstddef>
 #include <cstdlib>
@@ -56,10 +57,13 @@ namespace ConsoleColor {
 }
 
 // Initializes the bloody library lmao.
-void init(const char* logfile);
+void init();
 
 // Deinitializes the bloody library lmao.
 void free();
+
+// Sets the log file to somewhere.
+void use_log_file(const char* path);
 
 // Log.
 TR_LOG_FUNC(1, 2) void log(const char* fmt, ...);
@@ -78,6 +82,129 @@ TR_LOG_FUNC(1, 2) void panic(const char* fmt, ...);
 
 // Formatted assert?????????
 TR_LOG_FUNC(2, 3) void assert(bool x, const char* fmt, ...);
+
+// Vec2 lmao
+template<typename T>
+struct Vec2 {
+public:
+	T x;
+	T y;
+
+	Vec2(T x, T y) : x(x), y(y) {};
+
+	Vec2 operator+(Vec2 r)  { return Vec2(this->x + r.x, this->y + r.y); }
+	Vec2 operator-(Vec2 r)  { return Vec2(this->x - r.x, this->y - r.y); }
+	Vec2 operator*(Vec2 r)  { return Vec2(this->x * r.x, this->y * r.y); }
+	Vec2 operator*(T r)     { return Vec2(this->x * r,   this->y * r);   }
+	Vec2 operator/(Vec2 r)  { return Vec2(this->x / r.x, this->y / r.y); }
+	Vec2 operator/(T r)     { return Vec2(this->x / r,   this->y / r);   }
+	Vec2 operator%(Vec2 r)  { return Vec2(this->x % r.x, this->y % r.y); }
+	Vec2 operator%(T r)     { return Vec2(this->x % r,   this->y % r);   }
+
+	bool operator==(Vec2 r) { return this->x == r.x && this->y == r.y;   }
+	bool operator!=(Vec2 r) { return this->x != r.x && this->y != r.y;   }
+	bool operator>(Vec2 r)  { return this->x >  r.x && this->y >  r.y;   }
+	bool operator>=(Vec2 r) { return this->x >= r.x && this->y >= r.y;   }
+	bool operator<(Vec2 r)  { return this->x <  r.x && this->y <  r.y;   }
+	bool operator<=(Vec2 r) { return this->x <= r.x && this->y <= r.y;   }
+};
+
+// c i hate you
+template<> inline Vec2<double> Vec2<double>::operator%(Vec2<double> r) {
+	return Vec2<double>(fmod(this->x, r.x), fmod(this->y, r.y));
+}
+template<> inline Vec2<double> Vec2<double>::operator%(double r) {
+	return Vec2<double>(fmod(this->x, r), fmod(this->y, r));
+}
+template<> inline Vec2<float> Vec2<float>::operator%(Vec2<float> r) {
+	return Vec2<float>(fmod(this->x, r.x), fmod(this->y, r.y));
+}
+template<> inline Vec2<float> Vec2<float>::operator%(float r) {
+	return Vec2<float>(fmod(this->x, r), fmod(this->y, r));
+}
+
+// Vec3 lmao
+template<typename T>
+struct Vec3 {
+public:
+	T x;
+	T y;
+	T z;
+
+	Vec3(T x, T y, T z) : x(x), y(y), z(z) {};
+
+	Vec3 operator+(Vec3 r)  { return Vec3(this->x + r.x, this->y + r.y, this->z + r.z);  }
+	Vec3 operator-(Vec3 r)  { return Vec3(this->x - r.x, this->y - r.y, this->z - r.z);  }
+	Vec3 operator*(Vec3 r)  { return Vec3(this->x * r.x, this->y * r.y, this->z * r.z);  }
+	Vec3 operator*(T r)     { return Vec3(this->x * r,   this->y * r,   this->z * r);    }
+	Vec3 operator/(Vec3 r)  { return Vec3(this->x / r.x, this->y / r.y, this->z / r.z);  }
+	Vec3 operator/(T r)     { return Vec3(this->x / r,   this->y / r,   this->z / r);    }
+	Vec3 operator%(Vec3 r)  { return Vec3(this->x % r.x, this->y % r.y, this->z % r.z);  }
+	Vec3 operator%(T r)     { return Vec3(this->x % r,   this->y % r,   this->z % r);    }
+
+	bool operator==(Vec3 r) { return this->x == r.x && this->y == r.y && this->z == r.z; }
+	bool operator!=(Vec3 r) { return this->x != r.x && this->y != r.y && this->z != r.z; }
+	bool operator>(Vec3 r)  { return this->x >  r.x && this->y >  r.y && this->z >  r.z; }
+	bool operator>=(Vec3 r) { return this->x >= r.x && this->y >= r.y && this->z >= r.z; }
+	bool operator<(Vec3 r)  { return this->x <  r.x && this->y <  r.y && this->z <  r.z; }
+	bool operator<=(Vec3 r) { return this->x <= r.x && this->y <= r.y && this->z <= r.z; }
+};
+
+// c i hate you
+template<> inline Vec3<double> Vec3<double>::operator%(Vec3<double> r) {
+	return Vec3<double>(fmod(this->x, r.x), fmod(this->y, r.y), fmod(this->z, r.z));
+}
+template<> inline Vec3<double> Vec3<double>::operator%(double r) {
+	return Vec3<double>(fmod(this->x, r), fmod(this->y, r), fmod(this->z, r));
+}
+template<> inline Vec3<float> Vec3<float>::operator%(Vec3<float> r) {
+	return Vec3<float>(fmod(this->x, r.x), fmod(this->y, r.y), fmod(this->z, r.z));
+}
+template<> inline Vec3<float> Vec3<float>::operator%(float r) {
+	return Vec3<float>(fmod(this->x, r), fmod(this->y, r), fmod(this->z, r));
+}
+
+// Vec4 lmao
+template<typename T>
+struct Vec4 {
+public:
+	T x;
+	T y;
+	T z;
+	T w;
+
+	Vec4(T x, T y, T z, T w) : x(x), y(y), z(z), w(w) {};
+
+	Vec4 operator+(Vec4 r)  { return Vec4(this->x + r.x, this->y + r.y, this->z + r.z, this->w + r.w);  }
+	Vec4 operator-(Vec4 r)  { return Vec4(this->x - r.x, this->y - r.y, this->z - r.z, this->w - r.w);  }
+	Vec4 operator*(Vec4 r)  { return Vec4(this->x * r.x, this->y * r.y, this->z * r.z, this->w * r.w);  }
+	Vec4 operator*(T r)     { return Vec4(this->x * r,   this->y * r,   this->z * r,   this->w * r);    }
+	Vec4 operator/(Vec4 r)  { return Vec4(this->x / r.x, this->y / r.y, this->z / r.z, this->w / r.z);  }
+	Vec4 operator/(T r)     { return Vec4(this->x / r,   this->y / r,   this->z / r,   this->w / r);    }
+	Vec4 operator%(Vec4 r)  { return Vec4(this->x % r.x, this->y % r.y, this->z % r.z, this->w % r.z);  }
+	Vec4 operator%(T r)     { return Vec4(this->x % r,   this->y % r,   this->z % r,   this->w % r);    }
+
+	bool operator==(Vec4 r) { return this->x == r.x && this->y == r.y && this->z == r.z && this->w == r.w; }
+	bool operator!=(Vec4 r) { return this->x != r.x && this->y != r.y && this->z != r.z && this->w != r.w; }
+	bool operator>(Vec4 r)  { return this->x >  r.x && this->y >  r.y && this->z >  r.z && this->w >  r.w; }
+	bool operator>=(Vec4 r) { return this->x >= r.x && this->y >= r.y && this->z >= r.z && this->w >= r.w; }
+	bool operator<(Vec4 r)  { return this->x <  r.x && this->y <  r.y && this->z <  r.z && this->w <  r.w; }
+	bool operator<=(Vec4 r) { return this->x <= r.x && this->y <= r.y && this->z <= r.z && this->w <= r.w; }
+};
+
+// c i hate you
+template<> inline Vec4<double> Vec4<double>::operator%(Vec4<double> r) {
+	return Vec4<double>(fmod(this->x, r.x), fmod(this->y, r.y), fmod(this->z, r.z), fmod(this->w, r.w));
+}
+template<> inline Vec4<double> Vec4<double>::operator%(double r) {
+	return Vec4<double>(fmod(this->x, r), fmod(this->y, r), fmod(this->z, r), fmod(this->w, r));
+}
+template<> inline Vec4<float> Vec4<float>::operator%(Vec4<float> r) {
+	return Vec4<float>(fmod(this->x, r.x), fmod(this->y, r.y), fmod(this->z, r.z), fmod(this->w, r.w));
+}
+template<> inline Vec4<float> Vec4<float>::operator%(float r) {
+	return Vec4<float>(fmod(this->x, r), fmod(this->y, r), fmod(this->z, r), fmod(this->w, r));
+}
 
 }
 
