@@ -22,10 +22,122 @@
  *
  */
 
-#include <stdio.h>
+#include <cstdarg>
+#include <cstdio>
+#include <ctime>
+#include <csignal>
 #include "libtrippin.hpp"
 
-void tr::init()
+namespace tr {
+
+FILE* logfile;
+
+void init(const char* logfile)
 {
-	printf("hi mom %s\n", tr::version);
+	tr::logfile = fopen(logfile, "w");
+	tr::assert(tr::logfile != nullptr,
+		"couldn't open %s, either the path is inaccessible or there's no permissions to write here", logfile);
+
+	tr::liblog("initialized libtrippin %s", tr::VERSION);
+}
+
+void free()
+{
+	tr::liblog("deinitialized libtrippin");
+	fclose(tr::logfile);
+}
+
+static void __log(const char* color, const char* prefix, bool panic, const char* fmt, va_list arg)
+{
+	// you understand mechanical hands are the ruler of everything (ah)
+	char timestr[32];
+	time_t now = time(nullptr);
+	struct tm* tm_info = localtime(&now);
+	strftime(timestr, sizeof(timestr), "%Y-%m-%d %H:%M:%S", tm_info);
+
+	// TODO maybe increase in the future?
+	char buf[256];
+	vsnprintf(buf, sizeof(buf), fmt, arg);
+
+	if (tr::logfile == nullptr) {
+		printf(
+			"%s [%s] no log file available. did you forget to call tr::init()?%s\n",
+			color, timestr, ConsoleColor::RESET
+		);
+	}
+	else {
+		fprintf(tr::logfile, "[%s] %s%s\n", timestr, prefix, buf);
+		fflush(tr::logfile);
+	}
+
+	printf("%s[%s] %s%s%s\n", color, timestr, prefix, buf, ConsoleColor::RESET);
+	fflush(stdout);
+
+	if (panic) {
+		// windows doesn't have SIGTRAP (which sets a breakpoint) for some fucking reason
+		// TODO there's probably a windows equivalent but i don't care enough to find that
+		#ifndef _WIN32
+		raise(SIGTRAP);
+		#else
+		raise(SIGABRT);
+		#endif
+	}
+}
+
+TR_LOG_FUNC(1, 2) void log(const char* fmt, ...)
+{
+	va_list args;
+	va_start(args, fmt);
+	__log("", "", false, fmt, args);
+	va_end(args);
+}
+
+TR_LOG_FUNC(1, 2) void liblog(const char* fmt, ...)
+{
+	va_list args;
+	va_start(args, fmt);
+	__log(ConsoleColor::LIB_INFO, "", false, fmt, args);
+	va_end(args);
+}
+
+TR_LOG_FUNC(1, 2) void warn(const char* fmt, ...)
+{
+	va_list args;
+	va_start(args, fmt);
+	__log(ConsoleColor::WARN, "", false, fmt, args);
+	va_end(args);
+}
+
+TR_LOG_FUNC(1, 2) void error(const char* fmt, ...)
+{
+	va_list args;
+	va_start(args, fmt);
+	__log(ConsoleColor::ERROR, "", false, fmt, args);
+	va_end(args);
+}
+
+TR_LOG_FUNC(1, 2) void panic(const char* fmt, ...)
+{
+	va_list args;
+	va_start(args, fmt);
+	__log(ConsoleColor::ERROR, "panic: ", true, fmt, args);
+	va_end(args);
+}
+
+TR_LOG_FUNC(2, 3) void assert(bool x, const char* fmt, ...)
+{
+	#ifdef DEBUG
+	if (!x) {
+		va_list args;
+		va_start(args, fmt);
+		__log(ConsoleColor::ERROR, "failed assert: ", true, fmt, args);
+		va_end(args);
+	}
+	#else
+	// the compiler is complaining about unused arguments
+	(void)x;
+	(void)fmt;
+	#endif
+}
+
 }

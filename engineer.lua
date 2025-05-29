@@ -13,6 +13,7 @@ function libtrippin.lib(debug, trippinsrc)
 	if debug then
 		project:debug()
 		project:optimization(0)
+		project:define({"DEBUG"})
 	else
 		project:optimization(2)
 	end
@@ -21,17 +22,18 @@ function libtrippin.lib(debug, trippinsrc)
 	project:target("libtrippin.a")
 	return project
 end
-local trippin = libtrippin.lib(false, "libtrippin.cpp")
+local trippin = libtrippin.lib(true, "libtrippin.cpp")
 
 -- example projects :(
-local example_log = eng.newproj("example_log", "executable", "c++11")
-example_log:pedantic()
-example_log:debug()
-example_log:link({"trippin", "m"})
-example_log:add_sources({"examples/log.cpp"})
-example_log:add_includes({"..", "."})
+local example_all = eng.newproj("example_all", "executable", "c++11")
+example_all:pedantic()
+example_all:debug()
+example_all:define({"DEBUG"})
+example_all:link({"trippin", "m"})
+example_all:add_sources({"examples/one_test_to_rule_them_all.cpp"})
+example_all:add_includes({"..", "."})
 -- just one because it's pretty much the same for all of them
-example_log:gen_compile_commands()
+example_all:gen_compile_commands()
 
 eng.option("debug", "true or false", function(val)
 	if val == "true" then
@@ -46,17 +48,19 @@ end)
 
 eng.recipe("build", "Builds the library and the examples", function()
 	eng.run_recipe("build-lib")
-	example_log:build()
+	example_all:build()
 end)
 
-eng.recipe("run-log", "Runs the log example", function()
+eng.recipe("run-one-test-to-rule-them-all", "Runs the example with everything ever", function()
 	eng.run_recipe("build")
-	os.execute("./build/bin/example_log")
+	-- padding
+	print()
+	os.execute("./build/bin/example_all")
 end)
 
 eng.recipe("clean", "Cleans the project", function()
 	trippin:clean()
-	example_log:clean()
+	example_all:clean()
 end)
 
 eng.run()
