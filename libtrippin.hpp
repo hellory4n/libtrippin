@@ -31,10 +31,21 @@
 
 #if (defined(__GNUC__) || defined(__clang__)) && !defined(_WIN32)
 // counting starts at 1 lmao
-#define TR_LOG_FUNC(fmt_idx, varargs_idx) __attribute__((format(printf, fmt_idx, varargs_idx)))
+#define TR_LOG_FUNC(fmt_idx, varargs_idx) [[gnu::format(printf, fmt_idx, varargs_idx)]]
 #else
 #define TR_LOG_FUNC(fmt_idx, varargs_idx)
 #endif
+
+typedef int8_t int8;
+typedef int16_t int16;
+typedef int32_t int32;
+typedef int64_t int64;
+typedef uint8_t uint8;
+typedef uint16_t uint16;
+typedef uint32_t uint32;
+typedef uint64_t uint64;
+typedef float float32;
+typedef double float64;
 
 namespace tr {
 
@@ -110,17 +121,17 @@ public:
 };
 
 // c i hate you
-template<> inline Vec2<double> Vec2<double>::operator%(Vec2<double> r) {
-	return Vec2<double>(fmod(this->x, r.x), fmod(this->y, r.y));
+template<> inline Vec2<float64> Vec2<float64>::operator%(Vec2<float64> r) {
+	return Vec2<float64>(fmod(this->x, r.x), fmod(this->y, r.y));
 }
-template<> inline Vec2<double> Vec2<double>::operator%(double r) {
-	return Vec2<double>(fmod(this->x, r), fmod(this->y, r));
+template<> inline Vec2<float64> Vec2<float64>::operator%(float64 r) {
+	return Vec2<float64>(fmod(this->x, r), fmod(this->y, r));
 }
-template<> inline Vec2<float> Vec2<float>::operator%(Vec2<float> r) {
-	return Vec2<float>(fmod(this->x, r.x), fmod(this->y, r.y));
+template<> inline Vec2<float32> Vec2<float32>::operator%(Vec2<float32> r) {
+	return Vec2<float32>(fmod(this->x, r.x), fmod(this->y, r.y));
 }
-template<> inline Vec2<float> Vec2<float>::operator%(float r) {
-	return Vec2<float>(fmod(this->x, r), fmod(this->y, r));
+template<> inline Vec2<float32> Vec2<float32>::operator%(float32 r) {
+	return Vec2<float32>(fmod(this->x, r), fmod(this->y, r));
 }
 
 // Vec3 lmao
@@ -151,17 +162,17 @@ public:
 };
 
 // c i hate you
-template<> inline Vec3<double> Vec3<double>::operator%(Vec3<double> r) {
-	return Vec3<double>(fmod(this->x, r.x), fmod(this->y, r.y), fmod(this->z, r.z));
+template<> inline Vec3<float64> Vec3<float64>::operator%(Vec3<float64> r) {
+	return Vec3<float64>(fmod(this->x, r.x), fmod(this->y, r.y), fmod(this->z, r.z));
 }
-template<> inline Vec3<double> Vec3<double>::operator%(double r) {
-	return Vec3<double>(fmod(this->x, r), fmod(this->y, r), fmod(this->z, r));
+template<> inline Vec3<float64> Vec3<float64>::operator%(float64 r) {
+	return Vec3<float64>(fmod(this->x, r), fmod(this->y, r), fmod(this->z, r));
 }
-template<> inline Vec3<float> Vec3<float>::operator%(Vec3<float> r) {
-	return Vec3<float>(fmod(this->x, r.x), fmod(this->y, r.y), fmod(this->z, r.z));
+template<> inline Vec3<float32> Vec3<float32>::operator%(Vec3<float32> r) {
+	return Vec3<float32>(fmod(this->x, r.x), fmod(this->y, r.y), fmod(this->z, r.z));
 }
-template<> inline Vec3<float> Vec3<float>::operator%(float r) {
-	return Vec3<float>(fmod(this->x, r), fmod(this->y, r), fmod(this->z, r));
+template<> inline Vec3<float32> Vec3<float32>::operator%(float32 r) {
+	return Vec3<float32>(fmod(this->x, r), fmod(this->y, r), fmod(this->z, r));
 }
 
 // Vec4 lmao
@@ -193,18 +204,54 @@ public:
 };
 
 // c i hate you
-template<> inline Vec4<double> Vec4<double>::operator%(Vec4<double> r) {
-	return Vec4<double>(fmod(this->x, r.x), fmod(this->y, r.y), fmod(this->z, r.z), fmod(this->w, r.w));
+template<> inline Vec4<float64> Vec4<float64>::operator%(Vec4<float64> r) {
+	return Vec4<float64>(fmod(this->x, r.x), fmod(this->y, r.y), fmod(this->z, r.z), fmod(this->w, r.w));
 }
-template<> inline Vec4<double> Vec4<double>::operator%(double r) {
-	return Vec4<double>(fmod(this->x, r), fmod(this->y, r), fmod(this->z, r), fmod(this->w, r));
+template<> inline Vec4<float64> Vec4<float64>::operator%(float64 r) {
+	return Vec4<float64>(fmod(this->x, r), fmod(this->y, r), fmod(this->z, r), fmod(this->w, r));
 }
-template<> inline Vec4<float> Vec4<float>::operator%(Vec4<float> r) {
-	return Vec4<float>(fmod(this->x, r.x), fmod(this->y, r.y), fmod(this->z, r.z), fmod(this->w, r.w));
+template<> inline Vec4<float32> Vec4<float32>::operator%(Vec4<float32> r) {
+	return Vec4<float32>(fmod(this->x, r.x), fmod(this->y, r.y), fmod(this->z, r.z), fmod(this->w, r.w));
 }
-template<> inline Vec4<float> Vec4<float>::operator%(float r) {
-	return Vec4<float>(fmod(this->x, r), fmod(this->y, r), fmod(this->z, r), fmod(this->w, r));
+template<> inline Vec4<float32> Vec4<float32>::operator%(float32 r) {
+	return Vec4<float32>(fmod(this->x, r), fmod(this->y, r), fmod(this->z, r), fmod(this->w, r));
 }
+
+// Like how the spicy modern languages handle null
+template<typename T>
+struct Maybe {
+private:
+	bool has_value;
+	union {
+		uint8_t waste_of_space;
+		T value;
+	};
+
+public:
+	// Initializes a Maybe<T> as null
+	Maybe() : has_value(false), waste_of_space(0) {};
+
+	// Intializes a Maybe<T> with a value
+	Maybe(T val) : has_value(true), value(val) {};
+
+	// If true, the maybe is, in fact, a definitely.
+	bool is_valid()
+	{
+		return this->has_value;
+	}
+
+	// Gets the value or crashes if it's null
+	T* unwrap()
+	{
+		if (this->has_value) {
+			return &this->value;
+		}
+		else {
+			tr::panic("couldn't unwrap Maybe<T>");
+			return nullptr;
+		}
+	}
+};
 
 }
 
