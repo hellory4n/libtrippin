@@ -46,11 +46,22 @@ typedef uint32_t uint32;
 typedef uint64_t uint64;
 typedef float float32;
 typedef double float64;
+typedef size_t usize;
 
 namespace tr {
 
 // I sure love versions.
 constexpr const char* VERSION = "v2.0.0";
+
+// Initializes the bloody library lmao.
+void init();
+
+// Deinitializes the bloody library lmao.
+void free();
+
+/*
+ * LOGGING
+ */
 
 namespace ConsoleColor {
 	// TODO colored output doesn't work on windows and i can't be bothered to fix it
@@ -66,12 +77,6 @@ namespace ConsoleColor {
 	constexpr const char* ERROR    = "";
 	#endif
 }
-
-// Initializes the bloody library lmao.
-void init();
-
-// Deinitializes the bloody library lmao.
-void free();
 
 // Sets the log file to somewhere.
 void use_log_file(const char* path);
@@ -89,10 +94,114 @@ TR_LOG_FUNC(1, 2) void warn(const char* fmt, ...);
 TR_LOG_FUNC(1, 2) void error(const char* fmt, ...);
 
 // Oh god oh fuck. Note this crashes and kills everything, `tr::error` doesn't.
-TR_LOG_FUNC(1, 2) void panic(const char* fmt, ...);
+TR_LOG_FUNC(1, 2) [[noreturn]] void panic(const char* fmt, ...);
 
 // Formatted assert?????????
 TR_LOG_FUNC(2, 3) void assert(bool x, const char* fmt, ...);
+
+/*
+ * UTILITIES
+ */
+
+// Like how the spicy modern languages handle null
+template<typename T>
+struct Maybe {
+private:
+	bool has_value;
+	union {
+		uint8_t waste_of_space;
+		T value;
+	};
+
+public:
+	// Initializes a Maybe<T> as null
+	Maybe() : has_value(false), waste_of_space(0) {};
+
+	// Intializes a Maybe<T> with a value
+	Maybe(T val) : has_value(true), value(val) {};
+
+	// If true, the maybe is, in fact, a definitely.
+	bool is_valid()
+	{
+		return this->has_value;
+	}
+
+	// Gets the value or panics if it's null
+	T* unwrap()
+	{
+		if (this->has_value) {
+			return &this->value;
+		}
+		else {
+			tr::panic("couldn't unwrap Maybe<T>");
+		}
+	}
+};
+
+// Functional propaganda
+template<typename L, typename R>
+struct Either {
+private:
+	// False is left, true is right
+	bool active;
+	union {
+		L val_left;
+		R val_right;
+	};
+
+public:
+	Either(L left) : active(false), val_left(left) {};
+	Either(R right) : active(true), val_right(right) {};
+
+	~Either()
+	{
+		if (this->active) {
+			this->val_left.~L();
+		}
+		else {
+			this->val_right.~R();
+		}
+	}
+
+	// If true, it's left. Else, it's right.
+	bool is_left() { return !this->active; }
+	// If true, it's right. Else, it's left.
+	bool is_right() { return this->active; }
+
+	// Returns the left value, or panics if it's not left
+	L left()
+	{
+		if (this->active) tr::panic("Either<L, R> is right, not left");
+		else return this->val_left;
+	}
+
+	// Returns the right value, or panics if it's not right
+	R right()
+	{
+		if (this->active) tr::panic("Either<L, R> is right, not left");
+		else return this->val_left;
+	}
+};
+
+// It's a pair lmao.
+template<typename L, typename R>
+struct Pair {
+public:
+	L left;
+	R right;
+
+	Pair(L left, R right) : left(left), right(right) {};
+
+	~Pair()
+	{
+		left.~L();
+		right.~R();
+	}
+};
+
+/*
+ * MATH
+ */
 
 // Vec2 lmao
 template<typename T>
@@ -217,41 +326,17 @@ template<> inline Vec4<float32> Vec4<float32>::operator%(float32 r) {
 	return Vec4<float32>(fmod(this->x, r), fmod(this->y, r), fmod(this->z, r), fmod(this->w, r));
 }
 
-// Like how the spicy modern languages handle null
-template<typename T>
-struct Maybe {
-private:
-	bool has_value;
-	union {
-		uint8_t waste_of_space;
-		T value;
-	};
+// Converts kilobytes to bytes
+static inline usize kb_to_bytes(usize x) { return x * 1024; }
+// Converts megabytes to bytes
+static inline usize mb_to_bytes(usize x) { return kb_to_bytes(x) * 1024; }
+// Converts gigabytes to bytes
+static inline usize gb_to_bytes(usize x) { return mb_to_bytes(x) * 1024; }
 
-public:
-	// Initializes a Maybe<T> as null
-	Maybe() : has_value(false), waste_of_space(0) {};
+// Arenas are made of many buffers.
+struct ArenaBuffer {};
 
-	// Intializes a Maybe<T> with a value
-	Maybe(T val) : has_value(true), value(val) {};
-
-	// If true, the maybe is, in fact, a definitely.
-	bool is_valid()
-	{
-		return this->has_value;
-	}
-
-	// Gets the value or crashes if it's null
-	T* unwrap()
-	{
-		if (this->has_value) {
-			return &this->value;
-		}
-		else {
-			tr::panic("couldn't unwrap Maybe<T>");
-			return nullptr;
-		}
-	}
-};
+struct Arena {};
 
 }
 

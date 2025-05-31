@@ -25,11 +25,11 @@ end
 local trippin = libtrippin.lib(true, "libtrippin.cpp")
 
 -- example projects :(
-local example_all = eng.newproj("example_all", "executable", "c++11")
+local example_all = eng.newproj("example_all", "executable", "c++14")
 example_all:pedantic()
 example_all:debug()
 example_all:define({"DEBUG"})
-example_all:link({"trippin", "m"})
+example_all:link({"trippin", "m", "stdc++"})
 example_all:add_sources({"examples/one_test_to_rule_them_all.cpp"})
 example_all:add_includes({"..", "."})
 -- just one because it's pretty much the same for all of them

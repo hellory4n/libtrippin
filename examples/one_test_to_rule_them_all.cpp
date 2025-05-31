@@ -31,5 +31,14 @@ int main()
 		tr::log("perchance %i", *maybe.unwrap());
 	}
 
+	auto it_depends_yknow = tr::Either<int32, bool>(64);
+	if (it_depends_yknow.is_left()) {
+		tr::log("left: %i", it_depends_yknow.left());
+	}
+	it_depends_yknow.right();
+
+	auto should_i_call_it_both = tr::Pair<int64, float64>(1, 2.2);
+	tr::log("pair left: %li, pair right %f", should_i_call_it_both.left, should_i_call_it_both.right);
+
 	tr::free();
 }

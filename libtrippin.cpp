@@ -126,6 +126,9 @@ TR_LOG_FUNC(1, 2) void panic(const char* fmt, ...)
 	va_list args;
 	va_start(args, fmt);
 	__log(ConsoleColor::ERROR, "panic: ", true, fmt, args);
+	// Function declared 'noreturn' should not return
+	// (this will never happen because __log panics first)
+	exit(1);
 	va_end(args);
 }
 
