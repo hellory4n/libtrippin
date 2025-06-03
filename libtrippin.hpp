@@ -105,7 +105,8 @@ TR_LOG_FUNC(2, 3) void assert(bool x, const char* fmt, ...);
 
 // Like how the spicy modern languages handle null
 template<typename T>
-struct Maybe {
+struct Maybe
+{
 private:
 	bool has_value;
 	union {
@@ -136,11 +137,26 @@ public:
 			tr::panic("couldn't unwrap Maybe<T>");
 		}
 	}
+
+	// i love c++
+	Maybe& operator=(T val)
+	{
+		if (val == nullptr) {
+			this->has_value = false;
+			this->value = nullptr;
+		}
+		else {
+			this->has_value = true;
+			this->value = val;
+		}
+		return *this;
+	}
 };
 
 // Functional propaganda
 template<typename L, typename R>
-struct Either {
+struct Either
+{
 private:
 	// False is left, true is right
 	bool active;
@@ -169,24 +185,24 @@ public:
 	bool is_right() { return this->active; }
 
 	// Returns the left value, or panics if it's not left
-	L left()
+	L* left()
 	{
 		if (this->active) tr::panic("Either<L, R> is right, not left");
-		else return this->val_left;
+		else return &this->val_left;
 	}
 
 	// Returns the right value, or panics if it's not right
-	R right()
+	R* right()
 	{
 		if (this->active) tr::panic("Either<L, R> is right, not left");
-		else return this->val_left;
+		else return &this->val_right;
 	}
 };
 
 // It's a pair lmao.
 template<typename L, typename R>
-struct Pair {
-public:
+struct Pair
+{
 	L left;
 	R right;
 
@@ -205,8 +221,8 @@ public:
 
 // Vec2 lmao
 template<typename T>
-struct Vec2 {
-public:
+struct Vec2
+{
 	T x;
 	T y;
 
@@ -245,8 +261,8 @@ template<> inline Vec2<float32> Vec2<float32>::operator%(float32 r) {
 
 // Vec3 lmao
 template<typename T>
-struct Vec3 {
-public:
+struct Vec3
+{
 	T x;
 	T y;
 	T z;
@@ -286,8 +302,8 @@ template<> inline Vec3<float32> Vec3<float32>::operator%(float32 r) {
 
 // Vec4 lmao
 template<typename T>
-struct Vec4 {
-public:
+struct Vec4
+{
 	T x;
 	T y;
 	T z;
@@ -327,16 +343,57 @@ template<> inline Vec4<float32> Vec4<float32>::operator%(float32 r) {
 }
 
 // Converts kilobytes to bytes
-static inline usize kb_to_bytes(usize x) { return x * 1024; }
+static constexpr usize kb_to_bytes(usize x) { return x * 1024; }
 // Converts megabytes to bytes
-static inline usize mb_to_bytes(usize x) { return kb_to_bytes(x) * 1024; }
+static constexpr usize mb_to_bytes(usize x) { return kb_to_bytes(x) * 1024; }
 // Converts gigabytes to bytes
-static inline usize gb_to_bytes(usize x) { return mb_to_bytes(x) * 1024; }
+static constexpr usize gb_to_bytes(usize x) { return mb_to_bytes(x) * 1024; }
 
 // Arenas are made of many buffers.
-struct ArenaBuffer {};
+struct ArenaPage
+{
+	usize size;
+	usize alloc_pos;
+	Maybe<ArenaPage*> prev;
+	Maybe<ArenaPage*> next;
+	void* buffer;
 
-struct Arena {};
+	ArenaPage(usize size);
+	~ArenaPage();
+
+	// Returns how much space left the page has
+	usize available_space();
+
+	// TODO resize(usize new_size); (it's for vectors and hashmaps and whatever the fuck)
+};
+
+// Life changing allocator.
+struct Arena
+{
+	usize page_size;
+	ArenaPage* page;
+
+	// Initializes the arena. `page_size` is the base size for the buffers, you can have more buffers or
+	// bigger buffers.
+	Arena(usize page_size);
+
+	// Frees the arena. Note this doesn't call any destructors from structs you may have allocated, as I
+	// don't know how to do that.
+	~Arena();
+
+	// Allocates some crap on the arena.
+	void* alloc(usize size);
+
+	// Literally just `Arena::alloc()` but for structs and crap.
+	template<typename T> T* alloc()
+	{
+		return (T*)this->alloc(sizeof(T));
+	}
+
+	// Makes sure there's enough space to fit `size`. Useful for when you're about to allocate a lot of
+	// objects without trying to figure out the pages 57399593895 times.
+	void prealloc(usize size);
+};
 
 }
 

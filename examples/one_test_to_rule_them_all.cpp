@@ -33,12 +33,28 @@ int main()
 
 	auto it_depends_yknow = tr::Either<int32, bool>(64);
 	if (it_depends_yknow.is_left()) {
-		tr::log("left: %i", it_depends_yknow.left());
+		tr::log("left: %i", *it_depends_yknow.left());
 	}
 	it_depends_yknow.right();
 
 	auto should_i_call_it_both = tr::Pair<int64, float64>(1, 2.2);
 	tr::log("pair left: %li, pair right %f", should_i_call_it_both.left, should_i_call_it_both.right);
+
+	auto arena = tr::Arena(tr::kb_to_bytes(2));
+	struct ComicallyLargeStruct {
+		uint8 man[1024];
+	};
+	struct EvenLargerStruct {
+		uint8 man[4096];
+	};
+	// if it works it won't segfault
+	auto* sig = arena.alloc<ComicallyLargeStruct>();
+	auto* ma = arena.alloc<EvenLargerStruct>();
+	tr::log("it did allocate");
+	sig->man[12] = 221;
+	ma->man[35] = 54;
+	tr::log("look %i", sig->man[12]);
+	tr::log("oh look at what you've done now to me %i", ma->man[35]);
 
 	tr::free();
 }

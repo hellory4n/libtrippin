@@ -1,13 +1,13 @@
-# libtrippin
+# Massive changes are coming...
 
-## Massive changes are coming...
-
-Here at Trippin Massivesystems, we love you. In effort to innovate and think different, we are working on the
+Here at Trippin Massivesystems, we love you. In an effort to innovate and think different, we are working on the
 brand-new **libtrippin v2.0.0**, in C++ and with many new features, blasting off libtrippin into a new level
-of advancement and pro-level libraries. If you're not planning to switch to C++, we don't care because there's
-only 1 user and that is me.
+of advancement and pro-level libraries. There's no documentation because it's not done yet. If you're not
+planning to switch to C++, we don't care because there's only 1 user and that is me.
 
 *Trippin Massivesystems: Never Go Back*
+
+# libtrippin
 
 Most biggest most massive C library of all time. I'm insane.
 

@@ -301,7 +301,7 @@ end
 -- Adds compile flags to the project. It's recommended to use project methods instead of manually adding
 -- flags wherever possible.
 function project_methods.add_cflags(proj, cflags)
-	proj.cflags = proj.cflags.." "..cflags
+	proj.cflags = proj.cflags.." "..cflags.." "
 end
 
 -- Adds linker flags to the project. It's recommended to use project methods instead of manually adding
@@ -345,7 +345,7 @@ end
 
 -- Adds common flags to make the compiler more obnoxious
 function project_methods.pedantic(proj)
-	proj.cflags = proj.cflags.." -Werror -Wall -Wextra "
+	proj.cflags = proj.cflags.." -Wall -Wextra -Wpedantic "
 end
 
 -- Enables debug info

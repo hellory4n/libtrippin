@@ -42,6 +42,18 @@ eng.option("debug", "true or false", function(val)
 	end
 end)
 
+eng.option("asan", "if true, enables AddressSanitizer", function(val)
+	if val == "true" then
+		example_all:add_cflags("-fsanitize=address")
+		example_all:add_ldflags("-fsanitize=address")
+	end
+end)
+
+local breakpoint = ""
+eng.option("breakpoint", "sets a breakpoint in gdb, e.g. \"breakpoint=src/file.c:43\"", function(val)
+	breakpoint = val
+end)
+
 eng.recipe("build-lib", "Builds only the library", function()
 	trippin:build()
 end)
@@ -55,7 +67,8 @@ eng.recipe("run-one-test-to-rule-them-all", "Runs the example with everything ev
 	eng.run_recipe("build")
 	-- padding
 	print()
-	os.execute("./build/bin/example_all")
+	-- it could be just ./build/bin/example_all but then you would miss any panics that may happen
+	os.execute("gdb -q -ex \"break "..breakpoint.."\" -ex run -ex \"quit\" --args build/bin/example_all")
 end)
 
 eng.recipe("clean", "Cleans the project", function()

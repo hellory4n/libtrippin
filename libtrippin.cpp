@@ -29,21 +29,21 @@
 #include "libtrippin.hpp"
 
 namespace tr {
+	FILE* logfile;
+}
 
-FILE* logfile;
-
-void init()
+void tr::init()
 {
 	tr::liblog("initialized libtrippin %s", tr::VERSION);
 }
 
-void free()
+void tr::free()
 {
 	tr::liblog("deinitialized libtrippin");
 	fclose(tr::logfile);
 }
 
-void use_log_file(const char* path)
+void tr::use_log_file(const char* path)
 {
 	tr::logfile = fopen(path, "w");
 	tr::assert(tr::logfile != nullptr,
@@ -57,7 +57,7 @@ static void __log(const char* color, const char* prefix, bool panic, const char*
 	// you understand mechanical hands are the ruler of everything (ah)
 	char timestr[32];
 	time_t now = time(nullptr);
-	struct tm* tm_info = localtime(&now);
+	tm* tm_info = localtime(&now);
 	strftime(timestr, sizeof(timestr), "%Y-%m-%d %H:%M:%S", tm_info);
 
 	// TODO maybe increase in the future?
@@ -67,7 +67,7 @@ static void __log(const char* color, const char* prefix, bool panic, const char*
 	if (tr::logfile == nullptr) {
 		printf(
 			"%s [%s] no log file available. did you forget to call tr::init()?%s\n",
-			color, timestr, ConsoleColor::RESET
+			color, timestr, tr::ConsoleColor::RESET
 		);
 	}
 	else {
@@ -75,7 +75,7 @@ static void __log(const char* color, const char* prefix, bool panic, const char*
 		fflush(tr::logfile);
 	}
 
-	printf("%s[%s] %s%s%s\n", color, timestr, prefix, buf, ConsoleColor::RESET);
+	printf("%s[%s] %s%s%s\n", color, timestr, prefix, buf, tr::ConsoleColor::RESET);
 	fflush(stdout);
 
 	if (panic) {
@@ -89,7 +89,7 @@ static void __log(const char* color, const char* prefix, bool panic, const char*
 	}
 }
 
-TR_LOG_FUNC(1, 2) void log(const char* fmt, ...)
+TR_LOG_FUNC(1, 2) void tr::log(const char* fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
@@ -97,48 +97,48 @@ TR_LOG_FUNC(1, 2) void log(const char* fmt, ...)
 	va_end(args);
 }
 
-TR_LOG_FUNC(1, 2) void liblog(const char* fmt, ...)
+TR_LOG_FUNC(1, 2) void tr::liblog(const char* fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
-	__log(ConsoleColor::LIB_INFO, "", false, fmt, args);
+	__log(tr::ConsoleColor::LIB_INFO, "", false, fmt, args);
 	va_end(args);
 }
 
-TR_LOG_FUNC(1, 2) void warn(const char* fmt, ...)
+TR_LOG_FUNC(1, 2) void tr::warn(const char* fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
-	__log(ConsoleColor::WARN, "", false, fmt, args);
+	__log(tr::ConsoleColor::WARN, "", false, fmt, args);
 	va_end(args);
 }
 
-TR_LOG_FUNC(1, 2) void error(const char* fmt, ...)
+TR_LOG_FUNC(1, 2) void tr::error(const char* fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
-	__log(ConsoleColor::ERROR, "", false, fmt, args);
+	__log(tr::ConsoleColor::ERROR, "", false, fmt, args);
 	va_end(args);
 }
 
-TR_LOG_FUNC(1, 2) void panic(const char* fmt, ...)
+TR_LOG_FUNC(1, 2) void tr::panic(const char* fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
-	__log(ConsoleColor::ERROR, "panic: ", true, fmt, args);
+	__log(tr::ConsoleColor::ERROR, "panic: ", true, fmt, args);
 	// Function declared 'noreturn' should not return
 	// (this will never happen because __log panics first)
 	exit(1);
 	va_end(args);
 }
 
-TR_LOG_FUNC(2, 3) void assert(bool x, const char* fmt, ...)
+TR_LOG_FUNC(2, 3) void tr::assert(bool x, const char* fmt, ...)
 {
 	#ifdef DEBUG
 	if (!x) {
 		va_list args;
 		va_start(args, fmt);
-		__log(ConsoleColor::ERROR, "failed assert: ", true, fmt, args);
+		__log(tr::ConsoleColor::ERROR, "failed assert: ", true, fmt, args);
 		va_end(args);
 	}
 	#else
@@ -148,4 +148,108 @@ TR_LOG_FUNC(2, 3) void assert(bool x, const char* fmt, ...)
 	#endif
 }
 
+tr::ArenaPage::ArenaPage(usize size)
+{
+	this->buffer = malloc(size);
+	this->size = size;
+	this->alloc_pos = 0;
+	this->next = nullptr;
+	this->prev = nullptr;
+
+	// i don't think you can recover from that
+	// so just die
+	tr::assert(this->buffer != nullptr, "couldn't allocate arena page");
+}
+
+tr::ArenaPage::~ArenaPage()
+{
+	if (this->buffer != nullptr) {
+		// full legal name because the tr namespace also has a function called free
+		std::free(this->buffer);
+	}
+}
+
+usize tr::ArenaPage::available_space()
+{
+	return this->size - this->alloc_pos;
+}
+
+tr::Arena::Arena(usize page_size)
+{
+	this->page_size = page_size;
+	this->page = new ArenaPage(page_size);
+}
+
+tr::Arena::~Arena()
+{
+	while (this->page != nullptr) {
+		// it crashes without this lmao
+		if (!this->page->prev.is_valid()) break;
+
+		this->page = *this->page->prev.unwrap();
+		delete this->page;
+	}
+}
+
+void* tr::Arena::alloc(usize size)
+{
+	// does it fit in the current page?
+	if (this->page->available_space() >= size) {
+		void* val = (char*)this->page->buffer + this->page->alloc_pos;
+		this->page->alloc_pos += size;
+		return val;
+	}
+
+	// does it fit in the previous page?
+	if (this->page->prev.is_valid()) {
+		ArenaPage* prev_page = *this->page->prev.unwrap();
+		if (prev_page->available_space() >= size) {
+			void* val = (char*)prev_page->buffer + prev_page->alloc_pos;
+			prev_page->alloc_pos += size;
+			return val;
+		}
+	}
+
+	// does it fit in a regularly sized page?
+	if (this->page_size >= size) {
+		ArenaPage* new_page = new ArenaPage(this->page_size);
+		new_page->prev = this->page;
+		this->page->next = new_page;
+		this->page = new_page;
+
+		void* val = (char*)new_page->buffer + new_page->alloc_pos;
+		new_page->alloc_pos += size;
+		return val;
+	}
+
+	// last resort is making a new page with that specific size
+	ArenaPage* new_page = new ArenaPage(size);
+	new_page->prev = this->page;
+	this->page->next = new_page;
+	this->page = new_page;
+
+	void* val = (char*)new_page->buffer + new_page->alloc_pos;
+	new_page->alloc_pos += size;
+	return val;
+}
+
+void tr::Arena::prealloc(usize size)
+{
+	// does it already fit?
+	if (this->page->available_space() >= size) {
+		return;
+	}
+
+	if (this->page->prev.is_valid()) {
+		ArenaPage* prev_page = *this->page->prev.unwrap();
+		if (prev_page->available_space() >= size) {
+			return;
+		}
+	}
+
+	// make a new page without increasing alloc_pos
+	ArenaPage* new_page = new ArenaPage((usize)fmax(size, this->page_size));
+	new_page->prev = this->page;
+	this->page->next = new_page;
+	this->page = new_page;
 }
