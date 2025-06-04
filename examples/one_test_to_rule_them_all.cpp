@@ -61,5 +61,10 @@ int main()
 	tr::log("sogmarand %f", random.next(1.0, 1.4));
 	tr::log("sogmarand %li", random.next<int64>(1, 69'000'000'000));
 
+	auto lerp_a = tr::Vec2<int64>(1, 2);
+	auto lerp_b = tr::Vec2<int64>(15393, 2376);
+	tr::Vec2<int64> lerp = tr::lerp(lerp_a, lerp_b, 0.5);
+	tr::log("lerp vec2<int64>: %li, %li", lerp.x, lerp.y);
+
 	tr::free();
 }

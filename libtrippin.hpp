@@ -52,7 +52,7 @@ typedef size_t usize;
 namespace tr {
 
 // I sure love versions.
-constexpr const char* VERSION = "v2.0.0";
+static constexpr const char* VERSION = "v2.0.0";
 
 // Initializes the bloody library lmao.
 void init();
@@ -227,7 +227,7 @@ struct Vec2
 	T x;
 	T y;
 
-	Vec2(T x, T y) : x(x), y(y) {};
+	constexpr Vec2(T x, T y) : x(x), y(y) {};
 
 	Vec2 operator+(Vec2 r)  { return Vec2(this->x + r.x, this->y + r.y); }
 	Vec2 operator-(Vec2 r)  { return Vec2(this->x - r.x, this->y - r.y); }
@@ -268,7 +268,7 @@ struct Vec3
 	T y;
 	T z;
 
-	Vec3(T x, T y, T z) : x(x), y(y), z(z) {};
+	constexpr Vec3(T x, T y, T z) : x(x), y(y), z(z) {};
 
 	Vec3 operator+(Vec3 r)  { return Vec3(this->x + r.x, this->y + r.y, this->z + r.z);  }
 	Vec3 operator-(Vec3 r)  { return Vec3(this->x - r.x, this->y - r.y, this->z - r.z);  }
@@ -310,7 +310,7 @@ struct Vec4
 	T z;
 	T w;
 
-	Vec4(T x, T y, T z, T w) : x(x), y(y), z(z), w(w) {};
+	constexpr Vec4(T x, T y, T z, T w) : x(x), y(y), z(z), w(w) {};
 
 	Vec4 operator+(Vec4 r)  { return Vec4(this->x + r.x, this->y + r.y, this->z + r.z, this->w + r.w);  }
 	Vec4 operator-(Vec4 r)  { return Vec4(this->x - r.x, this->y - r.y, this->z - r.z, this->w - r.w);  }
@@ -343,12 +343,144 @@ template<> inline Vec4<float32> Vec4<float32>::operator%(float32 r) {
 	return Vec4<float32>(fmod(this->x, r), fmod(this->y, r), fmod(this->z, r), fmod(this->w, r));
 }
 
+// SO RANDOM LMAO HAHA implemented through xoshiro256+
+struct Random
+{
+private:
+	uint64_t state[4];
+
+public:
+	// Initializes the `tr::Random` with a seed
+	Random(int64 seed);
+
+	// Initializes the `tr::Random` with the current time as the seed
+	Random() : Random(time(nullptr)) {}
+
+	// Returns a value from 0 to 1
+	float64 next();
+
+	// Returns a value in a range
+	template<typename T> T next(T min, T max)
+	{
+		return static_cast<T>((this->next() * max) + min);
+	}
+};
+
+// COLOR I HARDLY KNOW 'ER HAHAHHAHA LAUGH IMMEIDATLEY
+struct Color
+{
+	// Red
+	uint8 r = 255;
+	// Green
+	uint8 g = 255;
+	// Blue
+	uint8 b = 255;
+	// Alpha/transparency
+	uint8 a = 255;
+
+	constexpr Color();
+	constexpr Color(uint8 r, uint8 g, uint8 b) : r(r), g(g), b(b), a(255) {}
+	constexpr Color(uint8 r, uint8 g, uint8 b, uint8 a) : r(r), g(g), b(b), a(a) {}
+
+	// Makes a color from a hex code, with a format of 0xRRGGBB
+	static constexpr Color rgb(uint32 hex)
+	{
+		return Color((hex >> 16) & 0xFF, (hex >> 8) & 0xFF, hex & 0xFF, 255);
+	}
+
+	// Makes a color from a hex code, with a format of 0xRRGGBBAA
+	static constexpr Color rgba(uint32 hex)
+	{
+		return Color((hex >> 24) & 0xFF, (hex >> 16) & 0xFF, (hex >> 8) & 0xFF, hex & 0xFF);
+	}
+};
+
+namespace palette {
+	// White lmao.
+	static constexpr Color WHITE = Color::rgb(0xFFFFFF);
+	// Black lmao.
+	static constexpr Color BLACK = Color::rgb(0x000000);
+	// Where did it go
+	static constexpr Color TRANSPARENT = Color::rgba(0x00000000);
+
+	// TODO more palettes, e.g. tr::palette::WebSafe, tr::palette::Material, tr::palette::Starry etc
+}
+
+// π
+static constexpr float64 PI = 3.141592653589793238463;
+
+// Degrees to radians
+template<typename T> inline constexpr T deg2rad(T deg) {
+	return deg * (static_cast<T>(PI) / static_cast<T>(180.0));
+}
+
+// Radians to degrees
+template<typename T> inline constexpr T rad2deg(T rad) {
+	return rad * (static_cast<T>(180.0) / static_cast<T>(PI));
+}
+
+// clamp
+template<typename T> inline constexpr T clamp(T val, T min, T max)
+{
+	if (val < min) return min;
+	else if (val > max) return max;
+	else return val;
+}
+
+// Picks the smaller option
+template<typename T> inline constexpr T min(T a, T b)
+{
+	return a < b ? a : b;
+}
+
+// Picks the bigger option
+template<typename T> inline constexpr T max(T a, T b)
+{
+	return a > b ? a : b;
+}
+
+// lerp
+template<typename T> inline constexpr T lerp(T a, T b, float64 t)
+{
+	return (1.0 - t) * a + t * b;
+}
+
+// a couple disasters
+
+// lerp
+template<typename T> inline constexpr Vec2<T> lerp(Vec2<T> a, Vec2<T> b, float64 t) {
+	auto man = Vec2<float64>(1.0 - t, 1.0 - t) * Vec2<float64>(a.x, a.y) + Vec2<float64>(t, t) * Vec2<float64>(b.x, b.y);
+	return Vec2<T>(static_cast<T>(man.x), static_cast<T>(man.y));
+}
+// lerp
+template<typename T> inline constexpr Vec3<T> lerp(Vec3<T> a, Vec3<T> b, float64 t) {
+	auto man = Vec3<float64>(1.0 - t, 1.0 - t, 1.0 - t) * Vec3<float64>(a.x, a.y, a.z) + Vec3<float64>(t, t, t) * Vec3<float64>(b.x, b.y, b.z);
+	return Vec3<T>(static_cast<T>(man.x), static_cast<T>(man.y), static_cast<T>(man.z));
+}
+// lerp
+template<typename T> inline constexpr Vec4<T> lerp(Vec4<T> a, Vec4<T> b, float64 t) {
+	auto man = Vec4<float64>(1.0 - t, 1.0 - t, 1.0 - t, 1.0 - t) * Vec4<float64>(a.x, a.y, a.z, a.w) + Vec4<float64>(t, t, t, t) * Vec4<float64>(b.x, b.y, b.z, b.w);
+	return Vec4<T>(static_cast<T>(man.x), static_cast<T>(man.y), static_cast<T>(man.z), static_cast<T>(man.w));
+}
+
+// Similar to `tr::lerp`, but in reverse.
+template<typename T> inline constexpr T inverse_lerp(T a, T b, T v)
+{
+	return (v - a) / (b - a);
+}
+
+// Converts a number from one scale to another
+template<typename T> inline constexpr T remap(T val, T src_min, T src_max, T dst_min, T dst_max)
+{
+	return tr::lerp(dst_min, dst_max, tr::inverse_lerp(src_min, src_max, val));
+}
+
 // Converts kilobytes to bytes
-static constexpr usize kb_to_bytes(usize x) { return x * 1024; }
+inline constexpr usize kb_to_bytes(usize x) { return x * 1024; }
 // Converts megabytes to bytes
-static constexpr usize mb_to_bytes(usize x) { return kb_to_bytes(x) * 1024; }
+inline constexpr usize mb_to_bytes(usize x) { return kb_to_bytes(x) * 1024; }
 // Converts gigabytes to bytes
-static constexpr usize gb_to_bytes(usize x) { return mb_to_bytes(x) * 1024; }
+inline constexpr usize gb_to_bytes(usize x) { return mb_to_bytes(x) * 1024; }
 
 // Arenas are made of many buffers.
 struct ArenaPage
@@ -394,29 +526,6 @@ struct Arena
 	// Makes sure there's enough space to fit `size`. Useful for when you're about to allocate a lot of
 	// objects and don't want it to try to figure out the pages 57399593895 times.
 	void prealloc(usize size);
-};
-
-// SO RANDOM LMAO HAHA implemented through xoshiro256+
-struct Random
-{
-private:
-	uint64_t state[4];
-
-public:
-	// Initializes the `tr::Random` with a seed
-	Random(int64 seed);
-	
-	// Initializes the `tr::Random` with the current time as the seed
-	Random() : Random(time(nullptr)) {}
-
-	// Returns a value from 0 to 1
-	float64 next();
-
-	// Returns a value in a range
-	template<typename T> T next(T min, T max)
-	{
-		return static_cast<T>((this->next() * max) + min);
-	}
 };
 
 }
