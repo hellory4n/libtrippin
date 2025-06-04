@@ -1,26 +1,26 @@
 /*
- * libtrippin v2.0.0
- *
- * Most biggest most massive standard library thing for C of all time
- * More information at https://github.com/hellory4n/libtrippin
- *
- * Copyright (C) 2025 by hellory4n <hellory4n@gmail.com>
- *
- * Permission to use, copy, modify, and/or distribute this
- * software for any purpose with or without fee is hereby
- * granted.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS
- * ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO
- * EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
- * INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,
- * WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE
- * USE OR PERFORMANCE OF THIS SOFTWARE.
- *
- */
+* libtrippin v2.0.0
+*
+* Most biggest most massive standard library thing for C of all time
+* More information at https://github.com/hellory4n/libtrippin
+*
+* Copyright (C) 2025 by hellory4n <hellory4n@gmail.com>
+*
+* Permission to use, copy, modify, and/or distribute this
+* software for any purpose with or without fee is hereby
+* granted.
+*
+* THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS
+* ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL
+* IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO
+* EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+* INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+* WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,
+* WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+* TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE
+* USE OR PERFORMANCE OF THIS SOFTWARE.
+*
+*/
 
 #include <cstdarg>
 #include <cstdio>
@@ -164,7 +164,7 @@ tr::ArenaPage::ArenaPage(usize size)
 tr::ArenaPage::~ArenaPage()
 {
 	if (this->buffer != nullptr) {
-		// full legal name because the tr namespace also has a function called free
+		// full legal name because tr:: also has a function called free
 		std::free(this->buffer);
 		this->buffer = nullptr;
 	}
@@ -183,12 +183,15 @@ tr::Arena::Arena(usize page_size)
 
 tr::Arena::~Arena()
 {
-	while (this->page != nullptr) {
-		// it crashes without this lmao
-		if (!this->page->prev.is_valid()) break;
+	ArenaPage* head = this->page;
+	while (head->prev.is_valid()) {
+		head = *head->prev.unwrap();
+	}
 
-		this->page = *this->page->prev.unwrap();
-		delete this->page;
+	while (head != nullptr) {
+		ArenaPage* next = head->next.is_valid() ? *head->next.unwrap() : nullptr;
+		delete head;
+		head = next;
 	}
 }
 
@@ -223,7 +226,7 @@ void* tr::Arena::alloc(usize size)
 		return val;
 	}
 
-	// last resort is making a new page with that specific size
+	// last resort is making a new page with that size
 	ArenaPage* new_page = new ArenaPage(size);
 	new_page->prev = this->page;
 	this->page->next = new_page;
@@ -249,6 +252,7 @@ void tr::Arena::prealloc(usize size)
 	}
 
 	// make a new page without increasing alloc_pos
+	// i know using fmax here is questionable
 	ArenaPage* new_page = new ArenaPage((usize)fmax(size, this->page_size));
 	new_page->prev = this->page;
 	this->page->next = new_page;

@@ -391,7 +391,7 @@ struct Arena
 	}
 
 	// Makes sure there's enough space to fit `size`. Useful for when you're about to allocate a lot of
-	// objects without trying to figure out the pages 57399593895 times.
+	// objects and don't want it to try to figure out the pages 57399593895 times.
 	void prealloc(usize size);
 };
 

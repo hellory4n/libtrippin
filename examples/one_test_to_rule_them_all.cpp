@@ -41,6 +41,7 @@ int main()
 	tr::log("pair left: %li, pair right %f", should_i_call_it_both.left, should_i_call_it_both.right);
 
 	auto arena = tr::Arena(tr::kb_to_bytes(2));
+	// arena.prealloc(tr::mb_to_bytes(1));
 	struct ComicallyLargeStruct {
 		uint8 man[1024];
 	};
