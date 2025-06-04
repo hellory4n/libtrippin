@@ -258,3 +258,42 @@ void tr::Arena::prealloc(usize size)
 	this->page->next = new_page;
 	this->page = new_page;
 }
+
+tr::Random::Random(int64 seed)
+{
+	// i think this is how you implement splitmix64?
+	this->state[0] = seed;
+	for (size_t i = 1; i < 4; i++) {
+		this->state[i] = (this->state[i - 1] += UINT64_C(0x9E3779B97F4A7C15));
+		this->state[i] = (this->state[i] ^ (this->state[i] >> 30)) * UINT64_C(0xBF58476D1CE4E5B9);
+		this->state[i] = (this->state[i] ^ (this->state[i] >> 27)) * UINT64_C(0x94D049BB133111EB);
+		this->state[i] = this->state[i] ^ (this->state[i] >> 31);
+	}
+}
+
+static inline uint64 rotl(const uint64 x, int k) {
+	return (x << k) | (x >> (64 - k));
+}
+
+float64 tr::Random::next()
+{
+	// theft
+	const uint64 result = this->state[0] + this->state[3];
+
+	const uint64 t = this->state[1] << 17;
+
+	this->state[2] ^= this->state[0];
+	this->state[3] ^= this->state[1];
+	this->state[1] ^= this->state[2];
+	this->state[0] ^= this->state[3];
+
+	this->state[2] ^= t;
+
+	this->state[3] = rotl(this->state[3], 45);
+
+	// not theft
+	// man is 0 to 1
+	// 18446744073709551616.0 is UINT64_MAX but with the last digit changed because
+	// clang was complaining
+	return (float64)result / 18446744073709551616.0;
+}

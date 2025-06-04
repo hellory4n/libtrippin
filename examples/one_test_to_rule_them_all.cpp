@@ -57,5 +57,9 @@ int main()
 	tr::log("look %i", sig->man[12]);
 	tr::log("oh look at what you've done now to me %i", ma->man[35]);
 
+	auto random = tr::Random();
+	tr::log("sogmarand %f", random.next(1.0, 1.4));
+	tr::log("sogmarand %li", random.next<int64>(1, 69'000'000'000));
+
 	tr::free();
 }

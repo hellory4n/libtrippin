@@ -28,6 +28,7 @@
 #include <cstdint>
 #include <cstddef>
 #include <cstdlib>
+#include <ctime>
 
 #if (defined(__GNUC__) || defined(__clang__)) && !defined(_WIN32)
 // counting starts at 1 lmao
@@ -393,6 +394,29 @@ struct Arena
 	// Makes sure there's enough space to fit `size`. Useful for when you're about to allocate a lot of
 	// objects and don't want it to try to figure out the pages 57399593895 times.
 	void prealloc(usize size);
+};
+
+// SO RANDOM LMAO HAHA implemented through xoshiro256+
+struct Random
+{
+private:
+	uint64_t state[4];
+
+public:
+	// Initializes the `tr::Random` with a seed
+	Random(int64 seed);
+	
+	// Initializes the `tr::Random` with the current time as the seed
+	Random() : Random(time(nullptr)) {}
+
+	// Returns a value from 0 to 1
+	float64 next();
+
+	// Returns a value in a range
+	template<typename T> T next(T min, T max)
+	{
+		return static_cast<T>((this->next() * max) + min);
+	}
 };
 
 }
