@@ -42,10 +42,12 @@ eng.option("debug", "true or false", function(val)
 	end
 end)
 
+local asan = false
 eng.option("asan", "if true, enables AddressSanitizer", function(val)
 	if val == "true" then
 		example_all:add_cflags("-fsanitize=address")
 		example_all:add_ldflags("-fsanitize=address")
+		asan = true
 	end
 end)
 
@@ -68,7 +70,12 @@ eng.recipe("run-one-test-to-rule-them-all", "Runs the example with everything ev
 	-- padding
 	print()
 	-- it could be just ./build/bin/example_all but then you would miss any panics that may happen
-	os.execute("gdb -q -ex \"break "..breakpoint.."\" -ex run -ex \"quit\" --args build/bin/example_all")
+	if not asan then
+		os.execute("gdb -q -ex \"break "..breakpoint.."\" -ex run -ex \"quit\" --args build/bin/example_all")
+	else
+		-- asan doesn't work with gdb
+		os.execute("./build/bin/example_all")
+	end
 end)
 
 eng.recipe("clean", "Cleans the project", function()

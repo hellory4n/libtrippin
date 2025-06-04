@@ -166,6 +166,7 @@ tr::ArenaPage::~ArenaPage()
 	if (this->buffer != nullptr) {
 		// full legal name because the tr namespace also has a function called free
 		std::free(this->buffer);
+		this->buffer = nullptr;
 	}
 }
 
