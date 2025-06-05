@@ -1,26 +1,26 @@
 /*
- * libtrippin v2.0.0
- *
- * Most biggest most massive standard library thing for C of all time
- * More information at https://github.com/hellory4n/libtrippin
- *
- * Copyright (C) 2025 by hellory4n <hellory4n@gmail.com>
- *
- * Permission to use, copy, modify, and/or distribute this
- * software for any purpose with or without fee is hereby
- * granted.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS
- * ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO
- * EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
- * INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,
- * WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE
- * USE OR PERFORMANCE OF THIS SOFTWARE.
- *
- */
+* libtrippin v2.0.0
+*
+* Most biggest most massive standard library thing for C of all time
+* More information at https://github.com/hellory4n/libtrippin
+*
+* Copyright (C) 2025 by hellory4n <hellory4n@gmail.com>
+*
+* Permission to use, copy, modify, and/or distribute this
+* software for any purpose with or without fee is hereby
+* granted.
+*
+* THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS
+* ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL
+* IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO
+* EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+* INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+* WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,
+* WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+* TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE
+* USE OR PERFORMANCE OF THIS SOFTWARE.
+*
+*/
 
 #ifndef _TRIPPIN_H
 #define _TRIPPIN_H
@@ -62,8 +62,8 @@ void init();
 void free();
 
 /*
- * LOGGING
- */
+* LOGGING
+*/
 
 namespace ConsoleColor {
 	// TODO colored output doesn't work on windows and i can't be bothered to fix it
@@ -102,8 +102,8 @@ TR_LOG_FUNC(1, 2) [[noreturn]] void panic(const char* fmt, ...);
 TR_LOG_FUNC(2, 3) void assert(bool x, const char* fmt, ...);
 
 /*
- * UTILITIES
- */
+* UTILITIES
+*/
 
 // Like how the spicy modern languages handle null
 template<typename T>
@@ -225,8 +225,8 @@ struct Pair
 };
 
 /*
- * MATH
- */
+* MATH
+*/
 
 // Vec2 lmao
 template<typename T>
@@ -688,6 +688,13 @@ struct Arena
 	void prealloc(usize size);
 };
 
+// This is just for iterators lmao
+template<typename T>
+struct ListItem {
+	usize idx;
+	T& val;
+};
+
 // List. Automagically chooses whether to use the stack or the heap, either with your own arena or its own
 // internal one. When deleted, it automatically deletes its items
 template<typename T>
@@ -701,6 +708,7 @@ public:
 	usize length;
 private:
 	// i know
+	// also rust propaganda
 	enum class ListAllocator : uint8 { STACK, OWNED_ARENA, BORROWED_ARENA } alloc;
 	T stack[STACK_BUFFER_SIZE];
 	struct {
@@ -767,11 +775,25 @@ public:
 	T& operator[](usize idx)
 	{
 		if (idx >= this->length) {
-			tr::panic("index out of bounds: tried to access an index of %zu in a tr::List<T> of only %zu",
-				idx, this->length);
+			tr::panic("tried to access an index of %zu in a tr::List<T> of only %zu", idx, this->length);
 		}
 		return this->buffer()[idx];
 	}
+
+	// fucking iterator
+	class Iterator {
+	public:
+		Iterator(T* ptr, usize index) : idx(index), ptr(ptr) {}
+		ListItem<T> operator*() const { return {this->idx, *this->ptr}; }
+		Iterator& operator++() { this->ptr++; this->idx++; return *this; }
+		bool operator!=(const Iterator& other) const { return ptr != other.ptr; }
+	private:
+		usize idx;
+		T* ptr;
+	};
+
+	Iterator begin() { return Iterator(this->buffer(), 0); }
+	Iterator end()   { return Iterator(this->buffer() + this->length, this->length); }
 };
 
 }

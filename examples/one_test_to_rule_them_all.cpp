@@ -66,11 +66,11 @@ int main()
 	tr::Vec2<int64> lerp = tr::lerp(lerp_a, lerp_b, 0.5);
 	tr::log("lerp vec2<int64>: %li, %li", lerp.x, lerp.y);
 
-	int64 items[] = {1, 2, 3, 4, 5};
+	int64 items[] = {11, 22, 33, 44, 55};
 	tr::List<int64> listmaballs(sizeof(items) / sizeof(int64), items);
 	// TODO iterators :(
-	for (usize i = 0; i < listmaballs.length; i++) {
-		tr::log("item %zu is %li", i, listmaballs[i]);
+	for (tr::ListItem<int64> item : listmaballs) {
+		tr::log("idx is %zu, val is %li", item.idx, item.val);
 	}
 
 	tr::free();
