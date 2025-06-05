@@ -511,6 +511,10 @@ tr::Arena::Arena(usize page_size)
 
 tr::Arena::~Arena()
 {
+	// likely uninitialized, likely intentional
+	// if it's not intentional then it'd already crashed with the other functions
+	if (this->page_size == 0) return;
+
 	ArenaPage* head = this->page;
 	while (head->prev.is_valid()) {
 		head = head->prev.unwrap();
@@ -525,6 +529,8 @@ tr::Arena::~Arena()
 
 void* tr::Arena::alloc(usize size)
 {
+	tr::assert(this->page_size != 0, "you doofus this arena is very likely uninitialized");
+
 	// does it fit in the current page?
 	if (this->page->available_space() >= size) {
 		void* val = (char*)this->page->buffer + this->page->alloc_pos;
@@ -567,6 +573,8 @@ void* tr::Arena::alloc(usize size)
 
 void tr::Arena::prealloc(usize size)
 {
+	tr::assert(this->page_size != 0, "you doofus this arena is very likely uninitialized");
+
 	// does it already fit?
 	if (this->page->available_space() >= size) {
 		return;

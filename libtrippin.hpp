@@ -28,6 +28,7 @@
 #include <cstdint>
 #include <cstddef>
 #include <cstdlib>
+#include <cstring>
 #include <ctime>
 
 #if (defined(__GNUC__) || defined(__clang__)) && !defined(_WIN32)
@@ -109,18 +110,25 @@ template<typename T>
 struct Maybe
 {
 private:
-	bool has_value;
 	union {
 		uint8_t waste_of_space;
 		T value;
 	};
+	bool has_value;
 
 public:
 	// Initializes a Maybe<T> as null
-	Maybe() : has_value(false), waste_of_space(0) {};
+	Maybe() : waste_of_space(0), has_value(false) {};
 
 	// Intializes a Maybe<T> with a value
-	Maybe(T val) : has_value(true), value(val) {};
+	Maybe(T val) : value(val), has_value(true) {};
+
+	~Maybe()
+	{
+		if (this->has_value) {
+			value.~T();
+		}
+	}
 
 	// If true, the maybe is, in fact, a definitely.
 	bool is_valid()
@@ -159,16 +167,16 @@ template<typename L, typename R>
 struct Either
 {
 private:
-	// False is left, true is right
-	bool active;
 	union {
 		L val_left;
 		R val_right;
 	};
+	// False is left, true is right
+	bool active;
 
 public:
-	Either(L left) : active(false), val_left(left) {};
-	Either(R right) : active(true), val_right(right) {};
+	Either(L left) : val_left(left), active(false) {};
+	Either(R right) : val_right(right), active(true) {};
 
 	~Either()
 	{
@@ -463,7 +471,7 @@ private:
 
 public:
 	// Initializes the `tr::Random` with a seed
-	Random(int64 seed);
+	explicit Random(int64 seed);
 
 	// Initializes the `tr::Random` with the current time as the seed
 	Random() : Random(time(nullptr)) {}
@@ -599,6 +607,7 @@ struct Matrix4x4
 
 	// Initializes an identity matrix.
 	static Matrix4x4 identity();
+
 	// man
 	static Matrix4x4 translate(float32 x, float32 y, float32 z);
 	static Matrix4x4 translate_in_place(float32 x, float32 y, float32 z);
@@ -639,7 +648,7 @@ struct ArenaPage
 	Maybe<ArenaPage*> next;
 	void* buffer;
 
-	ArenaPage(usize size);
+	explicit ArenaPage(usize size);
 	~ArenaPage();
 
 	// Returns how much space left the page has
@@ -654,9 +663,12 @@ struct Arena
 	usize page_size;
 	ArenaPage* page;
 
+	// This is just for the compiler to shut up
+	Arena() : page_size(0), page(nullptr) {}
+
 	// Initializes the arena. `page_size` is the base size for the buffers, you can have more buffers or
 	// bigger buffers.
-	Arena(usize page_size);
+	explicit Arena(usize page_size);
 
 	// Frees the arena. Note this doesn't call any destructors from structs you may have allocated, as I
 	// don't know how to do that.
@@ -674,6 +686,92 @@ struct Arena
 	// Makes sure there's enough space to fit `size`. Useful for when you're about to allocate a lot of
 	// objects and don't want it to try to figure out the pages 57399593895 times.
 	void prealloc(usize size);
+};
+
+// List. Automagically chooses whether to use the stack or the heap, either with your own arena or its own
+// internal one. When deleted, it automatically deletes its items
+template<typename T>
+struct List
+{
+	static constexpr usize STACK_BUFFER_SIZE = 256;
+
+	// c++ i hate you
+	// i just want the length to be at the start
+public:
+	usize length;
+private:
+	// i know
+	enum class ListAllocator : uint8 { STACK, OWNED_ARENA, BORROWED_ARENA } alloc;
+	T stack[STACK_BUFFER_SIZE];
+	struct {
+		Arena arena;
+		T* buffer;
+	} heap;
+public:
+
+	// The constructor with automagic capabilities.
+	explicit List(usize length) : length(length)
+	{
+		this->alloc = length >= STACK_BUFFER_SIZE ? ListAllocator::OWNED_ARENA : ListAllocator::STACK;
+
+		// help
+		if (this->alloc == ListAllocator::OWNED_ARENA) {
+			this->heap.arena = Arena(length * sizeof(T));
+			this->heap.buffer = this->heap.arena.alloc(length * sizeof(T));
+		}
+	}
+
+	// Initializes the list but forces it to be in an arena and this specific arena. Help.
+	explicit List(Arena* arena, usize length) : length(length)
+	{
+		this->alloc = ListAllocator::BORROWED_ARENA;
+		this->heap.arena = arena;
+		this->heap.buffer = arena->alloc(length * sizeof(T));
+	}
+
+	// Initializes the list from an array literal (it's probably gonna explode and die with anything else)
+	explicit List(usize length, T items[]) : length(length)
+	{
+		if (length < STACK_BUFFER_SIZE) {
+			this->alloc = ListAllocator::STACK;
+			memcpy(this->stack, items, sizeof(T) * length);
+		}
+		else {
+			this->alloc = ListAllocator::OWNED_ARENA;
+			this->heap.arena = Arena(sizeof(T) * length);
+			this->heap.buffer = reinterpret_cast<T*>(this->heap.arena.alloc(sizeof(T) * length));
+			memcpy(this->heap.buffer, items, sizeof(T) * length);
+		}
+	}
+
+	// c++ i hate you
+	~List()
+	{
+		if (this->alloc == ListAllocator::OWNED_ARENA){
+			this->heap.arena.~Arena();
+		}
+
+		// delete items
+		for (usize i = 0; i < this->length; i++) {
+			(*this)[i].~T();
+		}
+	};
+
+	// It returns the buffer.
+	T* buffer()
+	{
+		if (this->alloc != ListAllocator::STACK) return this->heap.buffer;
+		else return this->stack;
+	}
+
+	T& operator[](usize idx)
+	{
+		if (idx >= this->length) {
+			tr::panic("index out of bounds: tried to access an index of %zu in a tr::List<T> of only %zu",
+				idx, this->length);
+		}
+		return this->buffer()[idx];
+	}
 };
 
 }

@@ -66,5 +66,12 @@ int main()
 	tr::Vec2<int64> lerp = tr::lerp(lerp_a, lerp_b, 0.5);
 	tr::log("lerp vec2<int64>: %li, %li", lerp.x, lerp.y);
 
+	int64 items[] = {1, 2, 3, 4, 5};
+	tr::List<int64> listmaballs(sizeof(items) / sizeof(int64), items);
+	// TODO iterators :(
+	for (usize i = 0; i < listmaballs.length; i++) {
+		tr::log("item %zu is %li", i, listmaballs[i]);
+	}
+
 	tr::free();
 }
