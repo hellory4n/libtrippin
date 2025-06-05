@@ -129,10 +129,10 @@ public:
 	}
 
 	// Gets the value or panics if it's null
-	T* unwrap()
+	T& unwrap()
 	{
 		if (this->has_value) {
-			return &this->value;
+			return this->value;
 		}
 		else {
 			tr::panic("couldn't unwrap Maybe<T>");
@@ -186,17 +186,17 @@ public:
 	bool is_right() { return this->active; }
 
 	// Returns the left value, or panics if it's not left
-	L* left()
+	L& left()
 	{
 		if (this->active) tr::panic("Either<L, R> is right, not left");
-		else return &this->val_left;
+		else return this->val_left;
 	}
 
 	// Returns the right value, or panics if it's not right
-	R* right()
+	R& right()
 	{
 		if (this->active) tr::panic("Either<L, R> is right, not left");
-		else return &this->val_right;
+		else return this->val_right;
 	}
 };
 
@@ -244,6 +244,28 @@ struct Vec2
 	bool operator>=(Vec2 r) { return this->x >= r.x && this->y >= r.y;   }
 	bool operator<(Vec2 r)  { return this->x <  r.x && this->y <  r.y;   }
 	bool operator<=(Vec2 r) { return this->x <= r.x && this->y <= r.y;   }
+
+	static constexpr usize LENGTH = 2;
+	T& operator[](usize idx)
+	{
+		switch (idx) {
+			case 0:  return &this->x; break;
+			case 1:  return &this->y; break;
+			default: tr::panic("sir this is a vec2<T> not a vec%zu<T>", idx + 1); break;
+		}
+	}
+
+	T mul_inner(Vec2<T> b)
+	{
+		T p = 0;
+		for (usize i = 0; i < LENGTH; i++) {
+			p += b[i] * this[i];
+		}
+		return p;
+	}
+
+	float64 len() { return sqrt(this->mul_inner(this)); }
+	Vec2<T> normalize() { return this * (1 / this->len()); }
 };
 
 // c i hate you
@@ -285,6 +307,39 @@ struct Vec3
 	bool operator>=(Vec3 r) { return this->x >= r.x && this->y >= r.y && this->z >= r.z; }
 	bool operator<(Vec3 r)  { return this->x <  r.x && this->y <  r.y && this->z <  r.z; }
 	bool operator<=(Vec3 r) { return this->x <= r.x && this->y <= r.y && this->z <= r.z; }
+
+	static constexpr usize LENGTH = 3;
+	T& operator[](usize idx)
+	{
+		switch (idx) {
+			case 0:  return &this->x; break;
+			case 1:  return &this->y; break;
+			case 2:  return &this->z; break;
+			default: tr::panic("sir this is a vec3<T> not a vec%zu<T>", idx + 1); break;
+		}
+	}
+
+	T mul_inner(Vec3<T> b)
+	{
+		T p = 0;
+		for (usize i = 0; i < LENGTH; i++) {
+			p += b[i] * this[i];
+		}
+		return p;
+	}
+
+	float64 len() { return sqrt(this->mul_inner(this)); }
+	Vec3<T> normalize() { return this * (1 / this->len()); }
+
+	Vec3<T> reflect(Vec3<T> b)
+	{
+		Vec3<T> r;
+		T p = 2 * this->mul_inner(b);
+		for (usize i = 0; i < LENGTH; i++) {
+			r[i] = this[i] - p * b[i];
+		}
+		return r;
+	}
 };
 
 // c i hate you
@@ -327,6 +382,50 @@ struct Vec4
 	bool operator>=(Vec4 r) { return this->x >= r.x && this->y >= r.y && this->z >= r.z && this->w >= r.w; }
 	bool operator<(Vec4 r)  { return this->x <  r.x && this->y <  r.y && this->z <  r.z && this->w <  r.w; }
 	bool operator<=(Vec4 r) { return this->x <= r.x && this->y <= r.y && this->z <= r.z && this->w <= r.w; }
+
+	static constexpr usize LENGTH = 4;
+	T& operator[](usize idx)
+	{
+		switch (idx) {
+			case 0:  return &this->x; break;
+			case 1:  return &this->y; break;
+			case 2:  return &this->z; break;
+			case 3:  return &this->w; break;
+			default: tr::panic("sir this is a vec4<T> not a vec%zu<T>", idx + 1); break;
+		}
+	}
+
+	T mul_inner(Vec4<T> b)
+	{
+		T p = 0;
+		for (usize i = 0; i < LENGTH; i++) {
+			p += b[i] * this[i];
+		}
+		return p;
+	}
+
+	float64 len() { return sqrt(this->mul_inner(this)); }
+	Vec4<T> normalize() { return this * (1 / this->len()); }
+
+	Vec4<T> mul_cross(Vec4<T> b)
+	{
+		Vec4<T> r;
+		r[0] = this[1] * b[2] - this[2] * b[1];
+		r[1] = this[2] * b[0] - this[0] * b[2];
+		r[2] = this[0] * b[1] - this[1] * b[0];
+		r[3] = 1.f;
+		return r;
+	}
+
+	Vec4<T> reflect(Vec4<T> b)
+	{
+		Vec4<T> r;
+		T p = 2 * this->mul_inner(b);
+		for (usize i = 0; i < LENGTH; i++) {
+			r[i] = this[i] - p * b[i];
+		}
+		return r;
+	}
 };
 
 // c i hate you
@@ -474,6 +573,357 @@ template<typename T> inline constexpr T remap(T val, T src_min, T src_max, T dst
 {
 	return tr::lerp(dst_min, dst_max, tr::inverse_lerp(src_min, src_max, val));
 }
+
+// 🤓. This entire struct is stolen from linmath.h btw lmao
+template<typename T>
+struct Matrix4x4
+{
+	Vec4<T> values[4];
+
+	T& operator[](usize idx) { return this->values[idx]; }
+
+	// Initializes an identity matrix
+	static Matrix4x4<T> identity()
+	{
+		Matrix4x4<T> m;
+		for (usize i = 0; i < 4; i++) {
+			for (usize j = 0; j < 4; j++) {
+				m[i][j] = i == j ? 1 : 0;
+			}
+		}
+		return m;
+	}
+
+	Vec4<T> row(usize idx)
+	{
+		Vec4<T> r;
+		for (usize k = 0; k < 4; k++) {
+			r[k] = this[k][idx];
+		}
+		return r;
+	}
+
+	Vec4<T> column(usize idx)
+	{
+		Vec4<T> r;
+		for (usize k = 0; k < 4; k++) {
+			r[k] = this[idx][k];
+		}
+		return r;
+	}
+
+	Matrix4x4<T> transpose()
+	{
+		Matrix4x4<T> m;
+		for (usize j = 0; j < 4; j++) {
+			for (usize i = 0; i < 4; i++) {
+				m[i][j] = this[j][i];
+			}
+		}
+		return m;
+	}
+
+	Matrix4x4<T> operator+(Matrix4x4<T> b)
+	{
+		Matrix4x4<T> m;
+		for (usize i = 0; i < 4; i++) {
+			m[i] = this[i] + b[i];
+		}
+		return m;
+	}
+
+	Matrix4x4<T> operator-(Matrix4x4<T> b)
+	{
+		Matrix4x4<T> m;
+		for (usize i = 0; i < 4; i++) {
+			m[i] = this[i] - b[i];
+		}
+		return m;
+	}
+
+	Matrix4x4<T> operator*(T b)
+	{
+		Matrix4x4<T> m;
+		for (usize i = 0; i < 4; i++) {
+			m[i] = this[i] * b;
+		}
+		return m;
+	}
+
+	Matrix4x4<T> operator*(Vec3<T> b)
+	{
+		Matrix4x4<T> m;
+		m[0] = this[0] * b.x;
+		m[1] = this[1] * b.y;
+		m[2] = this[2] * b.z;
+		m[3] = this[3];
+		return m;
+	}
+
+	Matrix4x4<T> operator*(Matrix4x4<T> b)
+	{
+		Matrix4x4<T> m, temp;
+		for (usize c = 0; c < 4; c++) {
+			for (usize r = 0; r < 4; r++) {
+				temp[c][r] = 0;
+				for (usize k = 0; k < 4; k++) {
+					temp[c][r] += this[k][r] * b[c][k];
+				}
+			}
+		}
+		return m;
+	}
+
+	Matrix4x4<T> operator*(Vec4<T> b)
+	{
+		Vec4<T> r;
+		for (usize j = 0; j < 4; j++) {
+			r[j] = 0;
+			for (usize i = 0; i < 4; i++) {
+				r[j] += this[i][j] * b[i];
+			}
+		}
+		return r;
+	}
+
+	Matrix4x4<T> translate(T x, T y, T z)
+	{
+		Matrix4x4<T> m = Matrix4x4<T>::identity();
+		m[3][0] = x;
+		m[3][1] = y;
+		m[3][2] = z;
+		return m;
+	}
+
+	Matrix4x4<T> translate_in_place(T x, T y, T z)
+	{
+		Matrix4x4<T> m = Matrix4x4<T>::identity();
+		Vec4<T> t = Vec4<T>(x, y, z, 0);
+		Vec4<T> r;
+		for (usize i = 0; i < 4; i++) {
+			Vec4<T> r = m.row(i);
+			m[3][i] += r.mul_inner(t);
+		}
+		return m;
+	}
+
+	static Matrix4x4<T> from_vec3_mul_outer(Vec3<T> a, Vec3<T> b)
+	{
+		Matrix4x4<T> m;
+		for(usize i = 0; i < 4; i++) {
+			for(usize j = 0; j < 4; j++) {
+				m[i][j] = i < 3 && j < 3 ? a[i] * b[j] : 0;
+			}
+		}
+		return m;
+	}
+
+	Matrix4x4<T> rotate(T x, T y, T z, float64 radians)
+	{
+		float64 s = sin(radians);
+		float64 c = cos(radians);
+		Vec3<T> u = Vec3<T>(x, y, z);
+		Matrix4x4<T> R;
+
+		if (u.len() > 1e-4) {
+			u = u.normalize();
+			Matrix4x4<T> t = Matrix4x4<T>::from_vec3_mul_outer(u, u);
+
+			Matrix4x4<T> S = {
+				{    0,  u[2], -u[1], 0},
+				{-u[2],     0,  u[0], 0},
+				{ u[1], -u[0],     0, 0},
+				{    0,     0,     0, 0}
+			};
+			S *= s;
+
+			Matrix4x4<T> C = Matrix4x4<T>::identity();
+			C -= t;
+			C *= c;
+
+			t += C;
+			t += S;
+
+			t[3][3] = 1;
+			R = this * t;
+		} else {
+			R = this;
+		}
+		return R;
+	}
+
+	Matrix4x4<T> rotate_x(float64 radians)
+	{
+		float64 s = sin(radians);
+		float64 c = cos(radians);
+		Matrix4x4<T> R = {
+			{1, 0, 0, 0},
+			{0, c, s, 0},
+			{0, -s, c, 0},
+			{0, 0, 0, 1}
+		};
+		return this * R;
+	}
+
+	Matrix4x4<T> rotate_y(float64 radians)
+	{
+		float64 s = sin(radians);
+		float64 c = cos(radians);
+		Matrix4x4<T> R = {
+			{c, 0, -s, 0},
+			{0, 1, 0, 0},
+			{s, 0, c, 0},
+			{0, 0, 0, 1}
+		};
+		return this * R;
+	}
+
+	Matrix4x4<T> rotate_z(float64 radians)
+	{
+		float64 s = sin(radians);
+		float64 c = cos(radians);
+		Matrix4x4<T> R = {
+			{c, s, 0, 0},
+			{-s, c, 0, 0},
+			{0, 0, 1, 0},
+			{0, 0, 0, 1}
+		};
+		return this * R;
+	}
+
+	Matrix4x4<T> invert()
+	{
+		Matrix4x4<T> m;
+		T s[6];
+		T c[6];
+		s[0] = this[0][0]*this[1][1] - this[1][0]*this[0][1];
+		s[1] = this[0][0]*this[1][2] - this[1][0]*this[0][2];
+		s[2] = this[0][0]*this[1][3] - this[1][0]*this[0][3];
+		s[3] = this[0][1]*this[1][2] - this[1][1]*this[0][2];
+		s[4] = this[0][1]*this[1][3] - this[1][1]*this[0][3];
+		s[5] = this[0][2]*this[1][3] - this[1][2]*this[0][3];
+
+		c[0] = this[2][0]*this[3][1] - this[3][0]*this[2][1];
+		c[1] = this[2][0]*this[3][2] - this[3][0]*this[2][2];
+		c[2] = this[2][0]*this[3][3] - this[3][0]*this[2][3];
+		c[3] = this[2][1]*this[3][2] - this[3][1]*this[2][2];
+		c[4] = this[2][1]*this[3][3] - this[3][1]*this[2][3];
+		c[5] = this[2][2]*this[3][3] - this[3][2]*this[2][3];
+
+		float idet = 1.0f/( s[0]*c[5]-s[1]*c[4]+s[2]*c[3]+s[3]*c[2]-s[4]*c[1]+s[5]*c[0] );
+
+		m[0][0] = ( this[1][1] * c[5] - this[1][2] * c[4] + this[1][3] * c[3]) * idet;
+		m[0][1] = (-this[0][1] * c[5] + this[0][2] * c[4] - this[0][3] * c[3]) * idet;
+		m[0][2] = ( this[3][1] * s[5] - this[3][2] * s[4] + this[3][3] * s[3]) * idet;
+		m[0][3] = (-this[2][1] * s[5] + this[2][2] * s[4] - this[2][3] * s[3]) * idet;
+
+		m[1][0] = (-this[1][0] * c[5] + this[1][2] * c[2] - this[1][3] * c[1]) * idet;
+		m[1][1] = ( this[0][0] * c[5] - this[0][2] * c[2] + this[0][3] * c[1]) * idet;
+		m[1][2] = (-this[3][0] * s[5] + this[3][2] * s[2] - this[3][3] * s[1]) * idet;
+		m[1][3] = ( this[2][0] * s[5] - this[2][2] * s[2] + this[2][3] * s[1]) * idet;
+
+		m[2][0] = ( this[1][0] * c[4] - this[1][1] * c[2] + this[1][3] * c[0]) * idet;
+		m[2][1] = (-this[0][0] * c[4] + this[0][1] * c[2] - this[0][3] * c[0]) * idet;
+		m[2][2] = ( this[3][0] * s[4] - this[3][1] * s[2] + this[3][3] * s[0]) * idet;
+		m[2][3] = (-this[2][0] * s[4] + this[2][1] * s[2] - this[2][3] * s[0]) * idet;
+
+		m[3][0] = (-this[1][0] * c[3] + this[1][1] * c[1] - this[1][2] * c[0]) * idet;
+		m[3][1] = ( this[0][0] * c[3] - this[0][1] * c[1] + this[0][2] * c[0]) * idet;
+		m[3][2] = (-this[3][0] * s[3] + this[3][1] * s[1] - this[3][2] * s[0]) * idet;
+		m[3][3] = ( this[2][0] * s[3] - this[2][1] * s[1] + this[2][2] * s[0]) * idet;
+
+		return m;
+	}
+
+	Matrix4x4<T> orthonormalize()
+	{
+		Matrix4x4<T> R = this;
+		T s = 1;
+		Vec3<T> h;
+
+		R[2] = Vec4<T>(Vec3<T>(R[2].x, R[2].y, R[2].z).normalize(), R[2].w);
+
+		s = Vec3<T>(R[1].x, R[1].y, R[1].z).mul_inner(Vec3<T>(R[2].x, R[2].y, R[3]));
+		h = Vec3<T>(R[2].x, R[2].y, R[2].z) * s;
+		R[1] = Vec4<T>(Vec3<T>(R[1].x, R[1].y, R[1].z) - h, R[1].w);
+		R[1] = Vec4<T>(Vec3<T>(R[1].x, R[1].y, R[1].z).normalize(), R[1].w);
+
+		s = Vec3<T>(R[0].x, R[0].y, R[0].z).mul_inner(Vec3<T>(R[2].x, R[2].y, R[2].z));
+		h = R[2] * s;
+		R[0] = Vec3<T>(R[0].x, R[0].y, R[0].z) - h;
+
+		s = Vec3<T>(R[0].x, R[0].y, R[0].z).mul_inner(Vec3<T>(R[1].x, R[1].y, R[1].z));
+		h = Vec3<T>(R[1].x, R[1].y, R[1].z) * s;
+		R[0] = Vec4<T>(Vec3<T>(R[0].x, R[0].y, R[0].z) - h, R[0].w);
+		R[0] = Vec4<T>(Vec3<T>(R[0].x, R[0].y, R[0].z).normalize(), R[0].w);
+
+		return R;
+	}
+
+	static Matrix4x4<T> frustum(T left, T right, T bottom, T top, T near, T far)
+	{
+		Matrix4x4<T> m;
+		m[0][0] = 2.f*near/(right-left);
+		m[0][1] = m[0][2] = m[0][3] = 0.f;
+
+		m[1][1] = 2.f*near/(top-bottom);
+		m[1][0] = m[1][2] = m[1][3] = 0.f;
+
+		m[2][0] = (right+left)/(right-left);
+		m[2][1] = (top+bottom)/(top-bottom);
+		m[2][2] = -(far+near)/(far-near);
+		m[2][3] = -1.f;
+
+		m[3][2] = -2.f*(far*near)/(far-near);
+		m[3][0] = m[3][1] = m[3][3] = 0.f;
+		return m;
+	}
+
+	static Matrix4x4<T> ortho(T left, T right, T bottom, T top, T near, T far)
+	{
+		Matrix4x4<T> m;
+		m[0][0] = 2.f/(right-left);
+		m[0][1] = m[0][2] = m[0][3] = 0.f;
+
+		m[1][1] = 2.f/(top-bottom);
+		m[1][0] = m[1][2] = m[1][3] = 0.f;
+
+		m[2][2] = -2.f/(far-near);
+		m[2][0] = m[2][1] = m[2][3] = 0.f;
+
+		m[3][0] = -(right+left)/(right-left);
+		m[3][1] = -(top+bottom)/(top-bottom);
+		m[3][2] = -(far+near)/(far-near);
+		m[3][3] = 1.f;
+		return m;
+	}
+
+	static Matrix4x4<T> perspective(float64 fovy, float64 aspect, float64 near, float64 far)
+	{
+		Matrix4x4<T> m;
+		const float64 a = 1.f / tanf(fovy / 2.f);
+
+		m[0][0] = a / aspect;
+		m[0][1] = 0.f;
+		m[0][2] = 0.f;
+		m[0][3] = 0.f;
+
+		m[1][0] = 0.f;
+		m[1][1] = a;
+		m[1][2] = 0.f;
+		m[1][3] = 0.f;
+
+		m[2][0] = 0.f;
+		m[2][1] = 0.f;
+		m[2][2] = -((far + near) / (far - near));
+		m[2][3] = -1.f;
+
+		m[3][0] = 0.f;
+		m[3][1] = 0.f;
+		m[3][2] = -((2.f * far * near) / (far - near));
+		m[3][3] = 0.f;
+	}
+};
 
 // Converts kilobytes to bytes
 inline constexpr usize kb_to_bytes(usize x) { return x * 1024; }

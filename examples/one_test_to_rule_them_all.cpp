@@ -28,12 +28,12 @@ int main()
 	// maybe.unwrap();
 	maybe = tr::Maybe<int32>(57);
 	if (maybe.is_valid()) {
-		tr::log("perchance %i", *maybe.unwrap());
+		tr::log("perchance %i", maybe.unwrap());
 	}
 
 	auto it_depends_yknow = tr::Either<int32, bool>(64);
 	if (it_depends_yknow.is_left()) {
-		tr::log("left: %i", *it_depends_yknow.left());
+		tr::log("left: %i", it_depends_yknow.left());
 	}
 	it_depends_yknow.right();
 
