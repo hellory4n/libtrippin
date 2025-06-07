@@ -653,8 +653,6 @@ struct ArenaPage
 
 	// Returns how much space left the page has
 	usize available_space();
-
-	// TODO resize(usize new_size); (it's for vectors and hashmaps and whatever the fuck)
 };
 
 // Life changing allocator.
@@ -696,7 +694,7 @@ struct ListItem {
 };
 
 // List. Automagically chooses whether to use the stack or the heap, either with your own arena or its own
-// internal one. When deleted, it automatically deletes its items
+// internal one. When deleted, it automatically deletes its items.
 template<typename T>
 struct List
 {
@@ -704,15 +702,20 @@ struct List
 
 	// c++ i hate you
 	// i just want the length to be at the start
+	// TODO this is probably some shitty alignment
+	// TODO does the standard even allow this?
 public:
+	// How many items the list has
 	usize length;
+	// How many items the list can fit before resizing
+	usize capacity;
 private:
 	// i know
 	// also rust propaganda
-	enum class ListAllocator : uint8 { STACK, OWNED_ARENA, BORROWED_ARENA } alloc;
+	enum class ListAllocator: uint8 { STACK, OWNED_ARENA, BORROWED_ARENA } alloc;
 	T stack[STACK_BUFFER_SIZE];
 	struct {
-		Arena arena;
+		Arena* arena;
 		T* buffer;
 	} heap;
 public:
@@ -724,17 +727,20 @@ public:
 
 		// help
 		if (this->alloc == ListAllocator::OWNED_ARENA) {
-			this->heap.arena = Arena(length * sizeof(T));
-			this->heap.buffer = this->heap.arena.alloc(length * sizeof(T));
+			this->length = length;
+			this->heap.arena = new Arena(length * sizeof(T));
+			this->heap.buffer = reinterpret_cast<T*>(this->heap.arena->alloc(length * sizeof(T)));
+		}
+		else {
+			this->capacity = STACK_BUFFER_SIZE;
 		}
 	}
 
 	// Initializes the list but forces it to be in an arena and this specific arena. Help.
-	explicit List(Arena* arena, usize length) : length(length)
+	explicit List(Arena* arena, usize length) : length(length), capacity(length)
 	{
 		this->alloc = ListAllocator::BORROWED_ARENA;
-		this->heap.arena = arena;
-		this->heap.buffer = arena->alloc(length * sizeof(T));
+		this->heap.buffer = reinterpret_cast<T*>(arena->alloc(length * sizeof(T)));
 	}
 
 	// Initializes the list from an array literal (it's probably gonna explode and die with anything else)
@@ -743,11 +749,13 @@ public:
 		if (length < STACK_BUFFER_SIZE) {
 			this->alloc = ListAllocator::STACK;
 			memcpy(this->stack, items, sizeof(T) * length);
+			this->capacity = STACK_BUFFER_SIZE;
 		}
 		else {
+			this->capacity = length;
 			this->alloc = ListAllocator::OWNED_ARENA;
-			this->heap.arena = Arena(sizeof(T) * length);
-			this->heap.buffer = reinterpret_cast<T*>(this->heap.arena.alloc(sizeof(T) * length));
+			this->heap.arena = new Arena(sizeof(T) * length);
+			this->heap.buffer = reinterpret_cast<T*>(this->heap.arena->alloc(length * sizeof(T)));
 			memcpy(this->heap.buffer, items, sizeof(T) * length);
 		}
 	}
@@ -756,7 +764,7 @@ public:
 	~List()
 	{
 		if (this->alloc == ListAllocator::OWNED_ARENA){
-			this->heap.arena.~Arena();
+			delete this->heap.arena;
 		}
 
 		// delete items
@@ -780,8 +788,51 @@ public:
 		return this->buffer()[idx];
 	}
 
+	// TODO use pages like the arena, then indexing internally works by having a separate array where each
+	// index goes to a page, so then you just index there
+
+	// Adds an item to the list, and resizes the list if necessary.
+	void add(T val)
+	{
+		if (this->alloc == ListAllocator::STACK) {
+			// use the stack while we can
+			if (this->length + 1 < STACK_BUFFER_SIZE) {
+				this->stack[this->length] = val;
+				this->length++;
+			}
+			// move the crap to an arena
+			else {
+				this->alloc = ListAllocator::OWNED_ARENA;
+				this->capacity = STACK_BUFFER_SIZE * 2;
+				this->heap.arena = new Arena(sizeof(T) * this->capacity);
+				this->heap.buffer = reinterpret_cast<T*>(this->heap.arena->alloc(this->capacity * sizeof(T)));
+				memcpy(this->heap.buffer, this->stack, sizeof(T) * this->length);
+
+				this->heap.buffer[this->length] = val;
+				this->length++;
+			}
+		}
+		else {
+			// does it already fit?
+			if (this->length < this->capacity) {
+				this->heap.buffer[this->length] = val;
+				this->length++;
+			}
+			// reallocate deez
+			else {
+				this->capacity = this->length * 2;
+				T* old_buffer = this->heap.buffer;
+				this->heap.buffer = reinterpret_cast<T*>(this->heap.arena->alloc(this->capacity * sizeof(T)));
+				memcpy(this->heap.buffer, old_buffer, sizeof(T) * this->length);
+
+				this->heap.buffer[this->length] = val;
+				this->length++;
+			}
+		}
+	}
+
 	// fucking iterator
-	class Iterator {
+	struct Iterator {
 	public:
 		Iterator(T* ptr, usize index) : idx(index), ptr(ptr) {}
 		ListItem<T> operator*() const { return {this->idx, *this->ptr}; }

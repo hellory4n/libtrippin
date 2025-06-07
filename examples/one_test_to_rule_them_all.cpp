@@ -1,4 +1,5 @@
 #include "libtrippin.hpp"
+#include <cstdio>
 
 int main()
 {
@@ -68,10 +69,16 @@ int main()
 
 	int64 items[] = {11, 22, 33, 44, 55};
 	tr::List<int64> listmaballs(sizeof(items) / sizeof(int64), items);
-	// TODO iterators :(
 	for (tr::ListItem<int64> item : listmaballs) {
 		tr::log("idx is %zu, val is %li", item.idx, item.val);
 	}
+	for (int64 man = 66; man < 11 * 300; man++) {
+		listmaballs.add(man);
+	}
+	for (tr::ListItem<int64> item : listmaballs) {
+		printf("%li, ", item.val);
+	}
+	printf("\n");
 
 	tr::free();
 }

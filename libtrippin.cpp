@@ -478,6 +478,8 @@ tr::Matrix4x4 tr::Matrix4x4::perspective(float32 fovy, float32 aspect, float32 n
 
 tr::ArenaPage::ArenaPage(usize size)
 {
+	tr::assert(size != 0, "page size can't be 0");
+
 	this->buffer = malloc(size);
 	this->size = size;
 	this->alloc_pos = 0;
@@ -533,7 +535,7 @@ void* tr::Arena::alloc(usize size)
 
 	// does it fit in the current page?
 	if (this->page->available_space() >= size) {
-		void* val = (char*)this->page->buffer + this->page->alloc_pos;
+		void* val = (uint8*)this->page->buffer + this->page->alloc_pos;
 		this->page->alloc_pos += size;
 		return val;
 	}
@@ -542,7 +544,7 @@ void* tr::Arena::alloc(usize size)
 	if (this->page->prev.is_valid()) {
 		ArenaPage* prev_page = this->page->prev.unwrap();
 		if (prev_page->available_space() >= size) {
-			void* val = (char*)prev_page->buffer + prev_page->alloc_pos;
+			void* val = (uint8*)prev_page->buffer + prev_page->alloc_pos;
 			prev_page->alloc_pos += size;
 			return val;
 		}
@@ -555,7 +557,7 @@ void* tr::Arena::alloc(usize size)
 		this->page->next = new_page;
 		this->page = new_page;
 
-		void* val = (char*)new_page->buffer + new_page->alloc_pos;
+		void* val = (uint8*)new_page->buffer + new_page->alloc_pos;
 		new_page->alloc_pos += size;
 		return val;
 	}
@@ -566,7 +568,7 @@ void* tr::Arena::alloc(usize size)
 	this->page->next = new_page;
 	this->page = new_page;
 
-	void* val = (char*)new_page->buffer + new_page->alloc_pos;
+	void* val = (uint8*)new_page->buffer + new_page->alloc_pos;
 	new_page->alloc_pos += size;
 	return val;
 }
