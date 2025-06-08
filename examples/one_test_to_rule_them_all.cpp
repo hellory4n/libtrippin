@@ -41,7 +41,7 @@ int main()
 	auto should_i_call_it_both = tr::Pair<int64, float64>(1, 2.2);
 	tr::log("pair left: %li, pair right %f", should_i_call_it_both.left, should_i_call_it_both.right);
 
-	auto arena = tr::Arena(tr::kb_to_bytes(2));
+	tr::Ref<tr::Arena> arena = new tr::Arena(tr::kb_to_bytes(2));
 	// arena.prealloc(tr::mb_to_bytes(1));
 	struct ComicallyLargeStruct {
 		uint8 man[1024];
@@ -50,8 +50,8 @@ int main()
 		uint8 man[4096];
 	};
 	// if it works it won't segfault
-	auto* sig = arena.alloc<ComicallyLargeStruct>();
-	auto* ma = arena.alloc<EvenLargerStruct>();
+	auto* sig = arena->alloc<ComicallyLargeStruct>();
+	auto* ma = arena->alloc<EvenLargerStruct>();
 	tr::log("it did allocate");
 	sig->man[12] = 221;
 	ma->man[35] = 54;
@@ -68,24 +68,24 @@ int main()
 	tr::log("lerp vec2<int64>: %li, %li", lerp.x, lerp.y);
 
 	int64 items[] = {11, 22, 33, 44, 55};
-	tr::List<int64> listmaballs(sizeof(items) / sizeof(int64), items);
-	for (tr::ListItem<int64> item : listmaballs) {
+	tr::Ref<tr::List<int64>> listmaballs = new tr::List<int64>(sizeof(items) / sizeof(int64), items);
+	for (tr::ListItem<int64> item : *listmaballs) {
 		tr::log("idx is %zu, val is %li", item.idx, item.val);
 	}
 	for (int64 man = 66; man < 11 * 300; man++) {
-		listmaballs.add(man);
+		listmaballs->add(man);
 	}
-	for (tr::ListItem<int64> item : listmaballs) {
+	for (tr::ListItem<int64> item : *listmaballs) {
 		printf("%li, ", item.val);
 	}
 	printf("\n");
 
-	tr::String str = "sigma";
-	str = str.concat(" balls");
-	tr::log("str: %s (length %zu)", str.buffer(), str.length());
+	// tr::String str = "sigma";
+	// str = str.concat(" balls");
+	// tr::log("str: %s (length %zu)", str.buffer(), str.length());
 
-	tr::String sigmasigmas = tr::sprintf(256, "sigma sigmas: %i", 69);
-	tr::log("%s", sigmasigmas.buffer());
+	// tr::String sigmasigmas = tr::sprintf(256, "sigma sigmas: %i", 69);
+	// tr::log("%s", sigmasigmas.buffer());
 
 	tr::free();
 }

@@ -52,6 +52,8 @@ void tr::use_log_file(const char* path)
 	tr::liblog("using log file \"%s\"", path);
 }
 
+// TODO logging should use tr::String
+
 static void __log(const char* color, const char* prefix, bool panic, const char* fmt, va_list arg)
 {
 	// you understand mechanical hands are the ruler of everything (ah)
@@ -515,6 +517,19 @@ float64 tr::Random::next()
 	return static_cast<float64>(result) / 18446744073709551616.0;
 }
 
+void tr::RefCounted::retain() const
+{
+	this->count++;
+}
+
+void tr::RefCounted::release() const
+{
+	this->count--;
+	if (this->count <= 0) {
+		delete this;
+	}
+}
+
 tr::ArenaPage::ArenaPage(usize size)
 {
 	tr::assert(size != 0, "page size can't be 0");
@@ -636,7 +651,7 @@ void tr::Arena::prealloc(usize size)
 	this->page = new_page;
 }
 
-tr::String::String(usize len)
+/*tr::String::String(usize len)
 {
 	this->array = List<char>(len + 1);
 }
@@ -662,34 +677,35 @@ const char& tr::String::operator[](usize idx)
 	return this->array[idx];
 }
 
-bool tr::String::operator==(tr::String other)
+bool tr::String::operator==(const tr::String& other) const
 {
 	return strncmp(this->buffer(), other.buffer(), this->length()) == 0;
 }
 
-bool tr::String::operator!=(tr::String other)
+bool tr::String::operator!=(const tr::String& other) const
 {
 	return !(*this == other);
 }
 
-char* tr::String::buffer()
+char* tr::String::buffer() const
 {
-	return this->array.buffer();
+	// why.
+	return const_cast<List<char>*>(&this->array)->buffer();
 }
 
-usize tr::String::length()
+usize tr::String::length() const
 {
 	return this->array.length - 1;
 }
 
-tr::String tr::String::copy()
+tr::String tr::String::copy() const
 {
 	tr::String str;
 	str.array = this->array.copy();
 	return str;
 }
 
-tr::String tr::String::concat(tr::String other)
+tr::String tr::String::concat(const tr::String& other) const
 {
 	tr::String str;
 	str.array = List<char>((this->length() + other.length()) + 1);
@@ -708,4 +724,4 @@ TR_LOG_FUNC(2, 3) tr::String tr::sprintf(usize maxlen, const char* fmt, ...)
 	va_end(args);
 	tr::log("len: %zu", str.length());
 	return str;
-}
+}*/

@@ -632,6 +632,70 @@ struct Matrix4x4
 	Matrix4x4 invert();
 };
 
+// Implements reference counting through inheritance. Note you have to wrap your values in a `tr::Ref<T>`
+// so it's not esoteric to use.
+class RefCounted
+{
+	mutable usize count = 0;
+
+public:
+	RefCounted() : count(0) {}
+	virtual ~RefCounted() {}
+
+	void retain() const;
+	void release() const;
+};
+
+template<typename T>
+class Ref
+{
+	T* ptr;
+
+public:
+	Ref(T* ptr = nullptr) : ptr(ptr)
+	{
+		if (ptr == nullptr) return;
+		dynamic_cast<RefCounted*>(ptr)->retain();
+	}
+
+	Ref(const Ref& ref) : ptr(ref)
+	{
+		if (ref == nullptr) return;
+		dynamic_cast<RefCounted*>(ref.ptr)->retain();
+	}
+
+	~Ref()
+	{
+		if (this->ptr == nullptr) return;
+		dynamic_cast<RefCounted*>(this->ptr)->release();
+	}
+
+	Ref& operator=(T* ptr)
+	{
+		// idk man i stole this from some old website
+		if (ptr != nullptr) dynamic_cast<RefCounted*>(ptr)->retain();
+		if (this->ptr != nullptr) dynamic_cast<RefCounted*>(this->ptr)->retain();
+		this->ptr = ptr;
+		return (*this);
+	}
+
+	// Returns the crap pointer.
+	T* get() const
+	{
+		return this->ptr;
+	}
+
+	// help
+	T* operator->() const              { return this->ptr; }
+	T& operator*() const               { return *this->ptr; }
+	operator T*() const                { return this->ptr; }
+	operator bool() const              { return this->ptr != nullptr; }
+	bool operator==(const Ref<T>& ref) { return this->ptr == ref.ptr; }
+	bool operator==(const T* ptr)      { return this->ptr == ptr; }
+	bool operator!=(const Ref<T>& ref) { return this->ptr != ref.ptr; }
+	bool operator!=(const T* ptr)      { return this->ptr != ptr; }
+};
+
 // Converts kilobytes to bytes
 inline constexpr usize kb_to_bytes(usize x) { return x * 1024; }
 // Converts megabytes to bytes
@@ -640,8 +704,9 @@ inline constexpr usize mb_to_bytes(usize x) { return kb_to_bytes(x) * 1024; }
 inline constexpr usize gb_to_bytes(usize x) { return mb_to_bytes(x) * 1024; }
 
 // Arenas are made of many buffers.
-struct ArenaPage
+class ArenaPage
 {
+public:
 	usize size = 0;
 	usize alloc_pos = 0;
 	Maybe<ArenaPage*> prev = nullptr;
@@ -656,8 +721,9 @@ struct ArenaPage
 };
 
 // Life changing allocator.
-struct Arena
+class Arena : public RefCounted
 {
+public:
 	usize page_size = 0;
 	ArenaPage* page = nullptr;
 
@@ -696,15 +762,14 @@ struct ListItem {
 // List. Automagically chooses whether to use the stack or the heap, either with your own arena or its own
 // internal one. When deleted, it automatically deletes its items.
 template<typename T>
-struct List
+class List : public RefCounted
 {
+public:
 	static constexpr usize STACK_BUFFER_SIZE = 256;
 
 	// c++ i hate you
 	// i just want the length to be at the start
 	// TODO this is probably some bad alignment
-	// TODO does the standard even allow this?
-public:
 	// How many items the list has
 	usize length;
 	// How many items the list can fit before resizing
@@ -718,9 +783,16 @@ private:
 		Arena* arena;
 		T* buffer;
 	} heap;
+	// TODO does the standard even allow this? (switching between public then private then public)
 public:
 	// c++ i hate you
 	List() : List(1) {}
+
+	// c++ i hate you
+	List(List const&) = delete;
+	List& operator=(List const&) = delete;
+	List(List&&) = default;
+	List& operator=(List&&)= default;
 
 	// The constructor with automagic capabilities.
 	explicit List(usize length) : length(length)
@@ -778,13 +850,14 @@ public:
 	};
 
 	// It returns the buffer.
-	T* buffer()
+	T* buffer() const
 	{
 		if (this->alloc != ListAllocator::STACK) return this->heap.buffer;
-		else return this->stack;
+		// shut up
+		else return const_cast<T*>(this->stack);
 	}
 
-	T& operator[](usize idx)
+	T& operator[](usize idx) const
 	{
 		if (idx >= this->length) {
 			tr::panic("tried to access an index of %zu in a tr::List<T> of only %zu", idx, this->length);
@@ -836,15 +909,19 @@ public:
 	}
 
 	// Duplicates the list.
-	List<T> copy()
+	List<T> copy() const
 	{
 		List<T> new_list(this->length);
-		memcpy(new_list.buffer(), this->buffer(), sizeof(T) * this->length);
+		// buffer() doesn't work here lamo
+		// kill me
+		T* this_buffer = this->alloc != ListAllocator::STACK ? this->heap.buffer : this->stack;
+		T* new_buffer = new_list.alloc != ListAllocator::STACK ? new_list.heap.buffer : new_list.stack;
+		memcpy(new_buffer, this_buffer, sizeof(T) * this->length);
 		return new_list;
 	}
 
 	// Duplicates the list to a specific arena.
-	List<T> copy(Arena* arena)
+	List<T> copy(Arena* arena) const
 	{
 		List<T> new_list(arena, this->length);
 		memcpy(new_list.buffer(), this->buffer(), sizeof(T) * this->length);
@@ -869,7 +946,7 @@ public:
 
 // I love strinsgs. Note the string is immutable, so any string operations e.g. `.concat()` don't modify
 // the original strings.
-struct String {
+/*struct String {
 private:
 	List<char> array;
 
@@ -884,27 +961,33 @@ public:
 	// Initializes a string with a specific size. All the characters are left as null terminators.
 	explicit String(usize len);
 
+	// c++ i hate you
+	String(String const&) = delete;
+	String& operator=(String const&) = delete;
+	String(String&&) = default;
+	String& operator=(String&&) = default;
+
 	const char& operator[](usize idx);
-	bool operator==(String other);
-	bool operator!=(String other);
+	bool operator==(const String& other) const;
+	bool operator!=(const String& other) const;
 
 	// Returns the buffer of the string.
-	char* buffer();
+	char* buffer() const;
 
 	// Returns the length of the string, excluding the null terminator.
-	usize length();
+	usize length() const;
 
 	// Duplicates the string.
-	String copy();
+	String copy() const;
 
 	// Concatenates 2 strings.
-	String concat(String other);
+	String concat(const String& other) const;
 
 	// TODO 59 billion trillion more functions
 };
 
 // It's like sprintf but with `tr::String`
-TR_LOG_FUNC(2, 3) tr::String sprintf(usize maxlen, const char* fmt, ...);
+TR_LOG_FUNC(2, 3) tr::String sprintf(usize maxlen, const char* fmt, ...);*/
 
 }
 
