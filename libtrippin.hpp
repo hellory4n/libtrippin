@@ -189,14 +189,14 @@ public:
 	}
 
 	// If true, it's left. Else, it's right.
-	bool is_left() { return !this->active; }
+	bool is_left() { return this->active; }
 	// If true, it's right. Else, it's left.
-	bool is_right() { return this->active; }
+	bool is_right() { return !this->active; }
 
 	// Returns the left value, or panics if it's not left
 	L& left()
 	{
-		if (this->active) tr::panic("Either<L, R> is right, not left");
+		if (!this->active) tr::panic("Either<L, R> is right, not left");
 		else return this->val_left;
 	}
 
@@ -467,7 +467,7 @@ template<> inline Vec4<float32> Vec4<float32>::operator%(float32 r) {
 struct Random
 {
 private:
-	uint64_t state[4];
+	uint64 state[4];
 
 public:
 	// Initializes the `tr::Random` with a seed
@@ -642,11 +642,11 @@ inline constexpr usize gb_to_bytes(usize x) { return mb_to_bytes(x) * 1024; }
 // Arenas are made of many buffers.
 struct ArenaPage
 {
-	usize size;
-	usize alloc_pos;
-	Maybe<ArenaPage*> prev;
-	Maybe<ArenaPage*> next;
-	void* buffer;
+	usize size = 0;
+	usize alloc_pos = 0;
+	Maybe<ArenaPage*> prev = nullptr;
+	Maybe<ArenaPage*> next = nullptr;
+	void* buffer = nullptr;
 
 	explicit ArenaPage(usize size);
 	~ArenaPage();
@@ -658,8 +658,8 @@ struct ArenaPage
 // Life changing allocator.
 struct Arena
 {
-	usize page_size;
-	ArenaPage* page;
+	usize page_size = 0;
+	ArenaPage* page = nullptr;
 
 	// This is just for the compiler to shut up
 	Arena() : page_size(0), page(nullptr) {}
@@ -678,7 +678,7 @@ struct Arena
 	// Literally just `Arena::alloc()` but for structs and crap.
 	template<typename T> T* alloc()
 	{
-		return (T*)this->alloc(sizeof(T));
+		return reinterpret_cast<T*>(this->alloc(sizeof(T)));
 	}
 
 	// Makes sure there's enough space to fit `size`. Useful for when you're about to allocate a lot of
@@ -702,7 +702,7 @@ struct List
 
 	// c++ i hate you
 	// i just want the length to be at the start
-	// TODO this is probably some shitty alignment
+	// TODO this is probably some bad alignment
 	// TODO does the standard even allow this?
 public:
 	// How many items the list has
@@ -719,6 +719,8 @@ private:
 		T* buffer;
 	} heap;
 public:
+	// c++ i hate you
+	List() : List(1) {}
 
 	// The constructor with automagic capabilities.
 	explicit List(usize length) : length(length)
@@ -727,7 +729,7 @@ public:
 
 		// help
 		if (this->alloc == ListAllocator::OWNED_ARENA) {
-			this->length = length;
+			this->capacity = length;
 			this->heap.arena = new Arena(length * sizeof(T));
 			this->heap.buffer = reinterpret_cast<T*>(this->heap.arena->alloc(length * sizeof(T)));
 		}
@@ -763,13 +765,15 @@ public:
 	// c++ i hate you
 	~List()
 	{
-		if (this->alloc == ListAllocator::OWNED_ARENA){
-			delete this->heap.arena;
-		}
-
 		// delete items
 		for (usize i = 0; i < this->length; i++) {
 			(*this)[i].~T();
+		}
+
+		if (this->alloc == ListAllocator::OWNED_ARENA){
+			delete this->heap.arena;
+			this->heap.buffer = nullptr;
+			this->heap.arena = nullptr;
 		}
 	};
 
@@ -831,6 +835,22 @@ public:
 		}
 	}
 
+	// Duplicates the list.
+	List<T> copy()
+	{
+		List<T> new_list(this->length);
+		memcpy(new_list.buffer(), this->buffer(), sizeof(T) * this->length);
+		return new_list;
+	}
+
+	// Duplicates the list to a specific arena.
+	List<T> copy(Arena* arena)
+	{
+		List<T> new_list(arena, this->length);
+		memcpy(new_list.buffer(), this->buffer(), sizeof(T) * this->length);
+		return new_list;
+	}
+
 	// fucking iterator
 	struct Iterator {
 	public:
@@ -846,6 +866,45 @@ public:
 	Iterator begin() { return Iterator(this->buffer(), 0); }
 	Iterator end()   { return Iterator(this->buffer() + this->length, this->length); }
 };
+
+// I love strinsgs. Note the string is immutable, so any string operations e.g. `.concat()` don't modify
+// the original strings.
+struct String {
+private:
+	List<char> array;
+
+public:
+	// c++ i hate you
+	String() : String(1) {}
+	// Initializes a string from a C string. It's recommended to only use this for string literals.
+	String(const char* str);
+	// Initializes a string from a C string. If the original string is larger than the length, it'll get
+	// cut off.
+	explicit String(const char* str, usize len);
+	// Initializes a string with a specific size. All the characters are left as null terminators.
+	explicit String(usize len);
+
+	const char& operator[](usize idx);
+	bool operator==(String other);
+	bool operator!=(String other);
+
+	// Returns the buffer of the string.
+	char* buffer();
+
+	// Returns the length of the string, excluding the null terminator.
+	usize length();
+
+	// Duplicates the string.
+	String copy();
+
+	// Concatenates 2 strings.
+	String concat(String other);
+
+	// TODO 59 billion trillion more functions
+};
+
+// It's like sprintf but with `tr::String`
+TR_LOG_FUNC(2, 3) tr::String sprintf(usize maxlen, const char* fmt, ...);
 
 }
 

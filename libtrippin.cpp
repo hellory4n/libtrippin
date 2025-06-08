@@ -476,11 +476,50 @@ tr::Matrix4x4 tr::Matrix4x4::perspective(float32 fovy, float32 aspect, float32 n
 	return m;
 }
 
+tr::Random::Random(int64 seed)
+{
+	// i think this is how you implement splitmix64?
+	this->state[0] = seed;
+	for (size_t i = 1; i < 4; i++) {
+		this->state[i] = (this->state[i - 1] += UINT64_C(0x9E3779B97F4A7C15));
+		this->state[i] = (this->state[i] ^ (this->state[i] >> 30)) * UINT64_C(0xBF58476D1CE4E5B9);
+		this->state[i] = (this->state[i] ^ (this->state[i] >> 27)) * UINT64_C(0x94D049BB133111EB);
+		this->state[i] = this->state[i] ^ (this->state[i] >> 31);
+	}
+}
+
+static inline uint64 rotl(const uint64 x, int k) {
+	return (x << k) | (x >> (64 - k));
+}
+
+float64 tr::Random::next()
+{
+	// theft
+	const uint64 result = this->state[0] + this->state[3];
+
+	const uint64 t = this->state[1] << 17;
+
+	this->state[2] ^= this->state[0];
+	this->state[3] ^= this->state[1];
+	this->state[1] ^= this->state[2];
+	this->state[0] ^= this->state[3];
+
+	this->state[2] ^= t;
+
+	this->state[3] = rotl(this->state[3], 45);
+
+	// not theft
+	// man is 0 to 1
+	// 18446744073709551616.0 is UINT64_MAX but with the last digit changed because
+	// clang was complaining
+	return static_cast<float64>(result) / 18446744073709551616.0;
+}
+
 tr::ArenaPage::ArenaPage(usize size)
 {
 	tr::assert(size != 0, "page size can't be 0");
 
-	this->buffer = malloc(size);
+	this->buffer = calloc(1, size);
 	this->size = size;
 	this->alloc_pos = 0;
 	this->next = nullptr;
@@ -597,41 +636,76 @@ void tr::Arena::prealloc(usize size)
 	this->page = new_page;
 }
 
-tr::Random::Random(int64 seed)
+tr::String::String(usize len)
 {
-	// i think this is how you implement splitmix64?
-	this->state[0] = seed;
-	for (size_t i = 1; i < 4; i++) {
-		this->state[i] = (this->state[i - 1] += UINT64_C(0x9E3779B97F4A7C15));
-		this->state[i] = (this->state[i] ^ (this->state[i] >> 30)) * UINT64_C(0xBF58476D1CE4E5B9);
-		this->state[i] = (this->state[i] ^ (this->state[i] >> 27)) * UINT64_C(0x94D049BB133111EB);
-		this->state[i] = this->state[i] ^ (this->state[i] >> 31);
-	}
+	this->array = List<char>(len + 1);
 }
 
-static inline uint64 rotl(const uint64 x, int k) {
-	return (x << k) | (x >> (64 - k));
+tr::String::String(const char* str, usize len)
+{
+	// C++ strings are always const char* but if i use List<const char> then i can't assign to it????
+	this->array = List<char>(len + 1, const_cast<char*>(str));
+	// just in case
+	this->array[this->array.length - 1] = '\0';
 }
 
-float64 tr::Random::next()
+tr::String::String(const char* str)
 {
-	// theft
-	const uint64 result = this->state[0] + this->state[3];
+	// C++ strings are always const char* but if i use List<const char> then i can't assign to it????
+	this->array = List<char>(strlen(str) + 1, const_cast<char*>(str));
+	// just in case
+	this->array[this->array.length - 1] = '\0';
+}
 
-	const uint64 t = this->state[1] << 17;
+const char& tr::String::operator[](usize idx)
+{
+	return this->array[idx];
+}
 
-	this->state[2] ^= this->state[0];
-	this->state[3] ^= this->state[1];
-	this->state[1] ^= this->state[2];
-	this->state[0] ^= this->state[3];
+bool tr::String::operator==(tr::String other)
+{
+	return strncmp(this->buffer(), other.buffer(), this->length()) == 0;
+}
 
-	this->state[2] ^= t;
+bool tr::String::operator!=(tr::String other)
+{
+	return !(*this == other);
+}
 
-	this->state[3] = rotl(this->state[3], 45);
+char* tr::String::buffer()
+{
+	return this->array.buffer();
+}
 
-	// not theft
-	// man is 0 to 1
-	// 18446744073709551616.0 is UINT64_MAX but with the last digit changed because
-	// clang was complaining
-	return (float64)result / 18446744073709551616.0;
+usize tr::String::length()
+{
+	return this->array.length - 1;
+}
+
+tr::String tr::String::copy()
+{
+	tr::String str;
+	str.array = this->array.copy();
+	return str;
+}
+
+tr::String tr::String::concat(tr::String other)
+{
+	tr::String str;
+	str.array = List<char>((this->length() + other.length()) + 1);
+	strncpy(str.array.buffer(), this->buffer(), this->length() + 1);
+	strncat(str.array.buffer(), other.buffer(), this->length() + 1);
+	return str;
+}
+
+TR_LOG_FUNC(2, 3) tr::String tr::sprintf(usize maxlen, const char* fmt, ...)
+{
+	tr::String str(maxlen);
+	va_list args;
+	va_start(args, fmt);
+	tr::log("len: %zu", str.length());
+	vsnprintf(str.buffer(), str.length(), fmt, args);
+	va_end(args);
+	tr::log("len: %zu", str.length());
+	return str;
 }
