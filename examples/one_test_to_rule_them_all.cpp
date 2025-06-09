@@ -68,25 +68,11 @@ int main()
 	tr::log("lerp vec2<int64>: %li, %li", lerp.x, lerp.y);
 
 	int64 items[] = {11, 22, 33, 44, 55};
-	tr::Ref<tr::List<int64>> listmaballs = new tr::List<int64>(sizeof(items) / sizeof(int64), items);
-	for (tr::ListItem<int64> item : *listmaballs) {
-		tr::log("idx is %zu, val is %li", item.idx, item.val);
+	tr::Array<int64> array(arena, items, sizeof(items) / sizeof(int64));
+	array.add(66);
+	for (tr::ArrayItem<int64> sigm : array) {
+		tr::log("array[%zu] = %li", sigm.idx, sigm.val);
 	}
-	for (int64 man = 66; man < 11 * 300; man++) {
-		listmaballs->add(man);
-	}
-	for (tr::ListItem<int64> item : *listmaballs) {
-		printf("%li, ", item.val);
-	}
-	printf("\n");
-
-	tr::String str = "sigma";
-	tr::String str2 = " balls";
-	str = str.concat(&str);
-	tr::log("str: %s (length %zu)", str.buffer(), str.length());
-
-	tr::String sigmasigmas = tr::sprintf(256, "sigma sigmas: %i", 69);
-	tr::log("%s", sigmasigmas.buffer());
 
 	tr::free();
 }
