@@ -752,242 +752,35 @@ public:
 	void prealloc(usize size);
 };
 
-// This is just for iterators lmao
-template<typename T>
-struct ListItem {
-	usize idx;
-	T& val;
-};
-
-// List. Automagically chooses whether to use the stack or the heap, either with your own arena or its own
-// internal one. When deleted, it automatically deletes its items.
-template<typename T>
-class List : public RefCounted
+// Immutable string, doesn't allocate its own memory and instead points to somewhere else.
+class String
 {
+	usize len = 0;
+	const char* data = nullptr;
+
 public:
-	static constexpr usize STACK_BUFFER_SIZE = 256;
+	explicit String(const char* s, usize len) : len(len), data(s) {};
+	String(const char* s) : String(s, strlen(s) + 1) {};
 
-	// c++ i hate you
-	// i just want the length to be at the start
-	// TODO this is probably some bad alignment
-	// How many items the list has
-	usize length;
-	// How many items the list can fit before resizing
-	usize capacity;
-private:
-	// i know
-	// also rust propaganda
-	enum class ListAllocator: uint8 { STACK, OWNED_ARENA, BORROWED_ARENA } alloc;
-	T stack[STACK_BUFFER_SIZE];
-	struct {
-		Arena* arena;
-		T* buffer;
-	} heap;
-	// TODO does the standard even allow this? (switching between public then private then public)
-public:
-	// c++ i hate you
-	List() : List(1) {}
+	// Returns the buffer from the string
+	constexpr const char* buffer() { return this->data; }
+	// Returns the length from the string, excluding the null terminator
+	constexpr usize length() { return this->len; }
 
-	// c++ i hate you
-	List(List const&) = delete;
-	List& operator=(List const&) = delete;
-	List(List&&) = default;
-	List& operator=(List&&)= default;
-
-	// The constructor with automagic capabilities.
-	explicit List(usize length) : length(length)
+	// iterators
+	const char* begin() { return this->data; }
+	const char* end()   { return this->data + this->len; }
+	char operator[](usize idx)
 	{
-		this->alloc = length >= STACK_BUFFER_SIZE ? ListAllocator::OWNED_ARENA : ListAllocator::STACK;
-
-		// help
-		if (this->alloc == ListAllocator::OWNED_ARENA) {
-			this->capacity = length;
-			this->heap.arena = new Arena(length * sizeof(T));
-			this->heap.buffer = reinterpret_cast<T*>(this->heap.arena->alloc(length * sizeof(T)));
+		if (idx >= this->len) {
+			tr::panic("index out of range: %zu (length is %zu)", idx, this->len);
 		}
-		else {
-			this->capacity = STACK_BUFFER_SIZE;
-		}
+		return this->data[idx];
 	}
 
-	// Initializes the list but forces it to be in an arena and this specific arena. Help.
-	explicit List(Arena* arena, usize length) : length(length), capacity(length)
-	{
-		this->alloc = ListAllocator::BORROWED_ARENA;
-		this->heap.buffer = reinterpret_cast<T*>(arena->alloc(length * sizeof(T)));
-	}
-
-	// Initializes the list from an array literal (it's probably gonna explode and die with anything else)
-	explicit List(usize length, T items[]) : length(length)
-	{
-		if (length < STACK_BUFFER_SIZE) {
-			this->alloc = ListAllocator::STACK;
-			memcpy(this->stack, items, sizeof(T) * length);
-			this->capacity = STACK_BUFFER_SIZE;
-		}
-		else {
-			this->capacity = length;
-			this->alloc = ListAllocator::OWNED_ARENA;
-			this->heap.arena = new Arena(sizeof(T) * length);
-			this->heap.buffer = reinterpret_cast<T*>(this->heap.arena->alloc(length * sizeof(T)));
-			memcpy(this->heap.buffer, items, sizeof(T) * length);
-		}
-	}
-
-	// c++ i hate you
-	~List()
-	{
-		// delete items
-		for (usize i = 0; i < this->length; i++) {
-			(*this)[i].~T();
-		}
-
-		if (this->alloc == ListAllocator::OWNED_ARENA){
-			delete this->heap.arena;
-			this->heap.buffer = nullptr;
-			this->heap.arena = nullptr;
-		}
-	};
-
-	// It returns the buffer.
-	T* buffer() const
-	{
-		if (this->alloc != ListAllocator::STACK) return this->heap.buffer;
-		// shut up
-		else return const_cast<T*>(this->stack);
-	}
-
-	T& operator[](usize idx) const
-	{
-		if (idx >= this->length) {
-			tr::panic("tried to access an index of %zu in a tr::List<T> of only %zu", idx, this->length);
-		}
-		return this->buffer()[idx];
-	}
-
-	// TODO use pages like the arena, then indexing internally works by having a separate array where each
-	// index goes to a page, so then you just index there
-
-	// Adds an item to the list, and resizes the list if necessary.
-	void add(T val)
-	{
-		if (this->alloc == ListAllocator::STACK) {
-			// use the stack while we can
-			if (this->length + 1 < STACK_BUFFER_SIZE) {
-				this->stack[this->length] = val;
-				this->length++;
-			}
-			// move the crap to an arena
-			else {
-				this->alloc = ListAllocator::OWNED_ARENA;
-				this->capacity = STACK_BUFFER_SIZE * 2;
-				this->heap.arena = new Arena(sizeof(T) * this->capacity);
-				this->heap.buffer = reinterpret_cast<T*>(this->heap.arena->alloc(this->capacity * sizeof(T)));
-				memcpy(this->heap.buffer, this->stack, sizeof(T) * this->length);
-
-				this->heap.buffer[this->length] = val;
-				this->length++;
-			}
-		}
-		else {
-			// does it already fit?
-			if (this->length < this->capacity) {
-				this->heap.buffer[this->length] = val;
-				this->length++;
-			}
-			// reallocate deez
-			else {
-				this->capacity = this->length * 2;
-				T* old_buffer = this->heap.buffer;
-				this->heap.buffer = reinterpret_cast<T*>(this->heap.arena->alloc(this->capacity * sizeof(T)));
-				memcpy(this->heap.buffer, old_buffer, sizeof(T) * this->length);
-
-				this->heap.buffer[this->length] = val;
-				this->length++;
-			}
-		}
-	}
-
-	// Duplicates the list.
-	List<T> copy() const
-	{
-		List<T> new_list(this->length);
-		// buffer() doesn't work here lamo
-		// kill me
-		T* this_buffer = this->alloc != ListAllocator::STACK ? this->heap.buffer : this->stack;
-		T* new_buffer = new_list.alloc != ListAllocator::STACK ? new_list.heap.buffer : new_list.stack;
-		memcpy(new_buffer, this_buffer, sizeof(T) * this->length);
-		return new_list;
-	}
-
-	// Duplicates the list to a specific arena.
-	List<T> copy(Arena* arena) const
-	{
-		List<T> new_list(arena, this->length);
-		memcpy(new_list.buffer(), this->buffer(), sizeof(T) * this->length);
-		return new_list;
-	}
-
-	// fucking iterator
-	struct Iterator {
-	public:
-		Iterator(T* ptr, usize index) : idx(index), ptr(ptr) {}
-		ListItem<T> operator*() const { return {this->idx, *this->ptr}; }
-		Iterator& operator++() { this->ptr++; this->idx++; return *this; }
-		bool operator!=(const Iterator& other) const { return ptr != other.ptr; }
-	private:
-		usize idx;
-		T* ptr;
-	};
-
-	Iterator begin() { return Iterator(this->buffer(), 0); }
-	Iterator end()   { return Iterator(this->buffer() + this->length, this->length); }
+	bool operator==(String other);
+	bool operator!=(String other);
 };
-
-// I love strinsgs. Note the string is immutable, so any string operations e.g. `.concat()` don't modify
-// the original strings.
-/*struct String {
-private:
-	List<char> array;
-
-public:
-	// c++ i hate you
-	String() : String(1) {}
-	// Initializes a string from a C string. It's recommended to only use this for string literals.
-	String(const char* str);
-	// Initializes a string from a C string. If the original string is larger than the length, it'll get
-	// cut off.
-	explicit String(const char* str, usize len);
-	// Initializes a string with a specific size. All the characters are left as null terminators.
-	explicit String(usize len);
-
-	// c++ i hate you
-	String(String const&) = delete;
-	String& operator=(String const&) = delete;
-	String(String&&) = default;
-	String& operator=(String&&) = default;
-
-	const char& operator[](usize idx);
-	bool operator==(const String& other) const;
-	bool operator!=(const String& other) const;
-
-	// Returns the buffer of the string.
-	char* buffer() const;
-
-	// Returns the length of the string, excluding the null terminator.
-	usize length() const;
-
-	// Duplicates the string.
-	String copy() const;
-
-	// Concatenates 2 strings.
-	String concat(const String& other) const;
-
-	// TODO 59 billion trillion more functions
-};
-
-// It's like sprintf but with `tr::String`
-TR_LOG_FUNC(2, 3) tr::String sprintf(usize maxlen, const char* fmt, ...);*/
 
 }
 

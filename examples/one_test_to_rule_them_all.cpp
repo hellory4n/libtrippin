@@ -80,12 +80,13 @@ int main()
 	}
 	printf("\n");
 
-	// tr::String str = "sigma";
-	// str = str.concat(" balls");
-	// tr::log("str: %s (length %zu)", str.buffer(), str.length());
+	tr::String str = "sigma";
+	tr::String str2 = " balls";
+	str = str.concat(&str);
+	tr::log("str: %s (length %zu)", str.buffer(), str.length());
 
-	// tr::String sigmasigmas = tr::sprintf(256, "sigma sigmas: %i", 69);
-	// tr::log("%s", sigmasigmas.buffer());
+	tr::String sigmasigmas = tr::sprintf(256, "sigma sigmas: %i", 69);
+	tr::log("%s", sigmasigmas.buffer());
 
 	tr::free();
 }
