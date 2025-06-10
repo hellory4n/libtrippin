@@ -69,12 +69,12 @@ namespace ConsoleColor {
 	// TODO colored output doesn't work on windows and i can't be bothered to fix it
 	#ifndef _WIN32
 	constexpr const char* RESET    = "\033[0m";
-	constexpr const char* LIB_INFO = "\033[0;90m";
+	constexpr const char* INFO     = "\033[0;90m";
 	constexpr const char* WARN     = "\033[0;93m";
 	constexpr const char* ERROR    = "\033[0;91m";
 	#else
 	constexpr const char* RESET    = "";
-	constexpr const char* LIB_INFO = "";
+	constexpr const char* INFO     = "";
 	constexpr const char* WARN     = "";
 	constexpr const char* ERROR    = "";
 	#endif
@@ -87,7 +87,7 @@ void use_log_file(const char* path);
 TR_LOG_FUNC(1, 2) void log(const char* fmt, ...);
 
 // Log. (gray edition) (this is for libraries that use libtrippin so you can filter out library logs)
-TR_LOG_FUNC(1, 2) void liblog(const char* fmt, ...);
+TR_LOG_FUNC(1, 2) void info(const char* fmt, ...);
 
 // Oh nose.
 TR_LOG_FUNC(1, 2) void warn(const char* fmt, ...);
@@ -240,7 +240,7 @@ struct Vec2
 	bool operator<(Vec2 r)  { return this->x <  r.x && this->y <  r.y;   }
 	bool operator<=(Vec2 r) { return this->x <= r.x && this->y <= r.y;   }
 
-	static constexpr usize LENGTH = 2;
+	static constexpr usize ITEMS = 2;
 	T& operator[](usize idx)
 	{
 		switch (idx) {
@@ -253,14 +253,14 @@ struct Vec2
 	T mul_inner(Vec2<T> b)
 	{
 		T p = 0;
-		for (usize i = 0; i < LENGTH; i++) {
+		for (usize i = 0; i < ITEMS; i++) {
 			p += b[i] * (*this)[i];
 		}
 		return p;
 	}
 
-	float64 len() { return sqrt(this->mul_inner(*this)); }
-	Vec2<T> normalize() { return *this * (1 / this->len()); }
+	float64 length() { return sqrt(this->mul_inner(*this)); }
+	Vec2 normalize() { return *this * (1 / this->length()); }
 };
 
 // c i hate you
@@ -304,7 +304,7 @@ struct Vec3
 	bool operator<(Vec3 r)  { return this->x <  r.x && this->y <  r.y && this->z <  r.z; }
 	bool operator<=(Vec3 r) { return this->x <= r.x && this->y <= r.y && this->z <= r.z; }
 
-	static constexpr usize LENGTH = 3;
+	static constexpr usize ITEMS = 3;
 	T& operator[](usize idx)
 	{
 		switch (idx) {
@@ -318,20 +318,20 @@ struct Vec3
 	T mul_inner(Vec3<T> b)
 	{
 		T p = 0;
-		for (usize i = 0; i < LENGTH; i++) {
+		for (usize i = 0; i < ITEMS; i++) {
 			p += b[i] * (*this)[i];
 		}
 		return p;
 	}
 
-	float64 len() { return sqrt(this->mul_inner(*this)); }
-	Vec3<T> normalize() { return *this * (1 / this->len()); }
+	float64 length() { return sqrt(this->mul_inner(*this)); }
+	Vec3<T> normalize() { return *this * (1 / this->length()); }
 
 	Vec3<T> reflect(Vec3<T> b)
 	{
 		Vec3<T> r;
 		T p = 2 * this->mul_inner(b);
-		for (usize i = 0; i < LENGTH; i++) {
+		for (usize i = 0; i < ITEMS; i++) {
 			r[i] = (*this)[i] - p * b[i];
 		}
 		return r;
@@ -390,7 +390,7 @@ struct Vec4
 	bool operator<(Vec4 r)  { return this->x <  r.x && this->y <  r.y && this->z <  r.z && this->w <  r.w; }
 	bool operator<=(Vec4 r) { return this->x <= r.x && this->y <= r.y && this->z <= r.z && this->w <= r.w; }
 
-	static constexpr usize LENGTH = 4;
+	static constexpr usize ITEMS = 4;
 	T& operator[](usize idx)
 	{
 		switch (idx) {
@@ -405,14 +405,14 @@ struct Vec4
 	T mul_inner(Vec4<T> b)
 	{
 		T p = 0;
-		for (usize i = 0; i < LENGTH; i++) {
+		for (usize i = 0; i < ITEMS; i++) {
 			p += b[i] * (*this)[i];
 		}
 		return p;
 	}
 
-	float64 len() { return sqrt(this->mul_inner(*this)); }
-	Vec4<T> normalize() { return *this * (1 / this->len()); }
+	float64 length() { return sqrt(this->mul_inner(*this)); }
+	Vec4<T> normalize() { return *this * (1 / this->length()); }
 
 	Vec4<T> mul_cross(Vec4<T> b)
 	{
@@ -428,7 +428,7 @@ struct Vec4
 	{
 		Vec4<T> r;
 		T p = 2 * this->mul_inner(b);
-		for (usize i = 0; i < LENGTH; i++) {
+		for (usize i = 0; i < ITEMS; i++) {
 			r[i] = (*this)[i] - p * b[i];
 		}
 		return r;
@@ -599,7 +599,7 @@ struct Matrix4x4
 	static Matrix4x4 translate_in_place(float32 x, float32 y, float32 z);
 	static Matrix4x4 from_vec3_mul_outer(Vec3<float32> a, Vec3<float32> b);
 	static Matrix4x4 frustum(float32 left, float32 right, float32 bottom, float32 top, float32 near, float32 far);
-	static Matrix4x4 ortho(float32 left, float32 right, float32 bottom, float32 top, float32 near, float32 far);
+	static Matrix4x4 orthographic(float32 left, float32 right, float32 bottom, float32 top, float32 near, float32 far);
 	static Matrix4x4 perspective(float32 fovy, float32 aspect, float32 near, float32 far);
 
 	Vec4<float32> row(usize idx);
@@ -742,7 +742,7 @@ public:
 template<typename T>
 struct ArrayItem
 {
-	usize idx;
+	usize i;
 	T& val;
 };
 

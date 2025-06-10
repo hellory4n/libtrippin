@@ -34,12 +34,12 @@ namespace tr {
 
 void tr::init()
 {
-	tr::liblog("initialized libtrippin %s", tr::VERSION);
+	tr::info("initialized libtrippin %s", tr::VERSION);
 }
 
 void tr::free()
 {
-	tr::liblog("deinitialized libtrippin");
+	tr::info("deinitialized libtrippin");
 	fclose(tr::logfile);
 }
 
@@ -49,7 +49,7 @@ void tr::use_log_file(const char* path)
 	tr::assert(tr::logfile != nullptr,
 		"couldn't open %s, either the path is inaccessible or there's no permissions to write here", path);
 
-	tr::liblog("using log file \"%s\"", path);
+	tr::info("using log file \"%s\"", path);
 }
 
 // TODO logging should use tr::String
@@ -99,11 +99,11 @@ TR_LOG_FUNC(1, 2) void tr::log(const char* fmt, ...)
 	va_end(args);
 }
 
-TR_LOG_FUNC(1, 2) void tr::liblog(const char* fmt, ...)
+TR_LOG_FUNC(1, 2) void tr::info(const char* fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
-	__log(tr::ConsoleColor::LIB_INFO, "", false, fmt, args);
+	__log(tr::ConsoleColor::INFO, "", false, fmt, args);
 	va_end(args);
 }
 
@@ -305,7 +305,7 @@ tr::Matrix4x4 tr::Matrix4x4::rotate(float32 x, float32 y, float32 z, float32 rad
 	Vec3<float32> u = Vec3<float32>(x, y, z);
 	Matrix4x4 R;
 
-	if (u.len() > 1e-4) {
+	if (u.length() > 1e-4) {
 		u = u.normalize();
 		Matrix4x4 T = Matrix4x4::from_vec3_mul_outer(u, u);
 
@@ -431,7 +431,7 @@ tr::Matrix4x4 tr::Matrix4x4::frustum(float32 left, float32 right, float32 bottom
 	return m;
 }
 
-tr::Matrix4x4 tr::Matrix4x4::ortho(float32 left, float32 right, float32 bottom, float32 top, float32 near,
+tr::Matrix4x4 tr::Matrix4x4::orthographic(float32 left, float32 right, float32 bottom, float32 top, float32 near,
 	float32 far)
 {
 	Matrix4x4 m;

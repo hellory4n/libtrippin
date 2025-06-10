@@ -7,7 +7,7 @@ int main()
 	tr::init();
 
 	tr::log("sir");
-	tr::liblog("sir");
+	tr::info("sir");
 	tr::warn("sir");
 	tr::error("sir");
 	// tr::assert(false, "trajìque");
@@ -70,8 +70,8 @@ int main()
 	int64 items[] = {11, 22, 33, 44, 55};
 	tr::Array<int64> array(arena, items, sizeof(items) / sizeof(int64));
 	array.add(66);
-	for (tr::ArrayItem<int64> sigm : array) {
-		tr::log("array[%zu] = %li", sigm.idx, sigm.val);
+	for (tr::ArrayItem<int64> item : array) {
+		tr::log("array[%zu] = %li", item.i, item.val);
 	}
 
 	tr::String str = "sigma";
