@@ -27,7 +27,7 @@ int main()
 		tr::log("nope");
 	}
 	// maybe.unwrap();
-	maybe = tr::Maybe<int32>(57);
+	maybe = 57;
 	if (maybe.is_valid()) {
 		tr::log("perchance %i", maybe.unwrap());
 	}
@@ -73,6 +73,9 @@ int main()
 	for (tr::ArrayItem<int64> sigm : array) {
 		tr::log("array[%zu] = %li", sigm.idx, sigm.val);
 	}
+
+	tr::String str = "sigma";
+	tr::log("str: %s (length %zu)", str.buffer(), str.length());
 
 	tr::free();
 }

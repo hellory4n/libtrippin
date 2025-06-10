@@ -572,12 +572,12 @@ tr::Arena::~Arena()
 	if (this->page_size == 0) return;
 
 	ArenaPage* head = this->page;
-	while (head->prev.is_valid()) {
-		head = head->prev.unwrap();
+	while (head->prev != nullptr) {
+		head = head->prev;
 	}
 
 	while (head != nullptr) {
-		ArenaPage* next = head->next.is_valid() ? head->next.unwrap() : nullptr;
+		ArenaPage* next = head->next;
 		delete head;
 		head = next;
 	}
@@ -595,8 +595,8 @@ void* tr::Arena::alloc(usize size)
 	}
 
 	// does it fit in the previous page?
-	if (this->page->prev.is_valid()) {
-		ArenaPage* prev_page = this->page->prev.unwrap();
+	if (this->page->prev != nullptr) {
+		ArenaPage* prev_page = this->page->prev;
 		if (prev_page->available_space() >= size) {
 			void* val = (uint8*)prev_page->buffer + prev_page->alloc_pos;
 			prev_page->alloc_pos += size;
@@ -636,8 +636,8 @@ void tr::Arena::prealloc(usize size)
 		return;
 	}
 
-	if (this->page->prev.is_valid()) {
-		ArenaPage* prev_page = this->page->prev.unwrap();
+	if (this->page->prev != nullptr) {
+		ArenaPage* prev_page = this->page->prev;
 		if (prev_page->available_space() >= size) {
 			return;
 		}

@@ -146,20 +146,6 @@ public:
 			tr::panic("couldn't unwrap Maybe<T>");
 		}
 	}
-
-	// i love c++
-	Maybe& operator=(T val)
-	{
-		if (val == nullptr) {
-			this->has_value = false;
-			this->value = nullptr;
-		}
-		else {
-			this->has_value = true;
-			this->value = val;
-		}
-		return *this;
-	}
 };
 
 // Functional propaganda
@@ -709,8 +695,8 @@ class ArenaPage
 public:
 	usize size = 0;
 	usize alloc_pos = 0;
-	Maybe<ArenaPage*> prev = nullptr;
-	Maybe<ArenaPage*> next = nullptr;
+	ArenaPage* prev = nullptr;
+	ArenaPage* next = nullptr;
 	void* buffer = nullptr;
 
 	explicit ArenaPage(usize size);
@@ -760,46 +746,50 @@ struct ArrayItem
 	T& val;
 };
 
-// Arrays implemented through arenas. Similar to a slice.
+// A slice of memory, usually from an arena but can point to anywhere. Similar to a Go slice, or other
+// examples.
 template<typename T>
 class Array
 {
-	T* ptr = nullptr;
+	T* ptr;
 	Arena* arena;
+	usize len;
+	usize cap;
 
 public:
-	usize length = 0;
-	usize capacity = 0;
-
 	// Initializes an empty array at an arena.
-	explicit Array(Arena* arena, usize len) : length(len), capacity(len), arena(arena)
+	explicit Array(Arena* arena, usize len) : arena(arena), len(len), cap(len)
 	{
 		this->ptr = reinterpret_cast<T*>(arena->alloc(sizeof(T) * len));
 	}
 
 	// Initializes an array from a buffer. (the data is copied into the arena)
-	explicit Array(Arena* arena, T* data, usize len) : arena(arena), length(len), capacity(len)
+	explicit Array(Arena* arena, T* data, usize len) : arena(arena), len(len), cap(len)
 	{
 		this->ptr = reinterpret_cast<T*>(arena->alloc(sizeof(T) * len));
 		memcpy(this->ptr, data, len * sizeof(T));
 	}
 
 	// Initializes an array that points to any buffer. You really should only use this for temporary arrays.
-	explicit Array(T* data, usize len) : ptr(data), length(len), capacity(len), arena(arena) {}
+	explicit Array(T* data, usize len) : ptr(data), arena(nullptr), len(len), cap(len) {}
+
+	// man fuck you
+	Array() : ptr(nullptr), arena(nullptr), len(0), cap(0) {}
 
 	T& operator[](usize idx) const
 	{
-		if (idx >= this->length) {
-			tr::panic("index out of range: %zu in an array of %zu", idx, this->length);
+		if (idx >= this->len) {
+			tr::panic("index out of range: %zu in an array of %zu", idx, this->len);
 		}
 		return this->ptr[idx];
 	}
 
-	// Returns the buffer
-	T* buffer() const
-	{
-		return this->ptr;
-	}
+	// Returns the buffer.
+	T* buffer() const      { return this->ptr; }
+	// Returns the length of the array.
+	usize length() const   { return this->len; }
+	// Returns how many items the array can hold before having to resize.
+	usize capacity() const { return this->cap; }
 
 	// fucking iterator
 	class Iterator {
@@ -814,7 +804,7 @@ public:
 	};
 
 	Iterator begin() const { return Iterator(this->buffer(), 0); }
-	Iterator end()   const { return Iterator(this->buffer() + this->length, this->length); }
+	Iterator end()   const { return Iterator(this->buffer() + this->len, this->len); }
 
 	// Adds a new item to the array, and resizes it if necessary. This only works on arena-allocated arrays,
 	// if you try to use this on an array without an arena, it will panic.
@@ -825,20 +815,73 @@ public:
 		}
 
 		// does it already fit?
-		if (this->length + 1 <= this->capacity) {
-			(*this)[this->length++] = val;
+		if (this->len + 1 <= this->cap) {
+			(*this)[this->len++] = val;
 			return;
 		}
 
 		// reallocate array
 		// TODO use pages to not waste so much memory
 		T* old_buffer = this->ptr;
-		this->capacity *= 2;
-		this->ptr = reinterpret_cast<T*>(this->arena->alloc(this->capacity * sizeof(T)));
-		memcpy(this->ptr, old_buffer, this->length * sizeof(T));
+		this->cap *= 2;
+		this->ptr = reinterpret_cast<T*>(this->arena->alloc(this->cap * sizeof(T)));
+		memcpy(this->ptr, old_buffer, this->len * sizeof(T));
 
-		(*this)[this->length++] = val;
+		(*this)[this->len++] = val;
 	}
+
+	// As the name implies, it copies the array and its items to somewhere else.
+	Array<T> duplicate(Arena* arena) const
+	{
+		Array<T> result(arena, this->length());
+		memcpy(result.buffer(), this->buffer(), this->length() * sizeof(T));
+		return result;
+	}
+};
+
+// Literally just a wrapper around `tr::Array`, so it works better with strings.
+class String {
+	Array<char> array;
+
+public:
+	// Initializes a string from an arena and C string.
+	explicit String(Arena* arena, const char* str, usize len)
+	{
+		this->array = Array<char>(arena, const_cast<char*>(str), len + 1);
+	}
+
+	// Initializes an empty string from an arena
+	explicit String(Arena* arena, usize len)
+	{
+		this->array = Array<char>(arena, len + 1);
+	}
+
+	// Initializes a string from any C string. You really should only use this for temporary arrays.
+	explicit String(const char* str, usize len)
+	{
+		this->array = Array<char>(const_cast<char*>(str), len + 1);
+		// just in case
+		this->array[len] = '\0';
+	}
+
+	// Initializes a string from any C string. You really should only use this for temporary arrays.
+	String(const char* str) : String(str, strlen(str)) {}
+
+	// man
+	char& operator[](usize idx) const { return this->array[idx]; }
+	usize length() const { return this->array.length() - 1; }
+	const char* buffer() const { return this->array.buffer(); }
+	Array<char>::Iterator begin() const { return this->array.begin(); }
+	// this one is different since you don't want to iterate over the null terminator
+	Array<char>::Iterator end() const { return Array<char>::Iterator(const_cast<char*>(this->buffer()) + this->length() - 1, this->length() - 1); }
+	String duplicate(Arena* arena) const
+	{
+		Array<char> arrayma = this->array.duplicate(arena);
+		return String(arrayma.buffer(), arrayma.length() + 1);
+	}
+	// i know .add() is missing
+
+	// TODO 5368356306 different string functions
 };
 
 }
