@@ -77,5 +77,8 @@ int main()
 	tr::String str = "sigma";
 	tr::log("str: %s (length %zu)", str.buffer(), str.length());
 
+	tr::String maballs = tr::sprintf(arena, 256, "%s balls", str.buffer());
+	tr::log("%s", maballs.buffer());
+
 	tr::free();
 }

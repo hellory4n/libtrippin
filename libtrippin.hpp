@@ -860,8 +860,6 @@ public:
 	explicit String(const char* str, usize len)
 	{
 		this->array = Array<char>(const_cast<char*>(str), len + 1);
-		// just in case
-		this->array[len] = '\0';
 	}
 
 	// Initializes a string from any C string. You really should only use this for temporary arrays.
@@ -870,7 +868,7 @@ public:
 	// man
 	char& operator[](usize idx) const { return this->array[idx]; }
 	usize length() const { return this->array.length() - 1; }
-	const char* buffer() const { return this->array.buffer(); }
+	char* buffer() const { return this->array.buffer(); }
 	Array<char>::Iterator begin() const { return this->array.begin(); }
 	// this one is different since you don't want to iterate over the null terminator
 	Array<char>::Iterator end() const { return Array<char>::Iterator(const_cast<char*>(this->buffer()) + this->length() - 1, this->length() - 1); }
@@ -883,6 +881,9 @@ public:
 
 	// TODO 5368356306 different string functions
 };
+
+// It's just `sprintf` for `tr::String` lmao.
+TR_LOG_FUNC(3, 4) String sprintf(Ref<Arena> arena, usize maxlen, const char* fmt, ...);
 
 }
 

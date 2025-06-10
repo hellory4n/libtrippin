@@ -650,3 +650,15 @@ void tr::Arena::prealloc(usize size)
 	this->page->next = new_page;
 	this->page = new_page;
 }
+
+TR_LOG_FUNC(3, 4) tr::String tr::sprintf(Ref<Arena> arena, usize maxlen, const char* fmt, ...)
+{
+	String str(arena, maxlen);
+	va_list args;
+	va_start(args, fmt);
+	vsnprintf(str.buffer(), maxlen, fmt, args);
+	va_end(args);
+	// just in case
+	str[str.length() - 1] = '\0';
+	return str;
+}
