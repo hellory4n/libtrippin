@@ -1,5 +1,5 @@
 --[[
-	Engineer v1.1.0
+	Engineer v1.1.1
 
 	Bestest build system ever
 	More information at https://github.com/hellory4n/libtrippin/tree/main/engineerbuild
@@ -151,6 +151,15 @@ end
 
 -- Initializes engineer™
 function eng.init()
+	-- reset state bcuz modules are obnoxious :)
+	eng.cc = ""
+	eng.cxx = ""
+	eng.recipes = {}
+	eng.recipe_description = {}
+	eng.options = {}
+	eng.option_description = {}
+	eng.recompiling = false
+
 	-- get c compiler
 	local cc = os.getenv("CC")
 	if cc ~= nil and cc ~= "" then
@@ -185,7 +194,7 @@ function eng.init()
 
 	-- default help recipe
 	eng.recipe("help", "Shows what you're seeing right now", function()
-		print("Engineer v1.0.0\n")
+		print("Engineer v1.1.1\n")
 		print("Recipes:")
 
 		-- some sorting lamo
