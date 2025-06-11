@@ -41,7 +41,7 @@ int main()
 	auto should_i_call_it_both = tr::Pair<int64, float64>(1, 2.2);
 	tr::log("pair left: %li, pair right %f", should_i_call_it_both.left, should_i_call_it_both.right);
 
-	tr::Ref<tr::Arena> arena = new tr::Arena(tr::kb_to_bytes(2));
+	tr::MaybeRef<tr::Arena> arena = new tr::Arena(tr::kb_to_bytes(2));
 	// arena.prealloc(tr::mb_to_bytes(1));
 	struct ComicallyLargeStruct {
 		uint8 man[1024];

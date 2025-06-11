@@ -24,12 +24,12 @@
 
 #ifndef _TRIPPIN_H
 #define _TRIPPIN_H
-#include <cmath>
-#include <cstdint>
-#include <cstddef>
-#include <cstdlib>
-#include <cstring>
-#include <ctime>
+#include <math.h>
+#include <stdint.h>
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
 #if (defined(__GNUC__) || defined(__clang__)) && !defined(_WIN32)
 // counting starts at 1 lmao
@@ -618,6 +618,10 @@ struct Matrix4x4
 	Matrix4x4 invert();
 };
 
+/*
+ * MEMORY
+*/
+
 // Implements reference counting through inheritance. Note you have to wrap your values in a `tr::Ref<T>`
 // so it's not esoteric to use.
 class RefCounted
@@ -632,23 +636,38 @@ public:
 	void release() const;
 };
 
+// Non-esoteric wrapper around `tr::RefCounted`. It also allows null, if you don't want that to happen, use
+// `tr::Ref<T>`
+template<typename T>
+class MaybeRef;
+
+// Non-esoteric wrapper around `tr::RefCounted`. It also panics on null, if you don't want that to happen, use
+// `tr::MaybeRef<T>`
 template<typename T>
 class Ref
 {
 	T* ptr;
+	// man
+	friend class MaybeRef<T>;
 
 public:
-	Ref(T* ptr = nullptr) : ptr(ptr)
+	Ref(T* ptr) : ptr(ptr)
 	{
-		if (ptr == nullptr) return;
+		if (ptr == nullptr) {
+			tr::panic("tr::Ref<T> can't be null, if that's intentional use tr::MaybeRef<T>");
+		}
 		dynamic_cast<RefCounted*>(ptr)->retain();
 	}
 
 	Ref(const Ref& ref) : ptr(ref)
 	{
-		if (ref == nullptr) return;
+		if (ref == nullptr) {
+			tr::panic("tr::Ref<T> can't be null, if that's intentional use tr::MaybeRef<T>");
+		}
 		dynamic_cast<RefCounted*>(ref.ptr)->retain();
 	}
+
+	Ref(const MaybeRef<T>& ref);
 
 	~Ref()
 	{
@@ -658,11 +677,75 @@ public:
 
 	Ref& operator=(T* ptr)
 	{
+		if (this->ptr == nullptr || ptr == nullptr) {
+			tr::panic("tr::Ref<T> can't be null, if that's intentional use tr::MaybeRef<T>");
+		}
+		dynamic_cast<RefCounted*>(ptr)->retain();
+		dynamic_cast<RefCounted*>(this->ptr)->release();
+		this->ptr = ptr;
+		return *this;
+	}
+
+	// Returns the crap pointer.
+	T* get() const
+	{
+		if (this->ptr == nullptr) {
+			tr::panic("tr::Ref<T> is null, if that's intentional use tr::MaybeRef<T>");
+		}
+		return this->ptr;
+	}
+
+	// help
+	T* operator->() const              { return this->get(); }
+	T& operator*() const               { return *this->get(); }
+	operator T*() const                { return this->get(); }
+	bool operator==(const Ref<T>& ref) { return this->ptr == ref.ptr; }
+	bool operator==(const T* ptr)      { return this->ptr == ptr; }
+	bool operator!=(const Ref<T>& ref) { return this->ptr != ref.ptr; }
+	bool operator!=(const T* ptr)      { return this->ptr != ptr; }
+};
+
+// Non-esoteric wrapper around `tr::RefCounted`. It also allows null, if you don't want that to happen, use
+// `tr::Ref<T>`
+template<typename T>
+class MaybeRef
+{
+	T* ptr;
+	// man
+	friend class Ref<T>;
+
+public:
+	MaybeRef(T* ptr = nullptr) : ptr(ptr)
+	{
+		if (ptr == nullptr) return;
+		dynamic_cast<RefCounted*>(ptr)->retain();
+	}
+
+	MaybeRef(const MaybeRef& ref) : ptr(ref)
+	{
+		if (ref == nullptr) return;
+		dynamic_cast<RefCounted*>(ref.ptr)->retain();
+	}
+
+	MaybeRef(const Ref<T>& ref) : ptr(ref)
+	{
+		if (ref == nullptr) return;
+		dynamic_cast<RefCounted*>(ref.ptr)->retain();
+	}
+
+	~MaybeRef()
+	{
+		if (this->ptr == nullptr) return;
+		dynamic_cast<RefCounted*>(this->ptr)->release();
+	}
+
+	MaybeRef& operator=(T* ptr)
+	{
 		// idk man i stole this from some old website
 		if (ptr != nullptr) dynamic_cast<RefCounted*>(ptr)->retain();
-		if (this->ptr != nullptr) dynamic_cast<RefCounted*>(this->ptr)->retain();
+		if (this->ptr != nullptr) dynamic_cast<RefCounted*>(this->ptr)->release();
 		this->ptr = ptr;
-		return (*this);
+		return *this;
 	}
 
 	// Returns the crap pointer.
@@ -675,12 +758,21 @@ public:
 	T* operator->() const              { return this->ptr; }
 	T& operator*() const               { return *this->ptr; }
 	operator T*() const                { return this->ptr; }
-	operator bool() const              { return this->ptr != nullptr; }
 	bool operator==(const Ref<T>& ref) { return this->ptr == ref.ptr; }
 	bool operator==(const T* ptr)      { return this->ptr == ptr; }
 	bool operator!=(const Ref<T>& ref) { return this->ptr != ref.ptr; }
 	bool operator!=(const T* ptr)      { return this->ptr != ptr; }
 };
+
+// man
+template<typename T> Ref<T>::Ref(const MaybeRef<T>& ref)
+{
+	if (ref == nullptr) {
+		tr::panic("can't convert a null tr::MaybeRef<T> to tr::Ref<T>");
+	}
+	this->ptr = ref.ptr;
+	dynamic_cast<RefCounted*>(ref.ptr)->retain();
+}
 
 // Converts kilobytes to bytes
 inline constexpr usize kb_to_bytes(usize x) { return x * 1024; }
@@ -751,30 +843,30 @@ struct ArrayItem
 template<typename T>
 class Array
 {
+	MaybeRef<Arena> arena;
 	T* ptr;
-	Arena* arena;
 	usize len;
 	usize cap;
 
 public:
 	// Initializes an empty array at an arena.
-	explicit Array(Arena* arena, usize len) : arena(arena), len(len), cap(len)
+	explicit Array(Ref<Arena> arena, usize len) : arena(arena), len(len), cap(len)
 	{
 		this->ptr = reinterpret_cast<T*>(arena->alloc(sizeof(T) * len));
 	}
 
 	// Initializes an array from a buffer. (the data is copied into the arena)
-	explicit Array(Arena* arena, T* data, usize len) : arena(arena), len(len), cap(len)
+	explicit Array(Ref<Arena> arena, T* data, usize len) : arena(arena), len(len), cap(len)
 	{
 		this->ptr = reinterpret_cast<T*>(arena->alloc(sizeof(T) * len));
 		memcpy(this->ptr, data, len * sizeof(T));
 	}
 
 	// Initializes an array that points to any buffer. You really should only use this for temporary arrays.
-	explicit Array(T* data, usize len) : ptr(data), arena(nullptr), len(len), cap(len) {}
+	explicit Array(T* data, usize len) : arena(nullptr), ptr(data), len(len), cap(len) {}
 
 	// man fuck you
-	Array() : ptr(nullptr), arena(nullptr), len(0), cap(0) {}
+	Array() : arena(nullptr), ptr(nullptr), len(0), cap(0) {}
 
 	T& operator[](usize idx) const
 	{
@@ -831,7 +923,7 @@ public:
 	}
 
 	// As the name implies, it copies the array and its items to somewhere else.
-	Array<T> duplicate(Arena* arena) const
+	Array<T> duplicate(Ref<Arena> arena) const
 	{
 		Array<T> result(arena, this->length());
 		memcpy(result.buffer(), this->buffer(), this->length() * sizeof(T));
@@ -845,13 +937,13 @@ class String {
 
 public:
 	// Initializes a string from an arena and C string.
-	explicit String(Arena* arena, const char* str, usize len)
+	explicit String(Ref<Arena> arena, const char* str, usize len)
 	{
 		this->array = Array<char>(arena, const_cast<char*>(str), len + 1);
 	}
 
 	// Initializes an empty string from an arena
-	explicit String(Arena* arena, usize len)
+	explicit String(Ref<Arena> arena, usize len)
 	{
 		this->array = Array<char>(arena, len + 1);
 	}

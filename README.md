@@ -1,24 +1,18 @@
-# Massive changes are coming...
-
-Here at Trippin Massivesystems, we love you. In an effort to innovate and think different, we are working on the
-brand-new **libtrippin v2.0.0**, in C++ and with many new features, blasting off libtrippin into a new level
-of advancement and pro-level libraries. There's no documentation because it's not done yet. If you're not
-planning to switch to C++, we don't care because there's only 1 user and that is me.
-
-*Trippin Massivesystems: Never Go Back*
-
 # libtrippin
 
-Most biggest most massive C library of all time. I'm insane.
+Most biggest most massive library of all time. I'm insane.
 
 ## Featuring
 
-- [libtrippin](./libtrippin.h) v1.2.3: Most massive standard library
+- [libtrippin](./libtrippin.h) v2.0.0: Most massive standard library
+    - C++14 with no external dependencies (only libc)
     - Arenas
-    - Math functions and stuff
+    - Reference counting
+    - Arrays
+    - Basic strings
+    - Math
     - Logging
-    - Slices
-    - Pure C99 with no external dependencies
+    - And more
 - [engineer](./engineerbuild/README.md) v1.0.2: Build system of all time
     - No esoteric language
     - Only external dependency is lua
@@ -29,7 +23,7 @@ Most biggest most massive C library of all time. I'm insane.
 
 ## Usage
 
-Just add `libtrippin.c` to your project
+Just add `libtrippin.cpp` to your project
 
 If you have debug builds make sure you have `DEBUG` defined (it doesn't change a whole lot but i mean why not)
 
@@ -37,36 +31,74 @@ On Linux make sure you linked the math library `-lm`
 
 If some for reason you want to use engineer then [read this](./engineerbuild/README.md)
 
-## Example
+## Examples
 
-Look at the examples folder for something comprehensible
+See the examples folder for more crap.
 
-```c
-#include "libtrippin.h"
+### Logging
 
-int main(void)
-{
-    tr_init("log.txt");
-    TrArena arena = tr_arena_new(TR_MB(1));
-    TrSlice_Vec2f slicema = tr_slice_new(arena, 4, sizeof(TrVec2f));
-    TrRand rand = tr_rand_new(123456789);
+```cpp
+tr::use_log_file("log.txt");
+tr::init();
 
-    TrVec2f vecdeez = {tr_rand_double(&rand, 1, 10), tr_rand_double(&rand, 1, 10)};
-    TR_SET_SLICE(&arena, &slicema, TrVec2f,
-        (TrVec2f){1, 2},
-        vecdeez,
-        TR_V2_ADD(vecdeez, vecdeez),
-        TR_V2_SMUL(vecdeez, 2),
-    );
+// these are just for different colors
+tr::log("sir");
+tr::info("sir");
+tr::warn("sir");
+tr::error("sir");
 
-    for (size_t i = 0; i < slicema.length; i++) {
-        TrVec2f vecm = *TR_AT(slicema, TrVec2f, i);
-        tr_log("%f, %f", vecm.x, vecm.y);
-    }
+// same formatting as printf
+tr::info("sir %i", 9462952);
 
-    tr_arena_free(arena);
-    tr_free();
+tr::assert(2 + 2 == 5, "i may be wrong");
+tr::panic("AAAAAHHH");
+
+tr::free();
+```
+
+### Memory
+
+```cpp
+// initialize an arena
+// tr::Ref is for reference counting
+tr::Ref<tr::Arena> arena = new tr::Arena(tr::kb_to_bytes(64));
+
+// arenas are infinite
+// allocate as many as you want!
+auto* crap = arena->alloc<CrapStruct>();
+
+// you can also allocate arrays
+int32 items = {1, 2, 3, 4, 5};
+tr::Array<int32> array(arena, items, 5);
+array.add(6);
+for (auto item : array) {
+    tr::log("array[%zu] = %i", item.i, item.val);
 }
+```
+
+### Strings
+
+```cpp
+// temporary string
+tr::String str = "hi mom";
+tr::log("%s", str.buffer());
+
+// arena string
+tr::String str(arena, "a string", sizeof("a string"));
+
+// you can do formatting too
+tr::String str = tr::sprintf(arena, 32, "hi %s", "mom");
+```
+
+### Math
+
+```cpp
+tr::Random sorandomxd;
+tr::Vec3<float32> vecma;
+for (usize i = 0; i < 3; i++) {
+    vecma[i] = sorandomxd.next(0.f, 999999999.f);
+}
+tr::assert(vecma.x > 0.f, "oh no");
 ```
 
 ## FAQ

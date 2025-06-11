@@ -22,10 +22,10 @@
 *
 */
 
-#include <cstdarg>
-#include <cstdio>
-#include <ctime>
-#include <csignal>
+#include <stdarg.h>
+#include <stdio.h>
+#include <time.h>
+#include <signal.h>
 #include "libtrippin.hpp"
 
 namespace tr {
@@ -59,7 +59,7 @@ static void __log(const char* color, const char* prefix, bool panic, const char*
 	// you understand mechanical hands are the ruler of everything (ah)
 	char timestr[32];
 	time_t now = time(nullptr);
-	tm* tm_info = localtime(&now);
+	struct tm* tm_info = localtime(&now);
 	strftime(timestr, sizeof(timestr), "%Y-%m-%d %H:%M:%S", tm_info);
 
 	// TODO maybe increase in the future?
@@ -548,8 +548,8 @@ tr::ArenaPage::ArenaPage(usize size)
 tr::ArenaPage::~ArenaPage()
 {
 	if (this->buffer != nullptr) {
-		// full legal name because tr:: also has a function called free
-		std::free(this->buffer);
+		// tr:: also has a function called free
+		::free(this->buffer);
 		this->buffer = nullptr;
 	}
 }
