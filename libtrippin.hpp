@@ -1,8 +1,8 @@
 /*
 * libtrippin v2.0.0
 *
-* Most biggest most massive standard library thing for C of all time
-* More information at https://github.com/hellory4n/libtrippin
+* Most biggest most massive standard library thing of all time
+* https://github.com/hellory4n/libtrippin
 *
 * Copyright (C) 2025 by hellory4n <hellory4n@gmail.com>
 *
