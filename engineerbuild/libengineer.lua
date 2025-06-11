@@ -1,5 +1,5 @@
 --[[
-	Engineer v1.0.2
+	Engineer v1.1.0
 
 	Bestest build system ever
 	More information at https://github.com/hellory4n/libtrippin/tree/main/engineerbuild
@@ -45,6 +45,9 @@ eng = {
 	CONSOLE_COLOR_BLUE = "\27[0;34m",
 	CONSOLE_COLOR_WARN = "\27[0;93m",
 	CONSOLE_COLOR_ERROR = "\27[0;91m",
+
+	-- Used to relink projects if anything changed since there's no dependency system lmao
+	recompiling = false,
 }
 
 -- Runs a command with no output
@@ -227,16 +230,11 @@ end
 
 -- Put this at the end of your build script so it actually does something
 function eng.run()
-	-- if theres no arguments just show the help crap
-	if #arg == 0 then
-		eng.recipes["help"]()
-		return
-	end
-
 	local opts = {}
 	local recipes = {}
 
 	for _, argma in ipairs(arg) do
+		-- TODO this will probably break
 		local key, val = argma:match("^([%w%-_]+)=?(%S*)$")
 		-- man.
 		if key == "" then key = nil end
@@ -432,7 +430,8 @@ function project_methods.build(proj)
 	-- na
 	if #srcs == 0 then
 		print(proj.name.." is already up to date; nothing to do")
-		return
+	else
+		eng.recompiling = true
 	end
 
 	for i, src in ipairs(srcs) do
@@ -464,6 +463,8 @@ function project_methods.build(proj)
 	end
 
 	-- link :)
+	if not eng.recompiling then return end
+
 	-- first get the object files
 	local objma = ""
 	for _, src in ipairs(proj.sources) do

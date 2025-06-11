@@ -1,6 +1,6 @@
 libtrippin = {}
 
-local eng = require("engineerbuild.libengineer")
+local eng = require("libengineer")
 eng.init()
 
 -- Returns the libtrippin project as a static library. Intended to be used for projects that use libtrippin.
@@ -25,10 +25,12 @@ end
 local trippin = libtrippin.lib(true, "libtrippin.cpp")
 
 -- example projects :(
+-- TODO compile the other examples lmao
 local example_all = eng.newproj("example_all", "executable", "c++14")
 example_all:pedantic()
 example_all:debug()
 example_all:define({"DEBUG"})
+-- idk why it doesn't link stdc++
 example_all:link({"trippin", "m", "stdc++"})
 example_all:add_sources({"examples/one_test_to_rule_them_all.cpp"})
 example_all:add_includes({"..", "."})
