@@ -68,7 +68,7 @@ tr::Ref<tr::Arena> arena = new tr::Arena(tr::kb_to_bytes(64));
 auto* crap = arena->alloc<CrapStruct>();
 
 // you can also allocate arrays
-int32 items = {1, 2, 3, 4, 5};
+int32 items[] = {1, 2, 3, 4, 5};
 tr::Array<int32> array(arena, items, 5);
 array.add(6);
 for (auto item : array) {

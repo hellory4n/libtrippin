@@ -499,6 +499,8 @@ struct Color
 	{
 		return Color((hex >> 24) & 0xFF, (hex >> 16) & 0xFF, (hex >> 8) & 0xFF, hex & 0xFF);
 	}
+
+	// TODO a bunch of operators so lerp works
 };
 
 namespace palette {
