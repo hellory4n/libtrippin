@@ -1,5 +1,5 @@
 /*
-* libtrippin v2.0.0
+* libtrippin v2.0.1
 *
 * Most biggest most massive standard library thing of all time
 * https://github.com/hellory4n/libtrippin
@@ -53,7 +53,7 @@ typedef size_t usize;
 namespace tr {
 
 // I sure love versions.
-static constexpr const char* VERSION = "v2.0.0";
+static constexpr const char* VERSION = "v2.0.1";
 
 // Initializes the bloody library lmao.
 void init();
@@ -487,6 +487,7 @@ struct Color
 	constexpr Color();
 	constexpr Color(uint8 r, uint8 g, uint8 b) : r(r), g(g), b(b), a(255) {}
 	constexpr Color(uint8 r, uint8 g, uint8 b, uint8 a) : r(r), g(g), b(b), a(a) {}
+	constexpr Color(Vec4<float32> vec) : r(vec.x * 255), g(vec.y * 255), b(vec.z * 255), a(vec.w * 255) {}
 
 	// Makes a color from a hex code, with a format of 0xRRGGBB
 	static constexpr Color rgb(uint32 hex)
@@ -498,6 +499,12 @@ struct Color
 	static constexpr Color rgba(uint32 hex)
 	{
 		return Color((hex >> 24) & 0xFF, (hex >> 16) & 0xFF, (hex >> 8) & 0xFF, hex & 0xFF);
+	}
+
+	// OpenGL uses floats for colors
+	constexpr Vec4<float32> to_vec4()
+	{
+		return {this->r / 255.f, this->g / 255.f, this->b / 255.f, this->a / 255.f};
 	}
 
 	// TODO a bunch of operators so lerp works
@@ -653,6 +660,9 @@ class Ref
 	friend class MaybeRef<T>;
 
 public:
+	// C++ can be annoying
+	Ref() : ptr(nullptr) {}
+
 	Ref(T* ptr) : ptr(ptr)
 	{
 		if (ptr == nullptr) {
@@ -963,6 +973,8 @@ public:
 	char& operator[](usize idx) const { return this->array[idx]; }
 	usize length() const { return this->array.length() - 1; }
 	char* buffer() const { return this->array.buffer(); }
+	operator char*() const { return this->buffer(); }
+	operator const char*() const { return this->buffer(); }
 	Array<char>::Iterator begin() const { return this->array.begin(); }
 	// this one is different since you don't want to iterate over the null terminator
 	Array<char>::Iterator end() const { return Array<char>::Iterator(const_cast<char*>(this->buffer()) + this->length() - 1, this->length() - 1); }

@@ -1,5 +1,5 @@
 /*
-* libtrippin v2.0.0
+* libtrippin v2.0.1
 *
 * Most biggest most massive standard library thing of all time
 * https://github.com/hellory4n/libtrippin
