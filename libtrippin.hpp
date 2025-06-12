@@ -689,7 +689,7 @@ public:
 
 	Ref& operator=(T* ptr)
 	{
-		if (this->ptr == nullptr || ptr == nullptr) {
+		if (ptr == nullptr) {
 			tr::panic("tr::Ref<T> can't be null, if that's intentional use tr::MaybeRef<T>");
 		}
 		dynamic_cast<RefCounted*>(ptr)->retain();
