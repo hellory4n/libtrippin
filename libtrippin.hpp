@@ -693,7 +693,7 @@ public:
 			tr::panic("tr::Ref<T> can't be null, if that's intentional use tr::MaybeRef<T>");
 		}
 		dynamic_cast<RefCounted*>(ptr)->retain();
-		dynamic_cast<RefCounted*>(this->ptr)->release();
+		if (this->ptr != nullptr) dynamic_cast<RefCounted*>(this->ptr)->release();
 		this->ptr = ptr;
 		return *this;
 	}
