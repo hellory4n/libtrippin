@@ -49,6 +49,10 @@ typedef uint64_t uint64;
 typedef float float32;
 typedef double float64;
 typedef size_t usize;
+typedef ptrdiff_t isize;
+
+// it's not guaranteed lmao
+static_assert(sizeof(usize) == sizeof(isize), "oh no usize and isize aren't the same size");
 
 namespace tr {
 
@@ -634,23 +638,23 @@ struct Matrix4x4
 // Why the fuck not.
 struct MemoryInfo {
 	// Currently allocated by arenas, in bytes
-	usize allocated = 0;
+	isize allocated = 0;
 	// Like `allocated`, but cumulative
-	usize cumulative_allocated = 0;
+	isize cumulative_allocated = 0;
 	// Amount of alive reference counted objects
-	usize ref_counted_objs = 0;
+	isize ref_counted_objs = 0;
 	// Like `ref_counted_objs`, but cumulative
-	usize cumulative_ref_counted_objs = 0;
+	isize cumulative_ref_counted_objs = 0;
 	// Total amount of memory freed from arenas, in bytes
-	usize freed_by_arenas = 0;
+	isize freed_by_arenas = 0;
 	// Amount of freed reference counted objects
-	usize freed_ref_counted_objs = 0;
+	isize freed_ref_counted_objs = 0;
 	// Total amount of alive arena pages
-	usize alive_pages = 0;
+	isize alive_pages = 0;
 	// All arena pages that have ever existed
-	usize cumulative_pages = 0;
+	isize cumulative_pages = 0;
 	// Total amount of freed arena pages
-	usize freed_pages = 0;
+	isize freed_pages = 0;
 };
 
 // As the name implies, it gets the memory info. Idk why.

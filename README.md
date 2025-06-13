@@ -4,7 +4,7 @@ Most biggest most massive library of all time. I'm insane.
 
 ## Featuring
 
-- [libtrippin](./libtrippin.h) v2.0.1: Most massive standard library
+- [libtrippin](./libtrippin.h) v2.1.0: Most massive standard library
     - C++14 with no external dependencies (only libc)
     - Arenas
     - Reference counting
