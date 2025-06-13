@@ -80,5 +80,16 @@ int main()
 	tr::String maballs = tr::sprintf(arena, 256, "%s balls", str.buffer());
 	tr::log("%s", maballs.buffer());
 
+	tr::assert(str == "sigma", "strings are busted");
+	tr::assert(str != "ballshshjs", "strings are busted");
+	tr::assert(str != "sigmaaaa pelotas", "strings are busted");
+	tr::assert(str.substr(arena, 1, 3) == "igm", "strings are busted");
+	tr::Array<usize> sigma = tr::String("sigmysigmy").find(arena, "ig");
+	tr::assert(sigma.length() == 2, "strings are busted");
+	tr::String sigmaa = tr::String("figma").concat(arena, " balls");
+	tr::assert(sigmaa == "figma balls", "strings are busted");
+	tr::assert(sigmaa.starts_with("figm"), "strings are busted");
+	tr::assert(sigmaa.ends_with("alls"), "strings are busted");
+
 	tr::free();
 }

@@ -1,5 +1,5 @@
 /*
-* libtrippin v2.0.1
+* libtrippin v2.1.0
 *
 * Most biggest most massive standard library thing of all time
 * https://github.com/hellory4n/libtrippin
@@ -53,7 +53,7 @@ typedef size_t usize;
 namespace tr {
 
 // I sure love versions.
-static constexpr const char* VERSION = "v2.0.1";
+static constexpr const char* VERSION = "v2.1.0";
 
 // Initializes the bloody library lmao.
 void init();
@@ -864,7 +864,10 @@ public:
 	// Initializes an empty array at an arena.
 	explicit Array(Ref<Arena> arena, usize len) : arena(arena), len(len), cap(len)
 	{
-		this->ptr = reinterpret_cast<T*>(arena->alloc(sizeof(T) * len));
+		// you may initialize with a length of 0 so you can then add crap
+		if (len > 0) {
+			this->ptr = reinterpret_cast<T*>(arena->alloc(sizeof(T) * len));
+		}
 	}
 
 	// Initializes an array from a buffer. (the data is copied into the arena)
@@ -929,7 +932,10 @@ public:
 		T* old_buffer = this->ptr;
 		this->cap *= 2;
 		this->ptr = reinterpret_cast<T*>(this->arena->alloc(this->cap * sizeof(T)));
-		memcpy(this->ptr, old_buffer, this->len * sizeof(T));
+		// you may initialize with a length of 0 so you can then add crap
+		if (this->len > 0) {
+			memcpy(this->ptr, old_buffer, this->len * sizeof(T));
+		}
 
 		(*this)[this->len++] = val;
 	}
@@ -943,7 +949,8 @@ public:
 	}
 };
 
-// Literally just a wrapper around `tr::Array`, so it works better with strings.
+// Literally just a wrapper around `tr::Array`, so it works better with strings. Also all of the functions
+// that return strings copy the original strings first.
 class String {
 	Array<char> array;
 
@@ -978,14 +985,33 @@ public:
 	Array<char>::Iterator begin() const { return this->array.begin(); }
 	// this one is different since you don't want to iterate over the null terminator
 	Array<char>::Iterator end() const { return Array<char>::Iterator(const_cast<char*>(this->buffer()) + this->length() - 1, this->length() - 1); }
-	String duplicate(Arena* arena) const
+	String duplicate(Ref<Arena> arena) const
 	{
 		Array<char> arrayma = this->array.duplicate(arena);
 		return String(arrayma.buffer(), arrayma.length() + 1);
 	}
 	// i know .add() is missing
 
-	// TODO 5368356306 different string functions
+	// special string crap
+	bool operator==(const String& other);
+	bool operator!=(const String& other) { return !(*this == other); }
+	bool operator==(const char* other)   { return *this == String(other); }
+	bool operator!=(const char* other)   { return *this != String(other); }
+
+	// Gets a substring. The returned string doesn't include the end character.
+	String substr(Ref<Arena> arena, usize start, usize end);
+
+	// Returns an array with all of the indexes
+	Array<usize> find(Ref<Arena> arena, String str, usize start = 0, usize end = 0);
+
+	// It concatenates 2 strings lmao.
+	String concat(Ref<Arena> arena, String other);
+
+	// If true, the string starts with that other crap.
+	bool starts_with(String str);
+
+	// If true, the string ends with that other crap.
+	bool ends_with(String str);
 };
 
 // It's just `sprintf` for `tr::String` lmao.

@@ -1,5 +1,5 @@
 /*
-* libtrippin v2.0.1
+* libtrippin v2.1.0
 *
 * Most biggest most massive standard library thing of all time
 * https://github.com/hellory4n/libtrippin
@@ -136,18 +136,12 @@ TR_LOG_FUNC(1, 2) void tr::panic(const char* fmt, ...)
 
 TR_LOG_FUNC(2, 3) void tr::assert(bool x, const char* fmt, ...)
 {
-	#ifdef DEBUG
 	if (!x) {
 		va_list args;
 		va_start(args, fmt);
 		__log(tr::ConsoleColor::ERROR, "failed assert: ", true, fmt, args);
 		va_end(args);
 	}
-	#else
-	// the compiler is complaining about unused arguments
-	(void)x;
-	(void)fmt;
-	#endif
 }
 
 tr::Vec4<float32>& tr::Matrix4x4::operator[](usize idx)
@@ -661,4 +655,50 @@ TR_LOG_FUNC(3, 4) tr::String tr::sprintf(Ref<Arena> arena, usize maxlen, const c
 	// just in case
 	str[str.length() - 1] = '\0';
 	return str;
+}
+
+bool tr::String::operator==(const tr::String& other)
+{
+	return strncmp(*this, other, tr::max(this->length(), other.length())) == 0;
+}
+
+tr::String tr::String::substr(tr::Ref<tr::Arena> arena, usize start, usize end)
+{
+	String str = String(this->buffer() + start, end + 1).duplicate(arena);
+	str[end] = '\0';
+	return str;
+}
+
+tr::Array<usize> tr::String::find(tr::Ref<tr::Arena> arena, tr::String str, usize start, usize end)
+{
+	if (end == 0) end = this->length();
+
+	Ref<Arena> tmp = new Arena(tr::kb_to_bytes(64));
+	Array<usize> indexes(tmp, 0);
+
+	for (usize i = start; i < end; i++) {
+		String substr = this->substr(tmp, i, str.length());
+		if (substr == str) {
+			indexes.add(i);
+		}
+	}
+
+	return indexes.duplicate(arena);
+}
+
+tr::String tr::String::concat(tr::Ref<tr::Arena> arena, tr::String other)
+{
+	String new_str(arena, this->buffer(), this->length() + other.length());
+	strncat(new_str.buffer(), other.buffer(), other.length());
+	return new_str;
+}
+
+bool tr::String::starts_with(tr::String str)
+{
+	return String(this->buffer(), str.length()) == str;
+}
+
+bool tr::String::ends_with(tr::String str)
+{
+	return String(this->buffer() + this->length() - str.length(), str.length()) == str;
 }
