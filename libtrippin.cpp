@@ -702,3 +702,63 @@ bool tr::String::ends_with(tr::String str)
 {
 	return String(this->buffer() + this->length() - str.length(), str.length()) == str;
 }
+
+tr::String tr::String::file(Ref<Arena> arena)
+{
+	for (usize i = this->length() - 1; i >= 0; i--) {
+		if ((*this)[i] == '/' || (*this)[i] == '\\') {
+			return this->substr(arena, i + 1, this->length() + 1);
+		}
+	}
+	return this->duplicate(arena);
+}
+
+tr::String tr::String::directory(Ref<Arena> arena)
+{
+	for (usize i = this->length() - 1; i >= 0; i--) {
+		if ((*this)[i] == '/' || (*this)[i] == '\\') {
+			return this->substr(arena, 0, i);
+		}
+	}
+	return this->duplicate(arena);
+}
+
+tr::String tr::String::extension(Ref<Arena> arena)
+{
+	String filename = this->file(arena);
+	for (usize i = 0; i < filename.length(); i++) {
+		if (filename[i] == '.') {
+			// a . prefix is a hidden file in unix, not an extension
+			if (i == 0) return "";
+			return filename.substr(arena, i, filename.length() + 1);
+		}
+	}
+	return "";
+}
+
+bool tr::String::is_absolute()
+{
+	if (this->starts_with("/"))    return true;
+	if (this->starts_with("~/"))   return true;
+	if (this->starts_with("./"))   return false;
+	if (this->starts_with("../"))  return false;
+	// i think windows supports those? lmao
+	if (this->starts_with(".\\"))  return false;
+	if (this->starts_with("..\\")) return false;
+
+	// handle both windows drives and URI schemes
+	// they're both some letters followed by `:/`
+	for (ArrayItem<char> c : *this) {
+		// just ascii bcuz i doubt theres an uri scheme like lösarquívos://
+		if ((c.val >= '0' && c.val <= '9') || (c.val >= 'A' && c.val <= 'Z') || (c.val >= 'a' && c.val <= 'z')) {
+			// pls don't crash
+			if (this->length() > c.i + 2) {
+				if ((*this)[c.i + 1] == ':' && ((*this)[c.i + 2] == '/' || (*this)[c.i + 2] == '\\')) {
+					return true;
+				}
+			}
+		}
+	}
+
+	return false;
+}

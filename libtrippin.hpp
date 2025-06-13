@@ -1012,6 +1012,19 @@ public:
 
 	// If true, the string ends with that other crap.
 	bool ends_with(String str);
+
+	// Gets the filename in a path, e.g. returns `file.txt` for `/path/to/file.txt`
+	String file(Ref<Arena> arena);
+
+	// Gets the directory in a path e.g. returns `/path/to` for `/path/to/file.txt`
+	String directory(Ref<Arena> arena);
+
+	// Returns the extension in a path, e.g. returns `.txt` for `/path/to/file.txt`, `.blend.1` for
+	// `teapot.blend.1`, and an empty string for `.gitignore`
+	String extension(Ref<Arena> arena);
+
+	// If true, the path is absolute. Else, it's relative.
+	bool is_absolute();
 };
 
 // It's just `sprintf` for `tr::String` lmao.

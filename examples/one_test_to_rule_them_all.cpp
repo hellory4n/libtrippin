@@ -91,5 +91,14 @@ int main()
 	tr::assert(sigmaa.starts_with("figm"), "strings are busted");
 	tr::assert(sigmaa.ends_with("alls"), "strings are busted");
 
+	tr::assert(tr::String("/path/to/file.txt").file(arena) == "file.txt", "paths are busted");
+	tr::assert(tr::String("/path/to/file.txt").directory(arena) == "/path/to", "paths are busted");
+	tr::assert(tr::String("/path/to/teapot.blend.1").extension(arena) == ".blend.1", "paths are busted");
+	tr::assert(tr::String("app://sigma").is_absolute(), "paths are busted");
+	tr::assert(tr::String("C:\\sigma").is_absolute(), "paths are busted");
+	tr::assert(!tr::String("sigma").is_absolute(), "paths are busted");
+	tr::assert(!tr::String("./sigma").is_absolute(), "paths are busted");
+	tr::assert(tr::String("~/sigma").is_absolute(), "paths are busted");
+
 	tr::free();
 }
