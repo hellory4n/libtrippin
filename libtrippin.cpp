@@ -30,6 +30,7 @@
 
 namespace tr {
 	FILE* logfile;
+	MemoryInfo memory_info;
 }
 
 void tr::init()
@@ -514,6 +515,8 @@ float64 tr::Random::next()
 void tr::RefCounted::retain() const
 {
 	this->count++;
+	tr::memory_info.cumulative_ref_counted_objs++;
+	tr::memory_info.ref_counted_objs++;
 }
 
 void tr::RefCounted::release() const
@@ -521,6 +524,8 @@ void tr::RefCounted::release() const
 	this->count--;
 	if (this->count <= 0) {
 		delete this;
+		tr::memory_info.freed_ref_counted_objs++;
+		tr::memory_info.ref_counted_objs--;
 	}
 }
 
@@ -537,6 +542,12 @@ tr::ArenaPage::ArenaPage(usize size)
 	// i don't think you can recover from that
 	// so just die
 	tr::assert(this->buffer != nullptr, "couldn't allocate arena page");
+
+	// man
+	tr::memory_info.alive_pages++;
+	tr::memory_info.cumulative_pages++;
+	tr::memory_info.cumulative_allocated += size;
+	tr::memory_info.allocated += size;
 }
 
 tr::ArenaPage::~ArenaPage()
@@ -545,6 +556,12 @@ tr::ArenaPage::~ArenaPage()
 		// tr:: also has a function called free
 		::free(this->buffer);
 		this->buffer = nullptr;
+
+		// man
+		tr::memory_info.alive_pages--;
+		tr::memory_info.freed_pages++;
+		tr::memory_info.allocated -= this->size;
+		tr::memory_info.freed_by_arenas += this->size;
 	}
 }
 
@@ -643,6 +660,11 @@ void tr::Arena::prealloc(usize size)
 	new_page->prev = this->page;
 	this->page->next = new_page;
 	this->page = new_page;
+}
+
+tr::MemoryInfo tr::get_memory_info()
+{
+	return tr::memory_info;
 }
 
 TR_LOG_FUNC(3, 4) tr::String tr::sprintf(Ref<Arena> arena, usize maxlen, const char* fmt, ...)

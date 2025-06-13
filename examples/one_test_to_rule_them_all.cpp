@@ -100,5 +100,10 @@ int main()
 	tr::assert(!tr::String("./sigma").is_absolute(), "paths are busted");
 	tr::assert(tr::String("~/sigma").is_absolute(), "paths are busted");
 
+	// man
+	// tr::MemoryInfo memory = tr::get_memory_info();
+	// couldn't be bothered to print shit so i just read it in gdb
+	// tr::panic("lol");
+
 	tr::free();
 }

@@ -631,6 +631,31 @@ struct Matrix4x4
  * MEMORY
 */
 
+// Why the fuck not.
+struct MemoryInfo {
+	// Currently allocated by arenas, in bytes
+	usize allocated = 0;
+	// Like `allocated`, but cumulative
+	usize cumulative_allocated = 0;
+	// Amount of alive reference counted objects
+	usize ref_counted_objs = 0;
+	// Like `ref_counted_objs`, but cumulative
+	usize cumulative_ref_counted_objs = 0;
+	// Total amount of memory freed from arenas, in bytes
+	usize freed_by_arenas = 0;
+	// Amount of freed reference counted objects
+	usize freed_ref_counted_objs = 0;
+	// Total amount of alive arena pages
+	usize alive_pages = 0;
+	// All arena pages that have ever existed
+	usize cumulative_pages = 0;
+	// Total amount of freed arena pages
+	usize freed_pages = 0;
+};
+
+// As the name implies, it gets the memory info. Idk why.
+MemoryInfo get_memory_info();
+
 // Implements reference counting through inheritance. Note you have to wrap your values in a `tr::Ref<T>`
 // so it's not esoteric to use.
 class RefCounted
@@ -787,11 +812,18 @@ template<typename T> Ref<T>::Ref(const MaybeRef<T>& ref)
 }
 
 // Converts kilobytes to bytes
-inline constexpr usize kb_to_bytes(usize x) { return x * 1024; }
+static constexpr usize kb_to_bytes(usize x) { return x * 1024; }
 // Converts megabytes to bytes
-inline constexpr usize mb_to_bytes(usize x) { return kb_to_bytes(x) * 1024; }
+static constexpr usize mb_to_bytes(usize x) { return kb_to_bytes(x) * 1024; }
 // Converts gigabytes to bytes
-inline constexpr usize gb_to_bytes(usize x) { return mb_to_bytes(x) * 1024; }
+static constexpr usize gb_to_bytes(usize x) { return mb_to_bytes(x) * 1024; }
+
+// Converts bytes to kilobytes
+static constexpr usize bytes_to_kb(usize x) { return x / 1024; }
+// Converts bytes to megabytes
+static constexpr usize bytes_to_mb(usize x) { return bytes_to_kb(x) / 1024; }
+// Converts bytes to gigabytes
+static constexpr usize bytes_to_gb(usize x) { return bytes_to_mb(x) / 1024; }
 
 // Arenas are made of many buffers.
 class ArenaPage
