@@ -1,5 +1,5 @@
 /*
-* libtrippin v2.1.0
+* libtrippin v2.1.1
 *
 * Most biggest most massive standard library thing of all time
 * https://github.com/hellory4n/libtrippin
@@ -514,15 +514,20 @@ float64 tr::Random::next()
 
 void tr::RefCounted::retain() const
 {
-	this->count++;
-	tr::memory_info.cumulative_ref_counted_objs++;
-	tr::memory_info.ref_counted_objs++;
+	// shut up it works
+	TR_GCC_IGNORE_WARNING(-Wtautological-undefined-compare)
+	// man
+	if (this != nullptr) {
+		this->count++;
+		tr::memory_info.cumulative_ref_counted_objs++;
+		tr::memory_info.ref_counted_objs++;
+	}
+	TR_GCC_RESTORE()
 }
 
 void tr::RefCounted::release() const
 {
-	this->count--;
-	if (this->count <= 0) {
+	if (--this->count == 0) {
 		delete this;
 		tr::memory_info.freed_ref_counted_objs++;
 		tr::memory_info.ref_counted_objs--;

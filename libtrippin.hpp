@@ -1,5 +1,5 @@
 /*
-* libtrippin v2.1.0
+* libtrippin v2.1.1
 *
 * Most biggest most massive standard library thing of all time
 * https://github.com/hellory4n/libtrippin
@@ -33,9 +33,22 @@
 
 #if (defined(__GNUC__) || defined(__clang__)) && !defined(_WIN32)
 // counting starts at 1 lmao
-#define TR_LOG_FUNC(fmt_idx, varargs_idx) [[gnu::format(printf, fmt_idx, varargs_idx)]]
+#define TR_LOG_FUNC(FmtIdx, VarargsIdx) [[gnu::format(printf, FmtIdx, VarargsIdx)]]
 #else
-#define TR_LOG_FUNC(fmt_idx, varargs_idx)
+#define TR_LOG_FUNC(FmtIdx, VarargsIdx)
+#endif
+
+#if defined(__GNUC__) || defined(__clang__)
+#define TR_GCC_PRAGMA(X) _Pragma(#X)
+
+#define TR_GCC_IGNORE_WARNING(Warning) \
+	TR_GCC_PRAGMA(GCC diagnostic push) \
+	TR_GCC_PRAGMA(GCC diagnostic ignored #Warning)
+
+#define TR_GCC_RESTORE() TR_GCC_PRAGMA(GCC diagnostic pop)
+#else
+#define TR_GCC_IGNORE_WARNING(Warning)
+#define TR_GCC_RESTORE()
 #endif
 
 typedef int8_t int8;
@@ -57,7 +70,7 @@ static_assert(sizeof(usize) == sizeof(isize), "oh no usize and isize aren't the 
 namespace tr {
 
 // I sure love versions.
-static constexpr const char* VERSION = "v2.1.0";
+static constexpr const char* VERSION = "v2.1.1";
 
 // Initializes the bloody library lmao.
 void init();
@@ -664,7 +677,7 @@ MemoryInfo get_memory_info();
 // so it's not esoteric to use.
 class RefCounted
 {
-	mutable usize count = 0;
+	mutable isize count = 0;
 
 public:
 	RefCounted() : count(0) {}
@@ -688,32 +701,36 @@ class Ref
 	// man
 	friend class MaybeRef<T>;
 
+	RefCounted* refcounted() { return dynamic_cast<RefCounted*>(ptr); }
+
 public:
 	// C++ can be annoying
 	Ref() : ptr(nullptr) {}
 
 	Ref(T* ptr) : ptr(ptr)
 	{
-		if (ptr == nullptr) {
+		if (this->ptr == nullptr) {
 			tr::panic("tr::Ref<T> can't be null, if that's intentional use tr::MaybeRef<T>");
 		}
-		dynamic_cast<RefCounted*>(ptr)->retain();
+		this->refcounted()->retain();
 	}
 
-	Ref(const Ref& ref) : ptr(ref)
+	Ref(const Ref& ref) : ptr(ref.ptr)
 	{
-		if (ref == nullptr) {
+		if (this->ptr == nullptr) {
 			tr::panic("tr::Ref<T> can't be null, if that's intentional use tr::MaybeRef<T>");
 		}
-		dynamic_cast<RefCounted*>(ref.ptr)->retain();
+		this->refcounted()->retain();
 	}
 
 	Ref(const MaybeRef<T>& ref);
 
+    Ref(Ref&& other) : ptr(other.ptr) { other.ptr = nullptr; }
+
 	~Ref()
 	{
 		if (this->ptr == nullptr) return;
-		dynamic_cast<RefCounted*>(this->ptr)->release();
+		this->refcounted()->release();
 	}
 
 	Ref& operator=(T* ptr)
@@ -721,9 +738,33 @@ public:
 		if (ptr == nullptr) {
 			tr::panic("tr::Ref<T> can't be null, if that's intentional use tr::MaybeRef<T>");
 		}
-		dynamic_cast<RefCounted*>(ptr)->retain();
-		if (this->ptr != nullptr) dynamic_cast<RefCounted*>(this->ptr)->release();
+		this->refcounted()->retain();
+		if (this->ptr != nullptr) this->refcounted()->release();
 		this->ptr = ptr;
+		return *this;
+	}
+
+	Ref& operator=(const Ref<T>& other)
+	{
+		if (this != &other) {
+			other.refcounted()->retain();
+			if (this->ptr != nullptr) {
+				this->refcounted()->release();
+			}
+			this->ptr = other.ptr;
+		}
+		return *this;
+	}
+
+	Ref& operator=(Ref<T>&& other)
+	{
+		if (this != &other) {
+			if (this->ptr != nullptr) {
+				this->refcounted()->release();
+			}
+			ptr = other.ptr;
+			other.ptr = nullptr;
+		}
 		return *this;
 	}
 
@@ -737,13 +778,15 @@ public:
 	}
 
 	// help
-	T* operator->() const              { return this->get(); }
-	T& operator*() const               { return *this->get(); }
-	operator T*() const                { return this->get(); }
-	bool operator==(const Ref<T>& ref) { return this->ptr == ref.ptr; }
-	bool operator==(const T* ptr)      { return this->ptr == ptr; }
-	bool operator!=(const Ref<T>& ref) { return this->ptr != ref.ptr; }
-	bool operator!=(const T* ptr)      { return this->ptr != ptr; }
+	T* operator->() const                   { return this->ptr; }
+	T& operator*() const                    { return *this->ptr; }
+	operator T*() const                     { return this->ptr; }
+	bool operator==(const MaybeRef<T>& ref) { return this->ptr == ref.ptr; }
+	bool operator==(const Ref<T>& ref)      { return this->ptr == ref.ptr; }
+	bool operator==(const T* ptr)           { return this->ptr == ptr; }
+	bool operator!=(const MaybeRef<T>& ref) { return this->ptr != ref.ptr; }
+	bool operator!=(const Ref<T>& ref)      { return this->ptr != ref.ptr; }
+	bool operator!=(const T* ptr)           { return this->ptr != ptr; }
 };
 
 // Non-esoteric wrapper around `tr::RefCounted`. It also allows null, if you don't want that to happen, use
@@ -755,37 +798,66 @@ class MaybeRef
 	// man
 	friend class Ref<T>;
 
+	RefCounted* refcounted() { return dynamic_cast<RefCounted*>(ptr); }
+
 public:
 	MaybeRef(T* ptr = nullptr) : ptr(ptr)
 	{
-		if (ptr == nullptr) return;
-		dynamic_cast<RefCounted*>(ptr)->retain();
+		if (this->ptr == nullptr) return;
+		this->refcounted()->retain();
 	}
 
-	MaybeRef(const MaybeRef& ref) : ptr(ref)
+	MaybeRef(const MaybeRef& ref) : ptr(ref.ptr)
 	{
-		if (ref == nullptr) return;
-		dynamic_cast<RefCounted*>(ref.ptr)->retain();
+		if (this->ptr == nullptr) return;
+		this->refcounted()->retain();
 	}
 
-	MaybeRef(const Ref<T>& ref) : ptr(ref)
+	MaybeRef(const Ref<T>& ref) : ptr(ref.ptr)
 	{
-		if (ref == nullptr) return;
-		dynamic_cast<RefCounted*>(ref.ptr)->retain();
+		if (this->ptr == nullptr) return;
+		this->refcounted()->retain();
 	}
+
+	MaybeRef(MaybeRef&& other) : ptr(other.ptr) { other.ptr = nullptr; }
 
 	~MaybeRef()
 	{
 		if (this->ptr == nullptr) return;
-		dynamic_cast<RefCounted*>(this->ptr)->release();
+		this->refcounted()->release();
 	}
 
 	MaybeRef& operator=(T* ptr)
 	{
-		// idk man i stole this from some old website
-		if (ptr != nullptr) dynamic_cast<RefCounted*>(ptr)->retain();
-		if (this->ptr != nullptr) dynamic_cast<RefCounted*>(this->ptr)->release();
+		if (ptr != nullptr) {
+			this->refcounted()->retain();
+		}
+		if (this->ptr != nullptr) {
+			this->refcounted()->release();
+		}
 		this->ptr = ptr;
+		return *this;
+	}
+
+	MaybeRef& operator=(const MaybeRef<T>& other)
+	{
+		if (this != &other) {
+			if (other != nullptr)     other.refcounted()->retain();
+			if (this->ptr != nullptr) this->refcounted()->release();
+			this->ptr = other.ptr;
+		}
+		return *this;
+	}
+
+	MaybeRef& operator=(MaybeRef<T>&& other)
+	{
+		if (this != &other) {
+			if (this->ptr != nullptr) {
+				this->refcounted()->release();
+			}
+			ptr = other.ptr;
+			other.ptr = nullptr;
+		}
 		return *this;
 	}
 
@@ -796,23 +868,24 @@ public:
 	}
 
 	// help
-	T* operator->() const              { return this->ptr; }
-	T& operator*() const               { return *this->ptr; }
-	operator T*() const                { return this->ptr; }
-	bool operator==(const Ref<T>& ref) { return this->ptr == ref.ptr; }
-	bool operator==(const T* ptr)      { return this->ptr == ptr; }
-	bool operator!=(const Ref<T>& ref) { return this->ptr != ref.ptr; }
-	bool operator!=(const T* ptr)      { return this->ptr != ptr; }
+	T* operator->() const                   { return this->ptr; }
+	T& operator*() const                    { return *this->ptr; }
+	operator T*() const                     { return this->ptr; }
+	bool operator==(const MaybeRef<T>& ref) { return this->ptr == ref.ptr; }
+	bool operator==(const Ref<T>& ref)      { return this->ptr == ref.ptr; }
+	bool operator==(const T* ptr)           { return this->ptr == ptr; }
+	bool operator!=(const MaybeRef<T>& ref) { return this->ptr != ref.ptr; }
+	bool operator!=(const Ref<T>& ref)      { return this->ptr != ref.ptr; }
+	bool operator!=(const T* ptr)           { return this->ptr != ptr; }
 };
 
 // man
-template<typename T> Ref<T>::Ref(const MaybeRef<T>& ref)
+template<typename T> Ref<T>::Ref(const MaybeRef<T>& other) : ptr(other.ptr)
 {
-	if (ref == nullptr) {
-		tr::panic("can't convert a null tr::MaybeRef<T> to tr::Ref<T>");
+    if (!this->ptr) {
+        tr::panic("can't convert null tr::MaybeRef<T> to tr::Ref<T>");
 	}
-	this->ptr = ref.ptr;
-	dynamic_cast<RefCounted*>(ref.ptr)->retain();
+    this->refcounted()->retain();
 }
 
 // Converts kilobytes to bytes
