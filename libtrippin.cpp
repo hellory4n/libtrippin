@@ -518,9 +518,12 @@ void tr::RefCounted::retain() const
 	TR_GCC_IGNORE_WARNING(-Wtautological-undefined-compare)
 	// man
 	if (this != nullptr) {
+		// probably was just birthed into this world
+		if (this->count == 0) {
+			tr::memory_info.cumulative_ref_counted_objs++;
+			tr::memory_info.ref_counted_objs++;
+		}
 		this->count++;
-		tr::memory_info.cumulative_ref_counted_objs++;
-		tr::memory_info.ref_counted_objs++;
 	}
 	TR_GCC_RESTORE()
 }
