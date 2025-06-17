@@ -1,26 +1,26 @@
 /*
-* libtrippin v2.1.1
-*
-* Most biggest most massive standard library thing of all time
-* https://github.com/hellory4n/libtrippin
-*
-* Copyright (C) 2025 by hellory4n <hellory4n@gmail.com>
-*
-* Permission to use, copy, modify, and/or distribute this
-* software for any purpose with or without fee is hereby
-* granted.
-*
-* THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS
-* ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL
-* IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO
-* EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
-* INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-* WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,
-* WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
-* TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE
-* USE OR PERFORMANCE OF THIS SOFTWARE.
-*
-*/
+ * libtrippin v2.1.2
+ *
+ * Most biggest most massive standard library thing of all time
+ * https://github.com/hellory4n/libtrippin
+ *
+ * Copyright (C) 2025 by hellory4n <hellory4n@gmail.com>
+ *
+ * Permission to use, copy, modify, and/or distribute this
+ * software for any purpose with or without fee is hereby
+ * granted.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS
+ * ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO
+ * EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+ * INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,
+ * WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+ * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE
+ * USE OR PERFORMANCE OF THIS SOFTWARE.
+ *
+ */
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -150,26 +150,6 @@ tr::Vec4<float32>& tr::Matrix4x4::operator[](usize idx)
 	return this->values[idx];
 }
 
-tr::Matrix4x4::Matrix4x4()
-{
-	for (usize i = 0; i < 4; i++) {
-		for (usize j = 0; j < 4; j++) {
-			(*this)[i][j] = 0;
-		}
-	}
-}
-
-tr::Matrix4x4 tr::Matrix4x4::identity()
-{
-	Matrix4x4 m;
-	for (usize i = 0; i < 4; i++) {
-		for (usize j = 0; j < 4; j++) {
-			m[i][j] = i == j ? 1 : 0;
-		}
-	}
-	return m;
-}
-
 tr::Vec4<float32> tr::Matrix4x4::row(usize idx)
 {
 	Vec4<float32> r;
@@ -226,7 +206,7 @@ tr::Matrix4x4 tr::Matrix4x4::operator*(float32 b)
 	return m;
 }
 
-tr::Matrix4x4 tr::Matrix4x4::operator*(tr::Vec3<float32> b)
+tr::Matrix4x4 tr::Matrix4x4::scale(tr::Vec3<float32> b)
 {
 	Matrix4x4 m;
 	m[0] = (*this)[0] * b.x;
@@ -238,7 +218,7 @@ tr::Matrix4x4 tr::Matrix4x4::operator*(tr::Vec3<float32> b)
 
 tr::Matrix4x4 tr::Matrix4x4::operator*(tr::Matrix4x4 b)
 {
-	tr::Matrix4x4 m, temp;
+	tr::Matrix4x4 temp;
 	for (usize c = 0; c < 4; c++) {
 		for (usize r = 0; r < 4; r++) {
 			temp[c][r] = 0;
@@ -247,7 +227,7 @@ tr::Matrix4x4 tr::Matrix4x4::operator*(tr::Matrix4x4 b)
 			}
 		}
 	}
-	return m;
+	return temp;
 }
 
 tr::Vec4<float32> tr::Matrix4x4::operator*(tr::Vec4<float32> b)
@@ -268,17 +248,6 @@ tr::Matrix4x4 tr::Matrix4x4::translate(float32 x, float32 y, float32 z)
 	m[3][0] = x;
 	m[3][1] = y;
 	m[3][2] = z;
-	return m;
-}
-
-tr::Matrix4x4 tr::Matrix4x4::translate_in_place(float32 x, float32 y, float32 z)
-{
-	Matrix4x4 m = Matrix4x4::identity();
-	Vec4<float32> t = Vec4<float32>(x, y, z, 0);
-	for (usize i = 0; i < 4; i++) {
-		Vec4<float32> r = m.row(i);
-		m[3][i] += r.mul_inner(t);
-	}
 	return m;
 }
 

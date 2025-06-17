@@ -1,26 +1,26 @@
 /*
-* libtrippin v2.1.1
-*
-* Most biggest most massive standard library thing of all time
-* https://github.com/hellory4n/libtrippin
-*
-* Copyright (C) 2025 by hellory4n <hellory4n@gmail.com>
-*
-* Permission to use, copy, modify, and/or distribute this
-* software for any purpose with or without fee is hereby
-* granted.
-*
-* THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS
-* ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL
-* IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO
-* EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
-* INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-* WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,
-* WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
-* TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE
-* USE OR PERFORMANCE OF THIS SOFTWARE.
-*
-*/
+ * libtrippin v2.1.2
+ *
+ * Most biggest most massive standard library thing of all time
+ * https://github.com/hellory4n/libtrippin
+ *
+ * Copyright (C) 2025 by hellory4n <hellory4n@gmail.com>
+ *
+ * Permission to use, copy, modify, and/or distribute this
+ * software for any purpose with or without fee is hereby
+ * granted.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS
+ * ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO
+ * EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+ * INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,
+ * WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+ * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE
+ * USE OR PERFORMANCE OF THIS SOFTWARE.
+ *
+ */
 
 #ifndef _TRIPPIN_H
 #define _TRIPPIN_H
@@ -70,7 +70,7 @@ static_assert(sizeof(usize) == sizeof(isize), "oh no usize and isize aren't the 
 namespace tr {
 
 // I sure love versions.
-static constexpr const char* VERSION = "v2.1.1";
+static constexpr const char* VERSION = "v2.1.2";
 
 // Initializes the bloody library lmao.
 void init();
@@ -615,14 +615,29 @@ struct Matrix4x4
 	Vec4<float32>& operator[](usize idx);
 
 	// Note this initializes the matrix as 0, not identity (use `Matrix4x4::identity()` for that)
-	Matrix4x4();
+	constexpr Matrix4x4()
+	{
+		for (usize i = 0; i < 4; i++) {
+			for (usize j = 0; j < 4; j++) {
+				(*this)[i][j] = 0;
+			}
+		}
+	}
 
 	// Initializes an identity matrix.
-	static Matrix4x4 identity();
+	static constexpr Matrix4x4 identity()
+	{
+		Matrix4x4 m;
+		for (usize i = 0; i < 4; i++) {
+			for (usize j = 0; j < 4; j++) {
+				m[i][j] = i == j ? 1 : 0;
+			}
+		}
+		return m;
+	}
 
 	// man
 	static Matrix4x4 translate(float32 x, float32 y, float32 z);
-	static Matrix4x4 translate_in_place(float32 x, float32 y, float32 z);
 	static Matrix4x4 from_vec3_mul_outer(Vec3<float32> a, Vec3<float32> b);
 	static Matrix4x4 frustum(float32 left, float32 right, float32 bottom, float32 top, float32 near, float32 far);
 	static Matrix4x4 orthographic(float32 left, float32 right, float32 bottom, float32 top, float32 near, float32 far);
@@ -634,9 +649,9 @@ struct Matrix4x4
 	Matrix4x4 operator+(Matrix4x4 b);
 	Matrix4x4 operator-(Matrix4x4 b);
 	Matrix4x4 operator*(float32 b);
-	Matrix4x4 operator*(Vec3<float32> b);
 	Matrix4x4 operator*(Matrix4x4 b);
 	Vec4<float32> operator*(Vec4<float32> b);
+	Matrix4x4 scale(Vec3<float32> b);
 	Matrix4x4 rotate(float32 x, float32 y, float32 z, float32 radians);
 	Matrix4x4 rotate_x(float32 radians);
 	Matrix4x4 rotate_y(float32 radians);
