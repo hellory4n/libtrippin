@@ -716,7 +716,7 @@ class Ref
 	// man
 	friend class MaybeRef<T>;
 
-	RefCounted* refcounted() { return dynamic_cast<RefCounted*>(ptr); }
+	RefCounted* refcounted() const { return dynamic_cast<RefCounted*>(ptr); }
 
 public:
 	// C++ can be annoying
@@ -813,7 +813,7 @@ class MaybeRef
 	// man
 	friend class Ref<T>;
 
-	RefCounted* refcounted() { return dynamic_cast<RefCounted*>(ptr); }
+	RefCounted* refcounted() const { return dynamic_cast<RefCounted*>(ptr); }
 
 public:
 	MaybeRef(T* ptr = nullptr) : ptr(ptr)
