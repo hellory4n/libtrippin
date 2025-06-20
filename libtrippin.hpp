@@ -138,7 +138,29 @@ public:
 	Maybe() : waste_of_space(0), has_value(false) {};
 
 	// Intializes a Maybe<T> with a value
-	Maybe(T val) : value(val), has_value(true) {};
+	Maybe(const T& val) : value(val), has_value(true) {};
+
+	Maybe(const Maybe& other) : has_value(other.has_value)
+	{
+		if (this->has_value) this->value = other.value;
+		else this->has_value = 0;
+	}
+
+	Maybe& operator=(const Maybe& other)
+	{
+		if (this != &other) {
+			if (this->has_value && other.has_value) {
+				this->value = other.value;
+			} else if (this->has_value && !other.has_value) {
+				this->value.~T();
+				this->has_value = false;
+			} else if (!this->has_value && other.has_value) {
+				this->value = other.value;
+				this->has_value = true;
+			}
+		}
+		return *this;
+	}
 
 	~Maybe()
 	{
@@ -148,7 +170,7 @@ public:
 	}
 
 	// If true, the maybe is, in fact, a definitely.
-	bool is_valid()
+	bool is_valid() const
 	{
 		return this->has_value;
 	}
@@ -156,12 +178,15 @@ public:
 	// Gets the value or panics if it's null
 	T& unwrap()
 	{
-		if (this->has_value) {
-			return this->value;
-		}
-		else {
-			tr::panic("couldn't unwrap Maybe<T>");
-		}
+		if (this->has_value) return this->value;
+		else tr::panic("couldn't unwrap Maybe<T>");
+	}
+
+	// Gets the value or panics if it's null
+	const T& unwrap() const
+	{
+		if (this->has_value) return this->value;
+		else tr::panic("couldn't unwrap Maybe<T>");
 	}
 };
 
