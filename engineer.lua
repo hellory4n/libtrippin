@@ -2,6 +2,7 @@ libtrippin = {}
 
 local eng = require("libengineer")
 eng.init()
+eng.workstation("libtrippin", "hellory4n", "Most biggest most massive library of all time")
 
 -- Returns the libtrippin project as a static library. Intended to be used for projects that use libtrippin.
 -- Just link with "trippin" and build this before your own projects. `debug` is a bool. On linux you have to

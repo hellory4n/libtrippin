@@ -31,6 +31,8 @@ Put these are the beginning and end:
 ```lua
 eng = require("libengineer")
 eng.init()
+-- optional
+eng.workstation("Crapplication", "John Lemon", "The most application ever.")
 
 -- your crap goes here
 
@@ -53,7 +55,7 @@ Conveniently Engineer provides a default "help" recipe:
 
 ```plaintext
 $ ./engineer
-Engineer v1.0.0
+...
 
 Recipes:
 - build:        Builds the project
@@ -61,25 +63,27 @@ Recipes:
 
 Options: (usage: <option>=<value>)
 - platform:     Sets the platform it'll get compiled to
+
+...
 ```
 
 Now to actually do something useful you can use projects:
 
 ```lua
 -- name, type (executable, sharedlib, staticlib), standard
-local crapplication = eng.newproj("crapplication", "executable", "c99")
+local project = eng.newproj("crapplication", "executable", "c99")
 -- configured with methods
-crapplication:pedantic()
-crapplication:add_includes({"src"})
-crapplication:add_srcs({"src/main.c", "src/something_else.c"})
-crapplication:target("The_Crapplication™")
+project:pedantic()
+project:add_includes({"src"})
+project:add_srcs({"src/main.c", "src/something_else.c"})
+project:target("The_Crapplication™")
 ```
 
 It doesn't do anything until you build it:
 
 ```lua
 eng.recipe("build", "Builds the project", function()
-    crapplication:build()
+    project:build()
 end)
 ```
 
@@ -87,7 +91,7 @@ Additional recipes you can have:
 
 ```lua
 eng.recipe("clean", "Cleans the project", function()
-    crapplication:clean()
+    project:clean()
 end)
 
 eng.recipe("run", "Runs the project", function()
@@ -102,22 +106,22 @@ Full sample:
 eng = require("libengineer")
 eng.init()
 
-local crapplication = eng.newproj("crapplication", "executable", "c99")
-crapplication:pedantic()
-crapplication:add_includes({"src"})
-crapplication:add_srcs({"src/main.c", "src/something_else.c"})
-crapplication:target("The_Crapplication™")
+local project = eng.newproj("crapplication", "executable", "c99")
+project:pedantic()
+project:add_includes({"src"})
+project:add_srcs({"src/main.c", "src/something_else.c"})
+project:target("The_Crapplication™")
 
 eng.option("platform", "Sets the platform it'll get compiled to", function(val)
     print("Building for "..val)
 end)
 
 eng.recipe("build", "Builds the project", function()
-    crapplication:build()
+    project:build()
 end)
 
 eng.recipe("clean", "Cleans the project", function()
-    crapplication:clean()
+    project:clean()
 end)
 
 eng.recipe("run", "Runs the project", function()
@@ -149,6 +153,9 @@ I sure love documentation.
 
 -- Initializes engineer™
 function eng.init()
+
+-- Sets additional information to be displayed in the help recipe
+function eng.workstation(name: string, author: string, description: string)
 
 -- Makes a recipe. The callback will be called when the recipe is used. The description will
 -- be used for the default help recipe.

@@ -1,5 +1,5 @@
 --[[
-	Engineer v1.1.1
+	Engineer v1.2.0
 
 	Bestest build system ever
 	More information at https://github.com/hellory4n/libtrippin/tree/main/engineerbuild
@@ -48,6 +48,10 @@ eng = {
 
 	-- Used to relink projects if anything changed since there's no dependency system lmao
 	recompiling = false,
+	-- man.
+	workstation_name = "",
+	workstation_description = "",
+	workstation_author = "",
 }
 
 -- Runs a command with no output
@@ -78,7 +82,8 @@ function eng.util.print_table(node)
 					output_str = output_str.."\n"
 				end
 
-				-- This is necessary for working with HUGE tables otherwise we run out of memory using concat on huge strings
+				-- This is necessary for working with HUGE tables otherwise we run out of memory using concat on
+				-- huge strings
 				table.insert(output,output_str)
 				output_str = ""
 
@@ -194,7 +199,12 @@ function eng.init()
 
 	-- default help recipe
 	eng.recipe("help", "Shows what you're seeing right now", function()
-		print("Engineer v1.1.1\n")
+		-- if theres no eng.workstation() just shut up
+		if eng.workstation_name ~= "" then
+			print(eng.workstation_name.." by "..eng.workstation_author)
+			print(eng.workstation_description.."\n")
+		end
+
 		print("Recipes:")
 
 		-- some sorting lamo
@@ -206,7 +216,7 @@ function eng.init()
 
 		-- actually list the shitfuck
 		for _, recipe in ipairs(rkeys) do
-			print(string.format("%-16s", "- "..recipe..": ")..eng.recipe_description[recipe])
+			print(string.format("%-20s", "- "..recipe..": ")..eng.recipe_description[recipe])
 		end
 
 		-- mate
@@ -218,9 +228,18 @@ function eng.init()
 		table.sort(okeys)
 
 		for _, option in ipairs(okeys) do
-			print(string.format("%-16s", "- "..option..": ")..eng.option_description[option])
+			print(string.format("%-20s", "- "..option..": ")..eng.option_description[option])
 		end
+
+		print("\nEngineer v1.2.0 - copyright (C) 2025 hellory4n")
 	end)
+end
+
+-- Sets additional information to be displayed in the help recipe
+function eng.workstation(name, author, description)
+	eng.workstation_name = name
+	eng.workstation_author = author
+	eng.workstation_description = description
 end
 
 -- Makes a recipe. The callback will be called when the recipe is used. The description will be used for
@@ -366,7 +385,9 @@ function project_methods.optimization(proj, level)
 	elseif level == 1 then proj.cflags = proj.cflags.." -O1 "
 	elseif level == 2 then proj.cflags = proj.cflags.." -O2 "
 	elseif level == 3 then proj.cflags = proj.cflags.." -O3 "
-	else error(eng.CONSOLE_COLOR_ERROR.."you bloody scoundrel that's not a valid level"..eng.CONSOLE_COLOR_RESET) end
+	else
+		error(eng.CONSOLE_COLOR_ERROR.."you bloody scoundrel that's not a valid level"..eng.CONSOLE_COLOR_RESET)
+	end
 end
 
 -- Adds multiple defines (it's a list) to the project
