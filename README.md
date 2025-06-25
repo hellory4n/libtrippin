@@ -23,7 +23,7 @@ Most biggest most massive library of all time. I'm insane.
 
 ## Usage
 
-Just add `libtrippin.cpp` to your project
+Just add all the `.hpp`/`.cpp` files in `trippin/` to your project
 
 If you have debug builds make sure you have `DEBUG` defined (it doesn't change a whole lot but i mean why not)
 
@@ -38,6 +38,8 @@ See the examples folder for more crap.
 ### Logging
 
 ```cpp
+#include <trippin/log.hpp>
+
 tr::use_log_file("log.txt");
 tr::init();
 
@@ -50,7 +52,7 @@ tr::error("sir");
 // same formatting as printf
 tr::info("sir %i", 9462952);
 
-tr::assert(2 + 2 == 5, "i may be wrong");
+TR_ASSERT_MSG(2 + 2 == 5, "i may be wrong");
 tr::panic("AAAAAHHH");
 
 tr::free();
@@ -59,6 +61,9 @@ tr::free();
 ### Memory
 
 ```cpp
+#include <trippin/log.hpp>
+#include <trippin/memory.hpp>
+
 // initialize an arena
 // tr::Ref is for reference counting
 tr::Ref<tr::Arena> arena = new tr::Arena(tr::kb_to_bytes(64));
@@ -79,6 +84,8 @@ for (auto item : array) {
 ### Strings
 
 ```cpp
+#include <trippin/string.hpp>
+
 // temporary string
 tr::String str = "hi mom";
 tr::log("%s", str.buffer());
@@ -93,12 +100,15 @@ tr::String str = tr::sprintf(arena, 32, "hi %s", "mom");
 ### Math
 
 ```cpp
+#include <trippin/log.hpp>
+#include <trippin/math.hpp>
+
 tr::Random sorandomxd;
 tr::Vec3<float32> vecma;
 for (usize i = 0; i < 3; i++) {
-    vecma[i] = sorandomxd.next(0.f, 999999999.f);
+    vecma[i] = sorandomxd.next(0.0f, 999999999.9f);
 }
-tr::assert(vecma.x > 0.f, "oh no");
+TR_ASSERT(vecma.x > 0.0f);
 ```
 
 ## FAQ

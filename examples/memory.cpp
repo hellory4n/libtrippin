@@ -1,4 +1,5 @@
-#include "libtrippin.hpp"
+#include <trippin/log.hpp>
+#include <trippin/memory.hpp>
 
 struct CrapStruct
 {

@@ -6,7 +6,7 @@ eng.workstation("libtrippin", "hellory4n", "Most biggest most massive library of
 
 -- Returns the libtrippin project as a static library. Intended to be used for projects that use libtrippin.
 -- Just link with "trippin" and build this before your own projects. `debug` is a bool. On linux you have to
--- link with "m" too. `trippinsrc` is where you put libtrippin.cpp
+-- link with "m" too. `trippindir` is the directory with libtrippin
 function libtrippin.lib(debug, trippinsrc)
 	-- just trippin so it doesn't become "liblibtrippin.a"
 	local project = eng.newproj("trippin", "staticlib", "c++14")
@@ -19,11 +19,17 @@ function libtrippin.lib(debug, trippinsrc)
 		project:optimization(2)
 	end
 
-	project:add_sources({trippinsrc})
+	project:add_sources({
+		trippinsrc.."/common.cpp",
+		trippinsrc.."/log.cpp",
+		trippinsrc.."/math.cpp",
+		trippinsrc.."/memory.cpp",
+		trippinsrc.."/string.cpp",
+	})
 	project:target("libtrippin.a")
 	return project
 end
-local trippin = libtrippin.lib(true, "libtrippin.cpp")
+local trippin = libtrippin.lib(true, "trippin")
 
 -- example projects :(
 -- TODO compile the other examples lmao
@@ -68,7 +74,7 @@ eng.recipe("build", "Builds the library and the examples", function()
 	example_all:build()
 end)
 
-eng.recipe("run-one-test-to-rule-them-all", "Runs the example with everything ever", function()
+eng.recipe("run", "Runs the example with everything ever", function()
 	eng.run_recipe("build")
 	-- padding
 	print()

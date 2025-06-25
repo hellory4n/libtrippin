@@ -1,4 +1,4 @@
-#include "libtrippin.hpp"
+#include <trippin/log.hpp>
 
 int main(void)
 {
@@ -10,7 +10,7 @@ int main(void)
 	tr::warn("sir");
 	tr::error("sir");
 
-	tr::assert(2 + 2 == 5, "i may be wrong");
+	TR_ASSERT_MSG(2 + 2 == 5, "i may be wrong");
 	tr::panic("AHHHHHHH");
 
 	tr::free();

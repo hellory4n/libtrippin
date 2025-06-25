@@ -1,4 +1,8 @@
-#include "libtrippin.hpp"
+#include <trippin/common.hpp>
+#include <trippin/log.hpp>
+#include <trippin/math.hpp>
+#include <trippin/memory.hpp>
+#include <trippin/string.hpp>
 
 int main()
 {
