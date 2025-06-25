@@ -47,7 +47,7 @@ void tr::free()
 void tr::use_log_file(const char* path)
 {
 	tr::logfile = fopen(path, "w");
-	tr::assert(tr::logfile != nullptr,
+	TR_ASSERT_MSG(tr::logfile != nullptr,
 		"couldn't open %s, either the path is inaccessible or there's no permissions to write here", path);
 
 	tr::info("using log file \"%s\"", path);
@@ -135,12 +135,14 @@ TR_LOG_FUNC(1, 2) void tr::panic(const char* fmt, ...)
 	va_end(args);
 }
 
-TR_LOG_FUNC(2, 3) void tr::assert(bool x, const char* fmt, ...)
+TR_LOG_FUNC(4, 5) void tr::__impl_assert(const char* file, int line, bool x, const char* fmt, ...)
 {
 	if (!x) {
 		va_list args;
 		va_start(args, fmt);
-		__log(tr::ConsoleColor::ERROR, "failed assert: ", true, fmt, args);
+		char prefix[256];
+		snprintf(prefix, sizeof(prefix), "at %s:%i\n\t", file, line);
+		__log(tr::ConsoleColor::ERROR, prefix, true, fmt, args);
 		va_end(args);
 	}
 }
@@ -508,7 +510,7 @@ void tr::RefCounted::release() const
 
 tr::ArenaPage::ArenaPage(usize size)
 {
-	tr::assert(size != 0, "page size can't be 0");
+	TR_ASSERT(size != 0);
 
 	this->buffer = calloc(1, size);
 	this->size = size;
@@ -518,7 +520,7 @@ tr::ArenaPage::ArenaPage(usize size)
 
 	// i don't think you can recover from that
 	// so just die
-	tr::assert(this->buffer != nullptr, "couldn't allocate arena page");
+	TR_ASSERT_MSG(this->buffer != nullptr, "couldn't allocate arena page");
 
 	// man
 	tr::memory_info.alive_pages++;
@@ -573,7 +575,7 @@ tr::Arena::~Arena()
 
 void* tr::Arena::alloc(usize size)
 {
-	tr::assert(this->page_size != 0, "you doofus this arena is very likely uninitialized");
+	TR_ASSERT_MSG(this->page_size != 0, "you doofus this arena is very likely uninitialized");
 
 	// does it fit in the current page?
 	if (this->page->available_space() >= size) {
@@ -617,7 +619,7 @@ void* tr::Arena::alloc(usize size)
 
 void tr::Arena::prealloc(usize size)
 {
-	tr::assert(this->page_size != 0, "you doofus this arena is very likely uninitialized");
+	TR_ASSERT_MSG(this->page_size != 0, "you doofus this arena is very likely uninitialized");
 
 	// does it already fit?
 	if (this->page->available_space() >= size) {

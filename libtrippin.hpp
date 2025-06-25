@@ -1,5 +1,5 @@
 /*
- * libtrippin v2.1.2
+ * libtrippin v2.2.0
  *
  * Most biggest most massive standard library thing of all time
  * https://github.com/hellory4n/libtrippin
@@ -32,23 +32,23 @@
 #include <time.h>
 
 #if (defined(__GNUC__) || defined(__clang__)) && !defined(_WIN32)
-// counting starts at 1 lmao
-#define TR_LOG_FUNC(FmtIdx, VarargsIdx) [[gnu::format(printf, FmtIdx, VarargsIdx)]]
+	// counting starts at 1 lmao
+	#define TR_LOG_FUNC(FmtIdx, VarargsIdx) [[gnu::format(printf, FmtIdx, VarargsIdx)]]
 #else
-#define TR_LOG_FUNC(FmtIdx, VarargsIdx)
+	#define TR_LOG_FUNC(FmtIdx, VarargsIdx)
 #endif
 
 #if defined(__GNUC__) || defined(__clang__)
-#define TR_GCC_PRAGMA(X) _Pragma(#X)
+	#define TR_GCC_PRAGMA(X) _Pragma(#X)
 
-#define TR_GCC_IGNORE_WARNING(Warning) \
-	TR_GCC_PRAGMA(GCC diagnostic push) \
-	TR_GCC_PRAGMA(GCC diagnostic ignored #Warning)
+	#define TR_GCC_IGNORE_WARNING(Warning) \
+		TR_GCC_PRAGMA(GCC diagnostic push) \
+		TR_GCC_PRAGMA(GCC diagnostic ignored #Warning)
 
-#define TR_GCC_RESTORE() TR_GCC_PRAGMA(GCC diagnostic pop)
+	#define TR_GCC_RESTORE() TR_GCC_PRAGMA(GCC diagnostic pop)
 #else
-#define TR_GCC_IGNORE_WARNING(Warning)
-#define TR_GCC_RESTORE()
+	#define TR_GCC_IGNORE_WARNING(Warning)
+	#define TR_GCC_RESTORE()
 #endif
 
 typedef int8_t int8;
@@ -85,15 +85,15 @@ void free();
 namespace ConsoleColor {
 	// TODO colored output doesn't work on windows and i can't be bothered to fix it
 	#ifndef _WIN32
-	constexpr const char* RESET = "\033[0m";
-	constexpr const char* INFO  = "\033[0;90m";
-	constexpr const char* WARN  = "\033[0;93m";
-	constexpr const char* ERROR = "\033[0;91m";
+		constexpr const char* RESET = "\033[0m";
+		constexpr const char* INFO  = "\033[0;90m";
+		constexpr const char* WARN  = "\033[0;93m";
+		constexpr const char* ERROR = "\033[0;91m";
 	#else
-	constexpr const char* RESET = "";
-	constexpr const char* INFO  = "";
-	constexpr const char* WARN  = "";
-	constexpr const char* ERROR = "";
+		constexpr const char* RESET = "";
+		constexpr const char* INFO  = "";
+		constexpr const char* WARN  = "";
+		constexpr const char* ERROR = "";
 	#endif
 }
 
@@ -116,7 +116,13 @@ TR_LOG_FUNC(1, 2) void error(const char* fmt, ...);
 TR_LOG_FUNC(1, 2) [[noreturn]] void panic(const char* fmt, ...);
 
 // Formatted assert?????????
-TR_LOG_FUNC(2, 3) void assert(bool x, const char* fmt, ...);
+TR_LOG_FUNC(4, 5) void __impl_assert(const char* file, int line, bool x, const char* fmt, ...);
+
+#define TR_ASSERT_MSG(X, ...) \
+	tr::__impl_assert(__FILE__, __LINE__, X, "failed assert \"" #X "\": " __VA_ARGS__)
+
+#define TR_ASSERT(X) \
+	tr::__impl_assert(__FILE__, __LINE__, X, "failed assert: " #X)
 
 /*
 * UTILITIES

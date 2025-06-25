@@ -79,25 +79,25 @@ int main()
 	tr::String maballs = tr::sprintf(arena, 256, "%s balls", str.buffer());
 	tr::log("%s", maballs.buffer());
 
-	tr::assert(str == "sigma", "strings are busted");
-	tr::assert(str != "ballshshjs", "strings are busted");
-	tr::assert(str != "sigmaaaa pelotas", "strings are busted");
-	tr::assert(str.substr(arena, 1, 3) == "igm", "strings are busted");
+	TR_ASSERT(str == "sigma");
+	TR_ASSERT(str != "ballshshjs");
+	TR_ASSERT(str != "sigmaaaa pelotas");
+	TR_ASSERT(str.substr(arena, 1, 3) == "igm");
 	tr::Array<usize> sigma = tr::String("sigmysigmy").find(arena, "ig");
-	tr::assert(sigma.length() == 2, "strings are busted");
+	TR_ASSERT(sigma.length() == 2);
 	tr::String sigmaa = tr::String("figma").concat(arena, " balls");
-	tr::assert(sigmaa == "figma balls", "strings are busted");
-	tr::assert(sigmaa.starts_with("figm"), "strings are busted");
-	tr::assert(sigmaa.ends_with("alls"), "strings are busted");
+	TR_ASSERT(sigmaa == "figma balls");
+	TR_ASSERT(sigmaa.starts_with("figm"));
+	TR_ASSERT(sigmaa.ends_with("alls"));
 
-	tr::assert(tr::String("/path/to/file.txt").file(arena) == "file.txt", "paths are busted");
-	tr::assert(tr::String("/path/to/file.txt").directory(arena) == "/path/to", "paths are busted");
-	tr::assert(tr::String("/path/to/teapot.blend.1").extension(arena) == ".blend.1", "paths are busted");
-	tr::assert(tr::String("app://sigma").is_absolute(), "paths are busted");
-	tr::assert(tr::String("C:\\sigma").is_absolute(), "paths are busted");
-	tr::assert(!tr::String("sigma").is_absolute(), "paths are busted");
-	tr::assert(!tr::String("./sigma").is_absolute(), "paths are busted");
-	tr::assert(tr::String("~/sigma").is_absolute(), "paths are busted");
+	TR_ASSERT(tr::String("/path/to/file.txt").file(arena) == "file.txt");
+	TR_ASSERT(tr::String("/path/to/file.txt").directory(arena) == "/path/to");
+	TR_ASSERT(tr::String("/path/to/teapot.blend.1").extension(arena) == ".blend.1");
+	TR_ASSERT(tr::String("app://sigma").is_absolute());
+	TR_ASSERT(tr::String("C:\\sigma").is_absolute());
+	TR_ASSERT(!tr::String("sigma").is_absolute());
+	TR_ASSERT(!tr::String("./sigma").is_absolute());
+	TR_ASSERT(tr::String("~/sigma").is_absolute());
 
 	// man
 	// tr::MemoryInfo memory = tr::get_memory_info();
