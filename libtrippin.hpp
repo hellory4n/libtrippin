@@ -85,15 +85,15 @@ void free();
 namespace ConsoleColor {
 	// TODO colored output doesn't work on windows and i can't be bothered to fix it
 	#ifndef _WIN32
-	constexpr const char* RESET    = "\033[0m";
-	constexpr const char* INFO     = "\033[0;90m";
-	constexpr const char* WARN     = "\033[0;93m";
-	constexpr const char* ERROR    = "\033[0;91m";
+	constexpr const char* RESET = "\033[0m";
+	constexpr const char* INFO  = "\033[0;90m";
+	constexpr const char* WARN  = "\033[0;93m";
+	constexpr const char* ERROR = "\033[0;91m";
 	#else
-	constexpr const char* RESET    = "";
-	constexpr const char* INFO     = "";
-	constexpr const char* WARN     = "";
-	constexpr const char* ERROR    = "";
+	constexpr const char* RESET = "";
+	constexpr const char* INFO  = "";
+	constexpr const char* WARN  = "";
+	constexpr const char* ERROR = "";
 	#endif
 }
 
@@ -282,6 +282,17 @@ struct Vec2
 	bool operator<(Vec2 r)  { return this->x <  r.x && this->y <  r.y;   }
 	bool operator<=(Vec2 r) { return this->x <= r.x && this->y <= r.y;   }
 
+	Vec2& operator+=(Vec2 other) { return *this = *this + other; }
+	Vec2& operator-=(Vec2 other) { return *this = *this - other; }
+	Vec2& operator*=(Vec2 other) { return *this = *this * other; }
+	Vec2& operator/=(Vec2 other) { return *this = *this / other; }
+	Vec2& operator%=(Vec2 other) { return *this = *this % other; }
+	Vec2& operator*=(T other) { return *this = *this * other; }
+	Vec2& operator/=(T other) { return *this = *this / other; }
+	Vec2& operator%=(T other) { return *this = *this % other; }
+	Vec2 operator-() { return {-this->x, -this->y}; }
+	Vec2 operator+() { return {+this->x, +this->y}; }
+
 	static constexpr usize ITEMS = 2;
 	T& operator[](usize idx)
 	{
@@ -303,6 +314,14 @@ struct Vec2
 
 	float64 length() { return sqrt(this->mul_inner(*this)); }
 	Vec2 normalize() { return *this * (1 / this->length()); }
+
+	// swizzling operators
+	// i know this is insane
+	// i didnt write this myself im not insane
+	constexpr Vec2<T> xx() const { return {this->x, this->x}; }
+	constexpr Vec2<T> xy() const { return {this->x, this->y}; }
+	constexpr Vec2<T> yx() const { return {this->y, this->x}; }
+	constexpr Vec2<T> yy() const { return {this->y, this->y}; }
 };
 
 // c i hate you
@@ -346,6 +365,17 @@ struct Vec3
 	bool operator<(Vec3 r)  { return this->x <  r.x && this->y <  r.y && this->z <  r.z; }
 	bool operator<=(Vec3 r) { return this->x <= r.x && this->y <= r.y && this->z <= r.z; }
 
+	Vec3& operator+=(Vec3 other) { return *this = *this + other; }
+	Vec3& operator-=(Vec3 other) { return *this = *this - other; }
+	Vec3& operator*=(Vec3 other) { return *this = *this * other; }
+	Vec3& operator/=(Vec3 other) { return *this = *this / other; }
+	Vec3& operator%=(Vec3 other) { return *this = *this % other; }
+	Vec3& operator*=(T other) { return *this = *this * other; }
+	Vec3& operator/=(T other) { return *this = *this / other; }
+	Vec3& operator%=(T other) { return *this = *this % other; }
+	Vec3 operator-() { return {-this->x, -this->y}; }
+	Vec3 operator+() { return {+this->x, +this->y}; }
+
 	static constexpr usize ITEMS = 3;
 	T& operator[](usize idx)
 	{
@@ -388,6 +418,48 @@ struct Vec3
 		r[3] = 1.f;
 		return r;
 	}
+
+	// swizzling operators
+	// i know this is insane
+	// i didnt write this myself im not insane
+	Vec3(T x, Vec2<T> other) : Vec3(x, other.y, other.z) {}
+	Vec3(Vec2<T> other, T z) : Vec3(other.x, other.y, z) {}
+	constexpr Vec2<T> xx() const { return {this->x, this->x}; }
+	constexpr Vec2<T> xy() const { return {this->x, this->y}; }
+	constexpr Vec2<T> xz() const { return {this->x, this->z}; }
+	constexpr Vec2<T> yx() const { return {this->y, this->x}; }
+	constexpr Vec2<T> yy() const { return {this->y, this->y}; }
+	constexpr Vec2<T> yz() const { return {this->y, this->z}; }
+	constexpr Vec2<T> zx() const { return {this->z, this->x}; }
+	constexpr Vec2<T> zy() const { return {this->z, this->y}; }
+	constexpr Vec2<T> zz() const { return {this->z, this->z}; }
+	constexpr Vec3<T> xxx() const { return {this->x, this->x, this->x}; }
+	constexpr Vec3<T> xxy() const { return {this->x, this->x, this->y}; }
+	constexpr Vec3<T> xxz() const { return {this->x, this->x, this->z}; }
+	constexpr Vec3<T> xyx() const { return {this->x, this->y, this->x}; }
+	constexpr Vec3<T> xyy() const { return {this->x, this->y, this->y}; }
+	constexpr Vec3<T> xyz() const { return {this->x, this->y, this->z}; }
+	constexpr Vec3<T> xzx() const { return {this->x, this->z, this->x}; }
+	constexpr Vec3<T> xzy() const { return {this->x, this->z, this->y}; }
+	constexpr Vec3<T> xzz() const { return {this->x, this->z, this->z}; }
+	constexpr Vec3<T> yxx() const { return {this->y, this->x, this->x}; }
+	constexpr Vec3<T> yxy() const { return {this->y, this->x, this->y}; }
+	constexpr Vec3<T> yxz() const { return {this->y, this->x, this->z}; }
+	constexpr Vec3<T> yyx() const { return {this->y, this->y, this->x}; }
+	constexpr Vec3<T> yyy() const { return {this->y, this->y, this->y}; }
+	constexpr Vec3<T> yyz() const { return {this->y, this->y, this->z}; }
+	constexpr Vec3<T> yzx() const { return {this->y, this->z, this->x}; }
+	constexpr Vec3<T> yzy() const { return {this->y, this->z, this->y}; }
+	constexpr Vec3<T> yzz() const { return {this->y, this->z, this->z}; }
+	constexpr Vec3<T> zxx() const { return {this->z, this->x, this->x}; }
+	constexpr Vec3<T> zxy() const { return {this->z, this->x, this->y}; }
+	constexpr Vec3<T> zxz() const { return {this->z, this->x, this->z}; }
+	constexpr Vec3<T> zyx() const { return {this->z, this->y, this->x}; }
+	constexpr Vec3<T> zyy() const { return {this->z, this->y, this->y}; }
+	constexpr Vec3<T> zyz() const { return {this->z, this->y, this->z}; }
+	constexpr Vec3<T> zzx() const { return {this->z, this->z, this->x}; }
+	constexpr Vec3<T> zzy() const { return {this->z, this->z, this->y}; }
+	constexpr Vec3<T> zzz() const { return {this->z, this->z, this->z}; }
 };
 
 // c i hate you
@@ -432,6 +504,17 @@ struct Vec4
 	bool operator<(Vec4 r)  { return this->x <  r.x && this->y <  r.y && this->z <  r.z && this->w <  r.w; }
 	bool operator<=(Vec4 r) { return this->x <= r.x && this->y <= r.y && this->z <= r.z && this->w <= r.w; }
 
+	Vec4& operator+=(Vec4 other) { return *this = *this + other; }
+	Vec4& operator-=(Vec4 other) { return *this = *this - other; }
+	Vec4& operator*=(Vec4 other) { return *this = *this * other; }
+	Vec4& operator/=(Vec4 other) { return *this = *this / other; }
+	Vec4& operator%=(Vec4 other) { return *this = *this % other; }
+	Vec4& operator*=(T other) { return *this = *this * other; }
+	Vec4& operator/=(T other) { return *this = *this / other; }
+	Vec4& operator%=(T other) { return *this = *this % other; }
+	Vec4 operator-() { return {-this->x, -this->y}; }
+	Vec4 operator+() { return {+this->x, +this->y}; }
+
 	static constexpr usize ITEMS = 4;
 	T& operator[](usize idx)
 	{
@@ -475,6 +558,351 @@ struct Vec4
 		}
 		return r;
 	}
+
+	// swizzling operators
+	// i know this is insane
+	// i didnt write this myself im not insane
+	Vec4(T x, T y, Vec2<T> other) : Vec4(x, y, other.z, other.w) {}
+	Vec4(Vec2<T> other, T z, T w) : Vec4(other.x, other.y, z, w) {}
+	Vec4(T x, Vec2<T> other, T w) : Vec4(x, other.y, other.z, w) {}
+	Vec4(T x, Vec3<T> other) : Vec4(x, other.y, other.z, other.w) {}
+	Vec4(Vec3<T> other, T w) : Vec4(other.x, other.y, other.z, w) {}
+	constexpr Vec2<T> xx() const { return {this->x, this->x}; }
+	constexpr Vec2<T> xy() const { return {this->x, this->y}; }
+	constexpr Vec2<T> xz() const { return {this->x, this->z}; }
+	constexpr Vec2<T> xw() const { return {this->x, this->w}; }
+	constexpr Vec2<T> yx() const { return {this->y, this->x}; }
+	constexpr Vec2<T> yy() const { return {this->y, this->y}; }
+	constexpr Vec2<T> yz() const { return {this->y, this->z}; }
+	constexpr Vec2<T> yw() const { return {this->y, this->w}; }
+	constexpr Vec2<T> zx() const { return {this->z, this->x}; }
+	constexpr Vec2<T> zy() const { return {this->z, this->y}; }
+	constexpr Vec2<T> zz() const { return {this->z, this->z}; }
+	constexpr Vec2<T> zw() const { return {this->z, this->w}; }
+	constexpr Vec2<T> wx() const { return {this->w, this->x}; }
+	constexpr Vec2<T> wy() const { return {this->w, this->y}; }
+	constexpr Vec2<T> wz() const { return {this->w, this->z}; }
+	constexpr Vec2<T> ww() const { return {this->w, this->w}; }
+	constexpr Vec3<T> xxx() const { return {this->x, this->x, this->x}; }
+	constexpr Vec3<T> xxy() const { return {this->x, this->x, this->y}; }
+	constexpr Vec3<T> xxz() const { return {this->x, this->x, this->z}; }
+	constexpr Vec3<T> xxw() const { return {this->x, this->x, this->w}; }
+	constexpr Vec3<T> xyx() const { return {this->x, this->y, this->x}; }
+	constexpr Vec3<T> xyy() const { return {this->x, this->y, this->y}; }
+	constexpr Vec3<T> xyz() const { return {this->x, this->y, this->z}; }
+	constexpr Vec3<T> xyw() const { return {this->x, this->y, this->w}; }
+	constexpr Vec3<T> xzx() const { return {this->x, this->z, this->x}; }
+	constexpr Vec3<T> xzy() const { return {this->x, this->z, this->y}; }
+	constexpr Vec3<T> xzz() const { return {this->x, this->z, this->z}; }
+	constexpr Vec3<T> xzw() const { return {this->x, this->z, this->w}; }
+	constexpr Vec3<T> xwx() const { return {this->x, this->w, this->x}; }
+	constexpr Vec3<T> xwy() const { return {this->x, this->w, this->y}; }
+	constexpr Vec3<T> xwz() const { return {this->x, this->w, this->z}; }
+	constexpr Vec3<T> xww() const { return {this->x, this->w, this->w}; }
+	constexpr Vec3<T> yxx() const { return {this->y, this->x, this->x}; }
+	constexpr Vec3<T> yxy() const { return {this->y, this->x, this->y}; }
+	constexpr Vec3<T> yxz() const { return {this->y, this->x, this->z}; }
+	constexpr Vec3<T> yxw() const { return {this->y, this->x, this->w}; }
+	constexpr Vec3<T> yyx() const { return {this->y, this->y, this->x}; }
+	constexpr Vec3<T> yyy() const { return {this->y, this->y, this->y}; }
+	constexpr Vec3<T> yyz() const { return {this->y, this->y, this->z}; }
+	constexpr Vec3<T> yyw() const { return {this->y, this->y, this->w}; }
+	constexpr Vec3<T> yzx() const { return {this->y, this->z, this->x}; }
+	constexpr Vec3<T> yzy() const { return {this->y, this->z, this->y}; }
+	constexpr Vec3<T> yzz() const { return {this->y, this->z, this->z}; }
+	constexpr Vec3<T> yzw() const { return {this->y, this->z, this->w}; }
+	constexpr Vec3<T> ywx() const { return {this->y, this->w, this->x}; }
+	constexpr Vec3<T> ywy() const { return {this->y, this->w, this->y}; }
+	constexpr Vec3<T> ywz() const { return {this->y, this->w, this->z}; }
+	constexpr Vec3<T> yww() const { return {this->y, this->w, this->w}; }
+	constexpr Vec3<T> zxx() const { return {this->z, this->x, this->x}; }
+	constexpr Vec3<T> zxy() const { return {this->z, this->x, this->y}; }
+	constexpr Vec3<T> zxz() const { return {this->z, this->x, this->z}; }
+	constexpr Vec3<T> zxw() const { return {this->z, this->x, this->w}; }
+	constexpr Vec3<T> zyx() const { return {this->z, this->y, this->x}; }
+	constexpr Vec3<T> zyy() const { return {this->z, this->y, this->y}; }
+	constexpr Vec3<T> zyz() const { return {this->z, this->y, this->z}; }
+	constexpr Vec3<T> zyw() const { return {this->z, this->y, this->w}; }
+	constexpr Vec3<T> zzx() const { return {this->z, this->z, this->x}; }
+	constexpr Vec3<T> zzy() const { return {this->z, this->z, this->y}; }
+	constexpr Vec3<T> zzz() const { return {this->z, this->z, this->z}; }
+	constexpr Vec3<T> zzw() const { return {this->z, this->z, this->w}; }
+	constexpr Vec3<T> zwx() const { return {this->z, this->w, this->x}; }
+	constexpr Vec3<T> zwy() const { return {this->z, this->w, this->y}; }
+	constexpr Vec3<T> zwz() const { return {this->z, this->w, this->z}; }
+	constexpr Vec3<T> zww() const { return {this->z, this->w, this->w}; }
+	constexpr Vec3<T> wxx() const { return {this->w, this->x, this->x}; }
+	constexpr Vec3<T> wxy() const { return {this->w, this->x, this->y}; }
+	constexpr Vec3<T> wxz() const { return {this->w, this->x, this->z}; }
+	constexpr Vec3<T> wxw() const { return {this->w, this->x, this->w}; }
+	constexpr Vec3<T> wyx() const { return {this->w, this->y, this->x}; }
+	constexpr Vec3<T> wyy() const { return {this->w, this->y, this->y}; }
+	constexpr Vec3<T> wyz() const { return {this->w, this->y, this->z}; }
+	constexpr Vec3<T> wyw() const { return {this->w, this->y, this->w}; }
+	constexpr Vec3<T> wzx() const { return {this->w, this->z, this->x}; }
+	constexpr Vec3<T> wzy() const { return {this->w, this->z, this->y}; }
+	constexpr Vec3<T> wzz() const { return {this->w, this->z, this->z}; }
+	constexpr Vec3<T> wzw() const { return {this->w, this->z, this->w}; }
+	constexpr Vec3<T> wwx() const { return {this->w, this->w, this->x}; }
+	constexpr Vec3<T> wwy() const { return {this->w, this->w, this->y}; }
+	constexpr Vec3<T> wwz() const { return {this->w, this->w, this->z}; }
+	constexpr Vec3<T> www() const { return {this->w, this->w, this->w}; }
+	constexpr Vec4<T> xxxx() const { return {this->x, this->x, this->x, this->x}; }
+	constexpr Vec4<T> xxxy() const { return {this->x, this->x, this->x, this->y}; }
+	constexpr Vec4<T> xxxz() const { return {this->x, this->x, this->x, this->z}; }
+	constexpr Vec4<T> xxxw() const { return {this->x, this->x, this->x, this->w}; }
+	constexpr Vec4<T> xxyx() const { return {this->x, this->x, this->y, this->x}; }
+	constexpr Vec4<T> xxyy() const { return {this->x, this->x, this->y, this->y}; }
+	constexpr Vec4<T> xxyz() const { return {this->x, this->x, this->y, this->z}; }
+	constexpr Vec4<T> xxyw() const { return {this->x, this->x, this->y, this->w}; }
+	constexpr Vec4<T> xxzx() const { return {this->x, this->x, this->z, this->x}; }
+	constexpr Vec4<T> xxzy() const { return {this->x, this->x, this->z, this->y}; }
+	constexpr Vec4<T> xxzz() const { return {this->x, this->x, this->z, this->z}; }
+	constexpr Vec4<T> xxzw() const { return {this->x, this->x, this->z, this->w}; }
+	constexpr Vec4<T> xxwx() const { return {this->x, this->x, this->w, this->x}; }
+	constexpr Vec4<T> xxwy() const { return {this->x, this->x, this->w, this->y}; }
+	constexpr Vec4<T> xxwz() const { return {this->x, this->x, this->w, this->z}; }
+	constexpr Vec4<T> xxww() const { return {this->x, this->x, this->w, this->w}; }
+	constexpr Vec4<T> xyxx() const { return {this->x, this->y, this->x, this->x}; }
+	constexpr Vec4<T> xyxy() const { return {this->x, this->y, this->x, this->y}; }
+	constexpr Vec4<T> xyxz() const { return {this->x, this->y, this->x, this->z}; }
+	constexpr Vec4<T> xyxw() const { return {this->x, this->y, this->x, this->w}; }
+	constexpr Vec4<T> xyyx() const { return {this->x, this->y, this->y, this->x}; }
+	constexpr Vec4<T> xyyy() const { return {this->x, this->y, this->y, this->y}; }
+	constexpr Vec4<T> xyyz() const { return {this->x, this->y, this->y, this->z}; }
+	constexpr Vec4<T> xyyw() const { return {this->x, this->y, this->y, this->w}; }
+	constexpr Vec4<T> xyzx() const { return {this->x, this->y, this->z, this->x}; }
+	constexpr Vec4<T> xyzy() const { return {this->x, this->y, this->z, this->y}; }
+	constexpr Vec4<T> xyzz() const { return {this->x, this->y, this->z, this->z}; }
+	constexpr Vec4<T> xyzw() const { return {this->x, this->y, this->z, this->w}; }
+	constexpr Vec4<T> xywx() const { return {this->x, this->y, this->w, this->x}; }
+	constexpr Vec4<T> xywy() const { return {this->x, this->y, this->w, this->y}; }
+	constexpr Vec4<T> xywz() const { return {this->x, this->y, this->w, this->z}; }
+	constexpr Vec4<T> xyww() const { return {this->x, this->y, this->w, this->w}; }
+	constexpr Vec4<T> xzxx() const { return {this->x, this->z, this->x, this->x}; }
+	constexpr Vec4<T> xzxy() const { return {this->x, this->z, this->x, this->y}; }
+	constexpr Vec4<T> xzxz() const { return {this->x, this->z, this->x, this->z}; }
+	constexpr Vec4<T> xzxw() const { return {this->x, this->z, this->x, this->w}; }
+	constexpr Vec4<T> xzyx() const { return {this->x, this->z, this->y, this->x}; }
+	constexpr Vec4<T> xzyy() const { return {this->x, this->z, this->y, this->y}; }
+	constexpr Vec4<T> xzyz() const { return {this->x, this->z, this->y, this->z}; }
+	constexpr Vec4<T> xzyw() const { return {this->x, this->z, this->y, this->w}; }
+	constexpr Vec4<T> xzzx() const { return {this->x, this->z, this->z, this->x}; }
+	constexpr Vec4<T> xzzy() const { return {this->x, this->z, this->z, this->y}; }
+	constexpr Vec4<T> xzzz() const { return {this->x, this->z, this->z, this->z}; }
+	constexpr Vec4<T> xzzw() const { return {this->x, this->z, this->z, this->w}; }
+	constexpr Vec4<T> xzwx() const { return {this->x, this->z, this->w, this->x}; }
+	constexpr Vec4<T> xzwy() const { return {this->x, this->z, this->w, this->y}; }
+	constexpr Vec4<T> xzwz() const { return {this->x, this->z, this->w, this->z}; }
+	constexpr Vec4<T> xzww() const { return {this->x, this->z, this->w, this->w}; }
+	constexpr Vec4<T> xwxx() const { return {this->x, this->w, this->x, this->x}; }
+	constexpr Vec4<T> xwxy() const { return {this->x, this->w, this->x, this->y}; }
+	constexpr Vec4<T> xwxz() const { return {this->x, this->w, this->x, this->z}; }
+	constexpr Vec4<T> xwxw() const { return {this->x, this->w, this->x, this->w}; }
+	constexpr Vec4<T> xwyx() const { return {this->x, this->w, this->y, this->x}; }
+	constexpr Vec4<T> xwyy() const { return {this->x, this->w, this->y, this->y}; }
+	constexpr Vec4<T> xwyz() const { return {this->x, this->w, this->y, this->z}; }
+	constexpr Vec4<T> xwyw() const { return {this->x, this->w, this->y, this->w}; }
+	constexpr Vec4<T> xwzx() const { return {this->x, this->w, this->z, this->x}; }
+	constexpr Vec4<T> xwzy() const { return {this->x, this->w, this->z, this->y}; }
+	constexpr Vec4<T> xwzz() const { return {this->x, this->w, this->z, this->z}; }
+	constexpr Vec4<T> xwzw() const { return {this->x, this->w, this->z, this->w}; }
+	constexpr Vec4<T> xwwx() const { return {this->x, this->w, this->w, this->x}; }
+	constexpr Vec4<T> xwwy() const { return {this->x, this->w, this->w, this->y}; }
+	constexpr Vec4<T> xwwz() const { return {this->x, this->w, this->w, this->z}; }
+	constexpr Vec4<T> xwww() const { return {this->x, this->w, this->w, this->w}; }
+	constexpr Vec4<T> yxxx() const { return {this->y, this->x, this->x, this->x}; }
+	constexpr Vec4<T> yxxy() const { return {this->y, this->x, this->x, this->y}; }
+	constexpr Vec4<T> yxxz() const { return {this->y, this->x, this->x, this->z}; }
+	constexpr Vec4<T> yxxw() const { return {this->y, this->x, this->x, this->w}; }
+	constexpr Vec4<T> yxyx() const { return {this->y, this->x, this->y, this->x}; }
+	constexpr Vec4<T> yxyy() const { return {this->y, this->x, this->y, this->y}; }
+	constexpr Vec4<T> yxyz() const { return {this->y, this->x, this->y, this->z}; }
+	constexpr Vec4<T> yxyw() const { return {this->y, this->x, this->y, this->w}; }
+	constexpr Vec4<T> yxzx() const { return {this->y, this->x, this->z, this->x}; }
+	constexpr Vec4<T> yxzy() const { return {this->y, this->x, this->z, this->y}; }
+	constexpr Vec4<T> yxzz() const { return {this->y, this->x, this->z, this->z}; }
+	constexpr Vec4<T> yxzw() const { return {this->y, this->x, this->z, this->w}; }
+	constexpr Vec4<T> yxwx() const { return {this->y, this->x, this->w, this->x}; }
+	constexpr Vec4<T> yxwy() const { return {this->y, this->x, this->w, this->y}; }
+	constexpr Vec4<T> yxwz() const { return {this->y, this->x, this->w, this->z}; }
+	constexpr Vec4<T> yxww() const { return {this->y, this->x, this->w, this->w}; }
+	constexpr Vec4<T> yyxx() const { return {this->y, this->y, this->x, this->x}; }
+	constexpr Vec4<T> yyxy() const { return {this->y, this->y, this->x, this->y}; }
+	constexpr Vec4<T> yyxz() const { return {this->y, this->y, this->x, this->z}; }
+	constexpr Vec4<T> yyxw() const { return {this->y, this->y, this->x, this->w}; }
+	constexpr Vec4<T> yyyx() const { return {this->y, this->y, this->y, this->x}; }
+	constexpr Vec4<T> yyyy() const { return {this->y, this->y, this->y, this->y}; }
+	constexpr Vec4<T> yyyz() const { return {this->y, this->y, this->y, this->z}; }
+	constexpr Vec4<T> yyyw() const { return {this->y, this->y, this->y, this->w}; }
+	constexpr Vec4<T> yyzx() const { return {this->y, this->y, this->z, this->x}; }
+	constexpr Vec4<T> yyzy() const { return {this->y, this->y, this->z, this->y}; }
+	constexpr Vec4<T> yyzz() const { return {this->y, this->y, this->z, this->z}; }
+	constexpr Vec4<T> yyzw() const { return {this->y, this->y, this->z, this->w}; }
+	constexpr Vec4<T> yywx() const { return {this->y, this->y, this->w, this->x}; }
+	constexpr Vec4<T> yywy() const { return {this->y, this->y, this->w, this->y}; }
+	constexpr Vec4<T> yywz() const { return {this->y, this->y, this->w, this->z}; }
+	constexpr Vec4<T> yyww() const { return {this->y, this->y, this->w, this->w}; }
+	constexpr Vec4<T> yzxx() const { return {this->y, this->z, this->x, this->x}; }
+	constexpr Vec4<T> yzxy() const { return {this->y, this->z, this->x, this->y}; }
+	constexpr Vec4<T> yzxz() const { return {this->y, this->z, this->x, this->z}; }
+	constexpr Vec4<T> yzxw() const { return {this->y, this->z, this->x, this->w}; }
+	constexpr Vec4<T> yzyx() const { return {this->y, this->z, this->y, this->x}; }
+	constexpr Vec4<T> yzyy() const { return {this->y, this->z, this->y, this->y}; }
+	constexpr Vec4<T> yzyz() const { return {this->y, this->z, this->y, this->z}; }
+	constexpr Vec4<T> yzyw() const { return {this->y, this->z, this->y, this->w}; }
+	constexpr Vec4<T> yzzx() const { return {this->y, this->z, this->z, this->x}; }
+	constexpr Vec4<T> yzzy() const { return {this->y, this->z, this->z, this->y}; }
+	constexpr Vec4<T> yzzz() const { return {this->y, this->z, this->z, this->z}; }
+	constexpr Vec4<T> yzzw() const { return {this->y, this->z, this->z, this->w}; }
+	constexpr Vec4<T> yzwx() const { return {this->y, this->z, this->w, this->x}; }
+	constexpr Vec4<T> yzwy() const { return {this->y, this->z, this->w, this->y}; }
+	constexpr Vec4<T> yzwz() const { return {this->y, this->z, this->w, this->z}; }
+	constexpr Vec4<T> yzww() const { return {this->y, this->z, this->w, this->w}; }
+	constexpr Vec4<T> ywxx() const { return {this->y, this->w, this->x, this->x}; }
+	constexpr Vec4<T> ywxy() const { return {this->y, this->w, this->x, this->y}; }
+	constexpr Vec4<T> ywxz() const { return {this->y, this->w, this->x, this->z}; }
+	constexpr Vec4<T> ywxw() const { return {this->y, this->w, this->x, this->w}; }
+	constexpr Vec4<T> ywyx() const { return {this->y, this->w, this->y, this->x}; }
+	constexpr Vec4<T> ywyy() const { return {this->y, this->w, this->y, this->y}; }
+	constexpr Vec4<T> ywyz() const { return {this->y, this->w, this->y, this->z}; }
+	constexpr Vec4<T> ywyw() const { return {this->y, this->w, this->y, this->w}; }
+	constexpr Vec4<T> ywzx() const { return {this->y, this->w, this->z, this->x}; }
+	constexpr Vec4<T> ywzy() const { return {this->y, this->w, this->z, this->y}; }
+	constexpr Vec4<T> ywzz() const { return {this->y, this->w, this->z, this->z}; }
+	constexpr Vec4<T> ywzw() const { return {this->y, this->w, this->z, this->w}; }
+	constexpr Vec4<T> ywwx() const { return {this->y, this->w, this->w, this->x}; }
+	constexpr Vec4<T> ywwy() const { return {this->y, this->w, this->w, this->y}; }
+	constexpr Vec4<T> ywwz() const { return {this->y, this->w, this->w, this->z}; }
+	constexpr Vec4<T> ywww() const { return {this->y, this->w, this->w, this->w}; }
+	constexpr Vec4<T> zxxx() const { return {this->z, this->x, this->x, this->x}; }
+	constexpr Vec4<T> zxxy() const { return {this->z, this->x, this->x, this->y}; }
+	constexpr Vec4<T> zxxz() const { return {this->z, this->x, this->x, this->z}; }
+	constexpr Vec4<T> zxxw() const { return {this->z, this->x, this->x, this->w}; }
+	constexpr Vec4<T> zxyx() const { return {this->z, this->x, this->y, this->x}; }
+	constexpr Vec4<T> zxyy() const { return {this->z, this->x, this->y, this->y}; }
+	constexpr Vec4<T> zxyz() const { return {this->z, this->x, this->y, this->z}; }
+	constexpr Vec4<T> zxyw() const { return {this->z, this->x, this->y, this->w}; }
+	constexpr Vec4<T> zxzx() const { return {this->z, this->x, this->z, this->x}; }
+	constexpr Vec4<T> zxzy() const { return {this->z, this->x, this->z, this->y}; }
+	constexpr Vec4<T> zxzz() const { return {this->z, this->x, this->z, this->z}; }
+	constexpr Vec4<T> zxzw() const { return {this->z, this->x, this->z, this->w}; }
+	constexpr Vec4<T> zxwx() const { return {this->z, this->x, this->w, this->x}; }
+	constexpr Vec4<T> zxwy() const { return {this->z, this->x, this->w, this->y}; }
+	constexpr Vec4<T> zxwz() const { return {this->z, this->x, this->w, this->z}; }
+	constexpr Vec4<T> zxww() const { return {this->z, this->x, this->w, this->w}; }
+	constexpr Vec4<T> zyxx() const { return {this->z, this->y, this->x, this->x}; }
+	constexpr Vec4<T> zyxy() const { return {this->z, this->y, this->x, this->y}; }
+	constexpr Vec4<T> zyxz() const { return {this->z, this->y, this->x, this->z}; }
+	constexpr Vec4<T> zyxw() const { return {this->z, this->y, this->x, this->w}; }
+	constexpr Vec4<T> zyyx() const { return {this->z, this->y, this->y, this->x}; }
+	constexpr Vec4<T> zyyy() const { return {this->z, this->y, this->y, this->y}; }
+	constexpr Vec4<T> zyyz() const { return {this->z, this->y, this->y, this->z}; }
+	constexpr Vec4<T> zyyw() const { return {this->z, this->y, this->y, this->w}; }
+	constexpr Vec4<T> zyzx() const { return {this->z, this->y, this->z, this->x}; }
+	constexpr Vec4<T> zyzy() const { return {this->z, this->y, this->z, this->y}; }
+	constexpr Vec4<T> zyzz() const { return {this->z, this->y, this->z, this->z}; }
+	constexpr Vec4<T> zyzw() const { return {this->z, this->y, this->z, this->w}; }
+	constexpr Vec4<T> zywx() const { return {this->z, this->y, this->w, this->x}; }
+	constexpr Vec4<T> zywy() const { return {this->z, this->y, this->w, this->y}; }
+	constexpr Vec4<T> zywz() const { return {this->z, this->y, this->w, this->z}; }
+	constexpr Vec4<T> zyww() const { return {this->z, this->y, this->w, this->w}; }
+	constexpr Vec4<T> zzxx() const { return {this->z, this->z, this->x, this->x}; }
+	constexpr Vec4<T> zzxy() const { return {this->z, this->z, this->x, this->y}; }
+	constexpr Vec4<T> zzxz() const { return {this->z, this->z, this->x, this->z}; }
+	constexpr Vec4<T> zzxw() const { return {this->z, this->z, this->x, this->w}; }
+	constexpr Vec4<T> zzyx() const { return {this->z, this->z, this->y, this->x}; }
+	constexpr Vec4<T> zzyy() const { return {this->z, this->z, this->y, this->y}; }
+	constexpr Vec4<T> zzyz() const { return {this->z, this->z, this->y, this->z}; }
+	constexpr Vec4<T> zzyw() const { return {this->z, this->z, this->y, this->w}; }
+	constexpr Vec4<T> zzzx() const { return {this->z, this->z, this->z, this->x}; }
+	constexpr Vec4<T> zzzy() const { return {this->z, this->z, this->z, this->y}; }
+	constexpr Vec4<T> zzzz() const { return {this->z, this->z, this->z, this->z}; }
+	constexpr Vec4<T> zzzw() const { return {this->z, this->z, this->z, this->w}; }
+	constexpr Vec4<T> zzwx() const { return {this->z, this->z, this->w, this->x}; }
+	constexpr Vec4<T> zzwy() const { return {this->z, this->z, this->w, this->y}; }
+	constexpr Vec4<T> zzwz() const { return {this->z, this->z, this->w, this->z}; }
+	constexpr Vec4<T> zzww() const { return {this->z, this->z, this->w, this->w}; }
+	constexpr Vec4<T> zwxx() const { return {this->z, this->w, this->x, this->x}; }
+	constexpr Vec4<T> zwxy() const { return {this->z, this->w, this->x, this->y}; }
+	constexpr Vec4<T> zwxz() const { return {this->z, this->w, this->x, this->z}; }
+	constexpr Vec4<T> zwxw() const { return {this->z, this->w, this->x, this->w}; }
+	constexpr Vec4<T> zwyx() const { return {this->z, this->w, this->y, this->x}; }
+	constexpr Vec4<T> zwyy() const { return {this->z, this->w, this->y, this->y}; }
+	constexpr Vec4<T> zwyz() const { return {this->z, this->w, this->y, this->z}; }
+	constexpr Vec4<T> zwyw() const { return {this->z, this->w, this->y, this->w}; }
+	constexpr Vec4<T> zwzx() const { return {this->z, this->w, this->z, this->x}; }
+	constexpr Vec4<T> zwzy() const { return {this->z, this->w, this->z, this->y}; }
+	constexpr Vec4<T> zwzz() const { return {this->z, this->w, this->z, this->z}; }
+	constexpr Vec4<T> zwzw() const { return {this->z, this->w, this->z, this->w}; }
+	constexpr Vec4<T> zwwx() const { return {this->z, this->w, this->w, this->x}; }
+	constexpr Vec4<T> zwwy() const { return {this->z, this->w, this->w, this->y}; }
+	constexpr Vec4<T> zwwz() const { return {this->z, this->w, this->w, this->z}; }
+	constexpr Vec4<T> zwww() const { return {this->z, this->w, this->w, this->w}; }
+	constexpr Vec4<T> wxxx() const { return {this->w, this->x, this->x, this->x}; }
+	constexpr Vec4<T> wxxy() const { return {this->w, this->x, this->x, this->y}; }
+	constexpr Vec4<T> wxxz() const { return {this->w, this->x, this->x, this->z}; }
+	constexpr Vec4<T> wxxw() const { return {this->w, this->x, this->x, this->w}; }
+	constexpr Vec4<T> wxyx() const { return {this->w, this->x, this->y, this->x}; }
+	constexpr Vec4<T> wxyy() const { return {this->w, this->x, this->y, this->y}; }
+	constexpr Vec4<T> wxyz() const { return {this->w, this->x, this->y, this->z}; }
+	constexpr Vec4<T> wxyw() const { return {this->w, this->x, this->y, this->w}; }
+	constexpr Vec4<T> wxzx() const { return {this->w, this->x, this->z, this->x}; }
+	constexpr Vec4<T> wxzy() const { return {this->w, this->x, this->z, this->y}; }
+	constexpr Vec4<T> wxzz() const { return {this->w, this->x, this->z, this->z}; }
+	constexpr Vec4<T> wxzw() const { return {this->w, this->x, this->z, this->w}; }
+	constexpr Vec4<T> wxwx() const { return {this->w, this->x, this->w, this->x}; }
+	constexpr Vec4<T> wxwy() const { return {this->w, this->x, this->w, this->y}; }
+	constexpr Vec4<T> wxwz() const { return {this->w, this->x, this->w, this->z}; }
+	constexpr Vec4<T> wxww() const { return {this->w, this->x, this->w, this->w}; }
+	constexpr Vec4<T> wyxx() const { return {this->w, this->y, this->x, this->x}; }
+	constexpr Vec4<T> wyxy() const { return {this->w, this->y, this->x, this->y}; }
+	constexpr Vec4<T> wyxz() const { return {this->w, this->y, this->x, this->z}; }
+	constexpr Vec4<T> wyxw() const { return {this->w, this->y, this->x, this->w}; }
+	constexpr Vec4<T> wyyx() const { return {this->w, this->y, this->y, this->x}; }
+	constexpr Vec4<T> wyyy() const { return {this->w, this->y, this->y, this->y}; }
+	constexpr Vec4<T> wyyz() const { return {this->w, this->y, this->y, this->z}; }
+	constexpr Vec4<T> wyyw() const { return {this->w, this->y, this->y, this->w}; }
+	constexpr Vec4<T> wyzx() const { return {this->w, this->y, this->z, this->x}; }
+	constexpr Vec4<T> wyzy() const { return {this->w, this->y, this->z, this->y}; }
+	constexpr Vec4<T> wyzz() const { return {this->w, this->y, this->z, this->z}; }
+	constexpr Vec4<T> wyzw() const { return {this->w, this->y, this->z, this->w}; }
+	constexpr Vec4<T> wywx() const { return {this->w, this->y, this->w, this->x}; }
+	constexpr Vec4<T> wywy() const { return {this->w, this->y, this->w, this->y}; }
+	constexpr Vec4<T> wywz() const { return {this->w, this->y, this->w, this->z}; }
+	constexpr Vec4<T> wyww() const { return {this->w, this->y, this->w, this->w}; }
+	constexpr Vec4<T> wzxx() const { return {this->w, this->z, this->x, this->x}; }
+	constexpr Vec4<T> wzxy() const { return {this->w, this->z, this->x, this->y}; }
+	constexpr Vec4<T> wzxz() const { return {this->w, this->z, this->x, this->z}; }
+	constexpr Vec4<T> wzxw() const { return {this->w, this->z, this->x, this->w}; }
+	constexpr Vec4<T> wzyx() const { return {this->w, this->z, this->y, this->x}; }
+	constexpr Vec4<T> wzyy() const { return {this->w, this->z, this->y, this->y}; }
+	constexpr Vec4<T> wzyz() const { return {this->w, this->z, this->y, this->z}; }
+	constexpr Vec4<T> wzyw() const { return {this->w, this->z, this->y, this->w}; }
+	constexpr Vec4<T> wzzx() const { return {this->w, this->z, this->z, this->x}; }
+	constexpr Vec4<T> wzzy() const { return {this->w, this->z, this->z, this->y}; }
+	constexpr Vec4<T> wzzz() const { return {this->w, this->z, this->z, this->z}; }
+	constexpr Vec4<T> wzzw() const { return {this->w, this->z, this->z, this->w}; }
+	constexpr Vec4<T> wzwx() const { return {this->w, this->z, this->w, this->x}; }
+	constexpr Vec4<T> wzwy() const { return {this->w, this->z, this->w, this->y}; }
+	constexpr Vec4<T> wzwz() const { return {this->w, this->z, this->w, this->z}; }
+	constexpr Vec4<T> wzww() const { return {this->w, this->z, this->w, this->w}; }
+	constexpr Vec4<T> wwxx() const { return {this->w, this->w, this->x, this->x}; }
+	constexpr Vec4<T> wwxy() const { return {this->w, this->w, this->x, this->y}; }
+	constexpr Vec4<T> wwxz() const { return {this->w, this->w, this->x, this->z}; }
+	constexpr Vec4<T> wwxw() const { return {this->w, this->w, this->x, this->w}; }
+	constexpr Vec4<T> wwyx() const { return {this->w, this->w, this->y, this->x}; }
+	constexpr Vec4<T> wwyy() const { return {this->w, this->w, this->y, this->y}; }
+	constexpr Vec4<T> wwyz() const { return {this->w, this->w, this->y, this->z}; }
+	constexpr Vec4<T> wwyw() const { return {this->w, this->w, this->y, this->w}; }
+	constexpr Vec4<T> wwzx() const { return {this->w, this->w, this->z, this->x}; }
+	constexpr Vec4<T> wwzy() const { return {this->w, this->w, this->z, this->y}; }
+	constexpr Vec4<T> wwzz() const { return {this->w, this->w, this->z, this->z}; }
+	constexpr Vec4<T> wwzw() const { return {this->w, this->w, this->z, this->w}; }
+	constexpr Vec4<T> wwwx() const { return {this->w, this->w, this->w, this->x}; }
+	constexpr Vec4<T> wwwy() const { return {this->w, this->w, this->w, this->y}; }
+	constexpr Vec4<T> wwwz() const { return {this->w, this->w, this->w, this->z}; }
+	constexpr Vec4<T> wwww() const { return {this->w, this->w, this->w, this->w}; }
 };
 
 // c i hate you

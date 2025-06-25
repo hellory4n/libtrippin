@@ -17,8 +17,8 @@ All of the C files are just for testing, they're not part of Engineer™
 
 ## Limitations
 
-- Linux only
-- GCC/Clang only
+- Linux only, maybe macOS works too?
+- GCC/Clang only (unless there's another compiler that supports gcc flags)
 - You probably can't use a massive IDE with it
 - It's made by some random guy
 
@@ -136,7 +136,8 @@ eng.run()
 
 ### Isn't that just Premake?
 
-No they're quite different, the only thing in common is Lua.
+No they're quite different, Premake generates build files (like CMake) while Engineer manages the build process
+and only needs a compiler
 
 ### Have you tried \[build system] you fucking moron?
 

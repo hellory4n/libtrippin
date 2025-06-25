@@ -1,5 +1,4 @@
 #include "libtrippin.hpp"
-#include <cstdio>
 
 int main()
 {
