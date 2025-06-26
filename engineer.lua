@@ -27,6 +27,7 @@ function libtrippin.lib(debug, trippinsrc)
 		trippinsrc.."/string.cpp",
 	})
 	project:target("libtrippin.a")
+	project:define({"BACKWARD_HAS_BFD=1"})
 	return project
 end
 local trippin = libtrippin.lib(true, "trippin")
@@ -38,7 +39,7 @@ example_all:pedantic()
 example_all:debug()
 example_all:define({"DEBUG"})
 -- idk why it doesn't link stdc++
-example_all:link({"trippin", "m", "stdc++"})
+example_all:link({"trippin", "bfd", "dl", "m", "stdc++"})
 example_all:add_sources({"examples/one_test_to_rule_them_all.cpp"})
 example_all:add_includes({"..", "."})
 -- just one because it's pretty much the same for all of them

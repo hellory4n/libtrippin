@@ -14,6 +14,8 @@ int main(void)
 
 	// arenas are infinite
 	// allocate as many as you want!
+	// note this doesn't call the constructor, classes are instead supposed to take an arena in their
+	// constructor
 	auto* crap = arena->alloc<CrapStruct>();
 
 	// you can also allocate arrays

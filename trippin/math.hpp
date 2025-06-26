@@ -33,6 +33,8 @@
 
 namespace tr {
 
+// TODO more constexpr
+
 // Vec2 lmao
 template<typename T>
 struct Vec2
@@ -40,38 +42,40 @@ struct Vec2
 	T x;
 	T y;
 
-	constexpr Vec2() : x(0), y(0) {};
-	constexpr Vec2(T x, T y) : x(x), y(y) {};
+	constexpr Vec2() : x(0), y(0) {}
+	constexpr Vec2(T x, T y) : x(x), y(y) {}
+	explicit constexpr Vec2(T v) : x(v), y(v) {}
 
-	Vec2 operator+(Vec2 r)  { return Vec2(this->x + r.x, this->y + r.y); }
-	Vec2 operator-(Vec2 r)  { return Vec2(this->x - r.x, this->y - r.y); }
-	Vec2 operator*(Vec2 r)  { return Vec2(this->x * r.x, this->y * r.y); }
-	Vec2 operator*(T r)     { return Vec2(this->x * r,   this->y * r);   }
-	Vec2 operator/(Vec2 r)  { return Vec2(this->x / r.x, this->y / r.y); }
-	Vec2 operator/(T r)     { return Vec2(this->x / r,   this->y / r);   }
-	Vec2 operator%(Vec2 r)  { return Vec2(this->x % r.x, this->y % r.y); }
-	Vec2 operator%(T r)     { return Vec2(this->x % r,   this->y % r);   }
+	// TODO these could be implemented with evil macro fuckery but idk if i want to do that
 
-	bool operator==(Vec2 r) { return this->x == r.x && this->y == r.y;   }
-	bool operator!=(Vec2 r) { return this->x != r.x && this->y != r.y;   }
-	bool operator>(Vec2 r)  { return this->x >  r.x && this->y >  r.y;   }
-	bool operator>=(Vec2 r) { return this->x >= r.x && this->y >= r.y;   }
-	bool operator<(Vec2 r)  { return this->x <  r.x && this->y <  r.y;   }
-	bool operator<=(Vec2 r) { return this->x <= r.x && this->y <= r.y;   }
+	constexpr Vec2 operator+(Vec2 r)  { return Vec2(this->x + r.x, this->y + r.y); }
+	constexpr Vec2 operator-(Vec2 r)  { return Vec2(this->x - r.x, this->y - r.y); }
+	constexpr Vec2 operator*(Vec2 r)  { return Vec2(this->x * r.x, this->y * r.y); }
+	constexpr Vec2 operator*(T r)     { return Vec2(this->x * r,   this->y * r);   }
+	constexpr Vec2 operator/(Vec2 r)  { return Vec2(this->x / r.x, this->y / r.y); }
+	constexpr Vec2 operator/(T r)     { return Vec2(this->x / r,   this->y / r);   }
+	constexpr Vec2 operator%(Vec2 r)  { return Vec2(this->x % r.x, this->y % r.y); }
+	constexpr Vec2 operator%(T r)     { return Vec2(this->x % r,   this->y % r);   }
 
-	Vec2& operator+=(Vec2 other) { return *this = *this + other; }
-	Vec2& operator-=(Vec2 other) { return *this = *this - other; }
-	Vec2& operator*=(Vec2 other) { return *this = *this * other; }
-	Vec2& operator/=(Vec2 other) { return *this = *this / other; }
-	Vec2& operator%=(Vec2 other) { return *this = *this % other; }
-	Vec2& operator*=(T other) { return *this = *this * other; }
-	Vec2& operator/=(T other) { return *this = *this / other; }
-	Vec2& operator%=(T other) { return *this = *this % other; }
-	Vec2 operator-() { return {-this->x, -this->y}; }
-	Vec2 operator+() { return {+this->x, +this->y}; }
+	constexpr bool operator==(Vec2 r) { return this->x == r.x && this->y == r.y;   }
+	constexpr bool operator!=(Vec2 r) { return this->x != r.x && this->y != r.y;   }
+	constexpr bool operator>(Vec2 r)  { return this->x >  r.x && this->y >  r.y;   }
+	constexpr bool operator>=(Vec2 r) { return this->x >= r.x && this->y >= r.y;   }
+	constexpr bool operator<(Vec2 r)  { return this->x <  r.x && this->y <  r.y;   }
+	constexpr bool operator<=(Vec2 r) { return this->x <= r.x && this->y <= r.y;   }
+
+	constexpr Vec2& operator+=(Vec2 other) { return *this = *this + other; }
+	constexpr Vec2& operator-=(Vec2 other) { return *this = *this - other; }
+	constexpr Vec2& operator*=(Vec2 other) { return *this = *this * other; }
+	constexpr Vec2& operator/=(Vec2 other) { return *this = *this / other; }
+	constexpr Vec2& operator%=(Vec2 other) { return *this = *this % other; }
+	constexpr Vec2& operator*=(T other) { return *this = *this * other; }
+	constexpr Vec2& operator/=(T other) { return *this = *this / other; }
+	constexpr Vec2& operator%=(T other) { return *this = *this % other; }
+	constexpr Vec2 operator-() { return {-this->x, -this->y}; }
 
 	static constexpr usize ITEMS = 2;
-	T& operator[](usize idx)
+	constexpr T& operator[](usize idx)
 	{
 		switch (idx) {
 			case 0:  return this->x; break;
@@ -80,7 +84,7 @@ struct Vec2
 		}
 	}
 
-	T mul_inner(Vec2<T> b)
+	constexpr T mul_inner(Vec2<T> b)
 	{
 		T p = 0;
 		for (usize i = 0; i < ITEMS; i++) {
@@ -89,8 +93,8 @@ struct Vec2
 		return p;
 	}
 
-	float64 length() { return sqrt(this->mul_inner(*this)); }
-	Vec2 normalize() { return *this * (1 / this->length()); }
+	constexpr float64 length() { return sqrt(this->mul_inner(*this)); }
+	constexpr Vec2 normalize() { return *this * (1 / this->length()); }
 
 	// swizzling operators
 	// i know this is insane
@@ -102,16 +106,16 @@ struct Vec2
 };
 
 // c i hate you
-template<> inline Vec2<float64> Vec2<float64>::operator%(Vec2<float64> r) {
+template<> constexpr Vec2<float64> Vec2<float64>::operator%(Vec2<float64> r) {
 	return Vec2<float64>(fmod(this->x, r.x), fmod(this->y, r.y));
 }
-template<> inline Vec2<float64> Vec2<float64>::operator%(float64 r) {
+template<> constexpr Vec2<float64> Vec2<float64>::operator%(float64 r) {
 	return Vec2<float64>(fmod(this->x, r), fmod(this->y, r));
 }
-template<> inline Vec2<float32> Vec2<float32>::operator%(Vec2<float32> r) {
+template<> constexpr Vec2<float32> Vec2<float32>::operator%(Vec2<float32> r) {
 	return Vec2<float32>(fmod(this->x, r.x), fmod(this->y, r.y));
 }
-template<> inline Vec2<float32> Vec2<float32>::operator%(float32 r) {
+template<> constexpr Vec2<float32> Vec2<float32>::operator%(float32 r) {
 	return Vec2<float32>(fmod(this->x, r), fmod(this->y, r));
 }
 
@@ -125,36 +129,36 @@ struct Vec3
 
 	constexpr Vec3() : x(0), y(0), z(0) {};
 	constexpr Vec3(T x, T y, T z) : x(x), y(y), z(z) {};
+	explicit constexpr Vec3(T v) : x(v), y(v), z(v) {}
 
-	Vec3 operator+(Vec3 r)  { return Vec3(this->x + r.x, this->y + r.y, this->z + r.z);  }
-	Vec3 operator-(Vec3 r)  { return Vec3(this->x - r.x, this->y - r.y, this->z - r.z);  }
-	Vec3 operator*(Vec3 r)  { return Vec3(this->x * r.x, this->y * r.y, this->z * r.z);  }
-	Vec3 operator*(T r)     { return Vec3(this->x * r,   this->y * r,   this->z * r);    }
-	Vec3 operator/(Vec3 r)  { return Vec3(this->x / r.x, this->y / r.y, this->z / r.z);  }
-	Vec3 operator/(T r)     { return Vec3(this->x / r,   this->y / r,   this->z / r);    }
-	Vec3 operator%(Vec3 r)  { return Vec3(this->x % r.x, this->y % r.y, this->z % r.z);  }
-	Vec3 operator%(T r)     { return Vec3(this->x % r,   this->y % r,   this->z % r);    }
+	constexpr Vec3 operator+(Vec3 r)  { return Vec3(this->x + r.x, this->y + r.y, this->z + r.z);  }
+	constexpr Vec3 operator-(Vec3 r)  { return Vec3(this->x - r.x, this->y - r.y, this->z - r.z);  }
+	constexpr Vec3 operator*(Vec3 r)  { return Vec3(this->x * r.x, this->y * r.y, this->z * r.z);  }
+	constexpr Vec3 operator*(T r)     { return Vec3(this->x * r,   this->y * r,   this->z * r);    }
+	constexpr Vec3 operator/(Vec3 r)  { return Vec3(this->x / r.x, this->y / r.y, this->z / r.z);  }
+	constexpr Vec3 operator/(T r)     { return Vec3(this->x / r,   this->y / r,   this->z / r);    }
+	constexpr Vec3 operator%(Vec3 r)  { return Vec3(this->x % r.x, this->y % r.y, this->z % r.z);  }
+	constexpr Vec3 operator%(T r)     { return Vec3(this->x % r,   this->y % r,   this->z % r);    }
 
-	bool operator==(Vec3 r) { return this->x == r.x && this->y == r.y && this->z == r.z; }
-	bool operator!=(Vec3 r) { return this->x != r.x && this->y != r.y && this->z != r.z; }
-	bool operator>(Vec3 r)  { return this->x >  r.x && this->y >  r.y && this->z >  r.z; }
-	bool operator>=(Vec3 r) { return this->x >= r.x && this->y >= r.y && this->z >= r.z; }
-	bool operator<(Vec3 r)  { return this->x <  r.x && this->y <  r.y && this->z <  r.z; }
-	bool operator<=(Vec3 r) { return this->x <= r.x && this->y <= r.y && this->z <= r.z; }
+	constexpr bool operator==(Vec3 r) { return this->x == r.x && this->y == r.y && this->z == r.z; }
+	constexpr bool operator!=(Vec3 r) { return this->x != r.x && this->y != r.y && this->z != r.z; }
+	constexpr bool operator>(Vec3 r)  { return this->x >  r.x && this->y >  r.y && this->z >  r.z; }
+	constexpr bool operator>=(Vec3 r) { return this->x >= r.x && this->y >= r.y && this->z >= r.z; }
+	constexpr bool operator<(Vec3 r)  { return this->x <  r.x && this->y <  r.y && this->z <  r.z; }
+	constexpr bool operator<=(Vec3 r) { return this->x <= r.x && this->y <= r.y && this->z <= r.z; }
 
-	Vec3& operator+=(Vec3 other) { return *this = *this + other; }
-	Vec3& operator-=(Vec3 other) { return *this = *this - other; }
-	Vec3& operator*=(Vec3 other) { return *this = *this * other; }
-	Vec3& operator/=(Vec3 other) { return *this = *this / other; }
-	Vec3& operator%=(Vec3 other) { return *this = *this % other; }
-	Vec3& operator*=(T other) { return *this = *this * other; }
-	Vec3& operator/=(T other) { return *this = *this / other; }
-	Vec3& operator%=(T other) { return *this = *this % other; }
-	Vec3 operator-() { return {-this->x, -this->y}; }
-	Vec3 operator+() { return {+this->x, +this->y}; }
+	constexpr Vec3& operator+=(Vec3 other) { return *this = *this + other; }
+	constexpr Vec3& operator-=(Vec3 other) { return *this = *this - other; }
+	constexpr Vec3& operator*=(Vec3 other) { return *this = *this * other; }
+	constexpr Vec3& operator/=(Vec3 other) { return *this = *this / other; }
+	constexpr Vec3& operator%=(Vec3 other) { return *this = *this % other; }
+	constexpr Vec3& operator*=(T other) { return *this = *this * other; }
+	constexpr Vec3& operator/=(T other) { return *this = *this / other; }
+	constexpr Vec3& operator%=(T other) { return *this = *this % other; }
+	constexpr Vec3 operator-() { return {-this->x, -this->y, -this->z}; }
 
 	static constexpr usize ITEMS = 3;
-	T& operator[](usize idx)
+	constexpr T& operator[](usize idx)
 	{
 		switch (idx) {
 			case 0:  return this->x; break;
@@ -164,7 +168,7 @@ struct Vec3
 		}
 	}
 
-	T mul_inner(Vec3<T> b)
+	constexpr T mul_inner(Vec3<T> b)
 	{
 		T p = 0;
 		for (usize i = 0; i < ITEMS; i++) {
@@ -173,10 +177,10 @@ struct Vec3
 		return p;
 	}
 
-	float64 length() { return sqrt(this->mul_inner(*this)); }
-	Vec3<T> normalize() { return *this * (1 / this->length()); }
+	constexpr float64 length() { return sqrt(this->mul_inner(*this)); }
+	constexpr Vec3<T> normalize() { return *this * (1 / this->length()); }
 
-	Vec3<T> reflect(Vec3<T> b)
+	constexpr Vec3<T> reflect(Vec3<T> b)
 	{
 		Vec3<T> r;
 		T p = 2 * this->mul_inner(b);
@@ -186,7 +190,7 @@ struct Vec3
 		return r;
 	}
 
-	Vec3<T> mul_cross(Vec3<T> b)
+	constexpr Vec3<T> mul_cross(Vec3<T> b)
 	{
 		Vec3<T> r;
 		r[0] = (*this)[1] * b[2] - (*this)[2] * b[1];
@@ -199,8 +203,8 @@ struct Vec3
 	// swizzling operators
 	// i know this is insane
 	// i didnt write this myself im not insane
-	Vec3(T x, Vec2<T> other) : Vec3(x, other.y, other.z) {}
-	Vec3(Vec2<T> other, T z) : Vec3(other.x, other.y, z) {}
+	constexpr Vec3(T x, Vec2<T> other) : Vec3(x, other.y, other.z) {}
+	constexpr Vec3(Vec2<T> other, T z) : Vec3(other.x, other.y, z) {}
 	constexpr Vec2<T> xx() const { return {this->x, this->x}; }
 	constexpr Vec2<T> xy() const { return {this->x, this->y}; }
 	constexpr Vec2<T> xz() const { return {this->x, this->z}; }
@@ -240,18 +244,21 @@ struct Vec3
 };
 
 // c i hate you
-template<> inline Vec3<float64> Vec3<float64>::operator%(Vec3<float64> r) {
+template<> constexpr Vec3<float64> Vec3<float64>::operator%(Vec3<float64> r) {
 	return Vec3<float64>(fmod(this->x, r.x), fmod(this->y, r.y), fmod(this->z, r.z));
 }
-template<> inline Vec3<float64> Vec3<float64>::operator%(float64 r) {
+template<> constexpr Vec3<float64> Vec3<float64>::operator%(float64 r) {
 	return Vec3<float64>(fmod(this->x, r), fmod(this->y, r), fmod(this->z, r));
 }
-template<> inline Vec3<float32> Vec3<float32>::operator%(Vec3<float32> r) {
+template<> constexpr Vec3<float32> Vec3<float32>::operator%(Vec3<float32> r) {
 	return Vec3<float32>(fmod(this->x, r.x), fmod(this->y, r.y), fmod(this->z, r.z));
 }
-template<> inline Vec3<float32> Vec3<float32>::operator%(float32 r) {
+template<> constexpr Vec3<float32> Vec3<float32>::operator%(float32 r) {
 	return Vec3<float32>(fmod(this->x, r), fmod(this->y, r), fmod(this->z, r));
 }
+
+// COLOR I HARDLY KNOW 'ER HAHAHHAHA LAUGH IMMEIDATLEY
+struct Color;
 
 // Vec4 lmao
 template<typename T>
@@ -264,36 +271,37 @@ struct Vec4
 
 	constexpr Vec4() : x(0), y(0), z(0), w(0) {};
 	constexpr Vec4(T x, T y, T z, T w) : x(x), y(y), z(z), w(w) {};
+	explicit constexpr Vec4(T v) : x(v), y(v), z(v), w(v) {}
+	constexpr Vec4(Color c);
 
-	Vec4 operator+(Vec4 r)  { return Vec4(this->x + r.x, this->y + r.y, this->z + r.z, this->w + r.w);  }
-	Vec4 operator-(Vec4 r)  { return Vec4(this->x - r.x, this->y - r.y, this->z - r.z, this->w - r.w);  }
-	Vec4 operator*(Vec4 r)  { return Vec4(this->x * r.x, this->y * r.y, this->z * r.z, this->w * r.w);  }
-	Vec4 operator*(T r)     { return Vec4(this->x * r,   this->y * r,   this->z * r,   this->w * r);    }
-	Vec4 operator/(Vec4 r)  { return Vec4(this->x / r.x, this->y / r.y, this->z / r.z, this->w / r.z);  }
-	Vec4 operator/(T r)     { return Vec4(this->x / r,   this->y / r,   this->z / r,   this->w / r);    }
-	Vec4 operator%(Vec4 r)  { return Vec4(this->x % r.x, this->y % r.y, this->z % r.z, this->w % r.z);  }
-	Vec4 operator%(T r)     { return Vec4(this->x % r,   this->y % r,   this->z % r,   this->w % r);    }
+	constexpr Vec4 operator+(Vec4 r)  { return Vec4(this->x + r.x, this->y + r.y, this->z + r.z, this->w + r.w);  }
+	constexpr Vec4 operator-(Vec4 r)  { return Vec4(this->x - r.x, this->y - r.y, this->z - r.z, this->w - r.w);  }
+	constexpr Vec4 operator*(Vec4 r)  { return Vec4(this->x * r.x, this->y * r.y, this->z * r.z, this->w * r.w);  }
+	constexpr Vec4 operator*(T r)     { return Vec4(this->x * r,   this->y * r,   this->z * r,   this->w * r);    }
+	constexpr Vec4 operator/(Vec4 r)  { return Vec4(this->x / r.x, this->y / r.y, this->z / r.z, this->w / r.z);  }
+	constexpr Vec4 operator/(T r)     { return Vec4(this->x / r,   this->y / r,   this->z / r,   this->w / r);    }
+	constexpr Vec4 operator%(Vec4 r)  { return Vec4(this->x % r.x, this->y % r.y, this->z % r.z, this->w % r.z);  }
+	constexpr Vec4 operator%(T r)     { return Vec4(this->x % r,   this->y % r,   this->z % r,   this->w % r);    }
 
-	bool operator==(Vec4 r) { return this->x == r.x && this->y == r.y && this->z == r.z && this->w == r.w; }
-	bool operator!=(Vec4 r) { return this->x != r.x && this->y != r.y && this->z != r.z && this->w != r.w; }
-	bool operator>(Vec4 r)  { return this->x >  r.x && this->y >  r.y && this->z >  r.z && this->w >  r.w; }
-	bool operator>=(Vec4 r) { return this->x >= r.x && this->y >= r.y && this->z >= r.z && this->w >= r.w; }
-	bool operator<(Vec4 r)  { return this->x <  r.x && this->y <  r.y && this->z <  r.z && this->w <  r.w; }
-	bool operator<=(Vec4 r) { return this->x <= r.x && this->y <= r.y && this->z <= r.z && this->w <= r.w; }
+	constexpr bool operator==(Vec4 r) { return this->x == r.x && this->y == r.y && this->z == r.z && this->w == r.w; }
+	constexpr bool operator!=(Vec4 r) { return this->x != r.x && this->y != r.y && this->z != r.z && this->w != r.w; }
+	constexpr bool operator>(Vec4 r)  { return this->x >  r.x && this->y >  r.y && this->z >  r.z && this->w >  r.w; }
+	constexpr bool operator>=(Vec4 r) { return this->x >= r.x && this->y >= r.y && this->z >= r.z && this->w >= r.w; }
+	constexpr bool operator<(Vec4 r)  { return this->x <  r.x && this->y <  r.y && this->z <  r.z && this->w <  r.w; }
+	constexpr bool operator<=(Vec4 r) { return this->x <= r.x && this->y <= r.y && this->z <= r.z && this->w <= r.w; }
 
-	Vec4& operator+=(Vec4 other) { return *this = *this + other; }
-	Vec4& operator-=(Vec4 other) { return *this = *this - other; }
-	Vec4& operator*=(Vec4 other) { return *this = *this * other; }
-	Vec4& operator/=(Vec4 other) { return *this = *this / other; }
-	Vec4& operator%=(Vec4 other) { return *this = *this % other; }
-	Vec4& operator*=(T other) { return *this = *this * other; }
-	Vec4& operator/=(T other) { return *this = *this / other; }
-	Vec4& operator%=(T other) { return *this = *this % other; }
-	Vec4 operator-() { return {-this->x, -this->y}; }
-	Vec4 operator+() { return {+this->x, +this->y}; }
+	constexpr Vec4& operator+=(Vec4 other) { return *this = *this + other; }
+	constexpr Vec4& operator-=(Vec4 other) { return *this = *this - other; }
+	constexpr Vec4& operator*=(Vec4 other) { return *this = *this * other; }
+	constexpr Vec4& operator/=(Vec4 other) { return *this = *this / other; }
+	constexpr Vec4& operator%=(Vec4 other) { return *this = *this % other; }
+	constexpr Vec4& operator*=(T other) { return *this = *this * other; }
+	constexpr Vec4& operator/=(T other) { return *this = *this / other; }
+	constexpr Vec4& operator%=(T other) { return *this = *this % other; }
+	constexpr Vec4 operator-() { return {-this->x, -this->y, -this->z, -this->w}; }
 
 	static constexpr usize ITEMS = 4;
-	T& operator[](usize idx)
+	constexpr T& operator[](usize idx)
 	{
 		switch (idx) {
 			case 0:  return this->x; break;
@@ -304,7 +312,7 @@ struct Vec4
 		}
 	}
 
-	T mul_inner(Vec4<T> b)
+	constexpr T mul_inner(Vec4<T> b)
 	{
 		T p = 0;
 		for (usize i = 0; i < ITEMS; i++) {
@@ -313,10 +321,10 @@ struct Vec4
 		return p;
 	}
 
-	float64 length() { return sqrt(this->mul_inner(*this)); }
-	Vec4<T> normalize() { return *this * (1 / this->length()); }
+	constexpr float64 length() { return sqrt(this->mul_inner(*this)); }
+	constexpr Vec4<T> normalize() { return *this * (1 / this->length()); }
 
-	Vec4<T> mul_cross(Vec4<T> b)
+	constexpr Vec4<T> mul_cross(Vec4<T> b)
 	{
 		Vec4<T> r;
 		r[0] = (*this)[1] * b[2] - (*this)[2] * b[1];
@@ -326,7 +334,7 @@ struct Vec4
 		return r;
 	}
 
-	Vec4<T> reflect(Vec4<T> b)
+	constexpr Vec4<T> reflect(Vec4<T> b)
 	{
 		Vec4<T> r;
 		T p = 2 * this->mul_inner(b);
@@ -339,11 +347,11 @@ struct Vec4
 	// swizzling operators
 	// i know this is insane
 	// i didnt write this myself im not insane
-	Vec4(T x, T y, Vec2<T> other) : Vec4(x, y, other.z, other.w) {}
-	Vec4(Vec2<T> other, T z, T w) : Vec4(other.x, other.y, z, w) {}
-	Vec4(T x, Vec2<T> other, T w) : Vec4(x, other.y, other.z, w) {}
-	Vec4(T x, Vec3<T> other) : Vec4(x, other.y, other.z, other.w) {}
-	Vec4(Vec3<T> other, T w) : Vec4(other.x, other.y, other.z, w) {}
+	constexpr Vec4(T x, T y, Vec2<T> other) : Vec4(x, y, other.z, other.w) {}
+	constexpr Vec4(Vec2<T> other, T z, T w) : Vec4(other.x, other.y, z, w) {}
+	constexpr Vec4(T x, Vec2<T> other, T w) : Vec4(x, other.y, other.z, w) {}
+	constexpr Vec4(T x, Vec3<T> other) : Vec4(x, other.y, other.z, other.w) {}
+	constexpr Vec4(Vec3<T> other, T w) : Vec4(other.x, other.y, other.z, w) {}
 	constexpr Vec2<T> xx() const { return {this->x, this->x}; }
 	constexpr Vec2<T> xy() const { return {this->x, this->y}; }
 	constexpr Vec2<T> xz() const { return {this->x, this->z}; }
@@ -683,16 +691,16 @@ struct Vec4
 };
 
 // c i hate you
-template<> inline Vec4<float64> Vec4<float64>::operator%(Vec4<float64> r) {
+template<> constexpr Vec4<float64> Vec4<float64>::operator%(Vec4<float64> r) {
 	return Vec4<float64>(fmod(this->x, r.x), fmod(this->y, r.y), fmod(this->z, r.z), fmod(this->w, r.w));
 }
-template<> inline Vec4<float64> Vec4<float64>::operator%(float64 r) {
+template<> constexpr Vec4<float64> Vec4<float64>::operator%(float64 r) {
 	return Vec4<float64>(fmod(this->x, r), fmod(this->y, r), fmod(this->z, r), fmod(this->w, r));
 }
-template<> inline Vec4<float32> Vec4<float32>::operator%(Vec4<float32> r) {
+template<> constexpr Vec4<float32> Vec4<float32>::operator%(Vec4<float32> r) {
 	return Vec4<float32>(fmod(this->x, r.x), fmod(this->y, r.y), fmod(this->z, r.z), fmod(this->w, r.w));
 }
-template<> inline Vec4<float32> Vec4<float32>::operator%(float32 r) {
+template<> constexpr Vec4<float32> Vec4<float32>::operator%(float32 r) {
 	return Vec4<float32>(fmod(this->x, r), fmod(this->y, r), fmod(this->z, r), fmod(this->w, r));
 }
 
@@ -719,55 +727,6 @@ public:
 	}
 };
 
-// COLOR I HARDLY KNOW 'ER HAHAHHAHA LAUGH IMMEIDATLEY
-struct Color
-{
-	// Red
-	uint8 r = 255;
-	// Green
-	uint8 g = 255;
-	// Blue
-	uint8 b = 255;
-	// Alpha/transparency
-	uint8 a = 255;
-
-	constexpr Color();
-	constexpr Color(uint8 r, uint8 g, uint8 b) : r(r), g(g), b(b), a(255) {}
-	constexpr Color(uint8 r, uint8 g, uint8 b, uint8 a) : r(r), g(g), b(b), a(a) {}
-	constexpr Color(Vec4<float32> vec) : r(vec.x * 255), g(vec.y * 255), b(vec.z * 255), a(vec.w * 255) {}
-
-	// Makes a color from a hex code, with a format of 0xRRGGBB
-	static constexpr Color rgb(uint32 hex)
-	{
-		return Color((hex >> 16) & 0xFF, (hex >> 8) & 0xFF, hex & 0xFF, 255);
-	}
-
-	// Makes a color from a hex code, with a format of 0xRRGGBBAA
-	static constexpr Color rgba(uint32 hex)
-	{
-		return Color((hex >> 24) & 0xFF, (hex >> 16) & 0xFF, (hex >> 8) & 0xFF, hex & 0xFF);
-	}
-
-	// OpenGL uses floats for colors
-	constexpr Vec4<float32> to_vec4()
-	{
-		return {this->r / 255.f, this->g / 255.f, this->b / 255.f, this->a / 255.f};
-	}
-
-	// TODO a bunch of operators so lerp works
-};
-
-namespace palette {
-	// White lmao.
-	static constexpr Color WHITE = Color::rgb(0xFFFFFF);
-	// Black lmao.
-	static constexpr Color BLACK = Color::rgb(0x000000);
-	// Where did it go
-	static constexpr Color TRANSPARENT = Color::rgba(0x00000000);
-
-	// TODO more palettes, e.g. tr::palette::WebSafe, tr::palette::Material, tr::palette::Starry etc
-}
-
 // π
 static constexpr float64 PI = 3.141592653589793238463;
 
@@ -781,14 +740,6 @@ template<typename T> inline constexpr T rad2deg(T rad) {
 	return rad * (static_cast<T>(180.0) / static_cast<T>(PI));
 }
 
-// clamp
-template<typename T> inline constexpr T clamp(T val, T min, T max)
-{
-	if (val < min) return min;
-	else if (val > max) return max;
-	else return val;
-}
-
 // Picks the smaller option
 template<typename T> inline constexpr T min(T a, T b)
 {
@@ -799,6 +750,12 @@ template<typename T> inline constexpr T min(T a, T b)
 template<typename T> inline constexpr T max(T a, T b)
 {
 	return a > b ? a : b;
+}
+
+// clamp
+template<typename T> inline constexpr T clamp(T val, T min, T max)
+{
+	return tr::min(tr::max(min, val), max);
 }
 
 // lerp
@@ -837,7 +794,81 @@ template<typename T> inline constexpr T remap(T val, T src_min, T src_max, T dst
 	return tr::lerp(dst_min, dst_max, tr::inverse_lerp(src_min, src_max, val));
 }
 
-// 🤓. This entire struct is stolen from linmath.h btw lmao
+// COLOR I HARDLY KNOW 'ER HAHAHHAHA LAUGH IMMEIDATLEY
+struct Color
+{
+	// Red
+	uint8 r = 255;
+	// Green
+	uint8 g = 255;
+	// Blue
+	uint8 b = 255;
+	// Alpha/transparency
+	uint8 a = 255;
+
+	constexpr Color();
+	constexpr Color(uint8 r, uint8 g, uint8 b) : r(r), g(g), b(b), a(255) {}
+	constexpr Color(uint8 r, uint8 g, uint8 b, uint8 a) : r(r), g(g), b(b), a(a) {}
+	constexpr Color(Vec4<float32> vec) : r(vec.x * 255), g(vec.y * 255), b(vec.z * 255), a(vec.w * 255) {}
+
+	// Makes a color from a hex code, with a format of 0xRRGGBB
+	static constexpr Color rgb(uint32 hex)
+	{
+		return Color((hex >> 16) & 0xFF, (hex >> 8) & 0xFF, hex & 0xFF, 255);
+	}
+
+	// Makes a color from a hex code, with a format of 0xRRGGBBAA
+	static constexpr Color rgba(uint32 hex)
+	{
+		return Color((hex >> 24) & 0xFF, (hex >> 16) & 0xFF, (hex >> 8) & 0xFF, hex & 0xFF);
+	}
+
+	// im sorry... im sorry... im sorry...
+	constexpr Color operator+(Color c) { return {static_cast<uint8>(clamp(r+c.r, 0, 255)), static_cast<uint8>(clamp(g+c.g, 0, 255)), static_cast<uint8>(clamp(b+c.b, 0, 255)), static_cast<uint8>(clamp(a+c.a, 0, 255))}; }
+	constexpr Color operator-(Color c) { return {static_cast<uint8>(clamp(r-c.r, 0, 255)), static_cast<uint8>(clamp(g-c.g, 0, 255)), static_cast<uint8>(clamp(b-c.b, 0, 255)), static_cast<uint8>(clamp(a-c.a, 0, 255))}; }
+	constexpr Color operator*(Color c) { return {static_cast<uint8>(clamp(r*c.r, 0, 255)), static_cast<uint8>(clamp(g*c.g, 0, 255)), static_cast<uint8>(clamp(b*c.b, 0, 255)), static_cast<uint8>(clamp(a*c.a, 0, 255))}; }
+	constexpr Color operator*(uint8 c) { return {static_cast<uint8>(clamp(r*c, 0, 255)), static_cast<uint8>(clamp(g*c, 0, 255)), static_cast<uint8>(clamp(b*c, 0, 255)), static_cast<uint8>(clamp(a*c, 0, 255))}; }
+	constexpr Color operator/(Color c) { return {static_cast<uint8>(clamp(r/c.r, 0, 255)), static_cast<uint8>(clamp(g/c.g, 0, 255)), static_cast<uint8>(clamp(b/c.b, 0, 255)), static_cast<uint8>(clamp(a/c.a, 0, 255))}; }
+	constexpr Color operator/(uint8 c) { return {static_cast<uint8>(clamp(r/c, 0, 255)), static_cast<uint8>(clamp(g/c, 0, 255)), static_cast<uint8>(clamp(b/c, 0, 255)), static_cast<uint8>(clamp(a/c, 0, 255))}; }
+	constexpr Color operator%(Color c) { return {static_cast<uint8>(clamp(r%c.r, 0, 255)), static_cast<uint8>(clamp(g%c.g, 0, 255)), static_cast<uint8>(clamp(b%c.b, 0, 255)), static_cast<uint8>(clamp(a%c.a, 0, 255))}; }
+	constexpr Color operator%(uint8 c) { return {static_cast<uint8>(clamp(r%c, 0, 255)), static_cast<uint8>(clamp(g%c, 0, 255)), static_cast<uint8>(clamp(b%c, 0, 255)), static_cast<uint8>(clamp(a%c, 0, 255))}; }
+
+	constexpr bool operator==(Color c) { return r == c.r && g == c.g && b == c.b && a == c.a; }
+	constexpr bool operator!=(Color c) { return !(*this == c); }
+	constexpr bool operator>(Color c)  { return r >  c.r && g >  c.g && b >  c.b && a >  c.a; }
+	constexpr bool operator>=(Color c) { return r >= c.r && g >= c.g && b >= c.b && a >= c.a; }
+	constexpr bool operator<(Color c)  { return r <  c.r && g <  c.g && b <  c.b && a <  c.a; }
+	constexpr bool operator<=(Color c) { return r <= c.r && g <= c.g && b <= c.b && a <= c.a; }
+
+	constexpr Color& operator+=(Color other) { return *this = *this + other; }
+	constexpr Color& operator-=(Color other) { return *this = *this - other; }
+	constexpr Color& operator*=(Color other) { return *this = *this * other; }
+	constexpr Color& operator/=(Color other) { return *this = *this / other; }
+	constexpr Color& operator%=(Color other) { return *this = *this % other; }
+	constexpr Color& operator*=(uint8 other) { return *this = *this * other; }
+	constexpr Color& operator/=(uint8 other) { return *this = *this / other; }
+	constexpr Color& operator%=(uint8 other) { return *this = *this % other; }
+};
+
+template<typename T> constexpr Vec4<T>::Vec4(Color c) {
+	this->x = static_cast<T>(c.r / 255.0);
+	this->y = static_cast<T>(c.g / 255.0);
+	this->z = static_cast<T>(c.b / 255.0);
+	this->w = static_cast<T>(c.a / 255.0);
+}
+
+namespace palette {
+	// White lmao.
+	static constexpr Color WHITE = Color::rgb(0xffffff);
+	// Black lmao.
+	static constexpr Color BLACK = Color::rgb(0x000000);
+	// Where did it go
+	static constexpr Color TRANSPARENT = Color::rgba(0x00000000);
+
+	// TODO more palettes, e.g. tr::palette::WebSafe, tr::palette::Material, tr::palette::Starry etc
+}
+
+// Matrix intended for use with OpenGL. This entire struct is stolen from linmath.h btw lmao
 struct Matrix4x4
 {
 	Vec4<float32> values[4];

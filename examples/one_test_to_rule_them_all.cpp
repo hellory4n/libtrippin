@@ -100,7 +100,7 @@ int main()
 	TR_ASSERT(tr::String("app://sigma").is_absolute());
 	TR_ASSERT(tr::String("C:\\sigma").is_absolute());
 	TR_ASSERT(!tr::String("sigma").is_absolute());
-	TR_ASSERT(!tr::String("./sigma").is_absolute());
+	TR_ASSERT(tr::String("./sigma").is_absolute());
 	TR_ASSERT(tr::String("~/sigma").is_absolute());
 
 	// man

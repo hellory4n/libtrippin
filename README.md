@@ -5,7 +5,7 @@ Most biggest most massive library of all time. I'm insane.
 ## Featuring
 
 - [libtrippin](./libtrippin.h) v2.1.2: Most massive standard library
-    - C++14 with no external dependencies (only libc)
+    - C++14 with no external dependencies (only libc/stdc++)
     - Arenas
     - Reference counting
     - Arrays
@@ -23,11 +23,16 @@ Most biggest most massive library of all time. I'm insane.
 
 ## Usage
 
-Just add all the `.hpp`/`.cpp` files in `trippin/` to your project
-
-If you have debug builds make sure you have `DEBUG` defined (it doesn't change a whole lot but i mean why not)
+Just add all the `.hpp`/`.cpp` files from `trippin/` to your project
 
 On Linux make sure you linked the math library `-lm`
+
+libtrippin also uses [backward-cpp](https://github.com/bombela/backward-cpp) for better stack traces, it'll
+compile by default but it's recommended you do extra setup on Linux:
+- install binutils dev packages (e.g. `sudo apt install binutils-dev`)
+- link with `bfd` and `dl`
+- define `BACKWARD_HAS_BFD=1` (if you have libtrippin as a different project/static library, it has to be defined there)
+It should work automatically on Windows.
 
 If some for reason you want to use engineer then [read this](./engineerbuild/README.md)
 

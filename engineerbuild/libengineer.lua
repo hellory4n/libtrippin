@@ -52,6 +52,8 @@ eng = {
 	workstation_name = "",
 	workstation_description = "",
 	workstation_author = "",
+	-- changed with the showcmd option
+	show_command = false,
 }
 
 -- Runs a command with no output
@@ -165,37 +167,17 @@ function eng.init()
 	eng.option_description = {}
 	eng.recompiling = false
 
-	-- get c compiler
-	local cc = os.getenv("CC")
-	if cc ~= nil and cc ~= "" then
-		eng.cc = cc
-	else
-		if eng.util.silentexec("command -v clang") then
-			eng.cc = "clang"
-		elseif eng.util.silentexec("command -v gcc") then
-			eng.cc = "gcc"
-		else
-			error(eng.CONSOLE_COLOR_ERROR ..
-				"no C compiler found. please install gcc or clang, and make sure it's in the PATH" ..
-				eng.CONSOLE_COLOR_RESET)
-		end
-	end
+	eng.option("showcmd", "If true, prints the compiler commands being used", function(val)
+		eng.show_command = true
+	end)
 
-	-- get c++ compiler
-	local cxx = os.getenv("CXX") or os.getenv("CPP")
-	if cxx ~= nil and cxx ~= "" then
-		eng.cxx = cxx
-	else
-		if eng.util.silentexec("command -v clang++") then
-			eng.cxx = "clang++"
-		elseif eng.util.silentexec("command -v g++") then
-			eng.cxx = "g++"
-		else
-			error(eng.CONSOLE_COLOR_ERROR ..
-				"no C++ compiler found. please install gcc or clang, and make sure it's in the PATH" ..
-				eng.CONSOLE_COLOR_RESET)
-		end
-	end
+	eng.option("cc", "Sets the C compiler. Default is clang", function(val)
+		eng.cc = val
+	end)
+
+	eng.option("cxx", "Sets the C++ compiler. Default is clang++", function(val)
+		eng.cxx = val
+	end)
 
 	-- default help recipe
 	eng.recipe("help", "Shows what you're seeing right now", function()
@@ -296,6 +278,44 @@ end
 -- Forces a recipe to run
 function eng.run_recipe(recipe)
 	eng.recipes[recipe]()
+end
+
+function eng.check_compiler()
+	if eng.cc == "" then
+		-- get c compiler
+		local cc = os.getenv("CC")
+		if cc ~= nil and cc ~= "" then
+			eng.cc = cc
+		else
+			if eng.util.silentexec("command -v clang") then
+				eng.cc = "clang"
+			elseif eng.util.silentexec("command -v gcc") then
+				eng.cc = "gcc"
+			else
+				error(eng.CONSOLE_COLOR_ERROR ..
+					"no C compiler found. please install gcc or clang, and make sure it's in the PATH" ..
+					eng.CONSOLE_COLOR_RESET)
+			end
+		end
+	end
+
+	if eng.cxx == "" then
+		-- get c++ compiler
+		local cxx = os.getenv("CXX") or os.getenv("CPP")
+		if cxx ~= nil and cxx ~= "" then
+			eng.cxx = cxx
+		else
+			if eng.util.silentexec("command -v clang++") then
+				eng.cxx = "clang++"
+			elseif eng.util.silentexec("command -v g++") then
+				eng.cxx = "g++"
+			else
+				error(eng.CONSOLE_COLOR_ERROR ..
+					"no C++ compiler found. please install gcc or clang, and make sure it's in the PATH" ..
+					eng.CONSOLE_COLOR_RESET)
+			end
+		end
+	end
 end
 
 -- project metatable
@@ -446,6 +466,7 @@ end
 
 -- Builds and links the entire project
 function project_methods.build(proj)
+	eng.check_compiler()
 	print("Compiling "..proj.name.." with "..eng.cc.."/"..eng.cxx)
 
 	-- folder? i hardly know 'er!
@@ -481,11 +502,16 @@ function project_methods.build(proj)
 		-- pretty output
 		print(eng.CONSOLE_COLOR_BLUE.."["..i.."/"..#srcs.."] "..src..eng.CONSOLE_COLOR_RESET)
 
-		-- compile frfrfr ong no cap ngl tbh
 		if proj.type == "sharedlib" then
 			proj.cflags = proj.cflags.." -fPIC"
 		end
-		local success = os.execute(compiler..proj.cflags.." -o "..obj.." -c "..src)
+
+		-- compile frfrfr ong no cap ngl tbh
+		local cmd = compiler..proj.cflags.." -o "..obj.." -c "..src
+		if eng.show_command then
+			print(cmd)
+		end
+		local success = os.execute(cmd)
 		if not success then
 			error(eng.CONSOLE_COLOR_ERROR.."compiling "..src.." failed"..eng.CONSOLE_COLOR_RESET)
 		end
@@ -504,10 +530,13 @@ function project_methods.build(proj)
 	-- link executable
 	if proj.type == "executable" then
 		print("Linking "..proj.name)
-		local success = os.execute(
-			-- the ldflags must come last lamo
-			eng.cc.." "..objma.." -o "..proj.builddir.."/bin/"..proj.targetma.." "..proj.ldflags
-		)
+		-- the ldflags must come last lamo
+		local cmd = eng.cc.." "..objma.." -o "..proj.builddir.."/bin/"..proj.targetma.." "..proj.ldflags
+		if eng.show_command then
+			print(cmd)
+		end
+
+		local success = os.execute(cmd)
 		if not success then
 			error(eng.CONSOLE_COLOR_ERROR.."linking "..proj.name.." failed"..eng.CONSOLE_COLOR_RESET)
 		end
@@ -516,15 +545,22 @@ function project_methods.build(proj)
 	-- link static library
 	if proj.type == "staticlib" then
 		print("Linking "..proj.name)
-		os.execute("ar rcs "..proj.builddir.."/static/"..proj.targetma.." "..objma)
+		local cmd = "ar rcs "..proj.builddir.."/static/"..proj.targetma.." "..objma
+		if eng.show_command then
+			print(cmd)
+		end
+		os.execute(cmd)
 	end
 
 	-- link shared library
 	if proj.type == "sharedlib" then
-		local success = os.execute(
-			-- the ldflags must come last lamo
-			eng.cc.." -shared "..objma.." -o "..proj.builddir.."/bin/"..proj.targetma.." "..proj.ldflags
-		)
+		-- the ldflags must come last lamo
+		local cmd = eng.cc.." -shared "..objma.." -o "..proj.builddir.."/bin/"..proj.targetma.." "..proj.ldflags
+		if eng.show_command then
+			print(cmd)
+		end
+
+		local success = os.execute(cmd)
 		if not success then
 			error(eng.CONSOLE_COLOR_ERROR.."linking "..proj.name.." failed"..eng.CONSOLE_COLOR_RESET)
 		end

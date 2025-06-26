@@ -49,6 +49,8 @@
 	#define TR_LOG_FUNC(FmtIdx, VarargsIdx)
 #endif
 
+#define TR_ARRLEN(T, Array) (sizeof(Array)) / sizeof(T))
+
 typedef int8_t int8;
 typedef int16_t int16;
 typedef int32_t int32;
