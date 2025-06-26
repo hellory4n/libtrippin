@@ -162,9 +162,9 @@ public:
 	}
 
 	// help
-	T* operator->() const                   { return this->ptr; }
-	T& operator*() const                    { return *this->ptr; }
-	operator T*() const                     { return this->ptr; }
+	T* operator->() const                   { return this->get(); }
+	T& operator*() const                    { return *this->get(); }
+	operator T*() const                     { return this->get(); }
 	bool operator==(const MaybeRef<T>& ref) { return this->ptr == ref.ptr; }
 	bool operator==(const Ref<T>& ref)      { return this->ptr == ref.ptr; }
 	bool operator==(const T* ptr)           { return this->ptr == ptr; }

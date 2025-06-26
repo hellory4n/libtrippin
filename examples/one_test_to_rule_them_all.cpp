@@ -109,19 +109,15 @@ int main()
 	// couldn't be bothered to print shit so i just read it in gdb
 	// tr::panic("lol");
 
-	tr::Ref<tr::List<tr::String>> listma;
+	tr::Ref<tr::List<tr::String>> listma = new tr::List<tr::String>();
 	listma->add("fuck...");
 	listma->add("shit...");
 	listma->add("crap...");
 	listma->add("WRONG");
-	listma->remove(3);
+	(*listma)[3] = "correct...";
 	for (auto str : *listma) {
 		tr::log("list[%zu] = %s", str.i, str.val.buffer());
 	}
-
-	tr::Ref<tr::HashMap<tr::Vec3<float32>, int32>> mapma;
-	(*mapma)[tr::Vec3<float32>(1, 2, 3)] = 5;
-	tr::log("ts pmo cro icl ong n shi fr yu pmo ngl r u fr %i", (*mapma)[tr::Vec3<float32>(1, 2, 3)]);
 
 	tr::free();
 }
