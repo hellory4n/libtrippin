@@ -3,6 +3,7 @@
 #include <trippin/math.hpp>
 #include <trippin/memory.hpp>
 #include <trippin/string.hpp>
+#include <trippin/collection.hpp>
 
 int main()
 {
@@ -100,13 +101,27 @@ int main()
 	TR_ASSERT(tr::String("app://sigma").is_absolute());
 	TR_ASSERT(tr::String("C:\\sigma").is_absolute());
 	TR_ASSERT(!tr::String("sigma").is_absolute());
-	TR_ASSERT(tr::String("./sigma").is_absolute());
+	TR_ASSERT(!tr::String("./sigma").is_absolute());
 	TR_ASSERT(tr::String("~/sigma").is_absolute());
 
 	// man
 	// tr::MemoryInfo memory = tr::get_memory_info();
 	// couldn't be bothered to print shit so i just read it in gdb
 	// tr::panic("lol");
+
+	tr::Ref<tr::List<tr::String>> listma;
+	listma->add("fuck...");
+	listma->add("shit...");
+	listma->add("crap...");
+	listma->add("WRONG");
+	listma->remove(3);
+	for (auto str : *listma) {
+		tr::log("list[%zu] = %s", str.i, str.val.buffer());
+	}
+
+	tr::Ref<tr::HashMap<tr::Vec3<float32>, int32>> mapma;
+	(*mapma)[tr::Vec3<float32>(1, 2, 3)] = 5;
+	tr::log("ts pmo cro icl ong n shi fr yu pmo ngl r u fr %i", (*mapma)[tr::Vec3<float32>(1, 2, 3)]);
 
 	tr::free();
 }

@@ -348,6 +348,8 @@ struct ArrayItem
 template<typename T>
 class Array
 {
+	// i'm gonna keep the arena when i remove .add() so that for as long as the array exists, the arena exists too
+	// it's an ownership thing yknow
 	MaybeRef<Arena> arena;
 	T* ptr;
 	usize len;
@@ -389,7 +391,7 @@ public:
 	// Returns the length of the array.
 	usize length() const   { return this->len; }
 	// Returns how many items the array can hold before having to resize.
-	usize capacity() const { return this->cap; }
+	[[deprecated("this will soon be removed along with .add()")]] usize capacity() const { return this->cap; }
 
 	// fucking iterator
 	class Iterator {
@@ -408,7 +410,7 @@ public:
 
 	// Adds a new item to the array, and resizes it if necessary. This only works on arena-allocated arrays,
 	// if you try to use this on an array without an arena, it will panic.
-	void add(T val)
+	[[deprecated("use tr::List<T> instead, .add() will be removed in v2.3")]] void add(T val)
 	{
 		if (this->arena == nullptr) {
 			tr::panic("resizing arena-less tr::Array<T> is not allowed");

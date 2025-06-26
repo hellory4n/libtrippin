@@ -79,6 +79,8 @@ void init();
 void free();
 
 // including log.hpp here would crash and burn everything :)
+
+// Oh god oh fuck. Note this crashes and kills everything, `tr::error` doesn't.
 TR_LOG_FUNC(1, 2) [[noreturn]] void panic(const char* fmt, ...);
 
 // Like how the spicy modern languages handle null
@@ -147,6 +149,9 @@ public:
 		if (this->has_value) return this->value;
 		else tr::panic("couldn't unwrap Maybe<T>");
 	}
+
+	// Similar to the `??`/null coalescing operator in modern languages
+	T value_or(T other) const { return this->is_valid() ? this->unwrap() : other; }
 };
 
 // Functional propaganda
