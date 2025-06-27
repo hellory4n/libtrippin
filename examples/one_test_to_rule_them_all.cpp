@@ -5,6 +5,8 @@
 #include <trippin/string.hpp>
 #include <trippin/collection.hpp>
 
+uint64 custom_hash_func(tr::String key);
+
 int main()
 {
 	tr::use_log_file("log.txt");
@@ -122,7 +124,36 @@ int main()
 	// man
 	tr::Ref<tr::HashMap<tr::String, tr::String>> hashma = new tr::HashMap<tr::String, tr::String>();
 	(*hashma)["Sigma"] = "balls!";
-	tr::log("hashma[\"Sigma\"] = %s", (*hashma)["Sigma"].buffer());
+	tr::log("hashma[\"Sigma\"] = \"%s\"", (*hashma)["Sigma"].buffer());
+
+	// check collsiions
+	// what the fuck
+	using Disaster = tr::AdvancedHashMap<tr::String, tr::String, custom_hash_func, 256>;
+	tr::Ref<Disaster> hashmaballs = new Disaster();
+	(*hashmaballs)["Sigma"] = "balls!";
+	(*hashmaballs)["Balls"] = "sigma!";
+	(*hashmaballs)["oh no it go it gone bye bye (bye)"] = "ball. one";
+	(*hashmaballs)["oSgmggg"] = "ball. one ball.";
+	hashmaballs->remove("oh no it go it gone bye bye (bye)");
+	tr::log("hashmaballs[\"Sigma\"] = \"%s\"", (*hashmaballs)["Sigma"].buffer());
+	tr::log("hashmaballs[\"Balls\"] = \"%s\"", (*hashmaballs)["Balls"].buffer());
+	tr::log("hashmaballs[\"oSgmggg\"] = \"%s\"", (*hashmaballs)["oSgmggg"].buffer());
+
+	// check resizing
+	// this will actually resize twice
+	tr::Ref<tr::HashMap<int32, bool>> whathteufc = new tr::HashMap<int32, bool>();
+	for (usize i = 0; i < 256; i++) {
+		(*whathteufc)[i] = i % 2 == 0;
+	}
+
+	// iterator
+	for (auto item : *whathteufc) {
+		tr::log("number %i = %s", item.left, item.right ? "true" : "false");
+	}
 
 	tr::free();
+}
+
+uint64 custom_hash_func(tr::String) {
+	return 68;
 }

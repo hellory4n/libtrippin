@@ -120,12 +120,11 @@ public:
 // 64-bits
 uint64 hash(tr::Array<uint8> array);
 
-// ahahsmhap :DD if you're interested this works with open addressing and linear probing, i'll probably
-// change it if my brain expands to megamind levels of brain
-template<typename K, typename V>
-class HashMap : public RefCounted
+// im losing my mind im going insane im watching my life go down the drain TODO better name its a miracle
+// it works in the first place
+template<typename K, typename V, uint64 (*HashFunc)(K key), usize InitialCapacity>
+class AdvancedHashMap : public RefCounted
 {
-	static constexpr usize INITIAL_CAPACITY = 256;
 	static constexpr float64 LOAD_FACTOR = 0.5;
 
 	struct Bucket
@@ -136,29 +135,18 @@ class HashMap : public RefCounted
 		bool dead;
 	};
 
-	// c++ doesn't allow partially specializing a function and overloading results in 2 functions with the
-	// same signature im losing my mind im going insane im watching my life go down the drain
-	template<typename T> uint64 get_index_frfr(T key, uint64 cap)
-	{
-		return tr::hash(Array<uint8>(reinterpret_cast<uint8*>(key), sizeof(T))) % cap;
-	}
-	template<> uint64 get_index_frfr<String>(String key, uint64 cap)
-	{
-		return tr::hash(Array<uint8>(reinterpret_cast<uint8*>(key.buffer()), key.length())) % cap;
-	}
-
-	Bucket* buffer;
-	usize len;
-	usize cap;
+	Bucket* buffer = nullptr;
+	usize len = 0;
+	usize cap = 0;
 
 public:
-	HashMap() : cap(INITIAL_CAPACITY)
+	AdvancedHashMap() : cap(InitialCapacity)
 	{
-		this->buffer = reinterpret_cast<Bucket*>(calloc(INITIAL_CAPACITY, sizeof(Bucket)));
+		this->buffer = reinterpret_cast<Bucket*>(calloc(InitialCapacity, sizeof(Bucket)));
 		TR_ASSERT_MSG(this->buffer != nullptr, "couldn't allocate hashmap");
 	}
 
-	~HashMap()
+	~AdvancedHashMap()
 	{
 		::free(this->buffer);
 	}
@@ -166,7 +154,7 @@ public:
 	// Returns the index based on a key. That's how hash maps work.
 	usize get_index(K key)
 	{
-		return this->get_index_frfr(key, this->cap);
+		return HashFunc(key) % this->cap;
 	}
 
 	// Checks how full the hashmap is and resizes if necessary
@@ -209,6 +197,9 @@ public:
 
 	V& operator[](K key)
 	{
+		// operator[] is also used for putting crap :)
+		this->grow();
+
 		usize idx = this->get_index(key);
 
 		for (usize i = idx; i < this->cap; i++) {
@@ -273,7 +264,44 @@ public:
 
 		return false;
 	}
+
+	// fucking iterator
+	class Iterator {
+	public:
+		Iterator(Bucket* ptr, usize index) : idx(index), ptr(ptr) {}
+		Pair<K, V> operator*() const { return {this->ptr[idx].key, this->ptr[idx].value}; }
+		Iterator& operator++() {
+			while (!this->ptr[idx].occupied) {
+				this->idx++;
+				this->ptr++;
+			}
+			return *this;
+		}
+		bool operator!=(const Iterator& other) const { return ptr != other.ptr; }
+	private:
+		usize idx;
+		Bucket* ptr;
+	};
+
+	Iterator begin() const { return Iterator(this->buffer, 0); }
+	Iterator end()   const { return Iterator(this->buffer + this->cap, this->cap); }
 };
+
+// internal don't use probably :)
+template<typename T> uint64 __default_hash_function(T key)
+{
+	return tr::hash(Array<uint8>(reinterpret_cast<uint8*>(&key), sizeof(T)));
+}
+// internal don't use probably :)
+template<> inline uint64 __default_hash_function<String>(String key)
+{
+	return tr::hash(Array<uint8>(reinterpret_cast<uint8*>(key.buffer()), key.length()));
+}
+
+// ahahsmhap :DD if you're interested this works with open addressing and linear probing, i'll probably
+// change it if my brain expands to megamind levels of brain
+template<typename K, typename V>
+using HashMap = AdvancedHashMap<K, V, __default_hash_function, 256>;
 
 }
 

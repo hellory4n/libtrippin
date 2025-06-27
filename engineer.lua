@@ -9,7 +9,7 @@ eng.workstation("libtrippin", "hellory4n", "Most biggest most massive library of
 -- link with "m" too. `trippindir` is the directory with libtrippin
 function libtrippin.lib(debug, trippinsrc)
 	-- just trippin so it doesn't become "liblibtrippin.a"
-	local project = eng.newproj("trippin", "staticlib", "c++14")
+	local project = eng.newproj("trippin", "staticlib", "c++17")
 	project:pedantic()
 	if debug then
 		project:debug()
@@ -35,7 +35,7 @@ local trippin = libtrippin.lib(true, "trippin")
 
 -- example projects :(
 -- TODO compile the other examples lmao
-local example_all = eng.newproj("example_all", "executable", "c++14")
+local example_all = eng.newproj("example_all", "executable", "c++17")
 example_all:pedantic()
 example_all:debug()
 example_all:define({"DEBUG"})
