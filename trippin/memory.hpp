@@ -324,7 +324,9 @@ public:
 	// Allocates some crap on the arena.
 	void* alloc(usize size);
 
-	// Literally just `Arena::alloc()` but for structs and crap.
+	// Literally just `Arena::alloc()` but for structs and crap. Note this doesn't call the constructor, it
+	// just allocates enough space for that type. If you want to use arenas on your own types, you're supposed
+	// to pass it in the constructor (e.g. `CrapClass(tr::Ref<tr::Arena> arena)`)
 	template<typename T> T* alloc()
 	{
 		return reinterpret_cast<T*>(this->alloc(sizeof(T)));

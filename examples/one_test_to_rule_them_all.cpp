@@ -119,5 +119,10 @@ int main()
 		tr::log("list[%zu] = %s", str.i, str.val.buffer());
 	}
 
+	// man
+	tr::Ref<tr::HashMap<tr::String, tr::String>> hashma = new tr::HashMap<tr::String, tr::String>();
+	(*hashma)["Sigma"] = "balls!";
+	tr::log("hashma[\"Sigma\"] = %s", (*hashma)["Sigma"].buffer());
+
 	tr::free();
 }

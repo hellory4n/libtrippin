@@ -30,6 +30,7 @@
 
 #include "memory.hpp"
 #include "log.hpp"
+#include "string.hpp"
 
 namespace tr {
 
@@ -113,6 +114,165 @@ public:
 
 	Iterator begin() const { return Iterator(this->buffer(), 0); }
 	Iterator end()   const { return Iterator(this->buffer() + this->length(), this->length()); }
+};
+
+// Hashes an array of bytes, which is useful if you need to hash an array of bytes. Implemented with xxHash3
+// 64-bits
+uint64 hash(tr::Array<uint8> array);
+
+// ahahsmhap :DD if you're interested this works with open addressing and linear probing, i'll probably
+// change it if my brain expands to megamind levels of brain
+template<typename K, typename V>
+class HashMap : public RefCounted
+{
+	static constexpr usize INITIAL_CAPACITY = 256;
+	static constexpr float64 LOAD_FACTOR = 0.5;
+
+	struct Bucket
+	{
+		K key;
+		V value;
+		bool occupied;
+		bool dead;
+	};
+
+	// c++ doesn't allow partially specializing a function and overloading results in 2 functions with the
+	// same signature im losing my mind im going insane im watching my life go down the drain
+	template<typename T> uint64 get_index_frfr(T key, uint64 cap)
+	{
+		return tr::hash(Array<uint8>(reinterpret_cast<uint8*>(key), sizeof(T))) % cap;
+	}
+	template<> uint64 get_index_frfr<String>(String key, uint64 cap)
+	{
+		return tr::hash(Array<uint8>(reinterpret_cast<uint8*>(key.buffer()), key.length())) % cap;
+	}
+
+	Bucket* buffer;
+	usize len;
+	usize cap;
+
+public:
+	HashMap() : cap(INITIAL_CAPACITY)
+	{
+		this->buffer = reinterpret_cast<Bucket*>(calloc(INITIAL_CAPACITY, sizeof(Bucket)));
+		TR_ASSERT_MSG(this->buffer != nullptr, "couldn't allocate hashmap");
+	}
+
+	~HashMap()
+	{
+		::free(this->buffer);
+	}
+
+	// Returns the index based on a key. That's how hash maps work.
+	usize get_index(K key)
+	{
+		return this->get_index_frfr(key, this->cap);
+	}
+
+	// Checks how full the hashmap is and resizes if necessary
+	void grow()
+	{
+		float64 used = static_cast<float64>(this->len) / this->cap;
+		if (used <= LOAD_FACTOR) {
+			return;
+		}
+
+		usize old_cap = this->cap;
+		this->cap *= 2;
+		Bucket* new_buffer = reinterpret_cast<Bucket*>(calloc(this->cap, sizeof(Bucket)));
+		TR_ASSERT_MSG(this->buffer != nullptr, "couldn't grow hashmap");
+
+		// changing the capacity fucks with the hashing
+		// so we have to copy everything
+		for (usize i = 0; i < old_cap; i++) {
+			Bucket* bucket = &this->buffer[i];
+			if (!bucket->occupied) {
+				continue;
+			}
+
+			usize idx = this->get_index(bucket->key);
+			for (usize i = idx; i < this->cap; i++) {
+				Bucket* new_bucket = &new_buffer[i];
+
+				if (!new_bucket->occupied) {
+					new_bucket->occupied = true;
+					new_bucket->dead = bucket->dead;
+					new_bucket->key = bucket->key;
+					new_bucket->value = bucket->value;
+				}
+			}
+		}
+
+		::free(this->buffer);
+		this->buffer = new_buffer;
+	}
+
+	V& operator[](K key)
+	{
+		usize idx = this->get_index(key);
+
+		for (usize i = idx; i < this->cap; i++) {
+			Bucket* bucket = &this->buffer[i];
+
+			// it immediately dies for null strings which are like most of them
+			if (bucket->occupied) {
+				if (bucket->key == key) {
+					return bucket->value;
+				}
+			}
+
+			if (!bucket->occupied) {
+				bucket->occupied = true;
+				bucket->key = key;
+				this->len++;
+				return bucket->value;
+			}
+		}
+
+		tr::panic("what the fuck"); // should never happen probably maybe hopefully probably
+	}
+
+	// If true, the hashmap has that key. Useful because the `[]` operator automatically inserts an item if
+	// it's not there.
+	bool contains(K key)
+	{
+		usize idx = this->get_index(key);
+
+		for (usize i = idx; i < this->cap; i++) {
+			Bucket* bucket = &this->buffer[i];
+
+			if (bucket->key == key && bucket->occupied) {
+				return true;
+			}
+
+			if (!bucket->occupied) {
+				return false;
+			}
+		}
+
+		return false;
+	}
+
+	// Removes the key from the hashmap. Returns true if the key is was found, returns false otherwise.
+	bool remove(K key)
+	{
+		usize idx = this->get_index(key);
+
+		for (usize i = idx; i < this->cap; i++) {
+			Bucket* bucket = &this->buffer[i];
+
+			if (bucket->key == key && bucket->occupied) {
+				bucket->dead = true;
+				return true;
+			}
+
+			if (!bucket->occupied) {
+				return false;
+			}
+		}
+
+		return false;
+	}
 };
 
 }

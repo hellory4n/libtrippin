@@ -59,6 +59,7 @@ public:
 
 	// Initializes a string from any C string. You really should only use this for temporary arrays.
 	String(const char* str) : String(str, strlen(str)) {}
+	String() : String("") {}
 
 	// man
 	char& operator[](usize idx) const { return this->array[idx]; }
