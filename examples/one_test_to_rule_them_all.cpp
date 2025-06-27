@@ -142,14 +142,18 @@ int main()
 	// check resizing
 	// this will actually resize twice
 	tr::Ref<tr::HashMap<int32, bool>> whathteufc = new tr::HashMap<int32, bool>();
-	for (usize i = 0; i < 256; i++) {
+	for (usize i = 0; i < 257; i++) {
 		(*whathteufc)[i] = i % 2 == 0;
 	}
+	// i'm just gonna find that in the log file
+	// having log files is great
+	whathteufc->remove(69);
 
 	// iterator
 	for (auto item : *whathteufc) {
 		tr::log("number %i = %s", item.left, item.right ? "true" : "false");
 	}
+	tr::log("length %zu, capacity %zu", whathteufc->length(), whathteufc->capacity());
 
 	tr::free();
 }

@@ -157,36 +157,30 @@ public:
 		return HashFunc(key) % this->cap;
 	}
 
-	// Checks how full the hashmap is and resizes if necessary
 	void grow()
 	{
-		float64 used = static_cast<float64>(this->len) / this->cap;
-		if (used <= LOAD_FACTOR) {
-			return;
-		}
-
 		usize old_cap = this->cap;
 		this->cap *= 2;
 		Bucket* new_buffer = reinterpret_cast<Bucket*>(calloc(this->cap, sizeof(Bucket)));
-		TR_ASSERT_MSG(this->buffer != nullptr, "couldn't grow hashmap");
+		TR_ASSERT_MSG(new_buffer != nullptr, "couldn't grow hashmap");
 
 		// changing the capacity fucks with the hashing
-		// so we have to copy everything
+		// so we have to copy everything to new indexes
 		for (usize i = 0; i < old_cap; i++) {
-			Bucket* bucket = &this->buffer[i];
-			if (!bucket->occupied) {
-				continue;
-			}
+			Bucket& old_bucket = buffer[i];
+			if (!old_bucket.occupied) continue;
 
-			usize idx = this->get_index(bucket->key);
-			for (usize i = idx; i < this->cap; i++) {
-				Bucket* new_bucket = &new_buffer[i];
+			usize idx = this->get_index(old_bucket.key);
 
-				if (!new_bucket->occupied) {
-					new_bucket->occupied = true;
-					new_bucket->dead = bucket->dead;
-					new_bucket->key = bucket->key;
-					new_bucket->value = bucket->value;
+			// linear probe with wrap‑around
+			for (usize probe = idx; ; probe = (probe + 1) % this->cap) {
+				Bucket& new_bucket = new_buffer[probe];
+				if (!new_bucket.occupied) {
+					new_bucket.occupied = true;
+					new_bucket.dead = old_bucket.dead;
+					new_bucket.key = old_bucket.key;
+					new_bucket.value = old_bucket.value;
+					break;
 				}
 			}
 		}
@@ -195,97 +189,128 @@ public:
 		this->buffer = new_buffer;
 	}
 
+	// Checks how full the hashmap is and resizes if necessary
+	void check_grow()
+	{
+		float64 used = static_cast<float64>(this->len) / this->cap;
+		if (used <= LOAD_FACTOR) {
+			return;
+		}
+		this->grow();
+	}
+
+	// Returns the bucket and whether it's occupied (true for occupied, false for empty)
+	Pair<Bucket*, bool> find(K key)
+	{
+		usize idx = this->get_index(key);
+		for (usize probe = idx; ; probe = (probe + 1) % cap) {
+			Bucket& b = this->buffer[probe];
+			if (b.occupied) {
+				if (b.key == key && !b.dead) {
+					return {&b, true};
+				}
+			}
+			// found an empty spot
+			else {
+				return {&b, false};
+			}
+		}
+		// should never happen probably hopefully maybe probably :)
+		return {nullptr, false};
+	}
+
 	V& operator[](K key)
 	{
 		// operator[] is also used for putting crap :)
-		this->grow();
+		this->check_grow();
 
-		usize idx = this->get_index(key);
-
-		for (usize i = idx; i < this->cap; i++) {
-			Bucket* bucket = &this->buffer[i];
-
-			// it immediately dies for null strings which are like most of them
-			if (bucket->occupied) {
-				if (bucket->key == key) {
-					return bucket->value;
-				}
-			}
-
-			if (!bucket->occupied) {
-				bucket->occupied = true;
-				bucket->key = key;
-				this->len++;
-				return bucket->value;
-			}
+		Pair<Bucket*, bool> bucket = this->find(key);
+		// if it's empty, operator[] places some crap
+		if (!bucket.right) {
+			bucket.left->occupied = true;
+			bucket.left->key = key;
+			this->len++;
 		}
 
-		tr::panic("what the fuck"); // should never happen probably maybe hopefully probably
+		return bucket.left->value;
 	}
 
 	// If true, the hashmap has that key. Useful because the `[]` operator automatically inserts an item if
 	// it's not there.
 	bool contains(K key)
 	{
-		usize idx = this->get_index(key);
-
-		for (usize i = idx; i < this->cap; i++) {
-			Bucket* bucket = &this->buffer[i];
-
-			if (bucket->key == key && bucket->occupied) {
-				return true;
-			}
-
-			if (!bucket->occupied) {
-				return false;
-			}
-		}
-
-		return false;
+		return this->find(key).right;
 	}
 
 	// Removes the key from the hashmap. Returns true if the key is was found, returns false otherwise.
 	bool remove(K key)
 	{
-		usize idx = this->get_index(key);
-
-		for (usize i = idx; i < this->cap; i++) {
-			Bucket* bucket = &this->buffer[i];
-
-			if (bucket->key == key && bucket->occupied) {
-				bucket->dead = true;
-				return true;
-			}
-
-			if (!bucket->occupied) {
-				return false;
-			}
+		Pair<Bucket*, bool> bucket = this->find(key);
+		// you can't kill someone that hasn't been born
+		// don't quote me on this
+		if (bucket.right) {
+			bucket.left->dead = true;
 		}
 
-		return false;
+		return bucket.right;
 	}
+
+	// Returns how many items the hashmap currently has
+	usize length() { return this->len; }
+	// Returns the total amount of items the hashmap can currently hold (it'll grow when it's 50% full)
+	usize capacity() { return this->cap; }
 
 	// fucking iterator
 	class Iterator {
 	public:
-		Iterator(Bucket* ptr, usize index) : idx(index), ptr(ptr) {}
-		Pair<K, V> operator*() const { return {this->ptr[idx].key, this->ptr[idx].value}; }
-		Iterator& operator++() {
-			while (!this->ptr[idx].occupied) {
-				this->idx++;
-				this->ptr++;
-			}
+		Iterator(Bucket* buffer, usize idx, usize cap) : buffer(buffer), idx(idx), cap(cap)
+		{
+			this->advance_to_valid();
+		}
+
+		Pair<K, V> operator*() const
+		{
+			Bucket& b = this->buffer[this->idx];
+			return {b.key, b.value};
+		}
+
+		Iterator& operator++()
+		{
+			this->idx++;
+			this->advance_to_valid();
 			return *this;
 		}
-		bool operator!=(const Iterator& other) const { return ptr != other.ptr; }
+
+		bool operator!=(const Iterator& other) const
+		{
+			return this->idx != other.idx;
+		}
+
 	private:
+		Bucket* buffer;
 		usize idx;
-		Bucket* ptr;
+		usize cap;
+
+		void advance_to_valid()
+		{
+			// god
+			while (this->idx < this->cap && (!this->buffer[this->idx].occupied || this->buffer[this->idx].dead)) {
+				this->idx++;
+			}
+		}
 	};
 
-	Iterator begin() const { return Iterator(this->buffer, 0); }
-	Iterator end()   const { return Iterator(this->buffer + this->cap, this->cap); }
+	Iterator begin() const { return Iterator(this->buffer, 0, this->cap); }
+	Iterator end()   const { return Iterator(this->buffer + this->cap, this->cap, this->cap); }
 };
+
+// TODO pick one you dastardly scoundrel
+
+template<typename K, typename V, uint64 (*HashFunc)(K key), usize InitialCapacity>
+using ProLevelHashMap = AdvancedHashMap<K, V, HashFunc, InitialCapacity>;
+
+template<typename K, typename V, uint64 (*HashFunc)(K key), usize InitialCapacity>
+using TantalizingHashMap = AdvancedHashMap<K, V, HashFunc, InitialCapacity>;
 
 // internal don't use probably :)
 template<typename T> uint64 __default_hash_function(T key)
