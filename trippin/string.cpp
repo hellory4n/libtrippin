@@ -27,6 +27,7 @@
 #include <stdio.h>
 
 #include "math.hpp"
+#include "collection.hpp"
 
 #include "string.hpp"
 
@@ -59,7 +60,7 @@ tr::Array<usize> tr::String::find(tr::Ref<tr::Arena> arena, tr::String str, usiz
 	if (end == 0) end = this->length();
 
 	Ref<Arena> tmp = new Arena(tr::kb_to_bytes(64));
-	Array<usize> indexes(tmp, 0);
+	List<usize> indexes;
 
 	for (usize i = start; i < end; i++) {
 		String substr = this->substr(tmp, i, str.length());
@@ -68,7 +69,7 @@ tr::Array<usize> tr::String::find(tr::Ref<tr::Arena> arena, tr::String str, usiz
 		}
 	}
 
-	return indexes.duplicate(arena);
+	return Array<usize>(arena, indexes.buffer(), indexes.length());
 }
 
 tr::String tr::String::concat(tr::Ref<tr::Arena> arena, tr::String other)
@@ -147,3 +148,17 @@ bool tr::String::is_absolute()
 
 	return false;
 }
+
+[[nodiscard]] tr::String tr::String::replace(tr::Ref<tr::Arena> arena, char from, char to)
+{
+	Ref<Arena> tmp = new Arena(this->length());
+	Array<usize> indexes = this->find(tmp, from);
+	String str = this->duplicate(tmp);
+
+	for (ArrayItem<usize> c : indexes) {
+		str[c.val] = to;
+	}
+
+	return str.duplicate(arena);
+}
+

@@ -75,7 +75,7 @@ int main()
 
 	int64 items[] = {11, 22, 33, 44, 55};
 	tr::Array<int64> array(arena, items, sizeof(items) / sizeof(int64));
-	array.add(66);
+	// array.add(66); // its deprecated :)
 	for (tr::ArrayItem<int64> item : array) {
 		tr::log("array[%zu] = %li", item.i, item.val);
 	}

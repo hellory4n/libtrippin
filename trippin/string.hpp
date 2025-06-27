@@ -61,6 +61,12 @@ public:
 	String(const char* str) : String(str, strlen(str)) {}
 	String() : String("") {}
 
+	String(char c)
+	{
+		char man[2] = {c, '\0'};
+		String(man, 2);
+	}
+
 	// man
 	char& operator[](usize idx) const { return this->array[idx]; }
 	usize length() const { return this->array.length() - 1; }
@@ -84,13 +90,13 @@ public:
 	bool operator!=(const char* other)   { return *this != String(other); }
 
 	// Gets a substring. The returned string doesn't include the end character.
-	String substr(Ref<Arena> arena, usize start, usize end);
+	[[nodiscard]] String substr(Ref<Arena> arena, usize start, usize end);
 
-	// Returns an array with all of the indexes
+	// Returns an array with all of the indexes containing the substring (the index is where it starts)
 	Array<usize> find(Ref<Arena> arena, String str, usize start = 0, usize end = 0);
 
 	// It concatenates 2 strings lmao.
-	String concat(Ref<Arena> arena, String other);
+	[[nodiscard]] String concat(Ref<Arena> arena, String other);
 
 	// If true, the string starts with that other crap.
 	bool starts_with(String str);
@@ -99,17 +105,20 @@ public:
 	bool ends_with(String str);
 
 	// Gets the filename in a path, e.g. returns `file.txt` for `/path/to/file.txt`
-	String file(Ref<Arena> arena);
+	[[nodiscard]] String file(Ref<Arena> arena);
 
 	// Gets the directory in a path e.g. returns `/path/to` for `/path/to/file.txt`
-	String directory(Ref<Arena> arena);
+	[[nodiscard]] String directory(Ref<Arena> arena);
 
 	// Returns the extension in a path, e.g. returns `.txt` for `/path/to/file.txt`, `.blend.1` for
 	// `teapot.blend.1`, and an empty string for `.gitignore`
-	String extension(Ref<Arena> arena);
+	[[nodiscard]] String extension(Ref<Arena> arena);
 
 	// If true, the path is absolute. Else, it's relative.
 	bool is_absolute();
+
+	// Replaces a character with another character.
+	[[nodiscard]] String replace(Ref<Arena> arena, char from, char to);
 };
 
 // It's just `sprintf` for `tr::String` lmao.
