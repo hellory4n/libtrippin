@@ -4,6 +4,7 @@
 #include <trippin/memory.hpp>
 #include <trippin/string.hpp>
 #include <trippin/collection.hpp>
+#include <trippin/iofs.hpp>
 
 uint64 custom_hash_func(tr::String key);
 
@@ -154,6 +155,21 @@ int main()
 		tr::log("number %i = %s", item.left, item.right ? "true" : "false");
 	}
 	tr::log("length %zu, capacity %zu", whathteufc->length(), whathteufc->capacity());
+
+	tr::Ref<tr::File> write_file = tr::File::open("sigma.txt", tr::FileMode::WRITE_TEXT).unwrap();
+	write_file->write_string("Fuck...\r\nYou...", false);
+	write_file->flush();
+	// close immediately pls
+	write_file->~File();
+
+	tr::Ref<tr::File> read_file = tr::File::open("sigma.txt", tr::FileMode::READ_TEXT).unwrap();
+	tr::String line1 = read_file->read_line(arena);
+	tr::String line2 = read_file->read_line(arena);
+	tr::log("file: %lu bytes\n%s\n%s", read_file->length(), line1.buffer(), line2.buffer());
+	read_file->~File();
+
+	tr::File::rename("sigma.txt", "die.txt");
+	tr::File::remove("die.txt");
 
 	tr::free();
 }

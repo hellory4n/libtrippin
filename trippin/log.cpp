@@ -4689,7 +4689,7 @@ TR_LOG_FUNC(4, 5) void tr::__impl_assert(const char* file, int line, bool x, con
 		va_list args;
 		va_start(args, fmt);
 		char prefix[256];
-		snprintf(prefix, sizeof(prefix), "at %s:%i\n\t", file, line);
+		snprintf(prefix, sizeof(prefix), "at %s:%i: ", file, line);
 		__log(tr::ConsoleColor::ERROR, prefix, true, fmt, args);
 		va_end(args);
 	}

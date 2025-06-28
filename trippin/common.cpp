@@ -27,6 +27,7 @@
 
 #include "log.hpp"
 #include "memory.hpp"
+#include "iofs.hpp"
 
 #include "common.hpp"
 
@@ -37,6 +38,25 @@ namespace tr {
 
 void tr::init()
 {
+	// man.
+	tr::std_in = new File();
+	tr::std_in->fptr = stdin;
+	tr::std_in->len = -1;
+	tr::std_in->is_std = true;
+	tr::std_in->mode = FileMode::READ_TEXT;
+
+	tr::std_out = new File();
+	tr::std_out->fptr = stdout;
+	tr::std_out->len = -1;
+	tr::std_out->is_std = true;
+	tr::std_out->mode = FileMode::WRITE_TEXT;
+
+	tr::std_err = new File();
+	tr::std_err->fptr = stderr;
+	tr::std_err->len = -1;
+	tr::std_err->is_std = true;
+	tr::std_err->mode = FileMode::WRITE_TEXT;
+
 	tr::info("initialized libtrippin %s", tr::VERSION);
 }
 
