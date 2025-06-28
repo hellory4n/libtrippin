@@ -4,14 +4,13 @@ Most biggest most massive library of all time. I'm insane.
 
 ## Featuring
 
-- [libtrippin](./libtrippin.h) v2.1.2: Most massive standard library
-    - C++14 with no external dependencies (only libc/stdc++)
-    - Arenas
-    - Reference counting
-    - Arrays
-    - Basic strings
-    - Math
+- [libtrippin](./libtrippin.h) v2.1.2: Most massive library of all time
+    - C++17 with no external dependencies (only libc/stdc++)
+    - Arenas and reference counting
+    - Arrays, lists, hashmaps, strings
+    - Basic math
     - Logging
+    - Files/IO
     - And more
 - [engineer](./engineerbuild/README.md) v1.2.0: Build system of all time
     - No esoteric language
@@ -80,7 +79,6 @@ auto* crap = arena->alloc<CrapStruct>();
 // you can also allocate arrays
 int32 items[] = {1, 2, 3, 4, 5};
 tr::Array<int32> array(arena, items, 5);
-array.add(6);
 for (auto item : array) {
     tr::log("array[%zu] = %i", item.i, item.val);
 }
@@ -116,6 +114,43 @@ for (usize i = 0; i < 3; i++) {
 TR_ASSERT(vecma.x > 0.0f);
 ```
 
+### Lists and hashmaps
+
+```cpp
+#include <trippin/collection.hpp>
+
+// lists can change size
+tr::Ref<tr::List<int32>> list = new tr::List<int32>();
+list->add(1);
+list->add(2);
+list->add(848068024);
+
+for (auto item : *list) {
+    tr::log("list[%zu] = %i", item.i, item.val);
+}
+
+// hashmaps are hashmaps lmao
+// quite the fucking mouthful but it's just HashMap<String, String>
+auto hashmap = tr::Ref<tr::HashMap<tr::String, tr::String>>(new tr::HashMap<tr::String, tr::String>());
+(*hashmap)["john"] = "bob";
+(*hashmap)["bob"] = "greg";
+(*hashmap)["greg"] = "craig";
+(*hashmap)["craig"] = "fuck craig";
+hashmap->remove("craig");
+
+// hashmaps aren't sorted
+// so it'll show up in a seemingly random order
+for (auto item : *hashmap) {
+    tr::log("hashmap['%s'] = '%s'", item.left.buffer(), item.right.buffer());
+}
+```
+
+### Files
+
+```cpp
+#include <trippin/iofs.hpp>
+```
+
 ## FAQ
 
 ### Have you tried \[language] you fucking moron
@@ -125,3 +160,9 @@ No fuck off.
 ### Why?
 
 That's enough questions.
+
+## Copyright pls don't sue me cheers mate
+
+- `trippin/libxxhash.h`: Copyright (c) 2012-2021 Yann Collet, licensed under the BSD-2-Clause License
+- `trippin/libbackward.hpp`: Copyright 2013 Google Inc., licensed under the MIT license
+- Everything else: Copyright (C) 2025 by hellory4n, licensed under the BSD-0-Clause License
