@@ -26,6 +26,7 @@ function libtrippin.lib(debug, trippinsrc)
 		trippinsrc.."/memory.cpp",
 		trippinsrc.."/string.cpp",
 		trippinsrc.."/collection.cpp",
+		trippinsrc.."/iofs.cpp",
 	})
 	project:target("libtrippin.a")
 	project:define({"BACKWARD_HAS_BFD=1"})

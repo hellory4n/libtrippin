@@ -116,6 +116,8 @@ public:
 	Iterator end()   const { return Iterator(this->buffer() + this->length(), this->length()); }
 };
 
+// TODO StringBuilder?
+
 // Hashes an array of bytes, which is useful if you need to hash an array of bytes. Implemented with xxHash3
 // 64-bits
 uint64 hash(tr::Array<uint8> array);
