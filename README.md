@@ -149,6 +149,16 @@ for (auto item : *hashmap) {
 
 ```cpp
 #include <trippin/iofs.hpp>
+
+// reading
+tr::Ref<tr::File> file = tr::File::open("file.txt", tr::FileMode::READ_TEXT).unwrap();
+tr::String line = file->read_line(arena);
+// it closes automatically!
+
+// writing
+tr::Ref<tr::File> file = tr::File::open("otherfile.bin", tr::FileMode::WRITE_BINARY).unwrap();
+file->write_string("Man...\nso true", false);
+file->write_struct(2758952);
 ```
 
 ## FAQ

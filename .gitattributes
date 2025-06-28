@@ -1,0 +1,4 @@
+# both of these are bigger than libtrippin
+trippin/libbackward.hpp linguist-vendored
+trippin/libxxhash.hpp linguist-vendored
+* text=auto eol=lf
