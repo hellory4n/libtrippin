@@ -30,7 +30,6 @@
 // source: https://github.com/Cyan4973/xxHash
 #define XXH_STATIC_LINKING_ONLY
 #define XXH_IMPLEMENTATION
-TR_GCC_IGNORE_WARNING(-Wc++17-attribute-extensions) // TODO switch to c++17?
 #pragma region xxhash im sorry... im sorry... im sorry...
 /*
  * xxHash - Extremely Fast Hash algorithm
@@ -7529,7 +7528,6 @@ XXH3_generateSecret_fromSeed(XXH_NOESCAPE void* secretBuffer, XXH64_hash_t seed)
 } /* extern "C" */
 #endif
 #pragma endregion
-TR_GCC_RESTORE()
 
 uint64 tr::hash(tr::Array<uint8> array)
 {
