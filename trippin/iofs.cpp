@@ -2,7 +2,7 @@
  * libtrippin: Most massive library of all time
  * https://github.com/hellory4n/libtrippin
  *
- * trippin/iofs.hpp
+ * trippin/iofs.cpp
  * Stream and filesystem APIs
  *
  * Copyright (C) 2025 by hellory4n <hellory4n@gmail.com>
@@ -133,6 +133,7 @@ tr::File::~File()
 }
 
 // TODO consider being less offensive?
+// not offensive as in "libtrippin has gone woke :("
 
 int64 tr::File::position()
 {

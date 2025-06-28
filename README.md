@@ -4,7 +4,7 @@ Most biggest most massive library of all time. I'm insane.
 
 ## Featuring
 
-- [libtrippin](./libtrippin.h) v2.1.2: Most massive library of all time
+- [libtrippin](./libtrippin.h) v2.2.0: Most massive library of all time
     - C++17 with no external dependencies (only libc/stdc++)
     - Arenas and reference counting
     - Arrays, lists, hashmaps, strings
@@ -31,6 +31,7 @@ compile by default but it's recommended you do extra setup on Linux:
 - install binutils dev packages (e.g. `sudo apt install binutils-dev`)
 - link with `bfd` and `dl`
 - define `BACKWARD_HAS_BFD=1` (if you have libtrippin as a different project/static library, it has to be defined there)
+
 It should work automatically on Windows.
 
 If some for reason you want to use engineer then [read this](./engineerbuild/README.md)
@@ -78,7 +79,7 @@ auto* crap = arena->alloc<CrapStruct>();
 
 // you can also allocate arrays
 int32 items[] = {1, 2, 3, 4, 5};
-tr::Array<int32> array(arena, items, 5);
+tr::Array<int32> array(arena, TR_ARRLEN(int32, items));
 for (auto item : array) {
     tr::log("array[%zu] = %i", item.i, item.val);
 }
