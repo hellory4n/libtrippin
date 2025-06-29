@@ -156,6 +156,143 @@ function eng.util.get_checksum(file)
 	return out:match("^(%S+)")
 end
 
+--
+-- json.lua
+--
+-- Copyright (c) 2020 rxi
+--
+-- Permission is hereby granted, free of charge, to any person obtaining a copy of
+-- this software and associated documentation files (the "Software"), to deal in
+-- the Software without restriction, including without limitation the rights to
+-- use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+-- of the Software, and to permit persons to whom the Software is furnished to do
+-- so, subject to the following conditions:
+--
+-- The above copyright notice and this permission notice shall be included in all
+-- copies or substantial portions of the Software.
+--
+-- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+-- IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+-- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+-- AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+-- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+-- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+-- SOFTWARE.
+--
+
+local json = { _version = "0.1.2" }
+
+-------------------------------------------------------------------------------
+-- Encode
+-------------------------------------------------------------------------------
+
+local encode
+
+local escape_char_map = {
+  [ "\\" ] = "\\",
+  [ "\"" ] = "\"",
+  [ "\b" ] = "b",
+  [ "\f" ] = "f",
+  [ "\n" ] = "n",
+  [ "\r" ] = "r",
+  [ "\t" ] = "t",
+}
+
+local escape_char_map_inv = { [ "/" ] = "/" }
+for k, v in pairs(escape_char_map) do
+  escape_char_map_inv[v] = k
+end
+
+
+local function escape_char(c)
+  return "\\" .. (escape_char_map[c] or string.format("u%04x", c:byte()))
+end
+
+
+local function encode_nil(val)
+  return "null"
+end
+
+
+local function encode_table(val, stack)
+  local res = {}
+  stack = stack or {}
+
+  -- Circular reference?
+  if stack[val] then error("circular reference") end
+
+  stack[val] = true
+
+  if rawget(val, 1) ~= nil or next(val) == nil then
+    -- Treat as array -- check keys are valid and it is not sparse
+    local n = 0
+    for k in pairs(val) do
+      if type(k) ~= "number" then
+        error("invalid table: mixed or invalid key types")
+      end
+      n = n + 1
+    end
+    if n ~= #val then
+      error("invalid table: sparse array")
+    end
+    -- Encode
+    for i, v in ipairs(val) do
+      table.insert(res, encode(v, stack))
+    end
+    stack[val] = nil
+    return "[" .. table.concat(res, ",") .. "]"
+
+  else
+    -- Treat as an object
+    for k, v in pairs(val) do
+      if type(k) ~= "string" then
+        error("invalid table: mixed or invalid key types")
+      end
+      table.insert(res, encode(k, stack) .. ":" .. encode(v, stack))
+    end
+    stack[val] = nil
+    return "{" .. table.concat(res, ",") .. "}"
+  end
+end
+
+
+local function encode_string(val)
+  return '"' .. val:gsub('[%z\1-\31\\"]', escape_char) .. '"'
+end
+
+
+local function encode_number(val)
+  -- Check for NaN, -inf and inf
+  if val ~= val or val <= -math.huge or val >= math.huge then
+    error("unexpected number value '" .. tostring(val) .. "'")
+  end
+  return string.format("%.14g", val)
+end
+
+
+local type_func_map = {
+  [ "nil"     ] = encode_nil,
+  [ "table"   ] = encode_table,
+  [ "string"  ] = encode_string,
+  [ "number"  ] = encode_number,
+  [ "boolean" ] = tostring,
+}
+
+
+encode = function(val, stack)
+  local t = type(val)
+  local f = type_func_map[t]
+  if f then
+    return f(val, stack)
+  end
+  error("unexpected type '" .. t .. "'")
+end
+
+
+function json.encode(val)
+  return ( encode(val) )
+end
+
 -- Initializes engineer™
 function eng.init()
 	-- reset state bcuz modules are obnoxious :)
@@ -475,8 +612,11 @@ function project_methods.build(proj)
 	eng.util.silentexec("mkdir "..proj.builddir.."/static")
 	eng.util.silentexec("mkdir "..proj.builddir.."/bin")
 
+	-- just in case
+	eng.util.silentexec("rm "..proj.builddir.."/.buildjob.lua")
+	eng.util.silentexec("rm "..proj.builddir.."/.fail")
+
 	-- compile the bloody files
-	local objs = {}
 	local srcs = proj:get_changed_files()
 	-- na
 	if #srcs == 0 then
@@ -485,46 +625,59 @@ function project_methods.build(proj)
 		eng.recompiling = true
 	end
 
-	for i, src in ipairs(srcs) do
-		-- i appreciate c++
-		local compiler = ""
-		if eng.util.endswith(src, ".c") then
-			compiler = eng.cc
-		elseif eng.util.endswith(src, ".cpp") or eng.util.endswith(src, ".cc") or
-		eng.util.endswith(src, ".cxx") or eng.util.endswith(src, ".c++") then
-			compiler = eng.cxx
-		else
-			print(eng.CONSOLE_COLOR_WARN.."unexpected extension in "..src..", using "..eng.cc..eng.CONSOLE_COLOR_RESET)
-			compiler = eng.cc
+	for _, src in ipairs(srcs) do
+		local fuck = {
+			src = src,
+			cc = eng.cc,
+			cxx = eng.cxx,
+			show_command = eng.show_command,
+			proj = proj,
+		}
+		local fuckjson = json.encode(fuck):gsub("\"", "\\\"")
+
+		-- lua doenst fucking have fuvcking threads or tasks
+		-- so we're just making malware then launching it with & at the end, which makes it run in the background
+		-- it's different on windows but i'm not gonna fucking do that
+		-- man.
+		local success = os.execute("ENGINEER_TEMP_PROJ=\""..fuckjson.."\" lua libengineertask.lua &")
+		assert(success, "unexpected internal error")
+	end
+
+	if not eng.recompiling then return end
+
+	-- get objs
+	local objs = {}
+	for _, src in ipairs(proj.sources) do
+		table.insert(objs, proj.builddir.."/obj/"..src:gsub("/", "@")..".o")
+	end
+
+	-- all the compile commands are running on the background
+	-- so we have to wait for all the obj files to show up
+	local expected_objs = #objs
+	while true do
+		-- did compilation fail?
+		local failf = io.open(proj.builddir.."/.fail", "r")
+		if failf ~= nil then
+			error(eng.CONSOLE_COLOR_ERROR.."compiling "..proj.name.." failed"..eng.CONSOLE_COLOR_RESET)
 		end
 
-		local obj = proj.builddir.."/obj/"..src:gsub("/", "_")..".o"
-		-- pretty output
-		print(eng.CONSOLE_COLOR_BLUE.."["..i.."/"..#srcs.."] "..src..eng.CONSOLE_COLOR_RESET)
-
-		if proj.type == "sharedlib" then
-			proj.cflags = proj.cflags.." -fPIC"
+		-- check for the files
+		local obj_count = 0
+		for _, obj in ipairs(objs) do
+			local objf = io.open(obj, "r")
+			if objf ~= nil then obj_count = obj_count + 1 end
 		end
 
-		-- compile frfrfr ong no cap ngl tbh
-		local cmd = compiler..proj.cflags.." -o "..obj.." -c "..src
-		if eng.show_command then
-			print(cmd)
+		if obj_count >= expected_objs then
+			break
 		end
-		local success = os.execute(cmd)
-		if not success then
-			error(eng.CONSOLE_COLOR_ERROR.."compiling "..src.." failed"..eng.CONSOLE_COLOR_RESET)
-		end
-		table.insert(objs, obj)
 	end
 
 	-- link :)
-	if not eng.recompiling then return end
-
 	-- first get the object files
 	local objma = ""
 	for _, src in ipairs(proj.sources) do
-		objma = objma..proj.builddir.."/obj/"..src:gsub("/", "_")..".o "
+		objma = objma..proj.builddir.."/obj/"..src:gsub("/", "@")..".o "
 	end
 
 	-- link executable
