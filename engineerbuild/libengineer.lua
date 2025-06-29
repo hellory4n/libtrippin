@@ -42,7 +42,7 @@ eng = {
 	-- constants
 	CONSOLE_COLOR_RESET = "\27[0m",
 	CONSOLE_COLOR_LIB = "\27[0;90m",
-	CONSOLE_COLOR_BLUE = "\27[0;34m",
+	CONSOLE_COLOR_COMPILE = "\27[0;32m",
 	CONSOLE_COLOR_WARN = "\27[0;93m",
 	CONSOLE_COLOR_ERROR = "\27[0;91m",
 
@@ -654,6 +654,8 @@ function project_methods.build(proj)
 	-- all the compile commands are running on the background
 	-- so we have to wait for all the obj files to show up
 	local expected_objs = #objs
+	local already_printed = {}
+	local printed_count = #proj.sources - #srcs
 	while true do
 		-- did compilation fail?
 		local failf = io.open(proj.builddir.."/.fail", "r")
@@ -665,7 +667,19 @@ function project_methods.build(proj)
 		local obj_count = 0
 		for _, obj in ipairs(objs) do
 			local objf = io.open(obj, "r")
-			if objf ~= nil then obj_count = obj_count + 1 end
+			if objf ~= nil then
+				obj_count = obj_count + 1
+
+				-- print bullshit :)
+				local src = obj:gsub("build/obj/", ""):gsub("%.o", ""):gsub("@", "/")
+				if already_printed[src] == nil then
+					print(eng.CONSOLE_COLOR_COMPILE.."["..printed_count+1 .."/"..#proj.sources.."] "..src..eng.CONSOLE_COLOR_RESET)
+
+					-- we're using it as a hashset so the value doesn't matter
+					already_printed[src] = "shut"
+					printed_count = printed_count + 1
+				end
+			end
 		end
 
 		if obj_count >= expected_objs then
