@@ -41,7 +41,9 @@ class List : public RefCounted
 {
 	usize len;
 	usize cap;
-	T* ptr = nullptr;
+	// void* bcuz gcc says "warning: 'void* realloc(void*, size_t)' moving an object of non-trivially copyable
+	// type 'class tr::String'; use 'new' and 'delete' instead" shut the fuck up man
+	void* ptr = nullptr;
 
 	static constexpr usize INITIAL_CAPACITY = 8;
 
@@ -90,14 +92,14 @@ public:
 	// Returns the last item in the list
 	T& last() const { return (*this)[this->len - 1]; }
 
-	T* buffer() const { return this->ptr; }
+	T* buffer() const { return reinterpret_cast<T*>(this->ptr); }
 
 	T& operator[](usize idx) const
 	{
 		if (idx >= this->len) {
 			tr::panic("index out of range: %zu in a list of %zu", idx, this->len);
 		}
-		return this->ptr[idx];
+		return reinterpret_cast<T*>(this->ptr)[idx];
 	}
 
 	// fucking iterator

@@ -37,7 +37,12 @@ namespace tr {
 void tr::RefCounted::retain() const
 {
 	// shut up it works
+	// ffs its different on gcc and clang
+	#if defined(__clang__)
 	TR_GCC_IGNORE_WARNING(-Wtautological-undefined-compare)
+	#elif defined(__GNUC__)
+	TR_GCC_IGNORE_WARNING(-Wnonnull-compare)
+	#endif
 	// man
 	if (this != nullptr) {
 		// probably was just birthed into this world

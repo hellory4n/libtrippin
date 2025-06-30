@@ -160,16 +160,18 @@ int main()
 	write_file->write_string("Fuck...\r\nYou...", false);
 	write_file->flush();
 	// close immediately pls
-	write_file->~File();
+	write_file->close();
 
 	tr::Ref<tr::File> read_file = tr::File::open("sigma.txt", tr::FileMode::READ_TEXT).unwrap();
 	tr::String line1 = read_file->read_line(arena);
 	tr::String line2 = read_file->read_line(arena);
 	tr::log("file: %lu bytes\n%s\n%s", read_file->length(), line1.buffer(), line2.buffer());
-	read_file->~File();
+	read_file->close();
 
-	tr::File::rename("sigma.txt", "die.txt");
-	tr::File::remove("die.txt");
+	TR_ASSERT(tr::File::rename("sigma.txt", "die.txt"));
+	TR_ASSERT(tr::File::remove("die.txt"));
+
+	TR_ASSERT(false);
 
 	tr::free();
 }

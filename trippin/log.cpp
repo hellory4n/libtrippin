@@ -31,12 +31,6 @@ namespace tr {
 	extern FILE* logfile;
 }
 
-#include "libbackward.hpp"
-
-namespace backward {
-	backward::SignalHandling sh;
-}
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>

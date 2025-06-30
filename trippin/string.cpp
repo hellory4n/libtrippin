@@ -91,7 +91,7 @@ bool tr::String::ends_with(tr::String str)
 
 tr::String tr::String::file(Ref<Arena> arena)
 {
-	for (usize i = this->length() - 1; i >= 0; i--) {
+	for (usize i = this->length() - 1; i < this->length(); i--) {
 		if ((*this)[i] == '/' || (*this)[i] == '\\') {
 			return this->substr(arena, i + 1, this->length() + 1);
 		}
@@ -101,7 +101,7 @@ tr::String tr::String::file(Ref<Arena> arena)
 
 tr::String tr::String::directory(Ref<Arena> arena)
 {
-	for (usize i = this->length() - 1; i >= 0; i--) {
+	for (usize i = this->length() - 1; i < this->length(); i--) {
 		if ((*this)[i] == '/' || (*this)[i] == '\\') {
 			return this->substr(arena, 0, i);
 		}

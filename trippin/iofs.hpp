@@ -155,6 +155,9 @@ public:
 	// Opens a fucking file from fucking somewhere. Returns null on error
 	static Maybe<Ref<File>> open(String path, FileMode mode);
 
+	// Closes the file :) files are reference counted so this is done automatically
+	void close();
+
 	~File();
 
 	// Returns the current position of the cursor, or -1 if unknown/unsupported

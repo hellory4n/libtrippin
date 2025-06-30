@@ -38,7 +38,7 @@ tr::Maybe<tr::String> tr::Reader::read_string(tr::Ref<tr::Arena> arena, usize le
 {
 	String str(arena, length);
 	uint64 read = this->read_bytes(str.buffer(), sizeof(char), length);
-	if (read == length) return {};
+	if (read != length) return {};
 	else return str;
 }
 
@@ -125,11 +125,16 @@ tr::Maybe<tr::Ref<tr::File>> tr::File::open(tr::String path, FileMode mode)
 	return file;
 }
 
-tr::File::~File()
+void tr::File::close()
 {
-	// is_std is so it doesn't close tr::std_out and company
+	// is_std exists so it doesn't close tr::std_out and company
 	if (this->is_std || this->fptr != nullptr) return;
 	fclose(this->fptr);
+}
+
+tr::File::~File()
+{
+	this->close();
 }
 
 // TODO consider being less offensive?
@@ -217,6 +222,7 @@ bool tr::File::can_read()
 		case FileMode::READ_WRITE_TEXT:   return true;
 		case FileMode::READ_WRITE_BINARY: return true;
 	}
+	return false;
 }
 
 bool tr::File::can_write()
@@ -230,6 +236,7 @@ bool tr::File::can_write()
 		case FileMode::READ_WRITE_TEXT:   return true;
 		case FileMode::READ_WRITE_BINARY: return true;
 	}
+	return false;
 }
 
 bool tr::File::remove(tr::String path)
