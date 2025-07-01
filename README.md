@@ -26,14 +26,6 @@ Just add all the `.hpp`/`.cpp` files from `trippin/` to your project
 
 On Linux make sure you linked the math library `-lm`
 
-libtrippin also uses [backward-cpp](https://github.com/bombela/backward-cpp) for better stack traces, it'll
-compile by default but it's recommended you do extra setup on Linux:
-- install binutils dev packages (e.g. `sudo apt install binutils-dev`)
-- link with `bfd` and `dl`
-- define `BACKWARD_HAS_BFD=1` (if you have libtrippin as a different project/static library, it has to be defined there)
-
-It should work automatically on Windows.
-
 If some for reason you want to use engineer then [read this](./engineerbuild/README.md)
 
 ## Examples
