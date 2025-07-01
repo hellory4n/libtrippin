@@ -23,6 +23,20 @@
  *
  */
 
+// :(
+// TODO macOS exists
+#ifdef _WIN32
+	#define WIN32_LEAN_AND_MEAN
+	#define NOSERVICE
+	#define NOMCX
+	#define NOIME
+	#define NOMINMAX
+	#include <windows.h>
+	#undef ERROR
+#else
+	#include <sys/stat.h>
+#endif
+
 #include "collection.hpp"
 
 #include "iofs.hpp"
@@ -246,5 +260,26 @@ bool tr::File::remove(tr::String path)
 
 bool tr::File::rename(tr::String from, tr::String to)
 {
+	// libc rename() is different on windows and posix
+	// on posix it replaces the destination if it already exists
+	// on windows it fails in that case
+
+	if (tr::File::exists(to)) return false;
+
+	#ifdef _WIN32
+	return MoveFileEx(from, to, MOVEFILE_REPLACE_EXISTING) != 0;
+	#else
 	return ::rename(from, to) == 0;
+	#endif
+}
+
+bool tr::File::exists(tr::String path)
+{
+	#ifdef _WIN32
+	DWORD attrib = GetFileAttributesA(path);
+	return attrib != INVALID_FILE_ATTRIBUTES && !(attrib & FILE_ATTRIBUTE_DIRECTORY);
+	#else
+	struct stat buffer;
+    return stat(path, &buffer) == 0;
+	#endif
 }

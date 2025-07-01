@@ -197,8 +197,12 @@ public:
 	// Removes a file from a path, returns true if it succeeds.
 	static bool remove(String path);
 
-	// Renames or moves a file, returns true if it succeeds.
+	// Renames or moves a file, returns true if it succeeds. Note this fails if the destination already exists
+	// (unlike posix's `rename()` which overwrites the destination)
 	static bool rename(String from, String to);
+
+	// Returns true if the file exists
+	static bool exists(String path);
 };
 
 // idk why not
