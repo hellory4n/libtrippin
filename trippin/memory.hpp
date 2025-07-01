@@ -375,9 +375,11 @@ public:
 		// the warning is wrong :)
 		#ifdef TR_ONLY_GCC
 		TR_GCC_IGNORE_WARNING(-Warray-bounds);
+		TR_GCC_IGNORE_WARNING(-Wstringop-overread);
 		#endif
 		memcpy(this->ptr, data, len * sizeof(T));
 		#ifdef TR_ONLY_GCC
+		TR_GCC_RESTORE();
 		TR_GCC_RESTORE();
 		#endif
 	}

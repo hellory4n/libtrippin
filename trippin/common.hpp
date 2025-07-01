@@ -33,7 +33,7 @@
 // some warnings are different
 #if defined(__clang__)
 	#define TR_ONLY_CLANG
-#elif define(__GNUC__)
+#elif defined(__GNUC__)
 	#define TR_ONLY_GCC
 #endif
 
