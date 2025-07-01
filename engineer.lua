@@ -40,7 +40,7 @@ example_all:pedantic()
 example_all:debug()
 example_all:define({"DEBUG"})
 -- idk why it doesn't link stdc++
-example_all:link({"trippin", "stdc++"})
+example_all:link({"trippin", "m", "stdc++"})
 -- for windows
 -- example_all:add_ldflags("-static")
 example_all:add_sources({"examples/one_test_to_rule_them_all.cpp"})

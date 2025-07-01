@@ -181,6 +181,7 @@ void tr::File::seek(uint64 bytes, tr::SeekFrom from)
 		case SeekFrom::START:   whence = SEEK_SET; break;
 		case SeekFrom::CURRENT: whence = SEEK_CUR; break;
 		case SeekFrom::END:     whence = SEEK_END; break;
+		default:                whence = SEEK_CUR; break;
 	}
 
 	fseek(this->fptr, bytes, whence);

@@ -122,7 +122,7 @@ public:
 		if (ptr == nullptr) {
 			tr::panic("tr::Ref<T> can't be null, if that's intentional use tr::MaybeRef<T>");
 		}
-		this->refcounted()->retain();
+		if (this->ptr != nullptr) this->refcounted()->retain();
 		if (this->ptr != nullptr) this->refcounted()->release();
 		this->ptr = ptr;
 		return *this;
@@ -131,7 +131,7 @@ public:
 	Ref& operator=(const Ref<T>& other)
 	{
 		if (this != &other) {
-			other.refcounted()->retain();
+			if (other.ptr != nullptr) other.refcounted()->retain();
 			if (this->ptr != nullptr) {
 				this->refcounted()->release();
 			}
@@ -226,7 +226,7 @@ public:
 	MaybeRef& operator=(const MaybeRef<T>& other)
 	{
 		if (this != &other) {
-			if (other != nullptr)     other.refcounted()->retain();
+			if (other.ptr != nullptr) other.refcounted()->retain();
 			if (this->ptr != nullptr) this->refcounted()->release();
 			this->ptr = other.ptr;
 		}
@@ -352,10 +352,10 @@ class Array
 {
 	// i'm gonna keep the arena when i remove .add() so that for as long as the array exists, the arena exists too
 	// it's an ownership thing yknow
-	MaybeRef<Arena> arena;
-	T* ptr;
-	usize len;
-	usize cap;
+	MaybeRef<Arena> arena = nullptr;
+	T* ptr = nullptr;
+	usize len = 0;
+	usize cap = 0;
 
 public:
 	// Initializes an empty array at an arena.
@@ -371,7 +371,13 @@ public:
 	explicit Array(Ref<Arena> arena, T* data, usize len) : arena(arena), len(len), cap(len)
 	{
 		this->ptr = reinterpret_cast<T*>(arena->alloc(sizeof(T) * len));
+		#ifndef TR_ONLY_GCC
+		// 'void* memcpy(void*, const void*, size_t)' forming offset [1, 1024] is out of the bounds [0, 1]
+		// the warning is wrong :)
+		TR_GCC_IGNORE_WARNING(-Warray-bounds);
 		memcpy(this->ptr, data, len * sizeof(T));
+		TR_GCC_RESTORE();
+		#endif
 	}
 
 	// Initializes an array that points to any buffer. You really should only use this for temporary arrays.

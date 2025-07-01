@@ -29,7 +29,22 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#if defined(__GNUC__) || defined(__clang__)
+// is this gcc or clang?
+// some warnings are different
+#if defined(__GNUC__) && !defined(__clang__)
+	#define TR_ONLY_GCC
+#endif
+
+#if defined(__GNUC__) && defined(__clang__)
+	#define TR_ONLY_CLANG
+#endif
+
+// but they're similar enough that we can usually check for both
+#ifdef __GNUC__
+	#define TR_GCC_OR_CLANG
+#endif
+
+#ifdef TR_GCC_OR_CLANG
 	#define TR_GCC_PRAGMA(X) _Pragma(#X)
 
 	#define TR_GCC_IGNORE_WARNING(Warning) \
@@ -42,7 +57,7 @@
 	#define TR_GCC_RESTORE()
 #endif
 
-#if (defined(__GNUC__) || defined(__clang__)) && !defined(_WIN32)
+#if defined(TR_GCC_OR_CLANG) && !defined(_WIN32)
 	// counting starts at 1 lmao
 	#define TR_LOG_FUNC(FmtIdx, VarargsIdx) [[gnu::format(printf, FmtIdx, VarargsIdx)]]
 #else
@@ -70,7 +85,7 @@ static_assert(sizeof(usize) == sizeof(isize), "oh no usize and isize aren't the 
 namespace tr {
 
 // I sure love versions.
-static constexpr const char* VERSION = "v2.2.0";
+static constexpr const char* VERSION = "v2.2.1";
 
 // Initializes the bloody library lmao.
 void init();

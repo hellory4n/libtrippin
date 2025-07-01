@@ -171,8 +171,6 @@ int main()
 	TR_ASSERT(tr::File::rename("sigma.txt", "die.txt"));
 	TR_ASSERT(tr::File::remove("die.txt"));
 
-	TR_ASSERT(false);
-
 	tr::free();
 }
 
