@@ -371,11 +371,13 @@ public:
 	explicit Array(Ref<Arena> arena, T* data, usize len) : arena(arena), len(len), cap(len)
 	{
 		this->ptr = reinterpret_cast<T*>(arena->alloc(sizeof(T) * len));
-		#ifndef TR_ONLY_GCC
 		// 'void* memcpy(void*, const void*, size_t)' forming offset [1, 1024] is out of the bounds [0, 1]
 		// the warning is wrong :)
+		#ifdef TR_ONLY_GCC
 		TR_GCC_IGNORE_WARNING(-Warray-bounds);
+		#endif
 		memcpy(this->ptr, data, len * sizeof(T));
+		#ifdef TR_ONLY_GCC
 		TR_GCC_RESTORE();
 		#endif
 	}
