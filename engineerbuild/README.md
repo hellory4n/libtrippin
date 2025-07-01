@@ -1,5 +1,8 @@
 # Engineer™
 
+> [!WARNING]
+> Engineer is deprecated. Just use ninja + a generator in lua.
+
 Got so annoyed at Make that I made my own build system.
 
 This works by pretty much just being Make, but in Lua. (no esoteric language)

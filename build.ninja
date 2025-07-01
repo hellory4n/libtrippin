@@ -1,0 +1,26 @@
+# this crap is simple enough to not need a fancy generator like starry3d :)
+# TODO compile all of the examples
+cxx = clang++
+cflags = -std=c++17 -Wall -Wextra -Wpedantic -O2 -g -DDEBUG -D_DEBUG -I. -I..
+ldflags = -lm -lstdc++
+
+rule compile
+  command = $cxx $cflags -c $in -o $out
+  description = Compiling $in
+
+rule link
+  command = $cxx $in $ldflags -o $out
+  description = Linking $out
+
+build build/obj/trippin_collection.o:                 compile trippin/collection.cpp
+build build/obj/trippin_common.o:                     compile trippin/common.cpp
+build build/obj/trippin_iofs.o:                       compile trippin/iofs.cpp
+build build/obj/trippin_log.o:                        compile trippin/log.cpp
+build build/obj/trippin_math.o:                       compile trippin/math.cpp
+build build/obj/trippin_memory.o:                     compile trippin/memory.cpp
+build build/obj/trippin_string.o:                     compile trippin/string.cpp
+build build/obj/examples_one_test_to_rule_them_all.o: compile examples/one_test_to_rule_them_all.cpp
+
+build build/bin/example_all: link build/obj/trippin_collection.o build/obj/trippin_common.o build/obj/trippin_iofs.o build/obj/trippin_log.o build/obj/trippin_math.o build/obj/trippin_memory.o build/obj/trippin_string.o build/obj/examples_one_test_to_rule_them_all.o
+
+default build/bin/example_all

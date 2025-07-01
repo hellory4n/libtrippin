@@ -6,3 +6,8 @@ tab_size = 4
 [*.md]
 indent_style = space
 tab_size = 4
+
+# ffs
+[*.ninja]
+indent_style = space
+tab_size = 2

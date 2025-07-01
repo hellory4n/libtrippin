@@ -17,3 +17,7 @@ log.txt
 
 # valgrind garbage
 vgcore*
+
+# man.
+.ninja_log
+.ninja_lock
