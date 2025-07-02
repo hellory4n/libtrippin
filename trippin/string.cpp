@@ -50,14 +50,16 @@ bool tr::String::operator==(const tr::String& other) const
 
 tr::String tr::String::substr(tr::Ref<tr::Arena> arena, usize start, usize end) const
 {
-	String str = String(this->buffer() + start, end + 1).duplicate(arena);
+	// shut up asan
+	String str = String(this->buffer() + start, end + 1)
+		.duplicate(arena);
 	str[end] = '\0';
 	return str;
 }
 
 tr::Array<usize> tr::String::find(tr::Ref<tr::Arena> arena, tr::String str, usize start, usize end) const
 {
-	if (end == 0) end = this->length();
+	if (end == 0 || end > this->length()) end = this->length();
 
 	Ref<Arena> tmp = new Arena(tr::kb_to_bytes(64));
 	List<usize> indexes;

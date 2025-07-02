@@ -127,8 +127,8 @@ struct Vec3
 	T y;
 	T z;
 
-	constexpr Vec3() : x(0), y(0), z(0) {};
-	constexpr Vec3(T x, T y, T z) : x(x), y(y), z(z) {};
+	constexpr Vec3() : x(0), y(0), z(0) {}
+	constexpr Vec3(T x, T y, T z) : x(x), y(y), z(z) {}
 	explicit constexpr Vec3(T v) : x(v), y(v), z(v) {}
 
 	constexpr Vec3 operator+(Vec3 r)  { return Vec3(this->x + r.x, this->y + r.y, this->z + r.z);  }
@@ -269,8 +269,8 @@ struct Vec4
 	T z;
 	T w;
 
-	constexpr Vec4() : x(0), y(0), z(0), w(0) {};
-	constexpr Vec4(T x, T y, T z, T w) : x(x), y(y), z(z), w(w) {};
+	constexpr Vec4() : x(0), y(0), z(0), w(0) {}
+	constexpr Vec4(T x, T y, T z, T w) : x(x), y(y), z(z), w(w) {}
 	explicit constexpr Vec4(T v) : x(v), y(v), z(v), w(v) {}
 	constexpr Vec4(Color c);
 

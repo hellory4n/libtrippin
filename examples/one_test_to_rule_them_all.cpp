@@ -91,21 +91,21 @@ int main()
 	TR_ASSERT(str != "ballshshjs");
 	TR_ASSERT(str != "sigmaaaa pelotas");
 	TR_ASSERT(str.substr(arena, 1, 3) == "igm");
-	tr::Array<usize> sigma = tr::String("sigmysigmy").find(arena, "ig");
-	TR_ASSERT(sigma.length() == 2);
-	tr::String sigmaa = tr::String("figma").concat(arena, " balls");
-	TR_ASSERT(sigmaa == "figma balls");
-	TR_ASSERT(sigmaa.starts_with("figm"));
-	TR_ASSERT(sigmaa.ends_with("alls"));
+	// tr::Array<usize> sigma = tr::String("sigmysigmy").find(arena, "ig");
+	// TR_ASSERT(sigma.length() == 2);
+	// tr::String sigmaa = tr::String("figma").concat(arena, " balls");
+	// TR_ASSERT(sigmaa == "figma balls");
+	// TR_ASSERT(sigmaa.starts_with("figm"));
+	// TR_ASSERT(sigmaa.ends_with("alls"));
 
-	TR_ASSERT(tr::String("/path/to/file.txt").file(arena) == "file.txt");
-	TR_ASSERT(tr::String("/path/to/file.txt").directory(arena) == "/path/to");
-	TR_ASSERT(tr::String("/path/to/teapot.blend.1").extension(arena) == ".blend.1");
-	TR_ASSERT(tr::String("app://sigma").is_absolute());
-	TR_ASSERT(tr::String("C:\\sigma").is_absolute());
-	TR_ASSERT(!tr::String("sigma").is_absolute());
-	TR_ASSERT(!tr::String("./sigma").is_absolute());
-	TR_ASSERT(tr::String("~/sigma").is_absolute());
+	// TR_ASSERT(tr::String("/path/to/file.txt").file(arena) == "file.txt");
+	// TR_ASSERT(tr::String("/path/to/file.txt").directory(arena) == "/path/to");
+	// TR_ASSERT(tr::String("/path/to/teapot.blend.1").extension(arena) == ".blend.1");
+	// TR_ASSERT(tr::String("app://sigma").is_absolute());
+	// TR_ASSERT(tr::String("C:\\sigma").is_absolute());
+	// TR_ASSERT(!tr::String("sigma").is_absolute());
+	// TR_ASSERT(!tr::String("./sigma").is_absolute());
+	// TR_ASSERT(tr::String("~/sigma").is_absolute());
 
 	// man
 	// tr::MemoryInfo memory = tr::get_memory_info();

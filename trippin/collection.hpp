@@ -39,8 +39,8 @@ namespace tr {
 template<typename T>
 class List : public RefCounted
 {
-	usize len;
-	usize cap;
+	usize len = 0;
+	usize cap = 0;
 	// void* bcuz gcc says "warning: 'void* realloc(void*, size_t)' moving an object of non-trivially copyable
 	// type 'class tr::String'; use 'new' and 'delete' instead" shut the fuck up man
 	void* ptr = nullptr;

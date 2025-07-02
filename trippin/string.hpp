@@ -35,7 +35,8 @@ namespace tr {
 
 // Literally just a wrapper around `tr::Array`, so it works better with strings. Also all of the functions
 // that return strings copy the original strings first.
-class String {
+class String
+{
 	Array<char> array;
 
 public:
@@ -69,6 +70,7 @@ public:
 
 	// man
 	char& operator[](usize idx) const { return this->array[idx]; }
+	// Doesn't include the null terminator
 	usize length() const { return this->array.length() - 1; }
 	char* buffer() const { return this->array.buffer(); }
 	operator char*() const { return this->buffer(); }

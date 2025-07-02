@@ -109,10 +109,10 @@ private:
 
 public:
 	// Initializes a Maybe<T> as null
-	Maybe() : waste_of_space(0), has_value(false) {};
+	Maybe() : waste_of_space(0), has_value(false) {}
 
 	// Intializes a Maybe<T> with a value
-	Maybe(const T& val) : value(val), has_value(true) {};
+	Maybe(const T& val) : value(val), has_value(true) {}
 
 	Maybe(const Maybe& other) : has_value(other.has_value)
 	{
@@ -180,8 +180,8 @@ private:
 	bool active;
 
 public:
-	Either(L left) : val_left(left), active(false) {};
-	Either(R right) : val_right(right), active(true) {};
+	Either(L left) : val_left(left), active(false) {}
+	Either(R right) : val_right(right), active(true) {}
 
 	~Either()
 	{
@@ -220,7 +220,7 @@ struct Pair
 	L left;
 	R right;
 
-	Pair(L left, R right) : left(left), right(right) {};
+	Pair(L left, R right) : left(left), right(right) {}
 
 	~Pair()
 	{

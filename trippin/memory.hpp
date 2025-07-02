@@ -81,7 +81,7 @@ class MaybeRef;
 template<typename T>
 class Ref
 {
-	T* ptr;
+	T* ptr = nullptr;
 	// man
 	friend class MaybeRef<T>;
 
@@ -178,7 +178,7 @@ public:
 template<typename T>
 class MaybeRef
 {
-	T* ptr;
+	T* ptr = nullptr;
 	// man
 	friend class Ref<T>;
 
@@ -377,7 +377,7 @@ public:
 		TR_GCC_IGNORE_WARNING(-Warray-bounds);
 		TR_GCC_IGNORE_WARNING(-Wstringop-overread);
 		#endif
-		memcpy(this->ptr, data, len * sizeof(T));
+		memcpy(reinterpret_cast<void*>(this->ptr), data, len * sizeof(T));
 		#ifdef TR_ONLY_GCC
 		TR_GCC_RESTORE();
 		TR_GCC_RESTORE();
