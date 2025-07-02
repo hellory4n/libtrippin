@@ -193,16 +193,6 @@ public:
 
 	// If true, the file can be written to.
 	bool can_write();
-
-	// Removes a file from a path, returns true if it succeeds.
-	static bool remove(String path);
-
-	// Renames or moves a file, returns true if it succeeds. Note this fails if the destination already exists
-	// (unlike posix's `rename()` which overwrites the destination)
-	static bool rename(String from, String to);
-
-	// Returns true if the file exists
-	static bool exists(String path);
 };
 
 // idk why not
@@ -215,6 +205,32 @@ extern Ref<File> std_in;
 extern Ref<File> std_out;
 // `stderr` but `tr::File`.
 extern Ref<File> std_err;
+
+// Removes a file from a path, returns true if it succeeds.
+bool remove_file(String path);
+
+// Renames or moves a file, returns true if it succeeds. Note this fails if the destination already exists
+// (unlike posix's `rename()` which overwrites the destination)
+bool rename_file(String from, String to);
+
+// Returns true if the file exists
+bool file_exists(String path);
+
+// Copies a file, returns true if it succeeded.
+bool copy_file(String src, String dst);
+
+// Creates a directory. This is recursive, so `tr::Directory::create("dir/otherdir")` will make both `dir`
+// and `otherdir`. Returns true if it succeeded.
+bool create_dir(String path);
+
+// Removes a directory. Returns true if it succeeded.
+bool remove_dir(String path);
+
+// Lists all the files/directories
+Array<String> list(Ref<Arena> arena, String path);
+
+// If true, the path is a file. Else, it's a directory. Returns null if it doesn't exist.
+Maybe<bool> is_file(String path);
 
 }
 

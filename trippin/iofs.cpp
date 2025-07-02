@@ -35,6 +35,10 @@
 	#undef ERROR
 #else
 	#include <sys/stat.h>
+	#include <sys/types.h>
+	#include <dirent.h>
+	#include <unistd.h>
+	#include <errno.h>
 #endif
 
 #include "collection.hpp"
@@ -254,33 +258,63 @@ bool tr::File::can_write()
 	return false;
 }
 
-bool tr::File::remove(tr::String path)
+bool tr::remove_file(tr::String path)
 {
-	return ::remove(path) == 0;
+	return remove(path) == 0;
 }
 
-bool tr::File::rename(tr::String from, tr::String to)
+bool tr::rename_file(tr::String from, tr::String to)
 {
 	// libc rename() is different on windows and posix
 	// on posix it replaces the destination if it already exists
 	// on windows it fails in that case
 
-	if (tr::File::exists(to)) return false;
+	if (tr::file_exists(to)) return false;
 
 	#ifdef _WIN32
 	return MoveFileEx(from, to, MOVEFILE_REPLACE_EXISTING) != 0;
 	#else
-	return ::rename(from, to) == 0;
+	return rename(from, to) == 0;
 	#endif
 }
 
-bool tr::File::exists(tr::String path)
+bool tr::file_exists(tr::String path)
 {
+	// we could just fopen(path, "r") then check if that's null, but then it would return false on permission
+	// errors, even though it does in fact exist
 	#ifdef _WIN32
 	DWORD attrib = GetFileAttributesA(path);
 	return attrib != INVALID_FILE_ATTRIBUTES && !(attrib & FILE_ATTRIBUTE_DIRECTORY);
 	#else
 	struct stat buffer;
     return stat(path, &buffer) == 0;
+	#endif
+}
+
+bool tr::create_dir(tr::String path)
+{
+	// it's supposed to be recursive :D
+	Ref<Arena> tmp = new Arena(tr::kb_to_bytes(4));
+	Ref<List<String>> dirs = new List<String>();
+
+	usize idx = 0;
+	for (ArrayItem<char> c : path) {
+		if ((c.val != '/' && c.val != '\\') || c.i < path.length()) continue;
+
+		dirs->add(path.substr(tmp, idx, c.i));
+		idx = c.i + 1;
+	}
+	tr::panic("fuck...");
+	if (dirs->length() == 0) return false;
+
+	#ifdef _WIN32
+	#else
+	for (ArrayItem<String> dir : *dirs) {
+		if (mkdir(dir.val, 0755) != 0 && errno != EEXIST) {
+			return false;
+		}
+	}
+	tr::panic("hehe");
+	return true;
 	#endif
 }

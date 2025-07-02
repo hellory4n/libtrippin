@@ -43,19 +43,19 @@ TR_LOG_FUNC(3, 4) tr::String tr::sprintf(Ref<Arena> arena, usize maxlen, const c
 	return str;
 }
 
-bool tr::String::operator==(const tr::String& other)
+bool tr::String::operator==(const tr::String& other) const
 {
 	return strncmp(*this, other, tr::max(this->length(), other.length())) == 0;
 }
 
-tr::String tr::String::substr(tr::Ref<tr::Arena> arena, usize start, usize end)
+tr::String tr::String::substr(tr::Ref<tr::Arena> arena, usize start, usize end) const
 {
 	String str = String(this->buffer() + start, end + 1).duplicate(arena);
 	str[end] = '\0';
 	return str;
 }
 
-tr::Array<usize> tr::String::find(tr::Ref<tr::Arena> arena, tr::String str, usize start, usize end)
+tr::Array<usize> tr::String::find(tr::Ref<tr::Arena> arena, tr::String str, usize start, usize end) const
 {
 	if (end == 0) end = this->length();
 
@@ -72,24 +72,24 @@ tr::Array<usize> tr::String::find(tr::Ref<tr::Arena> arena, tr::String str, usiz
 	return Array<usize>(arena, indexes.buffer(), indexes.length());
 }
 
-tr::String tr::String::concat(tr::Ref<tr::Arena> arena, tr::String other)
+tr::String tr::String::concat(tr::Ref<tr::Arena> arena, tr::String other) const
 {
 	String new_str(arena, this->buffer(), this->length() + other.length());
 	strncat(new_str.buffer(), other.buffer(), other.length());
 	return new_str;
 }
 
-bool tr::String::starts_with(tr::String str)
+bool tr::String::starts_with(tr::String str) const
 {
 	return String(this->buffer(), str.length()) == str;
 }
 
-bool tr::String::ends_with(tr::String str)
+bool tr::String::ends_with(tr::String str) const
 {
 	return String(this->buffer() + this->length() - str.length(), str.length()) == str;
 }
 
-tr::String tr::String::file(Ref<Arena> arena)
+tr::String tr::String::file(Ref<Arena> arena) const
 {
 	for (usize i = this->length() - 1; i < this->length(); i--) {
 		if ((*this)[i] == '/' || (*this)[i] == '\\') {
@@ -99,7 +99,7 @@ tr::String tr::String::file(Ref<Arena> arena)
 	return this->duplicate(arena);
 }
 
-tr::String tr::String::directory(Ref<Arena> arena)
+tr::String tr::String::directory(Ref<Arena> arena) const
 {
 	for (usize i = this->length() - 1; i < this->length(); i--) {
 		if ((*this)[i] == '/' || (*this)[i] == '\\') {
@@ -109,7 +109,7 @@ tr::String tr::String::directory(Ref<Arena> arena)
 	return this->duplicate(arena);
 }
 
-tr::String tr::String::extension(Ref<Arena> arena)
+tr::String tr::String::extension(Ref<Arena> arena) const
 {
 	String filename = this->file(arena);
 	for (usize i = 0; i < filename.length(); i++) {
@@ -122,7 +122,7 @@ tr::String tr::String::extension(Ref<Arena> arena)
 	return "";
 }
 
-bool tr::String::is_absolute()
+bool tr::String::is_absolute() const
 {
 	if (this->starts_with("/"))    return true;
 	if (this->starts_with("~/"))   return true;
@@ -149,9 +149,9 @@ bool tr::String::is_absolute()
 	return false;
 }
 
-[[nodiscard]] tr::String tr::String::replace(tr::Ref<tr::Arena> arena, char from, char to)
+[[nodiscard]] tr::String tr::String::replace(tr::Ref<tr::Arena> arena, char from, char to) const
 {
-	Ref<Arena> tmp = new Arena(this->length());
+	Ref<Arena> tmp = new Arena(this->length() + 1);
 	Array<usize> indexes = this->find(tmp, from);
 	String str = this->duplicate(tmp);
 
@@ -160,5 +160,20 @@ bool tr::String::is_absolute()
 	}
 
 	return str.duplicate(arena);
+}
+
+[[nodiscard]] tr::Array<tr::String> tr::String::split(tr::Ref<tr::Arena> arena, char delimiter) const
+{
+	Ref<List<String>> strings = new List<String>();
+	String str = this->duplicate(arena);
+	char delim[2] = {delimiter, '\0'};
+
+	char* token = strtok(str, delim);
+	while (token != nullptr) {
+		strings->add(String(arena, token, strlen(token)));
+		token = strtok(str, delim);
+	}
+
+	return Array<String>(arena, strings->buffer(), strings->length());
 }
 

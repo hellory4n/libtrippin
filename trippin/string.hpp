@@ -84,41 +84,47 @@ public:
 	// i know .add() is missing
 
 	// special string crap
-	bool operator==(const String& other);
-	bool operator!=(const String& other) { return !(*this == other); }
-	bool operator==(const char* other)   { return *this == String(other); }
-	bool operator!=(const char* other)   { return *this != String(other); }
+	bool operator==(const String& other) const;
+	bool operator!=(const String& other) const { return !(*this == other); }
+	bool operator==(const char* other)   const { return *this == String(other); }
+	bool operator!=(const char* other)   const { return *this != String(other); }
 
 	// Gets a substring. The returned string doesn't include the end character.
-	[[nodiscard]] String substr(Ref<Arena> arena, usize start, usize end);
+	[[nodiscard]] String substr(Ref<Arena> arena, usize start, usize end) const;
 
 	// Returns an array with all of the indexes containing the substring (the index is where it starts)
-	Array<usize> find(Ref<Arena> arena, String str, usize start = 0, usize end = 0);
+	Array<usize> find(Ref<Arena> arena, String str, usize start = 0, usize end = 0) const;
 
 	// It concatenates 2 strings lmao.
-	[[nodiscard]] String concat(Ref<Arena> arena, String other);
+	[[nodiscard]] String concat(Ref<Arena> arena, String other) const;
 
 	// If true, the string starts with that other crap.
-	bool starts_with(String str);
+	bool starts_with(String str) const;
 
 	// If true, the string ends with that other crap.
-	bool ends_with(String str);
+	bool ends_with(String str) const;
 
 	// Gets the filename in a path, e.g. returns `file.txt` for `/path/to/file.txt`
-	[[nodiscard]] String file(Ref<Arena> arena);
+	[[nodiscard]] String file(Ref<Arena> arena) const;
 
 	// Gets the directory in a path e.g. returns `/path/to` for `/path/to/file.txt`
-	[[nodiscard]] String directory(Ref<Arena> arena);
+	[[nodiscard]] String directory(Ref<Arena> arena) const;
 
 	// Returns the extension in a path, e.g. returns `.txt` for `/path/to/file.txt`, `.blend.1` for
 	// `teapot.blend.1`, and an empty string for `.gitignore`
-	[[nodiscard]] String extension(Ref<Arena> arena);
+	[[nodiscard]] String extension(Ref<Arena> arena) const;
 
 	// If true, the path is absolute. Else, it's relative.
-	bool is_absolute();
+	bool is_absolute() const;
+
+	// If true, the path is relative. Else, it's absolute.
+	bool is_relative() const { return !this->is_absolute(); }
 
 	// Replaces a character with another character.
-	[[nodiscard]] String replace(Ref<Arena> arena, char from, char to);
+	[[nodiscard]] String replace(Ref<Arena> arena, char from, char to) const;
+
+	// Splits the string into several substrings using the specified delimiter.
+	[[nodiscard]] Array<String> split(Ref<Arena> arena, char delimiter) const;
 };
 
 // It's just `sprintf` for `tr::String` lmao.

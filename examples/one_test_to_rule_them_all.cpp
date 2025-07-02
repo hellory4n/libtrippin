@@ -156,6 +156,13 @@ int main()
 	}
 	tr::log("length %zu, capacity %zu", whathteufc->length(), whathteufc->capacity());
 
+	// split string :)
+	tr::String strma = "crap,shit,fuck,balls";
+	tr::Array<tr::String> splitma = strma.split(arena, ',');
+	for (auto c : splitma) {
+		tr::log("split[%zu] = %s", c.i, c.val.buffer());
+	}
+
 	tr::Ref<tr::File> write_file = tr::File::open("sigma.txt", tr::FileMode::WRITE_TEXT).unwrap();
 	write_file->write_string("Fuck...\r\nYou...", false);
 	write_file->flush();
@@ -168,8 +175,10 @@ int main()
 	tr::log("file: %lu bytes\n%s\n%s", read_file->length(), line1.buffer(), line2.buffer());
 	read_file->close();
 
-	TR_ASSERT(tr::File::rename("sigma.txt", "die.txt"));
-	TR_ASSERT(tr::File::remove("die.txt"));
+	tr::rename_file("sigma.txt", "die.txt");
+	tr::remove_file("die.txt");
+
+	TR_ASSERT(tr::create_dir("sigmyyyyls"));
 
 	tr::free();
 }
