@@ -125,7 +125,7 @@ void* tr::Arena::alloc(usize size)
 
 	// does it fit in the current page?
 	if (this->page->available_space() >= size) {
-		void* val = (uint8*)this->page->buffer + this->page->alloc_pos;
+		void* val = reinterpret_cast<uint8*>(this->page->buffer) + this->page->alloc_pos;
 		this->page->alloc_pos += size;
 		return val;
 	}
@@ -134,7 +134,7 @@ void* tr::Arena::alloc(usize size)
 	if (this->page->prev != nullptr) {
 		ArenaPage* prev_page = this->page->prev;
 		if (prev_page->available_space() >= size) {
-			void* val = (uint8*)prev_page->buffer + prev_page->alloc_pos;
+			void* val = reinterpret_cast<uint8*>(prev_page->buffer) + prev_page->alloc_pos;
 			prev_page->alloc_pos += size;
 			return val;
 		}
@@ -147,7 +147,7 @@ void* tr::Arena::alloc(usize size)
 		this->page->next = new_page;
 		this->page = new_page;
 
-		void* val = (uint8*)new_page->buffer + new_page->alloc_pos;
+		void* val = reinterpret_cast<uint8*>(new_page->buffer) + new_page->alloc_pos;
 		new_page->alloc_pos += size;
 		return val;
 	}
@@ -158,7 +158,7 @@ void* tr::Arena::alloc(usize size)
 	this->page->next = new_page;
 	this->page = new_page;
 
-	void* val = (uint8*)new_page->buffer + new_page->alloc_pos;
+	void* val = reinterpret_cast<uint8*>(new_page->buffer) + new_page->alloc_pos;
 	new_page->alloc_pos += size;
 	return val;
 }

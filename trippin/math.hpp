@@ -809,7 +809,9 @@ struct Color
 	constexpr Color();
 	constexpr Color(uint8 r, uint8 g, uint8 b) : r(r), g(g), b(b), a(255) {}
 	constexpr Color(uint8 r, uint8 g, uint8 b, uint8 a) : r(r), g(g), b(b), a(a) {}
-	constexpr Color(Vec4<float32> vec) : r(vec.x * 255), g(vec.y * 255), b(vec.z * 255), a(vec.w * 255) {}
+	constexpr Color(Vec4<float32> vec) :
+		r(tr::clamp(vec.x, 0.f, 1.f) * 255), g(tr::clamp(vec.y, 0.f, 1.f) * 255),
+		b(tr::clamp(vec.z, 0.f, 1.f) * 255), a(tr::clamp(vec.w, 0.f, 1.f) * 255) {}
 
 	// Makes a color from a hex code, with a format of 0xRRGGBB
 	static constexpr Color rgb(uint32 hex)

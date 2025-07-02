@@ -118,8 +118,8 @@ int main()
 	listma->add("crap...");
 	listma->add("WRONG");
 	(*listma)[3] = "correct...";
-	for (auto str : *listma) {
-		tr::log("list[%zu] = %s", str.i, str.val.buffer());
+	for (auto s : *listma) {
+		tr::log("list[%zu] = %s", s.i, s.val.buffer());
 	}
 
 	// man
@@ -143,7 +143,7 @@ int main()
 	// check resizing
 	// this will actually resize twice
 	tr::Ref<tr::HashMap<int32, bool>> whathteufc = new tr::HashMap<int32, bool>();
-	for (usize i = 0; i < 257; i++) {
+	for (int32 i = 0; i < 257; i++) {
 		(*whathteufc)[i] = i % 2 == 0;
 	}
 	// i'm just gonna find that in the log file
@@ -172,7 +172,7 @@ int main()
 	tr::Ref<tr::File> read_file = tr::File::open("sigma.txt", tr::FileMode::READ_TEXT).unwrap();
 	tr::String line1 = read_file->read_line(arena);
 	tr::String line2 = read_file->read_line(arena);
-	tr::log("file: %lu bytes\n%s\n%s", read_file->length(), line1.buffer(), line2.buffer());
+	tr::log("file: %li bytes\n%s\n%s", read_file->length(), line1.buffer(), line2.buffer());
 	read_file->close();
 
 	tr::rename_file("sigma.txt", "die.txt");

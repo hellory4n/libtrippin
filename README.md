@@ -49,7 +49,7 @@ tr::error("sir");
 // same formatting as printf
 tr::info("sir %i", 9462952);
 
-TR_ASSERT_MSG(2 + 2 == 5, "i may be wrong");
+TR_ASSERT_MSG(2 + 2 == 5, "i might be wrong");
 tr::panic("AAAAAHHH");
 
 tr::free();

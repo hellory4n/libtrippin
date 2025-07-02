@@ -119,13 +119,13 @@ tr::Maybe<tr::Ref<tr::File>> tr::File::open(tr::String path, FileMode mode)
 	// get mode
 	String modefrfr;
 	switch (mode) {
-		case FileMode::UNKNOWN:           modefrfr = "";    break;
 		case FileMode::READ_TEXT:         modefrfr = "r";   break;
 		case FileMode::READ_BINARY:       modefrfr = "rb";  break;
 		case FileMode::WRITE_TEXT:        modefrfr = "w";   break;
 		case FileMode::WRITE_BINARY:      modefrfr = "wb";  break;
 		case FileMode::READ_WRITE_TEXT:   modefrfr = "r+";  break;
 		case FileMode::READ_WRITE_BINARY: modefrfr = "rb+"; break;
+		default:                          modefrfr = "";    break;
 	}
 
 	Ref<File> file = new File();
@@ -146,8 +146,10 @@ tr::Maybe<tr::Ref<tr::File>> tr::File::open(tr::String path, FileMode mode)
 void tr::File::close()
 {
 	// is_std exists so it doesn't close tr::std_out and company
-	if (this->is_std || this->fptr != nullptr) return;
-	fclose(this->fptr);
+	if (!this->is_std && this->fptr != nullptr) {
+		fclose(this->fptr);
+		this->fptr = nullptr;
+	}
 }
 
 tr::File::~File()
@@ -180,12 +182,11 @@ void tr::File::seek(uint64 bytes, tr::SeekFrom from)
 {
 	TR_ASSERT_MSG(this->fptr != nullptr, "uninitialized tr::File, initialize it you dumbass");
 
-	int whence;
+	int whence = SEEK_CUR;
 	switch (from) {
 		case SeekFrom::START:   whence = SEEK_SET; break;
 		case SeekFrom::CURRENT: whence = SEEK_CUR; break;
 		case SeekFrom::END:     whence = SEEK_END; break;
-		default:                whence = SEEK_CUR; break;
 	}
 
 	fseek(this->fptr, bytes, whence);
@@ -233,29 +234,27 @@ FILE* tr::File::cfile()
 bool tr::File::can_read()
 {
 	switch (this->mode) {
-		case FileMode::UNKNOWN:           return false;
-		case FileMode::READ_TEXT:         return true;
-		case FileMode::READ_BINARY:       return true;
-		case FileMode::WRITE_TEXT:        return false;
-		case FileMode::WRITE_BINARY:      return false;
-		case FileMode::READ_WRITE_TEXT:   return true;
-		case FileMode::READ_WRITE_BINARY: return true;
+		case FileMode::READ_TEXT:          return true;
+		case FileMode::READ_BINARY:        return true;
+		case FileMode::WRITE_TEXT:         return false;
+		case FileMode::WRITE_BINARY:       return false;
+		case FileMode::READ_WRITE_TEXT:    return true;
+		case FileMode::READ_WRITE_BINARY:  return true;
+		default:                           return false;
 	}
-	return false;
 }
 
 bool tr::File::can_write()
 {
 	switch (this->mode) {
-		case FileMode::UNKNOWN:           return false;
-		case FileMode::READ_TEXT:         return false;
-		case FileMode::READ_BINARY:       return false;
-		case FileMode::WRITE_TEXT:        return true;
-		case FileMode::WRITE_BINARY:      return true;
-		case FileMode::READ_WRITE_TEXT:   return true;
-		case FileMode::READ_WRITE_BINARY: return true;
+		case FileMode::READ_TEXT:          return false;
+		case FileMode::READ_BINARY:        return false;
+		case FileMode::WRITE_TEXT:         return true;
+		case FileMode::WRITE_BINARY:       return true;
+		case FileMode::READ_WRITE_TEXT:    return true;
+		case FileMode::READ_WRITE_BINARY:  return true;
+		default:                           return false;
 	}
-	return false;
 }
 
 bool tr::remove_file(tr::String path)

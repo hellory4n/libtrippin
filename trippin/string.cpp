@@ -172,7 +172,8 @@ bool tr::String::is_absolute() const
 
 	char* token = strtok(str, delim);
 	while (token != nullptr) {
-		strings->add(String(arena, token, strlen(token)));
+		String m = String(arena, token, strlen(token));
+		strings->add(m);
 		token = strtok(str, delim);
 	}
 

@@ -71,14 +71,21 @@ public:
 	{
 		// does it already fit?
 		if (this->len < this->cap) {
-			(*this)[this->len++] = val;
+			// just doing idx = val; makes c++ pull an epic prank and corrupt everything somehow
+			// and i don't want to support your fucking copy/move constructors shut the fuck up man
+			void* place = &reinterpret_cast<T*>(this->ptr)[this->len++];
+			memcpy(place, &val, sizeof(T));
 			return;
 		}
 
 		// resize :)
 		this->cap *= 2;
 		this->ptr = reinterpret_cast<T*>(realloc(this->ptr, sizeof(T) * this->cap));
-		(*this)[this->len++] = val;
+
+		// just doing idx = val; makes c++ pull an epic prank and corrupt everything somehow
+		// and i don't want to support your fucking copy/move constructors shut the fuck up man
+		void* place = &reinterpret_cast<T*>(this->ptr)[this->len++];
+		memcpy(place, &val, sizeof(T));
 	}
 
 	// Reserves space in the list
@@ -307,14 +314,6 @@ public:
 	Iterator begin() const { return Iterator(this->buffer, 0, this->cap); }
 	Iterator end()   const { return Iterator(this->buffer + this->cap, this->cap, this->cap); }
 };
-
-// TODO pick one you dastardly scoundrel
-
-template<typename K, typename V, uint64 (*HashFunc)(K key), usize InitialCapacity>
-using ProLevelHashMap = AdvancedHashMap<K, V, HashFunc, InitialCapacity>;
-
-template<typename K, typename V, uint64 (*HashFunc)(K key), usize InitialCapacity>
-using TantalizingHashMap = AdvancedHashMap<K, V, HashFunc, InitialCapacity>;
 
 // internal don't use probably :)
 template<typename T> uint64 __default_hash_function(T key)

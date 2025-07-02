@@ -117,14 +117,14 @@ public:
 		this->refcounted()->release();
 	}
 
-	Ref& operator=(T* ptr)
+	Ref& operator=(T* p)
 	{
-		if (ptr == nullptr) {
+		if (p == nullptr) {
 			tr::panic("tr::Ref<T> can't be null, if that's intentional use tr::MaybeRef<T>");
 		}
 		if (this->ptr != nullptr) this->refcounted()->retain();
 		if (this->ptr != nullptr) this->refcounted()->release();
-		this->ptr = ptr;
+		this->ptr = p;
 		return *this;
 	}
 
@@ -167,10 +167,10 @@ public:
 	operator T*() const                     { return this->get(); }
 	bool operator==(const MaybeRef<T>& ref) { return this->ptr == ref.ptr; }
 	bool operator==(const Ref<T>& ref)      { return this->ptr == ref.ptr; }
-	bool operator==(const T* ptr)           { return this->ptr == ptr; }
+	bool operator==(const T* p)             { return this->ptr == p; }
 	bool operator!=(const MaybeRef<T>& ref) { return this->ptr != ref.ptr; }
 	bool operator!=(const Ref<T>& ref)      { return this->ptr != ref.ptr; }
-	bool operator!=(const T* ptr)           { return this->ptr != ptr; }
+	bool operator!=(const T* p)             { return this->ptr != p; }
 };
 
 // Non-esoteric wrapper around `tr::RefCounted`. It also allows null, if you don't want that to happen, use
@@ -182,7 +182,15 @@ class MaybeRef
 	// man
 	friend class Ref<T>;
 
-	RefCounted* refcounted() const { return dynamic_cast<RefCounted*>(ptr); }
+	RefCounted* refcounted() const
+	{
+		if (this->ptr == nullptr) tr::panic("MaybeRef<T> is null (likely a library error)");
+		RefCounted* fukc = dynamic_cast<RefCounted*>(this->ptr);
+		if (fukc == nullptr) {
+			tr::panic("couldn't cast type to tr::RefCounted, to use tr::MaybeRef<T> your types must inherit tr::RefCounted");
+		}
+		return fukc;
+	}
 
 public:
 	MaybeRef(T* ptr = nullptr) : ptr(ptr)
@@ -211,15 +219,15 @@ public:
 		this->refcounted()->release();
 	}
 
-	MaybeRef& operator=(T* ptr)
+	MaybeRef& operator=(T* p)
 	{
-		if (ptr != nullptr) {
+		if (p != nullptr) {
 			this->refcounted()->retain();
 		}
 		if (this->ptr != nullptr) {
 			this->refcounted()->release();
 		}
-		this->ptr = ptr;
+		this->ptr = p;
 		return *this;
 	}
 
@@ -257,10 +265,10 @@ public:
 	operator T*() const                     { return this->ptr; }
 	bool operator==(const MaybeRef<T>& ref) { return this->ptr == ref.ptr; }
 	bool operator==(const Ref<T>& ref)      { return this->ptr == ref.ptr; }
-	bool operator==(const T* ptr)           { return this->ptr == ptr; }
+	bool operator==(const T* p)             { return this->ptr == p; }
 	bool operator!=(const MaybeRef<T>& ref) { return this->ptr != ref.ptr; }
 	bool operator!=(const Ref<T>& ref)      { return this->ptr != ref.ptr; }
-	bool operator!=(const T* ptr)           { return this->ptr != ptr; }
+	bool operator!=(const T* p)             { return this->ptr != p; }
 };
 
 // man
@@ -352,14 +360,14 @@ class Array
 {
 	// i'm gonna keep the arena when i remove .add() so that for as long as the array exists, the arena exists too
 	// it's an ownership thing yknow
-	MaybeRef<Arena> arena = nullptr;
+	MaybeRef<Arena> src_arena = nullptr;
 	T* ptr = nullptr;
 	usize len = 0;
 	usize cap = 0;
 
 public:
 	// Initializes an empty array at an arena.
-	explicit Array(Ref<Arena> arena, usize len) : arena(arena), len(len), cap(len)
+	explicit Array(Ref<Arena> arena, usize len) : src_arena(arena), len(len), cap(len)
 	{
 		// you may initialize with a length of 0 so you can then add crap
 		if (len > 0) {
@@ -368,7 +376,7 @@ public:
 	}
 
 	// Initializes an array from a buffer. (the data is copied into the arena)
-	explicit Array(Ref<Arena> arena, T* data, usize len) : arena(arena), len(len), cap(len)
+	explicit Array(Ref<Arena> arena, T* data, usize len) : src_arena(arena), len(len), cap(len)
 	{
 		this->ptr = reinterpret_cast<T*>(arena->alloc(sizeof(T) * len));
 		// 'void* memcpy(void*, const void*, size_t)' forming offset [1, 1024] is out of the bounds [0, 1]
@@ -385,10 +393,23 @@ public:
 	}
 
 	// Initializes an array that points to any buffer. You really should only use this for temporary arrays.
-	explicit Array(T* data, usize len) : arena(nullptr), ptr(data), len(len), cap(len) {}
+	explicit Array(T* data, usize len) : src_arena(nullptr), ptr(data), len(len), cap(len) {}
 
 	// man fuck you
-	Array() : arena(nullptr), ptr(nullptr), len(0), cap(0) {}
+	Array() : src_arena(nullptr), ptr(nullptr), len(0), cap(0) {}
+
+	// I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++
+	Array(const Array& other) : src_arena(other.src_arena), ptr(other.ptr), len(other.len), cap(other.cap) {}
+	Array& operator=(const Array& other)
+	{
+		if (this != &other) {
+			this->src_arena = other.src_arena;
+			this->ptr = other.ptr;
+			this->len = other.len;
+			this->cap = other.cap;
+		}
+		return *this;
+	}
 
 	T& operator[](usize idx) const
 	{
@@ -424,7 +445,7 @@ public:
 	// if you try to use this on an array without an arena, it will panic.
 	[[deprecated("use tr::List<T> instead, .add() will be removed in v2.3")]] void add(T val)
 	{
-		if (this->arena == nullptr) {
+		if (this->src_arena == nullptr) {
 			tr::panic("resizing arena-less tr::Array<T> is not allowed");
 		}
 
@@ -438,7 +459,7 @@ public:
 		// TODO use pages to not waste so much memory
 		T* old_buffer = this->ptr;
 		this->cap *= 2;
-		this->ptr = reinterpret_cast<T*>(this->arena->alloc(this->cap * sizeof(T)));
+		this->ptr = reinterpret_cast<T*>(this->src_arena->alloc(this->cap * sizeof(T)));
 		// you may initialize with a length of 0 so you can then add crap
 		if (this->len > 0) {
 			memcpy(this->ptr, old_buffer, this->len * sizeof(T));

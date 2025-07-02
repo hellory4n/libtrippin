@@ -1,7 +1,7 @@
 # this crap is simple enough to not need a fancy generator like starry3d :)
 # TODO compile all of the examples
-cxx = g++
-cflags = -std=c++17 -Wall -Wextra -Wpedantic -Wuninitialized -Wmaybe-uninitialized -Wmissing-field-initializers -Wextra-semi -Wreorder -O0 -g -DDEBUG -D_DEBUG -I. -I..
+cxx = clang++
+cflags = -std=c++17 -Wall -Wextra -Wpedantic -Wuninitialized -fno-omit-frame-pointer -O0 -g -DDEBUG -D_DEBUG -I. -I..
 ldflags = -lm -lstdc++
 
 rule compile
