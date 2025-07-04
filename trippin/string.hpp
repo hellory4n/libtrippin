@@ -68,16 +68,6 @@ public:
 		String(man, 2);
 	}
 
-	// I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++
-	String(const String& other) : array(other.array) {}
-	String& operator=(const String& other)
-	{
-		if (this != &other) {
-			this->array = other.array;
-		}
-		return *this;
-	}
-
 	// man
 	char& operator[](usize idx) const { return this->array[idx]; }
 	// Doesn't include the null terminator

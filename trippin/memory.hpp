@@ -398,19 +398,6 @@ public:
 	// man fuck you
 	Array() : src_arena(nullptr), ptr(nullptr), len(0), cap(0) {}
 
-	// I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++ I LOVE C++
-	Array(const Array& other) : src_arena(other.src_arena), ptr(other.ptr), len(other.len), cap(other.cap) {}
-	Array& operator=(const Array& other)
-	{
-		if (this != &other) {
-			this->src_arena = other.src_arena;
-			this->ptr = other.ptr;
-			this->len = other.len;
-			this->cap = other.cap;
-		}
-		return *this;
-	}
-
 	T& operator[](usize idx) const
 	{
 		if (idx >= this->len) {

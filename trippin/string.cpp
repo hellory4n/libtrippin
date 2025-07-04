@@ -174,9 +174,10 @@ bool tr::String::is_absolute() const
 	while (token != nullptr) {
 		String m = String(arena, token, strlen(token));
 		strings->add(m);
-		token = strtok(str, delim);
+		tr::log("%s", token);
+		// WHY DENNIS RITCHIE WHY
+		token = strtok(nullptr, delim);
 	}
 
 	return Array<String>(arena, strings->buffer(), strings->length());
 }
-

@@ -135,7 +135,9 @@ enum class FileMode : uint8 {
 	READ_WRITE_TEXT, READ_WRITE_BINARY,
 };
 
-// Files are definitely important.
+// Files are definitely important. It's important to note that libtrippin ALWAYS uses forward slashes (`/`)
+// for paths, as every platform supports them, even Windows (since 95/NT, both of which are pretty old).
+// All backward slashes are automatically converted to forward slashes for consistency.
 class File : public Reader, public Writer, public RefCounted
 {
 	FILE* fptr = nullptr;
@@ -151,14 +153,13 @@ class File : public Reader, public Writer, public RefCounted
 
 public:
 	File() : fptr(nullptr), len(0), is_std(false), mode(FileMode::UNKNOWN) {}
+	~File();
 
 	// Opens a fucking file from fucking somewhere. Returns null on error
 	static Maybe<Ref<File>> open(String path, FileMode mode);
 
 	// Closes the file :) files are reference counted so this is done automatically
 	void close();
-
-	~File();
 
 	// Returns the current position of the cursor, or -1 if unknown/unsupported
 	int64 position() override;
