@@ -311,15 +311,22 @@ public:
 	usize available_space();
 };
 
+struct ArenaCheckpoint
+{
+	usize position;
+	usize page;
+};
+
 // Life changing allocator.
 class Arena : public RefCounted
 {
-public:
 	usize page_size = 0;
+	usize pages = 0;
 	ArenaPage* page = nullptr;
 
-	// This is just for the compiler to shut up
-	Arena() : page_size(0), page(nullptr) {}
+public:
+	// :)
+	Arena() : Arena(tr::kb_to_bytes(64)) {}
 
 	// Initializes the arena. `page_size` is the base size for the buffers, you can have more buffers or
 	// bigger buffers.
@@ -327,7 +334,7 @@ public:
 
 	// Frees the arena. Note this doesn't call any destructors from structs you may have allocated, as I
 	// don't know how to do that.
-	~Arena();
+	void destroy();
 
 	// Allocates some crap on the arena.
 	void* alloc(usize size);
@@ -343,6 +350,15 @@ public:
 	// Makes sure there's enough space to fit `size`. Useful for when you're about to allocate a lot of
 	// objects and don't want it to try to figure out the pages 57399593895 times.
 	void prealloc(usize size);
+
+	// Gets the current position in the arena so it can be returned to later.
+	ArenaCheckpoint checkpoint();
+
+	// Changes the arena position to somewhere else. Note this also sets everything in between to 0s.
+	void return_to(ArenaCheckpoint checkpoint);
+
+	// Reuses the entire arena and sets everything to 0 :)
+	void reset() { this->return_to({0, 0}); }
 };
 
 // This is just for iterators

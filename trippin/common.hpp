@@ -83,7 +83,7 @@ static_assert(sizeof(usize) == sizeof(isize), "oh no usize and isize aren't the 
 namespace tr {
 
 // I sure love versions.
-static constexpr const char* VERSION = "v2.2.1";
+static constexpr const char* VERSION = "v2.3.0";
 
 // Initializes the bloody library lmao.
 void init();
@@ -180,8 +180,8 @@ private:
 	bool active;
 
 public:
-	Either(L left) : val_left(left), active(false) {}
-	Either(R right) : val_right(right), active(true) {}
+	Either(const L& left) : val_left(left), active(false) {}
+	Either(const R& right) : val_right(right), active(true) {}
 
 	~Either()
 	{
@@ -194,9 +194,9 @@ public:
 	}
 
 	// If true, it's left. Else, it's right.
-	bool is_left() { return this->active; }
+	bool is_left() const { return this->active; }
 	// If true, it's right. Else, it's left.
-	bool is_right() { return !this->active; }
+	bool is_right() const { return !this->active; }
 
 	// Returns the left value, or panics if it's not left
 	L& left()
@@ -211,6 +211,20 @@ public:
 		if (this->active) tr::panic("Either<L, R> is right, not left");
 		else return this->val_right;
 	}
+
+	// Returns the left value, or panics if it's not left
+	const L& left() const
+	{
+		if (!this->active) tr::panic("Either<L, R> is right, not left");
+		else return this->val_left;
+	}
+
+	// Returns the right value, or panics if it's not right
+	const R& right() const
+	{
+		if (this->active) tr::panic("Either<L, R> is right, not left");
+		else return this->val_right;
+	}
 };
 
 // It's a pair lmao.
@@ -220,7 +234,7 @@ struct Pair
 	L left;
 	R right;
 
-	Pair(L left, R right) : left(left), right(right) {}
+	Pair(const L& left, const R& right) : left(left), right(right) {}
 
 	~Pair()
 	{

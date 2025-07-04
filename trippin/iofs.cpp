@@ -292,6 +292,9 @@ bool tr::file_exists(tr::String path)
 
 bool tr::create_dir(tr::String path)
 {
+	tr::panic("i didn't finish this function i'm busy uh getting milk");
+	// TODO use String.split dumbass
+
 	// it's supposed to be recursive :D
 	Ref<Arena> tmp = new Arena(tr::kb_to_bytes(4));
 	Ref<List<String>> dirs = new List<String>();

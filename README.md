@@ -4,7 +4,7 @@ Most biggest most massive library of all time. I'm insane.
 
 ## Featuring
 
-- [libtrippin](./libtrippin.h) v2.2.1: Most massive library of all time
+- [libtrippin](./libtrippin.h) v2.3.0: Most massive library of all time
     - C++17 with no external dependencies (only libc/stdc++)
     - Arenas and reference counting
     - Arrays, lists, hashmaps, strings
@@ -12,13 +12,6 @@ Most biggest most massive library of all time. I'm insane.
     - Logging
     - Files/IO
     - And more
-- [engineer](./engineerbuild/README.md) v1.2.0: Build system of all time
-    - No esoteric language
-    - Only external dependency is lua
-    - You can specify options and stuff
-    - You can control the entire build process
-    - Incremental builds
-    - Support for clangd's `compile_commands.json`
 
 ## Usage
 

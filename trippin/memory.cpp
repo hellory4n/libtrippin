@@ -97,15 +97,15 @@ usize tr::ArenaPage::available_space()
 
 tr::Arena::Arena(usize page_size)
 {
+	// it doesn't make a page until you allocate something
 	this->page_size = page_size;
-	this->page = new ArenaPage(page_size);
+	TR_ASSERT_MSG(this->page_size != 0, "you doofus why would you make an arena of 0 bytes");
 }
 
-tr::Arena::~Arena()
+void tr::Arena::destroy()
 {
-	// likely uninitialized, likely intentional
-	// if it's not intentional then it'd already crashed with the other functions
-	if (this->page_size == 0) return;
+	// it doesn't make a page until you allocate something
+	if (this->page == nullptr) return;
 
 	ArenaPage* head = this->page;
 	while (head->prev != nullptr) {
@@ -121,21 +121,11 @@ tr::Arena::~Arena()
 
 void* tr::Arena::alloc(usize size)
 {
-	TR_ASSERT_MSG(this->page_size != 0, "you doofus this arena is very likely uninitialized");
-
 	// does it fit in the current page?
-	if (this->page->available_space() >= size) {
-		void* val = reinterpret_cast<uint8*>(this->page->buffer) + this->page->alloc_pos;
-		this->page->alloc_pos += size;
-		return val;
-	}
-
-	// does it fit in the previous page?
-	if (this->page->prev != nullptr) {
-		ArenaPage* prev_page = this->page->prev;
-		if (prev_page->available_space() >= size) {
-			void* val = reinterpret_cast<uint8*>(prev_page->buffer) + prev_page->alloc_pos;
-			prev_page->alloc_pos += size;
+	if (this->page != nullptr) {
+		if (this->page->available_space() >= size) {
+			void* val = reinterpret_cast<uint8*>(this->page->buffer) + this->page->alloc_pos;
+			this->page->alloc_pos += size;
 			return val;
 		}
 	}
@@ -146,6 +136,7 @@ void* tr::Arena::alloc(usize size)
 		new_page->prev = this->page;
 		this->page->next = new_page;
 		this->page = new_page;
+		this->pages++;
 
 		void* val = reinterpret_cast<uint8*>(new_page->buffer) + new_page->alloc_pos;
 		new_page->alloc_pos += size;
@@ -157,6 +148,7 @@ void* tr::Arena::alloc(usize size)
 	new_page->prev = this->page;
 	this->page->next = new_page;
 	this->page = new_page;
+	this->pages++;
 
 	void* val = reinterpret_cast<uint8*>(new_page->buffer) + new_page->alloc_pos;
 	new_page->alloc_pos += size;
@@ -165,16 +157,9 @@ void* tr::Arena::alloc(usize size)
 
 void tr::Arena::prealloc(usize size)
 {
-	TR_ASSERT_MSG(this->page_size != 0, "you doofus this arena is very likely uninitialized");
-
 	// does it already fit?
-	if (this->page->available_space() >= size) {
-		return;
-	}
-
-	if (this->page->prev != nullptr) {
-		ArenaPage* prev_page = this->page->prev;
-		if (prev_page->available_space() >= size) {
+	if (this->page != nullptr) {
+		if (this->page->available_space() >= size) {
 			return;
 		}
 	}
@@ -184,6 +169,27 @@ void tr::Arena::prealloc(usize size)
 	new_page->prev = this->page;
 	this->page->next = new_page;
 	this->page = new_page;
+	this->pages++;
+}
+
+tr::ArenaCheckpoint tr::Arena::checkpoint()
+{
+	if (this->page == nullptr) return ArenaCheckpoint{0, 0};
+	return ArenaCheckpoint{this->page->alloc_pos, this->pages};
+}
+
+void tr::Arena::return_to(tr::ArenaCheckpoint checkpoint)
+{
+	// just making sure :)
+	isize page_difference = this->pages - checkpoint.page;
+	TR_ASSERT_MSG(page_difference >= 0, "what the fuck?");
+
+	ArenaPage* pg = this->page;
+	for (usize i = this->pages; i > checkpoint.page; i--) {
+		pg = pg->prev;
+		memset(this->page, 0, pg->size);
+	}
+	memset(pg->prev->buffer, 0, checkpoint.position - pg->prev->alloc_pos);
 }
 
 tr::MemoryInfo tr::get_memory_info()

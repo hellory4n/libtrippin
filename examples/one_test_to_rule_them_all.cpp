@@ -6,12 +6,41 @@
 #include <trippin/collection.hpp>
 #include <trippin/iofs.hpp>
 
-uint64 custom_hash_func(tr::String key);
+// TODO use actual tests you dumbass
+
+static uint64 custom_hash_func(tr::String key);
+
+namespace test {
+	static void logging();
+	static void memory();
+}
+
+static void test::logging()
+{
+	tr::log("sir");
+	tr::info("sir");
+	tr::warn("sir");
+	tr::error("sir");
+	// tr::assert(false, "trajìque");
+	// tr::panic("AHHHHHHH");
+}
+
+static void test::memory()
+{
+	tr::log("\n==== MEMORY ====");
+}
 
 int main()
 {
 	tr::use_log_file("log.txt");
 	tr::init();
+
+	test::logging();
+	test::memory();
+
+	tr::free();
+
+	return 0;
 
 	tr::log("sir");
 	tr::info("sir");
