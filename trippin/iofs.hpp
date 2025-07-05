@@ -59,7 +59,8 @@ public:
 	virtual uint64 read_bytes(void* out, uint64 size, uint64 items) = 0;
 
 	// Wrapper for `read_bytes`, returns null if it couldn't read the struct
-	template<typename T> Maybe<T> read_struct()
+	template<typename T>
+	Maybe<T> read_struct()
 	{
 		T man;
 		uint64 bytes = this->read_bytes(&man, sizeof(T), 1);
@@ -68,7 +69,8 @@ public:
 	}
 
 	// Wrapper for `read_bytes`, returns an array of N items or null if it isn't able to read the stream.
-	template<typename T> Maybe<Array<T>> read_array(Ref<Arena> arena, usize items)
+	template<typename T>
+	Maybe<Array<T>> read_array(Ref<Arena> arena, usize items)
 	{
 		T* man;
 		uint64 bytes = this->read_bytes(&man, sizeof(T), items);
@@ -102,7 +104,8 @@ public:
 	virtual void write_bytes(Array<uint8> bytes) = 0;
 
 	// Writes a struct into the stream
-	template<typename T> void write_struct(T data)
+	template<typename T>
+	void write_struct(T data)
 	{
 		Array<uint8> manfuckyou(reinterpret_cast<uint8*>(&data), sizeof(T));
 		this->write_bytes(manfuckyou);
@@ -110,7 +113,8 @@ public:
 
 	// Writes an array into the stream. If `include_len` is true, it'll include an uint64 with the length
 	// (in items, not bytes) before the actual data.
-	template<typename T> void write_array(Array<T> array, bool include_len)
+	template<typename T>
+	void write_array(Array<T> array, bool include_len)
 	{
 		if (include_len) {
 			this->write_struct(array.length());

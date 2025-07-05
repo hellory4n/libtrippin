@@ -193,7 +193,8 @@ void tr::Arena::reset()
 
 	// we keep the first page :)
 	// apparently memset is fucked
-	std::fill_n(headfrfr->buffer, headfrfr->size, '\0');
+	// the cast is bcuz it complains about making a reference to void lmao
+	std::fill_n(reinterpret_cast<uint8*>(headfrfr->buffer), headfrfr->size, '\0');
 	headfrfr->alloc_pos = 0;
 	headfrfr->prev = nullptr;
 	headfrfr->next = nullptr;

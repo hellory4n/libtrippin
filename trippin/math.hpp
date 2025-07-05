@@ -721,7 +721,8 @@ public:
 	float64 next();
 
 	// Returns a value in a range
-	template<typename T> T next(T min, T max)
+	template<typename T>
+	T next(T min, T max)
 	{
 		return static_cast<T>((this->next() * max) + min);
 	}
@@ -731,35 +732,41 @@ public:
 static constexpr float64 PI = 3.141592653589793238463;
 
 // Degrees to radians
-template<typename T> inline constexpr T deg2rad(T deg) {
+template<typename T>
+static constexpr T deg2rad(T deg) {
 	return deg * (static_cast<T>(PI) / static_cast<T>(180.0));
 }
 
 // Radians to degrees
-template<typename T> inline constexpr T rad2deg(T rad) {
+template<typename T>
+static constexpr T rad2deg(T rad) {
 	return rad * (static_cast<T>(180.0) / static_cast<T>(PI));
 }
 
 // Picks the smaller option
-template<typename T> inline constexpr T min(T a, T b)
+template<typename T>
+static constexpr T min(T a, T b)
 {
 	return a < b ? a : b;
 }
 
 // Picks the bigger option
-template<typename T> inline constexpr T max(T a, T b)
+template<typename T>
+static constexpr T max(T a, T b)
 {
 	return a > b ? a : b;
 }
 
 // clamp
-template<typename T> inline constexpr T clamp(T val, T min, T max)
+template<typename T>
+static constexpr T clamp(T val, T min, T max)
 {
 	return tr::min(tr::max(min, val), max);
 }
 
 // lerp
-template<typename T> inline constexpr T lerp(T a, T b, float64 t)
+template<typename T>
+static constexpr T lerp(T a, T b, float64 t)
 {
 	return (1.0 - t) * a + t * b;
 }
@@ -767,29 +774,34 @@ template<typename T> inline constexpr T lerp(T a, T b, float64 t)
 // a couple disasters
 
 // lerp
-template<typename T> inline constexpr Vec2<T> lerp(Vec2<T> a, Vec2<T> b, float64 t) {
+template<typename T>
+static constexpr Vec2<T> lerp(Vec2<T> a, Vec2<T> b, float64 t) {
 	auto man = Vec2<float64>(1.0 - t, 1.0 - t) * Vec2<float64>(a.x, a.y) + Vec2<float64>(t, t) * Vec2<float64>(b.x, b.y);
 	return Vec2<T>(static_cast<T>(man.x), static_cast<T>(man.y));
 }
 // lerp
-template<typename T> inline constexpr Vec3<T> lerp(Vec3<T> a, Vec3<T> b, float64 t) {
+template<typename T>
+constexpr Vec3<T> lerp(Vec3<T> a, Vec3<T> b, float64 t) {
 	auto man = Vec3<float64>(1.0 - t, 1.0 - t, 1.0 - t) * Vec3<float64>(a.x, a.y, a.z) + Vec3<float64>(t, t, t) * Vec3<float64>(b.x, b.y, b.z);
 	return Vec3<T>(static_cast<T>(man.x), static_cast<T>(man.y), static_cast<T>(man.z));
 }
 // lerp
-template<typename T> inline constexpr Vec4<T> lerp(Vec4<T> a, Vec4<T> b, float64 t) {
+template<typename T>
+constexpr Vec4<T> lerp(Vec4<T> a, Vec4<T> b, float64 t) {
 	auto man = Vec4<float64>(1.0 - t, 1.0 - t, 1.0 - t, 1.0 - t) * Vec4<float64>(a.x, a.y, a.z, a.w) + Vec4<float64>(t, t, t, t) * Vec4<float64>(b.x, b.y, b.z, b.w);
 	return Vec4<T>(static_cast<T>(man.x), static_cast<T>(man.y), static_cast<T>(man.z), static_cast<T>(man.w));
 }
 
 // Similar to `tr::lerp`, but in reverse.
-template<typename T> inline constexpr T inverse_lerp(T a, T b, T v)
+template<typename T>
+constexpr T inverse_lerp(T a, T b, T v)
 {
 	return (v - a) / (b - a);
 }
 
 // Converts a number from one scale to another
-template<typename T> inline constexpr T remap(T val, T src_min, T src_max, T dst_min, T dst_max)
+template<typename T>
+constexpr T remap(T val, T src_min, T src_max, T dst_min, T dst_max)
 {
 	return tr::lerp(dst_min, dst_max, tr::inverse_lerp(src_min, src_max, val));
 }
@@ -852,7 +864,8 @@ struct Color
 	constexpr Color& operator%=(uint8 other) { return *this = *this % other; }
 };
 
-template<typename T> constexpr Vec4<T>::Vec4(Color c) {
+template<typename T>
+constexpr Vec4<T>::Vec4(Color c) {
 	this->x = static_cast<T>(c.r / 255.0);
 	this->y = static_cast<T>(c.g / 255.0);
 	this->z = static_cast<T>(c.b / 255.0);
@@ -861,7 +874,7 @@ template<typename T> constexpr Vec4<T>::Vec4(Color c) {
 
 namespace palette {
 	// White lmao.
-	static constexpr Color WHITE = Color::rgb(0xffffff);
+	constexpr Color WHITE = Color::rgb(0xffffff);
 	// Black lmao.
 	static constexpr Color BLACK = Color::rgb(0x000000);
 	// Where did it go

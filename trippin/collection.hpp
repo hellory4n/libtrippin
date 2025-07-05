@@ -316,12 +316,14 @@ public:
 };
 
 // internal don't use probably :)
-template<typename T> uint64 __default_hash_function(T key)
+template<typename T>
+uint64 __default_hash_function(T key)
 {
 	return tr::hash(Array<uint8>(reinterpret_cast<uint8*>(&key), sizeof(T)));
 }
 // internal don't use probably :)
-template<> inline uint64 __default_hash_function<String>(String key)
+template<>
+inline uint64 __default_hash_function<String>(String key)
 {
 	return tr::hash(Array<uint8>(reinterpret_cast<uint8*>(key.buffer()), key.length()));
 }

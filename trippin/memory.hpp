@@ -275,7 +275,8 @@ public:
 };
 
 // man
-template<typename T> Ref<T>::Ref(const MaybeRef<T>& other) : ptr(other.ptr)
+template<typename T>
+Ref<T>::Ref(const MaybeRef<T>& other) : ptr(other.ptr)
 {
     if (!this->ptr) {
         tr::panic("can't convert null tr::MaybeRef<T> to tr::Ref<T>");
@@ -345,12 +346,15 @@ public:
 	~Arena();
 
 	// Allocates some crap on the arena.
-	[[gnu::malloc]] void* alloc(usize size, usize align = alignof(max_align_t));
+	[[gnu::malloc]]
+	void* alloc(usize size, usize align = alignof(max_align_t));
 
 	// Reuses the entire arena and sets everything to 0 :)
 	void reset();
 
-	// Kinda like `new`/`malloc` but for arenas. Note this doesn't call deconstructors
+	// Kinda like `new`/`malloc` but for arenas. The funky variadic templates allow you to pass any arguments
+	// here to the actual constructor. Note this supports calling destructors for when the arena is deleted,
+	// but why?
 	template<typename T, typename... Args>
 	T& make(Args&&... args)
 	{
@@ -436,7 +440,8 @@ public:
 	// Returns the length of the array.
 	usize length() const   { return this->len; }
 	// Returns how many items the array can hold before having to resize.
-	[[deprecated("this will soon be removed along with .add()")]] usize capacity() const { return this->cap; }
+	[[deprecated("this will soon be removed along with .add()")]]
+	usize capacity() const { return this->cap; }
 
 	// fucking iterator
 	class Iterator {
@@ -455,7 +460,8 @@ public:
 
 	// Adds a new item to the array, and resizes it if necessary. This only works on arena-allocated arrays,
 	// if you try to use this on an array without an arena, it will panic.
-	[[deprecated("use tr::List<T> instead, .add() will be removed in v2.3")]] void add(T val)
+	[[deprecated("use tr::List<T> instead, .add() will be removed in v2.3")]]
+	void add(T val)
 	{
 		if (this->src_arena == nullptr) {
 			tr::panic("resizing arena-less tr::Array<T> is not allowed");

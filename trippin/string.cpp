@@ -31,7 +31,8 @@
 
 #include "string.hpp"
 
-TR_LOG_FUNC(3, 4) tr::String tr::sprintf(Ref<Arena> arena, usize maxlen, const char* fmt, ...)
+[[gnu::format(printf, 3, 4)]]
+tr::String tr::sprintf(Ref<Arena> arena, usize maxlen, const char* fmt, ...)
 {
 	String str(arena, maxlen);
 	va_list args;
@@ -151,7 +152,8 @@ bool tr::String::is_absolute() const
 	return false;
 }
 
-[[nodiscard]] tr::String tr::String::replace(tr::Ref<tr::Arena> arena, char from, char to) const
+[[nodiscard]]
+tr::String tr::String::replace(tr::Ref<tr::Arena> arena, char from, char to) const
 {
 	Ref<Arena> tmp = new Arena(this->length() + 1);
 	Array<usize> indexes = this->find(tmp, from);
@@ -164,7 +166,8 @@ bool tr::String::is_absolute() const
 	return str.duplicate(arena);
 }
 
-[[nodiscard]] tr::Array<tr::String> tr::String::split(tr::Ref<tr::Arena> arena, char delimiter) const
+[[nodiscard]]
+tr::Array<tr::String> tr::String::split(tr::Ref<tr::Arena> arena, char delimiter) const
 {
 	Ref<List<String>> strings = new List<String>();
 	String str = this->duplicate(arena);
