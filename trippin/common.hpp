@@ -55,13 +55,6 @@
 	#define TR_GCC_RESTORE()
 #endif
 
-#if defined(TR_GCC_OR_CLANG) && !defined(_WIN32)
-	// counting starts at 1 lmao
-	#define TR_LOG_FUNC(FmtIdx, VarargsIdx) [[gnu::format(printf, FmtIdx, VarargsIdx)]]
-#else
-	#define TR_LOG_FUNC(FmtIdx, VarargsIdx)
-#endif
-
 #define TR_ARRLEN(T, Array) (sizeof(Array)) / sizeof(T))
 
 typedef int8_t int8;
@@ -94,7 +87,7 @@ void free();
 // including log.hpp here would crash and burn everything :)
 
 // Oh god oh fuck. Note this crashes and kills everything, `tr::error` doesn't.
-TR_LOG_FUNC(1, 2) [[noreturn]] void panic(const char* fmt, ...);
+[[gnu::format(printf, 1, 2)]] [[noreturn]] void panic(const char *fmt, ...);
 
 // Like how the spicy modern languages handle null
 template<typename T>

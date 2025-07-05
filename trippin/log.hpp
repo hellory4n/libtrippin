@@ -26,8 +26,6 @@
 #ifndef _TRIPPIN_LOG_H
 #define _TRIPPIN_LOG_H
 
-#include "common.hpp"
-
 namespace tr {
 
 namespace ConsoleColor {
@@ -49,22 +47,28 @@ namespace ConsoleColor {
 void use_log_file(const char* path);
 
 // Log.
-TR_LOG_FUNC(1, 2) void log(const char* fmt, ...);
+[[gnu::format(printf, 1, 2)]]
+void log(const char *fmt, ...);
 
 // Log. (gray edition) (this is for libraries that use libtrippin so you can filter out library logs)
-TR_LOG_FUNC(1, 2) void info(const char* fmt, ...);
+[[gnu::format(printf, 1, 2)]]
+void info(const char *fmt, ...);
 
 // Oh nose.
-TR_LOG_FUNC(1, 2) void warn(const char* fmt, ...);
+[[gnu::format(printf, 1, 2)]]
+void warn(const char *fmt, ...);
 
 // Oh god oh fuck. Note this doesn't crash and die everything, `tr::panic` does.
-TR_LOG_FUNC(1, 2) void error(const char* fmt, ...);
+[[gnu::format(printf, 1, 2)]]
+void error(const char *fmt, ...);
 
 // Oh god oh fuck. Note this crashes and kills everything, `tr::error` doesn't.
-TR_LOG_FUNC(1, 2) [[noreturn]] void panic(const char* fmt, ...);
+[[noreturn, gnu::format(printf, 1, 2)]]
+void panic(const char *fmt, ...);
 
 // Formatted assert?????????
-TR_LOG_FUNC(4, 5) void __impl_assert(const char* file, int line, bool x, const char* fmt, ...);
+[[gnu::format(printf, 4, 5)]]
+void __impl_assert(const char* file, int line, bool x, const char* fmt, ...);
 
 #define TR_ASSERT_MSG(X, ...) \
 	tr::__impl_assert(__FILE__, __LINE__, X, "failed assert \"" #X "\": " __VA_ARGS__)

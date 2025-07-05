@@ -130,7 +130,8 @@ public:
 };
 
 // It's just `sprintf` for `tr::String` lmao.
-TR_LOG_FUNC(3, 4) String sprintf(Ref<Arena> arena, usize maxlen, const char* fmt, ...);
+[[gnu::format(printf, 3, 4)]]
+String sprintf(Ref<Arena> arena, usize maxlen, const char* fmt, ...);
 
 }
 

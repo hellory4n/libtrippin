@@ -23,10 +23,10 @@
  *
  */
 
+#include <algorithm>
 #include <stdlib.h>
 
 #include "log.hpp"
-#include "math.hpp"
 
 #include "memory.hpp"
 
@@ -58,6 +58,8 @@ tr::ArenaPage::ArenaPage(usize size)
 {
 	TR_ASSERT(size != 0);
 
+	// calloc instead of malloc bcuz why the fuck would you want random garbage
+	// you're not running libtrippin on the pdp-11
 	this->buffer = calloc(1, size);
 	this->size = size;
 	this->alloc_pos = 0;
@@ -66,7 +68,9 @@ tr::ArenaPage::ArenaPage(usize size)
 
 	// i don't think you can recover from that
 	// so just die
-	TR_ASSERT_MSG(this->buffer != nullptr, "couldn't allocate arena page");
+	TR_ASSERT_MSG(this->buffer != nullptr, "couldn't allocate arena page of %zu B (%zu KB, %zu MB)",
+		size, tr::bytes_to_kb(size), tr::bytes_to_mb(size)
+	);
 
 	// man
 	tr::memory_info.alive_pages++;
@@ -102,10 +106,13 @@ tr::Arena::Arena(usize page_size)
 	TR_ASSERT_MSG(this->page_size != 0, "you doofus why would you make an arena of 0 bytes");
 }
 
-void tr::Arena::destroy()
+tr::Arena::~Arena()
 {
 	// it doesn't make a page until you allocate something
 	if (this->page == nullptr) return;
+
+	// :)
+	this->call_destructors();
 
 	ArenaPage* head = this->page;
 	while (head->prev != nullptr) {
@@ -119,7 +126,7 @@ void tr::Arena::destroy()
 	}
 }
 
-void* tr::Arena::alloc(usize size)
+void* tr::Arena::alloc(usize size, usize align)
 {
 	// does it fit in the current page?
 	if (this->page != nullptr) {
@@ -128,24 +135,13 @@ void* tr::Arena::alloc(usize size)
 			this->page->alloc_pos += size;
 			return val;
 		}
-
-		// does it fit on the next page?
-		// returning to somewhere can leave a lot of empty pages
-		if (this->page->next != nullptr) {
-			if (this->page->next->available_space() >= size) {
-				void* val = reinterpret_cast<uint8*>(this->page->next->buffer) + this->page->next->alloc_pos;
-				this->page = this->page->next;
-				this->page->alloc_pos += size;
-				return val;
-			}
-		}
 	}
 
 	// does it fit in a regularly sized page?
 	if (this->page_size >= size) {
 		ArenaPage* new_page = new ArenaPage(this->page_size);
 		new_page->prev = this->page;
-		this->page->next = new_page;
+		if (this->page != nullptr) this->page->next = new_page;
 		this->page = new_page;
 		this->pages++;
 
@@ -166,46 +162,42 @@ void* tr::Arena::alloc(usize size)
 	return val;
 }
 
-void tr::Arena::prealloc(usize size)
+void tr::Arena::call_destructors()
 {
-	// does it already fit?
-	if (this->page != nullptr) {
-		if (this->page->available_space() >= size) {
-			return;
-		}
-	}
+	// yea
+	while (this->destructors != nullptr) {
+		// idfk why it does that
+		if (this->destructors->object == nullptr) break;
 
-	// make a new page without increasing alloc_pos
-	ArenaPage* new_page = new ArenaPage(tr::max(size, this->page_size));
-	new_page->prev = this->page;
-	this->page->next = new_page;
-	this->page = new_page;
-	this->pages++;
+		this->destructors->func(this->destructors->object);
+		this->destructors = this->destructors->next;
+	}
 }
 
-tr::ArenaCheckpoint tr::Arena::checkpoint()
+void tr::Arena::reset()
 {
-	if (this->page == nullptr) return ArenaCheckpoint{0, 0};
-	return ArenaCheckpoint{this->page->alloc_pos, this->pages};
-}
+	// it doesn't make a page until you allocate something
+	if (this->page == nullptr) return;
 
-void tr::Arena::return_to(tr::ArenaCheckpoint checkpoint)
-{
-	// just making sure :)
-	isize page_difference = this->pages - checkpoint.page;
-	TR_ASSERT_MSG(page_difference >= 0, "what the fuck?");
-
-	// reset all the pages before it
-	ArenaPage* pg = this->page;
-	for (usize i = this->pages; i > checkpoint.page; i--) {
-		pg = pg->prev;
-		memset(this->page, 0, pg->size);
+	ArenaPage* head = this->page;
+	while (head->prev != nullptr) {
+		head = head->prev;
 	}
-	memset(pg->prev->buffer, 0, pg->prev->alloc_pos - checkpoint.position);
 
-	// actually go back
-	this->page = pg;
-	this->page->alloc_pos = checkpoint.position;
+	ArenaPage* headfrfr = head;
+	while (head != nullptr && head != headfrfr) {
+		ArenaPage* next = head->next;
+		delete head;
+		head = next;
+	}
+
+	// we keep the first page :)
+	// apparently memset is fucked
+	std::fill_n(headfrfr->buffer, headfrfr->size, '\0');
+	headfrfr->alloc_pos = 0;
+	headfrfr->prev = nullptr;
+	headfrfr->next = nullptr;
+	this->page = headfrfr;
 }
 
 tr::MemoryInfo tr::get_memory_info()

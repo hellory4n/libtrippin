@@ -17,17 +17,38 @@ namespace test {
 
 static void test::logging()
 {
+	tr::log("\n==== LOGGING ====");
+
 	tr::log("sir");
 	tr::info("sir");
 	tr::warn("sir");
 	tr::error("sir");
 	// tr::assert(false, "trajìque");
 	// tr::panic("AHHHHHHH");
+
+	tr::log("S%sa", "igm");
 }
 
 static void test::memory()
 {
 	tr::log("\n==== MEMORY ====");
+
+	tr::Arena maballs;
+	tr::Vec3<float32>& vecma3 = maballs.make<tr::Vec3<float32>>(1, 2, 3);
+	tr::log("vecma3 %f, %f, %f", vecma3.x, vecma3.y, vecma3.z);
+
+	struct MaBalls {
+		uint8 waste[tr::mb_to_bytes(1)];
+		MaBalls() { tr::log("MaBalls created"); }
+		~MaBalls() { tr::log("MaBalls deleted"); }
+	};
+
+	auto& sig = maballs.make<MaBalls>();
+	sig.waste[37] = 'm';
+
+	maballs.reset();
+	TR_ASSERT_MSG(sig.waste[37] == 0, "it didn't reset properly :(");
+	maballs.make<MaBalls>();
 }
 
 int main()

@@ -88,7 +88,8 @@ static void __log(const char* color, const char* prefix, bool panic, const char*
 	}
 }
 
-TR_LOG_FUNC(1, 2) void tr::log(const char* fmt, ...)
+[[gnu::format(printf, 1, 2)]]
+void tr::log(const char* fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
@@ -96,7 +97,8 @@ TR_LOG_FUNC(1, 2) void tr::log(const char* fmt, ...)
 	va_end(args);
 }
 
-TR_LOG_FUNC(1, 2) void tr::info(const char* fmt, ...)
+[[gnu::format(printf, 1, 2)]]
+void tr::info(const char* fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
@@ -104,7 +106,8 @@ TR_LOG_FUNC(1, 2) void tr::info(const char* fmt, ...)
 	va_end(args);
 }
 
-TR_LOG_FUNC(1, 2) void tr::warn(const char* fmt, ...)
+[[gnu::format(printf, 1, 2)]]
+void tr::warn(const char* fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
@@ -112,7 +115,8 @@ TR_LOG_FUNC(1, 2) void tr::warn(const char* fmt, ...)
 	va_end(args);
 }
 
-TR_LOG_FUNC(1, 2) void tr::error(const char* fmt, ...)
+[[gnu::format(printf, 1, 2)]]
+void tr::error(const char* fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
@@ -120,7 +124,8 @@ TR_LOG_FUNC(1, 2) void tr::error(const char* fmt, ...)
 	va_end(args);
 }
 
-TR_LOG_FUNC(1, 2) void tr::panic(const char* fmt, ...)
+[[noreturn, gnu::format(printf, 1, 2)]]
+void tr::panic(const char* fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
@@ -131,7 +136,8 @@ TR_LOG_FUNC(1, 2) void tr::panic(const char* fmt, ...)
 	va_end(args);
 }
 
-TR_LOG_FUNC(4, 5) void tr::__impl_assert(const char* file, int line, bool x, const char* fmt, ...)
+[[gnu::format(printf, 4, 5)]]
+void tr::__impl_assert(const char* file, int line, bool x, const char* fmt, ...)
 {
 	if (!x) {
 		va_list args;

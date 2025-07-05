@@ -26,7 +26,8 @@
 #ifndef _TRIPPIN_MEMORY_H
 #define _TRIPPIN_MEMORY_H
 
-// #include <new>
+// clangd are you stupid
+#include <new> // IWYU pragma: keep
 #include <utility>
 #include <string.h>
 
@@ -313,10 +314,12 @@ public:
 	usize available_space();
 };
 
-struct ArenaCheckpoint
+// Internal utility to manage calling destructors :)
+struct DestructorCall
 {
-	usize position;
-	usize page;
+	void (*func)(void* obj);
+	void* object;
+	DestructorCall* next;
 };
 
 // Life changing allocator.
@@ -324,7 +327,11 @@ class Arena : public RefCounted
 {
 	usize page_size = 0;
 	usize pages = 0;
+	usize bytes_allocated = 0;
 	ArenaPage* page = nullptr;
+	DestructorCall* destructors = nullptr;
+
+	void call_destructors();
 
 public:
 	// :)
@@ -334,44 +341,34 @@ public:
 	// bigger buffers.
 	explicit Arena(usize page_size);
 
-	// Frees the arena. Note this doesn't call any destructors from structs you may have allocated, as I
-	// don't know how to do that.
-	void destroy();
+	// Frees the arena.
+	~Arena();
 
 	// Allocates some crap on the arena.
-	void* alloc(usize size);
-
-	// Makes sure there's enough space to fit `size`. Useful for when you're about to allocate a lot of
-	// objects and don't want it to try to figure out the pages 57399593895 times.
-	void prealloc(usize size);
-
-	// Gets the current position in the arena so it can be returned to later.
-	ArenaCheckpoint checkpoint();
-
-	// Changes the arena position to somewhere else. Note this also sets everything in between to 0s.
-	void return_to(ArenaCheckpoint checkpoint);
+	[[gnu::malloc]] void* alloc(usize size, usize align = alignof(max_align_t));
 
 	// Reuses the entire arena and sets everything to 0 :)
-	void reset() { this->return_to({0, 0}); }
+	void reset();
+
+	// Kinda like `new`/`malloc` but for arenas. Note this doesn't call deconstructors
+	template<typename T, typename... Args>
+	T& make(Args&&... args)
+	{
+		void* baseball = this->alloc(sizeof(T), alignof(T));
+		T* huh = new (baseball) T(std::forward<Args>(args)...);
+
+		// fancy fuckery to get destructors to be called :)
+		auto* call = reinterpret_cast<DestructorCall*>(this->alloc(sizeof(DestructorCall)));
+		call->func = [](void* obj) -> void {
+			reinterpret_cast<T*>(obj)->~T();
+		};
+		call->object = huh;
+		call->next = this->destructors;
+		this->destructors = call;
+
+		return *huh;
+	}
 };
-
-// Kinda like `new`/`malloc` but for arenas :)
-template<typename T, typename... Args>
-T* newobj(Arena& arena, Args&&... args)
-{
-	void* baseball = arena.alloc(sizeof(T));
-	T* huh = new (baseball) T(std::forward<Args>(args)...);
-	return huh;
-}
-
-// Kinda like `new`/`malloc` but for arenas :)
-template<typename T, typename... Args>
-T& newobj(Arena& arena, Args&&... args)
-{
-	void* baseball = arena.alloc(sizeof(T));
-	T* huh = new (baseball) T(std::forward<Args>(args)...);
-	return *huh;
-}
 
 // This is just for iterators
 template<typename T>
