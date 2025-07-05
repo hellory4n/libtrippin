@@ -26,6 +26,8 @@
 #ifndef _TRIPPIN_MEMORY_H
 #define _TRIPPIN_MEMORY_H
 
+// #include <new>
+#include <utility>
 #include <string.h>
 
 #include "common.hpp"
@@ -339,14 +341,6 @@ public:
 	// Allocates some crap on the arena.
 	void* alloc(usize size);
 
-	// Literally just `Arena::alloc()` but for structs and crap. Note this doesn't call the constructor, it
-	// just allocates enough space for that type. If you want to use arenas on your own types, you're supposed
-	// to pass it in the constructor (e.g. `CrapClass(tr::Ref<tr::Arena> arena)`)
-	template<typename T> T* alloc()
-	{
-		return reinterpret_cast<T*>(this->alloc(sizeof(T)));
-	}
-
 	// Makes sure there's enough space to fit `size`. Useful for when you're about to allocate a lot of
 	// objects and don't want it to try to figure out the pages 57399593895 times.
 	void prealloc(usize size);
@@ -360,6 +354,24 @@ public:
 	// Reuses the entire arena and sets everything to 0 :)
 	void reset() { this->return_to({0, 0}); }
 };
+
+// Kinda like `new`/`malloc` but for arenas :)
+template<typename T, typename... Args>
+T* newobj(Arena& arena, Args&&... args)
+{
+	void* baseball = arena.alloc(sizeof(T));
+	T* huh = new (baseball) T(std::forward<Args>(args)...);
+	return huh;
+}
+
+// Kinda like `new`/`malloc` but for arenas :)
+template<typename T, typename... Args>
+T& newobj(Arena& arena, Args&&... args)
+{
+	void* baseball = arena.alloc(sizeof(T));
+	T* huh = new (baseball) T(std::forward<Args>(args)...);
+	return *huh;
+}
 
 // This is just for iterators
 template<typename T>

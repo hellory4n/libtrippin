@@ -86,13 +86,13 @@ int main()
 		uint8 man[4096];
 	};
 	// if it works it won't segfault
-	auto* sig = arena->alloc<ComicallyLargeStruct>();
-	auto* ma = arena->alloc<EvenLargerStruct>();
-	tr::log("it did allocate");
-	sig->man[12] = 221;
-	ma->man[35] = 54;
-	tr::log("look %i", sig->man[12]);
-	tr::log("oh look at what you've done now to me %i", ma->man[35]);
+	// auto* sig = arena->alloc<ComicallyLargeStruct>();
+	// auto* ma = arena->alloc<EvenLargerStruct>();
+	// tr::log("it did allocate");
+	// sig->man[12] = 221;
+	// ma->man[35] = 54;
+	// tr::log("look %i", sig->man[12]);
+	// tr::log("oh look at what you've done now to me %i", ma->man[35]);
 
 	auto random = tr::Random();
 	tr::log("sogmarand %f", random.next(1.0, 1.4));

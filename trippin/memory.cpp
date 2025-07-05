@@ -128,6 +128,17 @@ void* tr::Arena::alloc(usize size)
 			this->page->alloc_pos += size;
 			return val;
 		}
+
+		// does it fit on the next page?
+		// returning to somewhere can leave a lot of empty pages
+		if (this->page->next != nullptr) {
+			if (this->page->next->available_space() >= size) {
+				void* val = reinterpret_cast<uint8*>(this->page->next->buffer) + this->page->next->alloc_pos;
+				this->page = this->page->next;
+				this->page->alloc_pos += size;
+				return val;
+			}
+		}
 	}
 
 	// does it fit in a regularly sized page?
@@ -184,12 +195,17 @@ void tr::Arena::return_to(tr::ArenaCheckpoint checkpoint)
 	isize page_difference = this->pages - checkpoint.page;
 	TR_ASSERT_MSG(page_difference >= 0, "what the fuck?");
 
+	// reset all the pages before it
 	ArenaPage* pg = this->page;
 	for (usize i = this->pages; i > checkpoint.page; i--) {
 		pg = pg->prev;
 		memset(this->page, 0, pg->size);
 	}
-	memset(pg->prev->buffer, 0, checkpoint.position - pg->prev->alloc_pos);
+	memset(pg->prev->buffer, 0, pg->prev->alloc_pos - checkpoint.position);
+
+	// actually go back
+	this->page = pg;
+	this->page->alloc_pos = checkpoint.position;
 }
 
 tr::MemoryInfo tr::get_memory_info()
