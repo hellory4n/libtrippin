@@ -28,6 +28,7 @@
 
 #include <functional>
 // TODO implement these yourself you scoundrel
+// std::function is fine
 #include <variant>
 #include <optional>
 
@@ -38,9 +39,8 @@ namespace tr {
 
 // Functional propaganda
 template<typename L, typename R>
-struct Either
+class Either
 {
-private:
 	enum class Side : uint8 { LEFT, RIGHT };
 
 	// TODO implement it yourself you scoundrel
@@ -81,9 +81,8 @@ public:
 // Like how the spicy modern languages handle null. Note you have to use `MaybeRef<T>` for references,
 // because C++.
 template<typename T>
-struct Maybe
+class Maybe
 {
-private:
 	// TODO implement it yourself you scoundrel
 	std::optional<T> value;
 	bool has_value = false;
@@ -132,7 +131,7 @@ public:
 	}
 
 	// Similar to the `??`/null coalescing operator in modern languages
-	T value_or(const T& other) const { return this->is_valid() ? this->unwrap() : other; }
+	const T& value_or(const T& other) const { return this->is_valid() ? this->unwrap() : other; }
 
 	// Calls a function (usually a lambda) depending on whether it's valid or not.
 	void match(std::function<void(T& val)> valid_func, std::function<void()> invalid_func)
@@ -155,84 +154,63 @@ public:
 	bool operator!=(const Maybe& other) { return !(*this == other); }
 };
 
-// You're supposed to use this one with references. I fucking love C++.
-// TODO there has to be a better way lmao
+// Like `Maybe<T>`, but for pointers/references. C++ didn't let me do `Maybe<T&>` lmao. This also doesn't
+// call destructors, as it's assumed you didn't create the value it's pointing to, if you did, you'd use
+// `Maybe<T>`
 template<typename T>
-struct MaybeRef
+class MaybePtr
 {
-private:
-	// TODO implement it yourself you scoundrel
-	std::optional<std::reference_wrapper<T>> value;
-	bool has_value = false;
+	T* value = nullptr;
 
 public:
-	// Initializes a Maybe<T> as null
-	MaybeRef() : value(), has_value(false) {}
+	// Intializes a MaybePtr<T> as null
+	MaybePtr() : value(nullptr) {}
 
-	// Intializes a Maybe<T> with a value
-	MaybeRef(T& val) : has_value(true)
-	{
-		this->value = val;
-	}
+	// Initializes a MaybePtr<T> with a value.
+	MaybePtr(T* val) : value(val) {}
 
-	// TODO bring this back if it haunts me at some point
-	// Maybe(const Maybe& other) : has_value(other.has_value)
-	// {
-	// 	if (this->has_value) this->value.value = other.value;
-	// 	else this->value.waste_of_space = 0;
-	// }
-
-	// Maybe& operator=(const Maybe& other)
-	// {
-	// 	if (this != &other) {
-	// 		if (this->has_value && other.has_value) {
-	// 			this->value = other.value;
-	// 		} else if (this->has_value && !other.has_value) {
-	// 			this->value.~T();
-	// 			this->has_value = false;
-	// 		} else if (!this->has_value && other.has_value) {
-	// 			this->value = other.value;
-	// 			this->has_value = true;
-	// 		}
-	// 	}
-	// 	return *this;
-	// }
+	// Initializes a MaybePtr<T> with a value.
+	MaybePtr(T& val) : value(&val) {}
 
 	// If true, the maybe is, in fact, a definitely.
 	bool is_valid() const
 	{
-		return this->has_value;
+		return this->value != nullptr;
 	}
 
-	// Gets the value or panics if it's null
-	T& unwrap() const
+	// Gets the value as a reference, or panics if it's null
+	T& unwrap_ref() const
 	{
-		if (this->has_value) return *this->value.value();
-		else tr::panic("couldn't unwrap Maybe<T>");
+		if (this->is_valid()) return *this->value;
+		else tr::panic("couldn't unwrap MaybePtr<T>");
+	}
+
+	// Gets the value as a pointer, or panics if it's null
+	T* unwrap_ptr() const
+	{
+		if (this->is_valid()) return this->value;
+		else tr::panic("couldn't unwrap MaybePtr<T>");
 	}
 
 	// Similar to the `??`/null coalescing operator in modern languages
-	T value_or(T& other) const { return this->is_valid() ? this->unwrap() : other; }
+	T& value_or(const T& other) const { return this->is_valid() ? this->unwrap_ref() : other; }
+
+	// Similar to the `??`/null coalescing operator in modern languages
+	T* value_or(const T* other) const { return this->is_valid() ? this->unwrap_ptr() : other; }
 
 	// Calls a function (usually a lambda) depending on whether it's valid or not.
 	void match(std::function<void(T& val)> valid_func, std::function<void()> invalid_func)
 	{
-		if (this->is_valid()) valid_func(this->unwrap());
+		if (this->is_valid()) valid_func(this->unwrap_ref());
 		else invalid_func();
 	}
 
-	bool operator==(const MaybeRef& other)
+	// Calls a function (usually a lambda) depending on whether it's valid or not.
+	void match(std::function<void(T* val)> valid_func, std::function<void()> invalid_func)
 	{
-		// TODO is this stupid?
-		bool is_valid = this->is_valid() == other.is_valid();
-		bool value_eq = is_valid;
-		if (this->is_valid() && other.is_valid()) {
-			value_eq = this->unwrap() == other.unwrap();
-		}
-		return is_valid && value_eq;
+		if (this->is_valid()) valid_func(this->unwrap_ptr());
+		else invalid_func();
 	}
-
-	bool operator!=(const MaybeRef& other) { return !(*this == other); }
 };
 
 // It's a pair lmao.

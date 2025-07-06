@@ -34,6 +34,7 @@
 
 #include "common.hpp"
 #include "log.hpp"
+#include "utility.hpp"
 
 namespace tr {
 
@@ -180,16 +181,14 @@ struct ArrayItem
 template<typename T>
 class Array
 {
-	// i'm gonna keep the arena when i remove .add() so that for as long as the array exists, the arena exists too
-	// it's an ownership thing yknow
-	Arena* src_arena = nullptr;
 	T* ptr = nullptr;
+	MaybePtr<Arena> src_arena;
 	usize length = 0;
 	usize capacity = 0;
 
 public:
 	// Initializes an empty array at an arena.
-	explicit Array(Arena& arena, usize len) : src_arena(&arena), length(len), capacity(len)
+	explicit Array(Arena& arena, usize len) : src_arena(arena), length(len), capacity(len)
 	{
 		// you may initialize with a length of 0 so you can then add crap
 		if (len > 0) {
@@ -198,7 +197,7 @@ public:
 	}
 
 	// Initializes an array from a buffer. (the data is copied into the arena)
-	explicit Array(Arena& arena, T* data, usize len) : src_arena(&arena), length(len), capacity(len)
+	explicit Array(Arena& arena, T* data, usize len) : src_arena(arena), length(len), capacity(len)
 	{
 		this->ptr = reinterpret_cast<T*>(arena.alloc(sizeof(T) * len));
 		// 'void* memcpy(void*, const void*, size_t)' forming offset [1, 1024] is out of the bounds [0, 1]
@@ -264,7 +263,7 @@ public:
 	// if you try to use this on an array without an arena, it will panic.
 	void add(T val)
 	{
-		if (this->src_arena == nullptr) {
+		if (!this->src_arena.is_valid()) {
 			tr::panic("resizing arena-less tr::Array<T> is not allowed");
 		}
 
@@ -278,7 +277,7 @@ public:
 		// TODO use pages to not waste so much memory
 		T* old_buffer = this->ptr;
 		this->capacity *= 2;
-		this->ptr = reinterpret_cast<T*>(src_arena->alloc(this->capacity * sizeof(T)));
+		this->ptr = reinterpret_cast<T*>(src_arena.unwrap_ref().alloc(this->capacity * sizeof(T)));
 		// you may initialize with a length of 0 so you can then add crap
 		if (this->length > 0) {
 			memcpy(this->ptr, old_buffer, this->length * sizeof(T));

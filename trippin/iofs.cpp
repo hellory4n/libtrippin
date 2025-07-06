@@ -107,7 +107,7 @@ void tr::Writer::write_string(tr::String str, bool include_len)
 	this->write_bytes(manfuckyou);
 }
 
-tr::MaybeRef<tr::File> tr::File::open(tr::Arena& arena, tr::String path, FileMode mode)
+tr::MaybePtr<tr::File> tr::File::open(tr::Arena& arena, tr::String path, FileMode mode)
 {
 	// get mode
 	String modefrfr;

@@ -35,6 +35,7 @@
 namespace tr {
 
 // TODO more constexpr
+// we need to constexpr all over the place
 
 // Vec2 lmao
 template<typename T>

@@ -167,7 +167,7 @@ public:
 	~File();
 
 	// Opens a fucking file from fucking somewhere. Returns null on error
-	static MaybeRef<File> open(Arena& arena, String path, FileMode mode);
+	static MaybePtr<File> open(Arena& arena, String path, FileMode mode);
 
 	// Closes the file :) files are reference counted so this is done automatically
 	void close();

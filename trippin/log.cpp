@@ -23,24 +23,19 @@
  *
  */
 
-#include <stdio.h>
-
-#include "common.hpp"
-
-namespace tr {
-	extern FILE* logfile;
-}
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <time.h>
 #include <signal.h>
 
-#include "common.hpp"
 #include "log.hpp"
 
 // TODO logging should use tr::String and tr::File
+
+namespace tr {
+	extern FILE* logfile;
+}
 
 void tr::use_log_file(const char* path)
 {
