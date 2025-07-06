@@ -302,17 +302,21 @@ static constexpr usize bytes_to_gb(usize x) { return bytes_to_mb(x) / 1024; }
 class ArenaPage
 {
 public:
-	usize size = 0;
+	const usize bufsize = 0;
+	const usize alignment = 0;
 	usize alloc_pos = 0;
 	ArenaPage* prev = nullptr;
 	ArenaPage* next = nullptr;
 	void* buffer = nullptr;
 
-	explicit ArenaPage(usize size);
+	explicit ArenaPage(usize size, usize align = alignof(max_align_t));
 	~ArenaPage();
 
 	// Returns how much space left the page has
-	usize available_space();
+	usize available_space() const;
+
+	// Allocates something in the page lmao. Returns null on failure
+	void* alloc(usize size, usize align);
 };
 
 // Internal utility to manage calling destructors :)
@@ -326,8 +330,9 @@ struct DestructorCall
 // Life changing allocator.
 class Arena : public RefCounted
 {
-	usize page_size = 0;
-	usize pages = 0;
+	const usize page_size = 0;
+	// stupid names bcuz the functions are `capacity` and `allocated`
+	usize bytes_capacity = 0;
 	usize bytes_allocated = 0;
 	ArenaPage* page = nullptr;
 	DestructorCall* destructors = nullptr;
@@ -372,6 +377,12 @@ public:
 
 		return *huh;
 	}
+
+	// Returns how much has already been allocated in the arena, in bytes.
+	usize allocated() const;
+
+	// Returns how many bytes the arena can hold before expanding, in bytes.
+	usize capacity() const;
 };
 
 // This is just for iterators

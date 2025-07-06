@@ -33,22 +33,26 @@ static void test::memory()
 {
 	tr::log("\n==== MEMORY ====");
 
-	tr::Arena maballs;
-	tr::Vec3<float32>& vecma3 = maballs.make<tr::Vec3<float32>>(1, 2, 3);
+	tr::Arena arena;
+	tr::Vec3<float32>& vecma3 = arena.make<tr::Vec3<float32>>(1, 2, 3);
 	tr::log("vecma3 %f, %f, %f", vecma3.x, vecma3.y, vecma3.z);
 
 	struct MaBalls {
-		uint8 waste[tr::mb_to_bytes(1)];
+		uint8 waste[tr::kb_to_bytes(1)];
 		MaBalls() { tr::log("MaBalls created"); }
 		~MaBalls() { tr::log("MaBalls deleted"); }
 	};
 
-	auto& sig = maballs.make<MaBalls>();
+	auto& sig = arena.make<MaBalls>();
 	sig.waste[37] = 'm';
 
-	maballs.reset();
+	arena.reset();
 	TR_ASSERT_MSG(sig.waste[37] == 0, "it didn't reset properly :(");
-	maballs.make<MaBalls>();
+	arena.alloc(tr::mb_to_bytes(1));
+
+	tr::log("capacity: %zu KB, allocated: %zu KB",
+		tr::bytes_to_kb(arena.capacity()), tr::bytes_to_kb(arena.allocated())
+	);
 }
 
 int main()

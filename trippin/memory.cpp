@@ -23,10 +23,12 @@
  *
  */
 
-#include <algorithm>
+// clangd are you stupid
+#include <new> // IWYU pragma: keep
 #include <stdlib.h>
 
 #include "log.hpp"
+#include "math.hpp"
 
 #include "memory.hpp"
 
@@ -54,14 +56,12 @@ void tr::RefCounted::release() const
 	}
 }
 
-tr::ArenaPage::ArenaPage(usize size)
+tr::ArenaPage::ArenaPage(usize size, usize align) : bufsize(size), alignment(align)
 {
 	TR_ASSERT(size != 0);
 
-	// calloc instead of malloc bcuz why the fuck would you want random garbage
-	// you're not running libtrippin on the pdp-11
-	this->buffer = calloc(1, size);
-	this->size = size;
+	// man.
+	this->buffer = ::operator new(size, std::align_val_t(align), std::nothrow);
 	this->alloc_pos = 0;
 	this->next = nullptr;
 	this->prev = nullptr;
@@ -82,27 +82,47 @@ tr::ArenaPage::ArenaPage(usize size)
 tr::ArenaPage::~ArenaPage()
 {
 	if (this->buffer != nullptr) {
-		// tr:: also has a function called free
-		::free(this->buffer);
+		::operator delete(this->buffer, std::align_val_t(this->alignment), std::nothrow);
 		this->buffer = nullptr;
 
 		// man
 		tr::memory_info.alive_pages--;
 		tr::memory_info.freed_pages++;
-		tr::memory_info.allocated -= this->size;
-		tr::memory_info.freed_by_arenas += this->size;
+		tr::memory_info.allocated -= this->bufsize;
+		tr::memory_info.freed_by_arenas += this->bufsize;
 	}
 }
 
-usize tr::ArenaPage::available_space()
+usize tr::ArenaPage::available_space() const
 {
-	return this->size - this->alloc_pos;
+	return this->bufsize - this->alloc_pos;
 }
 
-tr::Arena::Arena(usize page_size)
+void* tr::ArenaPage::alloc(usize size, usize align)
+{
+	uint8* base = reinterpret_cast<uint8*>(this->buffer);
+	uint8* ptr = base + this->alloc_pos;
+	usize address = reinterpret_cast<usize>(ptr);
+
+	// fucking padding aligning fuckery
+	usize misalignment = address & (align - 1);
+	usize padding = misalignment ? (align - misalignment) : 0;
+
+	// consider not segfaulting
+	if (this->available_space() < padding + size) {
+		return nullptr;
+	}
+
+	// ma
+	this->alloc_pos += padding;
+	void* aligned_ptr = base + this->alloc_pos;
+	this->alloc_pos += size;
+	return aligned_ptr;
+}
+
+tr::Arena::Arena(usize page_size) : page_size(page_size)
 {
 	// it doesn't make a page until you allocate something
-	this->page_size = page_size;
 	TR_ASSERT_MSG(this->page_size != 0, "you doofus why would you make an arena of 0 bytes");
 }
 
@@ -130,36 +150,31 @@ void* tr::Arena::alloc(usize size, usize align)
 {
 	// does it fit in the current page?
 	if (this->page != nullptr) {
-		if (this->page->available_space() >= size) {
-			void* val = reinterpret_cast<uint8*>(this->page->buffer) + this->page->alloc_pos;
-			this->page->alloc_pos += size;
-			return val;
+		void* ptr = this->page->alloc(size, align);
+		if (ptr != nullptr) {
+			this->bytes_allocated += size;
+			return ptr;
 		}
 	}
 
-	// does it fit in a regularly sized page?
-	if (this->page_size >= size) {
-		ArenaPage* new_page = new ArenaPage(this->page_size);
-		new_page->prev = this->page;
-		if (this->page != nullptr) this->page->next = new_page;
-		this->page = new_page;
-		this->pages++;
+	// it doesn't fit, make a new page
+	usize new_pg_size = tr::max(this->page_size, size + align);
+	ArenaPage* new_page = new (std::nothrow) ArenaPage(new_pg_size, align);
+	TR_ASSERT_MSG(new_page != nullptr, "couldn't create new arena page");
 
-		void* val = reinterpret_cast<uint8*>(new_page->buffer) + new_page->alloc_pos;
-		new_page->alloc_pos += size;
-		return val;
-	}
-
-	// last resort is making a new page with that size
-	ArenaPage* new_page = new ArenaPage(size);
+	// dude... dude... dude... what? GOOD NEWS OGOD NEANEWS OGOOD NEWS NFOGOSJRJIGIRISJTOAEOTGOAGOKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 	new_page->prev = this->page;
-	this->page->next = new_page;
+	if (this->page != nullptr) this->page->next = new_page;
 	this->page = new_page;
-	this->pages++;
+	this->bytes_capacity += new_pg_size;
 
-	void* val = reinterpret_cast<uint8*>(new_page->buffer) + new_page->alloc_pos;
-	new_page->alloc_pos += size;
-	return val;
+	// actually allocate frfrfrfr no cap ong icl
+	void* ptr = this->page->alloc(size, align);
+	TR_ASSERT_MSG(ptr != nullptr, "couldn't allocate %zu B in arena (%zu KB, %zu MB)",
+		size, tr::bytes_to_kb(size), tr::bytes_to_mb(size)
+	);
+	this->bytes_allocated += size;
+	return ptr;
 }
 
 void tr::Arena::call_destructors()
@@ -186,19 +201,34 @@ void tr::Arena::reset()
 
 	ArenaPage* headfrfr = head;
 	while (head != nullptr && head != headfrfr) {
+		this->bytes_capacity -= head->bufsize;
 		ArenaPage* next = head->next;
 		delete head;
 		head = next;
 	}
 
 	// we keep the first page :)
-	// apparently memset is fucked
-	// the cast is bcuz it complains about making a reference to void lmao
-	std::fill_n(reinterpret_cast<uint8*>(headfrfr->buffer), headfrfr->size, '\0');
+	this->page = headfrfr;
+	// apparently memset is fucked, std::fill_n does nothing and memset_s just doesn't exist in c++??
+	// source https://en.cppreference.com/w/cpp/string/byte/memset#Notes
+	// maybe i'm just stupid :)
+	for (usize i = 0; i < headfrfr->bufsize; i++) {
+		reinterpret_cast<uint8*>(headfrfr->buffer)[i] = 0;
+	}
 	headfrfr->alloc_pos = 0;
 	headfrfr->prev = nullptr;
 	headfrfr->next = nullptr;
-	this->page = headfrfr;
+	this->bytes_allocated = 0;
+}
+
+usize tr::Arena::allocated() const
+{
+	return this->bytes_allocated;
+}
+
+usize tr::Arena::capacity() const
+{
+	return this->bytes_capacity;
 }
 
 tr::MemoryInfo tr::get_memory_info()
