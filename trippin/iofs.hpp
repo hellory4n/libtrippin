@@ -31,6 +31,7 @@
 #include "common.hpp"
 #include "memory.hpp"
 #include "string.hpp"
+#include "utility.hpp"
 
 namespace tr {
 

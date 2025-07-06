@@ -33,6 +33,7 @@
 #include <string.h>
 
 #include "common.hpp"
+#include "log.hpp"
 
 namespace tr {
 

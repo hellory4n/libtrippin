@@ -30,6 +30,7 @@
 #include <time.h>
 
 #include "common.hpp"
+#include "log.hpp"
 
 namespace tr {
 

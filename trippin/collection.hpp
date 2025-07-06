@@ -28,8 +28,10 @@
 
 #include <stdlib.h>
 
+#include "common.hpp"
 #include "memory.hpp"
 #include "string.hpp"
+#include "utility.hpp"
 
 namespace tr {
 
@@ -76,7 +78,7 @@ class HashMap
 
 	HashMapSettings<K> settings;
 
-	Arena& arena;
+	Arena* arena = nullptr;
 	Bucket* buffer = nullptr;
 
 	// occupied includes removed keys, length doesn't
@@ -85,18 +87,18 @@ class HashMap
 	usize capacity = 0;
 
 public:
-	explicit HashMap(Arena& arena, HashMapSettings<K> setting) : settings(setting), arena(arena)
+	explicit HashMap(Arena& arena, HashMapSettings<K> setting) : settings(setting), arena(&arena)
 	{
 		this->capacity = this->settings.initial_capacity;
 		this->buffer = reinterpret_cast<Bucket*>(
-			arena.alloc(this->settings.initial_capacity * sizeof(Bucket))
+			this->arena->alloc(this->settings.initial_capacity * sizeof(Bucket))
 		);
 	}
 
 	explicit HashMap(Arena& arena) : HashMap(arena, DEFAULT_SETTINGS) {}
 
 	// man fuck you
-	HashMap()
+	HashMap() {}
 
 	// Returns the index based on a key. That's how hash maps work.
 	usize get_index(const K& key)
@@ -109,7 +111,7 @@ public:
 		usize old_cap = this->capacity;
 		this->capacity *= 2;
 		Bucket* new_buffer = reinterpret_cast<Bucket*>(
-			this->arena.alloc(this->capacity * sizeof(Bucket))
+			this->arena->alloc(this->capacity * sizeof(Bucket))
 		);
 
 		// changing the capacity fucks with the hashing
