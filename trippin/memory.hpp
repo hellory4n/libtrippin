@@ -28,6 +28,7 @@
 
 // clangd are you stupid
 #include <new> // IWYU pragma: keep
+#include <initializer_list>
 #include <utility>
 #include <string.h>
 
@@ -59,230 +60,6 @@ struct MemoryInfo {
 
 // As the name implies, it gets the memory info. Idk why.
 MemoryInfo get_memory_info();
-
-// Implements reference counting through inheritance. Note you have to wrap your values in a `tr::Ref<T>`
-// so it's not esoteric to use.
-class RefCounted
-{
-	mutable isize count = 0;
-
-public:
-	RefCounted() : count(0) {}
-	virtual ~RefCounted() {}
-
-	void retain() const;
-	void release() const;
-};
-
-// Non-esoteric wrapper around `tr::RefCounted`. It also allows null, if you don't want that to happen, use
-// `tr::Ref<T>`
-template<typename T>
-class MaybeRef;
-
-// Non-esoteric wrapper around `tr::RefCounted`. It also panics on null, if you don't want that to happen, use
-// `tr::MaybeRef<T>`
-template<typename T>
-class Ref
-{
-	T* ptr = nullptr;
-	// man
-	friend class MaybeRef<T>;
-
-	RefCounted* refcounted() const { return dynamic_cast<RefCounted*>(ptr); }
-
-public:
-	// C++ can be annoying
-	Ref() : ptr(nullptr) {}
-
-	Ref(T* ptr) : ptr(ptr)
-	{
-		if (this->ptr == nullptr) {
-			tr::panic("tr::Ref<T> can't be null, if that's intentional use tr::MaybeRef<T>");
-		}
-		this->refcounted()->retain();
-	}
-
-	Ref(const Ref& ref) : ptr(ref.ptr)
-	{
-		if (this->ptr == nullptr) {
-			tr::panic("tr::Ref<T> can't be null, if that's intentional use tr::MaybeRef<T>");
-		}
-		this->refcounted()->retain();
-	}
-
-	Ref(const MaybeRef<T>& ref);
-
-    Ref(Ref&& other) : ptr(other.ptr) { other.ptr = nullptr; }
-
-	~Ref()
-	{
-		if (this->ptr == nullptr) return;
-		this->refcounted()->release();
-	}
-
-	Ref& operator=(T* p)
-	{
-		if (p == nullptr) {
-			tr::panic("tr::Ref<T> can't be null, if that's intentional use tr::MaybeRef<T>");
-		}
-		if (this->ptr != nullptr) this->refcounted()->retain();
-		if (this->ptr != nullptr) this->refcounted()->release();
-		this->ptr = p;
-		return *this;
-	}
-
-	Ref& operator=(const Ref<T>& other)
-	{
-		if (this != &other) {
-			if (other.ptr != nullptr) other.refcounted()->retain();
-			if (this->ptr != nullptr) {
-				this->refcounted()->release();
-			}
-			this->ptr = other.ptr;
-		}
-		return *this;
-	}
-
-	Ref& operator=(Ref<T>&& other)
-	{
-		if (this != &other) {
-			if (this->ptr != nullptr) {
-				this->refcounted()->release();
-			}
-			ptr = other.ptr;
-			other.ptr = nullptr;
-		}
-		return *this;
-	}
-
-	// Returns the crap pointer.
-	T* get() const
-	{
-		if (this->ptr == nullptr) {
-			tr::panic("tr::Ref<T> is null, if that's intentional use tr::MaybeRef<T>");
-		}
-		return this->ptr;
-	}
-
-	// help
-	T* operator->() const                   { return this->get(); }
-	T& operator*() const                    { return *this->get(); }
-	operator T*() const                     { return this->get(); }
-	bool operator==(const MaybeRef<T>& ref) { return this->ptr == ref.ptr; }
-	bool operator==(const Ref<T>& ref)      { return this->ptr == ref.ptr; }
-	bool operator==(const T* p)             { return this->ptr == p; }
-	bool operator!=(const MaybeRef<T>& ref) { return this->ptr != ref.ptr; }
-	bool operator!=(const Ref<T>& ref)      { return this->ptr != ref.ptr; }
-	bool operator!=(const T* p)             { return this->ptr != p; }
-};
-
-// Non-esoteric wrapper around `tr::RefCounted`. It also allows null, if you don't want that to happen, use
-// `tr::Ref<T>`
-template<typename T>
-class MaybeRef
-{
-	T* ptr = nullptr;
-	// man
-	friend class Ref<T>;
-
-	RefCounted* refcounted() const
-	{
-		if (this->ptr == nullptr) tr::panic("MaybeRef<T> is null (likely a library error)");
-		RefCounted* fukc = dynamic_cast<RefCounted*>(this->ptr);
-		if (fukc == nullptr) {
-			tr::panic("couldn't cast type to tr::RefCounted, to use tr::MaybeRef<T> your types must inherit tr::RefCounted");
-		}
-		return fukc;
-	}
-
-public:
-	MaybeRef(T* ptr = nullptr) : ptr(ptr)
-	{
-		if (this->ptr == nullptr) return;
-		this->refcounted()->retain();
-	}
-
-	MaybeRef(const MaybeRef& ref) : ptr(ref.ptr)
-	{
-		if (this->ptr == nullptr) return;
-		this->refcounted()->retain();
-	}
-
-	MaybeRef(const Ref<T>& ref) : ptr(ref.ptr)
-	{
-		if (this->ptr == nullptr) return;
-		this->refcounted()->retain();
-	}
-
-	MaybeRef(MaybeRef&& other) : ptr(other.ptr) { other.ptr = nullptr; }
-
-	~MaybeRef()
-	{
-		if (this->ptr == nullptr) return;
-		this->refcounted()->release();
-	}
-
-	MaybeRef& operator=(T* p)
-	{
-		if (p != nullptr) {
-			this->refcounted()->retain();
-		}
-		if (this->ptr != nullptr) {
-			this->refcounted()->release();
-		}
-		this->ptr = p;
-		return *this;
-	}
-
-	MaybeRef& operator=(const MaybeRef<T>& other)
-	{
-		if (this != &other) {
-			if (other.ptr != nullptr) other.refcounted()->retain();
-			if (this->ptr != nullptr) this->refcounted()->release();
-			this->ptr = other.ptr;
-		}
-		return *this;
-	}
-
-	MaybeRef& operator=(MaybeRef<T>&& other)
-	{
-		if (this != &other) {
-			if (this->ptr != nullptr) {
-				this->refcounted()->release();
-			}
-			ptr = other.ptr;
-			other.ptr = nullptr;
-		}
-		return *this;
-	}
-
-	// Returns the crap pointer.
-	T* get() const
-	{
-		return this->ptr;
-	}
-
-	// help
-	T* operator->() const                   { return this->ptr; }
-	T& operator*() const                    { return *this->ptr; }
-	operator T*() const                     { return this->ptr; }
-	bool operator==(const MaybeRef<T>& ref) { return this->ptr == ref.ptr; }
-	bool operator==(const Ref<T>& ref)      { return this->ptr == ref.ptr; }
-	bool operator==(const T* p)             { return this->ptr == p; }
-	bool operator!=(const MaybeRef<T>& ref) { return this->ptr != ref.ptr; }
-	bool operator!=(const Ref<T>& ref)      { return this->ptr != ref.ptr; }
-	bool operator!=(const T* p)             { return this->ptr != p; }
-};
-
-// man
-template<typename T>
-Ref<T>::Ref(const MaybeRef<T>& other) : ptr(other.ptr)
-{
-    if (!this->ptr) {
-        tr::panic("can't convert null tr::MaybeRef<T> to tr::Ref<T>");
-	}
-    this->refcounted()->retain();
-}
 
 // Converts kilobytes to bytes
 static constexpr usize kb_to_bytes(usize x) { return x * 1024; }
@@ -328,9 +105,9 @@ struct DestructorCall
 };
 
 // Life changing allocator.
-class Arena : public RefCounted
+class Arena
 {
-	const usize page_size = 0;
+	usize page_size = 0;
 	// stupid names bcuz the functions are `capacity` and `allocated`
 	usize bytes_capacity = 0;
 	usize bytes_allocated = 0;
@@ -385,6 +162,10 @@ public:
 	usize capacity() const;
 };
 
+// Temporary arena intended for temporary allocations. In other words, a sane `alloca()`. This should be
+// reset whenever is reasonable for your application (e.g. every frame for a game)
+extern Arena scratchpad;
+
 // This is just for iterators
 template<typename T>
 struct ArrayItem
@@ -400,25 +181,25 @@ class Array
 {
 	// i'm gonna keep the arena when i remove .add() so that for as long as the array exists, the arena exists too
 	// it's an ownership thing yknow
-	MaybeRef<Arena> src_arena = nullptr;
+	Arena* src_arena = nullptr;
 	T* ptr = nullptr;
-	usize len = 0;
-	usize cap = 0;
+	usize length = 0;
+	usize capacity = 0;
 
 public:
 	// Initializes an empty array at an arena.
-	explicit Array(Ref<Arena> arena, usize len) : src_arena(arena), len(len), cap(len)
+	explicit Array(Arena& arena, usize len) : src_arena(&arena), length(len), capacity(len)
 	{
 		// you may initialize with a length of 0 so you can then add crap
 		if (len > 0) {
-			this->ptr = reinterpret_cast<T*>(arena->alloc(sizeof(T) * len));
+			this->ptr = reinterpret_cast<T*>(arena.alloc(sizeof(T) * len));
 		}
 	}
 
 	// Initializes an array from a buffer. (the data is copied into the arena)
-	explicit Array(Ref<Arena> arena, T* data, usize len) : src_arena(arena), len(len), cap(len)
+	explicit Array(Arena& arena, T* data, usize len) : src_arena(&arena), length(len), capacity(len)
 	{
-		this->ptr = reinterpret_cast<T*>(arena->alloc(sizeof(T) * len));
+		this->ptr = reinterpret_cast<T*>(arena.alloc(sizeof(T) * len));
 		// 'void* memcpy(void*, const void*, size_t)' forming offset [1, 1024] is out of the bounds [0, 1]
 		// the warning is wrong :)
 		#ifdef TR_ONLY_GCC
@@ -433,26 +214,35 @@ public:
 	}
 
 	// Initializes an array that points to any buffer. You really should only use this for temporary arrays.
-	explicit Array(T* data, usize len) : src_arena(nullptr), ptr(data), len(len), cap(len) {}
+	explicit Array(T* data, usize len) : src_arena(), ptr(data), length(len), capacity(len) {}
+
+	// why bjarne stroustrup why can't i make this myself why is std::initializer_list<T> special i know
+	// this is from c++11 but i don't care i'm gonna blame bjarne stroustrup inventor of C incremented
+	Array(std::initializer_list<T> initlist)
+	{
+		this->capacity = initlist.size();
+		this->length = initlist.size();
+		// may you please shut the fuck up fucking hell man no one loves you🥰🥰🥰🥰
+		this->ptr = const_cast<T*>(initlist.begin());
+	}
 
 	// man fuck you
-	Array() : src_arena(nullptr), ptr(nullptr), len(0), cap(0) {}
+	Array() : src_arena(), ptr(nullptr), length(0), capacity(0) {}
 
 	T& operator[](usize idx) const
 	{
-		if (idx >= this->len) {
-			tr::panic("index out of range: %zu in an array of %zu", idx, this->len);
+		if (idx >= this->length) {
+			tr::panic("index out of range: %zu in an array of %zu", idx, this->length);
 		}
 		return this->ptr[idx];
 	}
 
 	// Returns the buffer.
-	T* buffer() const      { return this->ptr; }
+	T* buf() const      { return this->ptr; }
 	// Returns the length of the array.
-	usize length() const   { return this->len; }
+	usize len() const   { return this->length; }
 	// Returns how many items the array can hold before having to resize.
-	[[deprecated("this will soon be removed along with .add()")]]
-	usize capacity() const { return this->cap; }
+	usize cap() const  { return this->capacity; }
 
 	// fucking iterator
 	class Iterator {
@@ -466,12 +256,11 @@ public:
 		T* ptr;
 	};
 
-	Iterator begin() const { return Iterator(this->buffer(), 0); }
-	Iterator end()   const { return Iterator(this->buffer() + this->len, this->len); }
+	Iterator begin() const { return Iterator(this->buf(), 0); }
+	Iterator end()   const { return Iterator(this->buf() + this->len(), this->len()); }
 
 	// Adds a new item to the array, and resizes it if necessary. This only works on arena-allocated arrays,
 	// if you try to use this on an array without an arena, it will panic.
-	[[deprecated("use tr::List<T> instead, .add() will be removed in v2.3")]]
 	void add(T val)
 	{
 		if (this->src_arena == nullptr) {
@@ -479,29 +268,29 @@ public:
 		}
 
 		// does it already fit?
-		if (this->len + 1 <= this->cap) {
-			(*this)[this->len++] = val;
+		if (this->length + 1 <= this->capacity) {
+			(*this)[this->length++] = val;
 			return;
 		}
 
 		// reallocate array
 		// TODO use pages to not waste so much memory
 		T* old_buffer = this->ptr;
-		this->cap *= 2;
-		this->ptr = reinterpret_cast<T*>(this->src_arena->alloc(this->cap * sizeof(T)));
+		this->capacity *= 2;
+		this->ptr = reinterpret_cast<T*>(src_arena->alloc(this->capacity * sizeof(T)));
 		// you may initialize with a length of 0 so you can then add crap
-		if (this->len > 0) {
-			memcpy(this->ptr, old_buffer, this->len * sizeof(T));
+		if (this->length > 0) {
+			memcpy(this->ptr, old_buffer, this->length * sizeof(T));
 		}
 
-		(*this)[this->len++] = val;
+		(*this)[this->length++] = val;
 	}
 
 	// As the name implies, it copies the array and its items to somewhere else.
-	Array<T> duplicate(Ref<Arena> arena) const
+	Array<T> duplicate(Arena& arena) const
 	{
-		Array<T> result(arena, this->length());
-		memcpy(result.buffer(), this->buffer(), this->length() * sizeof(T));
+		Array<T> result(arena, this->len());
+		memcpy(result.buf(), this->buf(), this->len() * sizeof(T));
 		return result;
 	}
 };

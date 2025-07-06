@@ -40,11 +40,14 @@ enum class SeekFrom { START, CURRENT, END };
 class Reader
 {
 public:
+	// shut up
+	virtual ~Reader() {}
+
 	// Returns the current position of the cursor, or -1 if unknown/unsupported
 	virtual int64 position() = 0;
 
 	// Returns the length of the stream in bytes, or -1 if unknown/unsupported
-	virtual int64 length() = 0;
+	virtual int64 len() = 0;
 
 	// If true, the stream ended.
 	virtual bool eof() = 0;
@@ -70,7 +73,7 @@ public:
 
 	// Wrapper for `read_bytes`, returns an array of N items or null if it isn't able to read the stream.
 	template<typename T>
-	Maybe<Array<T>> read_array(Ref<Arena> arena, usize items)
+	Maybe<Array<T>> read_array(Arena& arena, usize items)
 	{
 		T* man;
 		uint64 bytes = this->read_bytes(&man, sizeof(T), items);
@@ -79,17 +82,17 @@ public:
 	}
 
 	// Wrapper for `read_bytes`, returns a string or null if it isn't able to read the stream.
-	Maybe<String> read_string(Ref<Arena> arena, usize length);
+	Maybe<String> read_string(Arena& arena, usize length);
 
 	// Reads a line of text :) Supports both Unix `\n` and Windows `\r\n`, no one is gonna be using classic
 	// MacOS with this
-	String read_line(Ref<Arena> arena);
+	String read_line(Arena& arena);
 
 	// Reads the entire stream as bytes
-	Array<uint8> read_all_bytes(Ref<Arena> arena);
+	Array<uint8> read_all_bytes(Arena& arena);
 
 	// Reads the entire stream as text
-	String read_all_text(Ref<Arena> arena);
+	String read_all_text(Arena& arena);
 
 };
 
@@ -97,6 +100,9 @@ public:
 class Writer
 {
 public:
+	// shut up
+	virtual ~Writer() {}
+
 	// It flushes the stream :)
 	virtual void flush() = 0;
 
@@ -117,10 +123,10 @@ public:
 	void write_array(Array<T> array, bool include_len)
 	{
 		if (include_len) {
-			this->write_struct(array.length());
+			this->write_struct(array.len());
 		}
 
-		Array<uint8> manfuckyou(reinterpret_cast<uint8*>(array.buffer()), array.length());
+		Array<uint8> manfuckyou(reinterpret_cast<uint8*>(array.buffer()), array.len());
 		this->write_bytes(manfuckyou);
 	}
 
@@ -142,10 +148,10 @@ enum class FileMode : uint8 {
 // Files are definitely important. It's important to note that libtrippin ALWAYS uses forward slashes (`/`)
 // for paths, as every platform supports them, even Windows (since 95/NT, both of which are pretty old).
 // All backward slashes are automatically converted to forward slashes for consistency.
-class File : public Reader, public Writer, public RefCounted
+class File : public Reader, public Writer
 {
 	FILE* fptr = nullptr;
-	int64 len = -1;
+	int64 length = -1;
 	// so it doesn't close stdout
 	bool is_std = false;
 
@@ -156,11 +162,11 @@ class File : public Reader, public Writer, public RefCounted
 	friend void tr::init();
 
 public:
-	File() : fptr(nullptr), len(0), is_std(false), mode(FileMode::UNKNOWN) {}
+	File() : fptr(nullptr), length(0), is_std(false), mode(FileMode::UNKNOWN) {}
 	~File();
 
 	// Opens a fucking file from fucking somewhere. Returns null on error
-	static Maybe<Ref<File>> open(String path, FileMode mode);
+	static MaybeRef<File> open(Arena& arena, String path, FileMode mode);
 
 	// Closes the file :) files are reference counted so this is done automatically
 	void close();
@@ -169,7 +175,7 @@ public:
 	int64 position() override;
 
 	// Returns the length of the file in bytes, or -1 if unknown/unsupported
-	int64 length() override;
+	int64 len() override;
 
 	// If true, the file ended. That's what "eof" means, End Of File
 	bool eof() override;
@@ -205,11 +211,11 @@ public:
 // it's safe in gcc/clang (bcuz it becomes the same name) but it's not ideal
 
 // `stdin` but `tr::File`.
-extern Ref<File> std_in;
+extern File std_in;
 // `stdout` but `tr::File`.
-extern Ref<File> std_out;
+extern File std_out;
 // `stderr` but `tr::File`.
-extern Ref<File> std_err;
+extern File std_err;
 
 // Removes a file from a path, returns true if it succeeds.
 bool remove_file(String path);
@@ -232,7 +238,7 @@ bool create_dir(String path);
 bool remove_dir(String path);
 
 // Lists all the files/directories
-Array<String> list(Ref<Arena> arena, String path);
+Array<String> list(Arena& arena, String path);
 
 // If true, the path is a file. Else, it's a directory. Returns null if it doesn't exist.
 Maybe<bool> is_file(String path);

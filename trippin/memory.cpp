@@ -36,26 +36,6 @@ namespace tr {
 	extern MemoryInfo memory_info;
 }
 
-void tr::RefCounted::retain() const
-{
-	// man
-	// probably was just birthed into this world
-	if (this->count == 0) {
-		tr::memory_info.cumulative_ref_counted_objs++;
-		tr::memory_info.ref_counted_objs++;
-	}
-	this->count++;
-}
-
-void tr::RefCounted::release() const
-{
-	if (--this->count == 0) {
-		delete this;
-		tr::memory_info.freed_ref_counted_objs++;
-		tr::memory_info.ref_counted_objs--;
-	}
-}
-
 tr::ArenaPage::ArenaPage(usize size, usize align) : bufsize(size), alignment(align)
 {
 	TR_ASSERT(size != 0);
@@ -199,6 +179,8 @@ void tr::Arena::reset()
 		head = head->prev;
 	}
 
+	// TODO we should reuse all the other pages
+	// i just can't be bothered to fix Arena.alloc() to support that
 	ArenaPage* headfrfr = head;
 	while (head != nullptr && head != headfrfr) {
 		this->bytes_capacity -= head->bufsize;

@@ -41,13 +41,13 @@ class String
 
 public:
 	// Initializes a string from an arena and C string.
-	explicit String(Ref<Arena> arena, const char* str, usize len)
+	explicit String(Arena& arena, const char* str, usize len)
 	{
 		this->array = Array<char>(arena, const_cast<char*>(str), len + 1);
 	}
 
 	// Initializes an empty string from an arena
-	explicit String(Ref<Arena> arena, usize len)
+	explicit String(Arena& arena, usize len)
 	{
 		this->array = Array<char>(arena, len + 1);
 	}
@@ -70,18 +70,18 @@ public:
 
 	// man
 	char& operator[](usize idx) const { return this->array[idx]; }
-	// Doesn't include the null terminator
-	usize length() const { return this->array.length() - 1; }
-	char* buffer() const { return this->array.buffer(); }
-	operator char*() const { return this->buffer(); }
-	operator const char*() const { return this->buffer(); }
+	// Returns the length, doesn't include the null terminator
+	usize len() const { return this->array.len() - 1; }
+	char* buf() const { return this->array.buf(); }
+	operator char*() const { return this->buf(); }
+	operator const char*() const { return this->buf(); }
 	Array<char>::Iterator begin() const { return this->array.begin(); }
 	// this one is different since you don't want to iterate over the null terminator
-	Array<char>::Iterator end() const { return Array<char>::Iterator(const_cast<char*>(this->buffer()) + this->length() - 1, this->length() - 1); }
-	String duplicate(Ref<Arena> arena) const
+	Array<char>::Iterator end() const { return Array<char>::Iterator(const_cast<char*>(this->buf()) + this->len() - 1, this->len() - 1); }
+	String duplicate(Arena& arena) const
 	{
 		Array<char> arrayma = this->array.duplicate(arena);
-		return String(arrayma.buffer(), arrayma.length() + 1);
+		return String(arrayma.buf(), arrayma.len() + 1);
 	}
 	// i know .add() is missing
 
@@ -93,14 +93,14 @@ public:
 
 	// Gets a substring. The returned string doesn't include the end character.
 	[[nodiscard]]
-	String substr(Ref<Arena> arena, usize start, usize end) const;
+	String substr(Arena& arena, usize start, usize end) const;
 
 	// Returns an array with all of the indexes containing the substring (the index is where it starts)
-	Array<usize> find(Ref<Arena> arena, String str, usize start = 0, usize end = 0) const;
+	Array<usize> find(Arena& arena, String str, usize start = 0, usize end = 0) const;
 
 	// It concatenates 2 strings lmao.
 	[[nodiscard]]
-	String concat(Ref<Arena> arena, String other) const;
+	String concat(Arena& arena, String other) const;
 
 	// If true, the string starts with that other crap.
 	bool starts_with(String str) const;
@@ -110,16 +110,16 @@ public:
 
 	// Gets the filename in a path, e.g. returns `file.txt` for `/path/to/file.txt`
 	[[nodiscard]]
-	String file(Ref<Arena> arena) const;
+	String file(Arena& arena) const;
 
 	// Gets the directory in a path e.g. returns `/path/to` for `/path/to/file.txt`
 	[[nodiscard]]
-	String directory(Ref<Arena> arena) const;
+	String directory(Arena& arena) const;
 
 	// Returns the extension in a path, e.g. returns `.txt` for `/path/to/file.txt`, `.blend.1` for
 	// `teapot.blend.1`, and an empty string for `.gitignore`
 	[[nodiscard]]
-	String extension(Ref<Arena> arena) const;
+	String extension(Arena& arena) const;
 
 	// If true, the path is absolute. Else, it's relative.
 	bool is_absolute() const;
@@ -129,16 +129,18 @@ public:
 
 	// Replaces a character with another character.
 	[[nodiscard]]
-	String replace(Ref<Arena> arena, char from, char to) const;
+	String replace(Arena& arena, char from, char to) const;
 
 	// Splits the string into several substrings using the specified delimiter.
 	[[nodiscard]]
-	Array<String> split(Ref<Arena> arena, char delimiter) const;
+	Array<String> split(Arena& arena, char delimiter) const;
 };
 
 // It's just `sprintf` for `tr::String` lmao.
 [[gnu::format(printf, 3, 4)]]
-String sprintf(Ref<Arena> arena, usize maxlen, const char* fmt, ...);
+String sprintf(Arena& arena, usize maxlen, const char* fmt, ...);
+
+// TODO StringBuilder
 
 }
 

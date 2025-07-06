@@ -27,84 +27,82 @@
 #include <stdio.h>
 
 #include "math.hpp"
-#include "collection.hpp"
 
 #include "string.hpp"
 
 [[gnu::format(printf, 3, 4)]]
-tr::String tr::sprintf(Ref<Arena> arena, usize maxlen, const char* fmt, ...)
+tr::String tr::sprintf(Arena& arena, usize maxlen, const char* fmt, ...)
 {
 	String str(arena, maxlen);
 	va_list args;
 	va_start(args, fmt);
-	vsnprintf(str.buffer(), maxlen, fmt, args);
+	vsnprintf(str.buf(), maxlen, fmt, args);
 	va_end(args);
 	// just in case
-	str[str.length() - 1] = '\0';
+	str[str.len() - 1] = '\0';
 	return str;
 }
 
 bool tr::String::operator==(const tr::String& other) const
 {
-	return strncmp(*this, other, tr::max(this->length(), other.length())) == 0;
+	return strncmp(*this, other, tr::max(this->len(), other.len())) == 0;
 }
 
-tr::String tr::String::substr(tr::Ref<tr::Arena> arena, usize start, usize end) const
+tr::String tr::String::substr(tr::Arena& arena, usize start, usize end) const
 {
 	// shut up asan
-	String str = String(this->buffer() + start, end + 1)
+	String str = String(this->buf() + start, end + 1)
 		.duplicate(arena);
 	str[end] = '\0';
 	return str;
 }
 
-tr::Array<usize> tr::String::find(tr::Ref<tr::Arena> arena, tr::String str, usize start, usize end) const
+tr::Array<usize> tr::String::find(tr::Arena& arena, tr::String str, usize start, usize end) const
 {
-	if (end == 0 || end > this->length()) end = this->length();
+	if (end == 0 || end > this->len()) end = this->len();
 
-	Ref<Arena> tmp = new Arena(tr::kb_to_bytes(64));
-	List<usize> indexes;
+	Array<usize> indexes(tr::scratchpad, 0);
 
 	for (usize i = start; i < end; i++) {
-		String substr = this->substr(tmp, i, str.length());
+		String substr = this->substr(tr::scratchpad, i, str.len());
 		if (substr == str) {
 			indexes.add(i);
 		}
 	}
 
-	return Array<usize>(arena, indexes.buffer(), indexes.length());
+	return Array<usize>(arena, indexes.buf(), indexes.len());
 }
 
-tr::String tr::String::concat(tr::Ref<tr::Arena> arena, tr::String other) const
+tr::String tr::String::concat(tr::Arena& arena, tr::String other) const
 {
-	String new_str(arena, this->buffer(), this->length() + other.length());
-	strncat(new_str.buffer(), other.buffer(), other.length());
+	String new_str(arena, this->buf(), this->len() + other.len());
+	strncat(new_str.buf(), other.buf(), other.len());
 	return new_str;
 }
 
 bool tr::String::starts_with(tr::String str) const
 {
-	return String(this->buffer(), str.length()) == str;
+	return String(this->buf(), str.len()) == str;
 }
 
 bool tr::String::ends_with(tr::String str) const
 {
-	return String(this->buffer() + this->length() - str.length(), str.length()) == str;
+	return String(this->buf() + this->len() - str.len(), str.len()) == str;
 }
 
-tr::String tr::String::file(Ref<Arena> arena) const
+tr::String tr::String::file(Arena& arena) const
 {
-	for (usize i = this->length() - 1; i < this->length(); i--) {
+	for (usize i = this->len() - 1; i < this->len(); i--) {
 		if ((*this)[i] == '/' || (*this)[i] == '\\') {
-			return this->substr(arena, i + 1, this->length() + 1);
+			return this->substr(arena, i + 1, this->len() + 1);
 		}
 	}
 	return this->duplicate(arena);
 }
 
-tr::String tr::String::directory(Ref<Arena> arena) const
+tr::String tr::String::directory(Arena& arena) const
 {
-	for (usize i = this->length() - 1; i < this->length(); i--) {
+	for (usize i = this->len() - 1; i < this->len(); i--) {
 		if ((*this)[i] == '/' || (*this)[i] == '\\') {
 			return this->substr(arena, 0, i);
 		}
@@ -112,14 +110,14 @@ tr::String tr::String::directory(Ref<Arena> arena) const
 	return this->duplicate(arena);
 }
 
-tr::String tr::String::extension(Ref<Arena> arena) const
+tr::String tr::String::extension(Arena& arena) const
 {
 	String filename = this->file(arena);
-	for (usize i = 0; i < filename.length(); i++) {
+	for (usize i = 0; i < filename.len(); i++) {
 		if (filename[i] == '.') {
 			// a . prefix is a hidden file in unix, not an extension
 			if (i == 0) return "";
-			return filename.substr(arena, i, filename.length() + 1);
+			return filename.substr(arena, i, filename.len() + 1);
 		}
 	}
 	return "";
@@ -141,7 +139,7 @@ bool tr::String::is_absolute() const
 		// just ascii bcuz i doubt theres an uri scheme like lösarquívos://
 		if ((c.val >= '0' && c.val <= '9') || (c.val >= 'A' && c.val <= 'Z') || (c.val >= 'a' && c.val <= 'z')) {
 			// pls don't crash
-			if (this->length() > c.i + 2) {
+			if (this->len() > c.i + 2) {
 				if ((*this)[c.i + 1] == ':' && ((*this)[c.i + 2] == '/' || (*this)[c.i + 2] == '\\')) {
 					return true;
 				}
@@ -153,11 +151,10 @@ bool tr::String::is_absolute() const
 }
 
 [[nodiscard]]
-tr::String tr::String::replace(tr::Ref<tr::Arena> arena, char from, char to) const
+tr::String tr::String::replace(tr::Arena& arena, char from, char to) const
 {
-	Ref<Arena> tmp = new Arena(this->length() + 1);
-	Array<usize> indexes = this->find(tmp, from);
-	String str = this->duplicate(tmp);
+	Array<usize> indexes = this->find(tr::scratchpad, from);
+	String str = this->duplicate(tr::scratchpad);
 
 	for (ArrayItem<usize> c : indexes) {
 		str[c.val] = to;
@@ -167,20 +164,19 @@ tr::String tr::String::replace(tr::Ref<tr::Arena> arena, char from, char to) con
 }
 
 [[nodiscard]]
-tr::Array<tr::String> tr::String::split(tr::Ref<tr::Arena> arena, char delimiter) const
+tr::Array<tr::String> tr::String::split(tr::Arena& arena, char delimiter) const
 {
-	Ref<List<String>> strings = new List<String>();
-	String str = this->duplicate(arena);
+	Array<String> strings(tr::scratchpad, 0);
+	String str = this->duplicate(tr::scratchpad);
 	char delim[2] = {delimiter, '\0'};
 
 	char* token = strtok(str, delim);
 	while (token != nullptr) {
 		String m = String(arena, token, strlen(token));
-		strings->add(m);
-		tr::log("%s", token);
+		strings.add(m);
 		// WHY DENNIS RITCHIE WHY
 		token = strtok(nullptr, delim);
 	}
 
-	return Array<String>(arena, strings->buffer(), strings->length());
+	return Array<String>(arena, strings.buf(), strings.len());
 }

@@ -31,5 +31,5 @@
 
 uint64 tr::hash(tr::Array<uint8> array)
 {
-	return XXH3_64bits(array.buffer(), array.length());
+	return XXH3_64bits(array.buf(), array.len());
 }

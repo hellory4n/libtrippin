@@ -38,31 +38,24 @@
 	#include <sys/types.h>
 	#include <dirent.h>
 	#include <unistd.h>
-	#include <errno.h>
+	// #include <errno.h>
 #endif
 
-#include "collection.hpp"
+#include "log.hpp"
 
 #include "iofs.hpp"
 
-// man. these are initialized in tr::init
-namespace tr {
-	Ref<File> std_in;
-	Ref<File> std_out;
-	Ref<File> std_err;
-}
-
-tr::Maybe<tr::String> tr::Reader::read_string(tr::Ref<tr::Arena> arena, usize length)
+tr::Maybe<tr::String> tr::Reader::read_string(tr::Arena& arena, usize length)
 {
 	String str(arena, length);
-	uint64 read = this->read_bytes(str.buffer(), sizeof(char), length);
+	uint64 read = this->read_bytes(str.buf(), sizeof(char), length);
 	if (read != length) return {};
 	else return str;
 }
 
-tr::String tr::Reader::read_line(Ref<Arena> arena)
+tr::String tr::Reader::read_line(Arena& arena)
 {
-	Ref<List<char>> linema = new List<char>();
+	Array<char> linema(tr::scratchpad, 0);
 
 	while (true) {
 		char byte = '\0';
@@ -84,37 +77,37 @@ tr::String tr::Reader::read_line(Ref<Arena> arena)
 		}
 
 		// normal character
-		linema->add(byte);
+		linema.add(byte);
 	}
 
-	return String(arena, linema->buffer(), linema->length() + 1);
+	return String(arena, linema.buf(), linema.len() + 1);
 }
 
-tr::Array<uint8> tr::Reader::read_all_bytes(tr::Ref<tr::Arena> arena)
+tr::Array<uint8> tr::Reader::read_all_bytes(tr::Arena& arena)
 {
-	Array<uint8> man(arena, this->length());
-	this->read_bytes(man.buffer(), sizeof(uint8), this->length());
+	Array<uint8> man(arena, this->len());
+	this->read_bytes(man.buf(), sizeof(uint8), this->len());
 	return man;
 }
 
-tr::String tr::Reader::read_all_text(tr::Ref<tr::Arena> arena)
+tr::String tr::Reader::read_all_text(tr::Arena& arena)
 {
-	String str(arena, this->length());
-	this->read_bytes(str.buffer(), sizeof(uint8), this->length());
+	String str(arena, this->len());
+	this->read_bytes(str.buf(), sizeof(uint8), this->len());
 	return str;
 }
 
 void tr::Writer::write_string(tr::String str, bool include_len)
 {
 	if (include_len) {
-		this->write_struct(str.length());
+		this->write_struct(str.len());
 	}
 
-	Array<uint8> manfuckyou(reinterpret_cast<uint8*>(str.buffer()), str.length());
+	Array<uint8> manfuckyou(reinterpret_cast<uint8*>(str.buf()), str.len());
 	this->write_bytes(manfuckyou);
 }
 
-tr::Maybe<tr::Ref<tr::File>> tr::File::open(tr::String path, FileMode mode)
+tr::MaybeRef<tr::File> tr::File::open(tr::Arena& arena, tr::String path, FileMode mode)
 {
 	// get mode
 	String modefrfr;
@@ -128,17 +121,17 @@ tr::Maybe<tr::Ref<tr::File>> tr::File::open(tr::String path, FileMode mode)
 		default:                          modefrfr = "";    break;
 	}
 
-	Ref<File> file = new File();
-	file->fptr = fopen(path, modefrfr);
-	if (file->fptr == nullptr) return {};
+	File& file = arena.make<File>();
+	file.fptr = fopen(path, modefrfr);
+	if (file.fptr == nullptr) return {};
 
-	file->is_std = false;
-	file->mode = mode;
+	file.is_std = false;
+	file.mode = mode;
 
 	// get length :)))))))))
-	fseek(file->fptr, 0, SEEK_END);
-	file->len = ftell(file->fptr);
-	::rewind(file->fptr);
+	fseek(file.fptr, 0, SEEK_END);
+	file.length = ftell(file.fptr);
+	::rewind(file.fptr);
 
 	return file;
 }
@@ -166,10 +159,10 @@ int64 tr::File::position()
 	return ftell(this->fptr);
 }
 
-int64 tr::File::length()
+int64 tr::File::len()
 {
 	TR_ASSERT_MSG(this->fptr != nullptr, "uninitialized tr::File, initialize it you dumbass");
-	return this->len;
+	return this->length;
 }
 
 bool tr::File::eof()
@@ -223,7 +216,7 @@ void tr::File::write_bytes(Array<uint8> bytes)
 	TR_ASSERT_MSG(this->fptr != nullptr, "uninitialized tr::File, initialize it you dumbass");
 	TR_ASSERT_MSG(this->can_write(), "dumbass you can't write to this file");
 
-	fwrite(bytes.buffer(), sizeof(uint8), bytes.length(), this->fptr);
+	fwrite(bytes.buf(), sizeof(uint8), bytes.len(), this->fptr);
 }
 
 FILE* tr::File::cfile()
@@ -290,33 +283,34 @@ bool tr::file_exists(tr::String path)
 	#endif
 }
 
-bool tr::create_dir(tr::String path)
+bool tr::create_dir(tr::String)
 {
 	tr::panic("i didn't finish this function i'm busy uh getting milk");
 	// TODO use String.split dumbass
+	// TODO may i ask you what the fuck is this
 
-	// it's supposed to be recursive :D
-	Ref<Arena> tmp = new Arena(tr::kb_to_bytes(4));
-	Ref<List<String>> dirs = new List<String>();
+	// // it's supposed to be recursive :D
+	// Arena& tmp = new Arena(tr::kb_to_bytes(4));
+	// Ref<List<String>> dirs = new List<String>();
 
-	usize idx = 0;
-	for (ArrayItem<char> c : path) {
-		if ((c.val != '/' && c.val != '\\') || c.i < path.length()) continue;
+	// usize idx = 0;
+	// for (ArrayItem<char> c : path) {
+	// 	if ((c.val != '/' && c.val != '\\') || c.i < path.len()) continue;
 
-		dirs->add(path.substr(tmp, idx, c.i));
-		idx = c.i + 1;
-	}
-	tr::panic("fuck...");
-	if (dirs->length() == 0) return false;
+	// 	dirs->add(path.substr(tmp, idx, c.i));
+	// 	idx = c.i + 1;
+	// }
+	// tr::panic("fuck...");
+	// if (dirs->length() == 0) return false;
 
-	#ifdef _WIN32
-	#else
-	for (ArrayItem<String> dir : *dirs) {
-		if (mkdir(dir.val, 0755) != 0 && errno != EEXIST) {
-			return false;
-		}
-	}
-	tr::panic("hehe");
-	return true;
-	#endif
+	// #ifdef _WIN32
+	// #else
+	// for (ArrayItem<String> dir : *dirs) {
+	// 	if (mkdir(dir.val, 0755) != 0 && errno != EEXIST) {
+	// 		return false;
+	// 	}
+	// }
+	// tr::panic("hehe");
+	// return true;
+	// #endif
 }

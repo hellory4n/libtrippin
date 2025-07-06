@@ -37,7 +37,7 @@ namespace tr {
 // Dynamically sized list. You can add and remove items to it, something you can't do to a regular
 // tr::Array<T>
 template<typename T>
-class List : public RefCounted
+class List
 {
 	usize len = 0;
 	usize cap = 0;
@@ -67,7 +67,7 @@ public:
 	usize capacity() const { return this->cap; }
 
 	// Adds an item to the end of the list
-	void add(T val)
+	void add(const T& val)
 	{
 		// does it already fit?
 		if (this->len < this->cap) {
@@ -125,8 +125,6 @@ public:
 	Iterator end()   const { return Iterator(this->buffer() + this->length(), this->length()); }
 };
 
-// TODO StringBuilder?
-
 // Hashes an array of bytes, which is useful if you need to hash an array of bytes. Implemented with xxHash3
 // 64-bits
 uint64 hash(tr::Array<uint8> array);
@@ -134,7 +132,7 @@ uint64 hash(tr::Array<uint8> array);
 // im losing my mind im going insane im watching my life go down the drain TODO better name its a miracle
 // it works in the first place
 template<typename K, typename V, uint64 (*HashFunc)(K key), usize InitialCapacity>
-class AdvancedHashMap : public RefCounted
+class AdvancedHashMap
 {
 	static constexpr float64 LOAD_FACTOR = 0.5;
 
@@ -325,13 +323,15 @@ uint64 __default_hash_function(T key)
 template<>
 inline uint64 __default_hash_function<String>(String key)
 {
-	return tr::hash(Array<uint8>(reinterpret_cast<uint8*>(key.buffer()), key.length()));
+	return tr::hash(Array<uint8>(reinterpret_cast<uint8*>(key.buf()), key.len()));
 }
 
 // ahahsmhap :DD if you're interested this works with open addressing and linear probing, i'll probably
 // change it if my brain expands to megamind levels of brain
 template<typename K, typename V>
 using HashMap = AdvancedHashMap<K, V, __default_hash_function, 256>;
+
+// TODO HashSet<T>, Stack<T>, Queue<T>, LinkedList<T>
 
 }
 
