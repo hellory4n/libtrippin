@@ -110,7 +110,7 @@ static void test::hashmaps()
 {
 	tr::log("\n==== HASHMAPS ====");
 
-	tr::HashMap<tr::String, tr::String> hashma;
+	tr::HashMap<tr::String, tr::String> hashma(tr::scratchpad);
 	hashma["Sigma"] = "balls!";
 	tr::log("hashma[\"Sigma\"] = \"%s\"", hashma["Sigma"].buf());
 
@@ -122,7 +122,7 @@ static void test::hashmaps()
 		return 68;
 	};
 
-	tr::HashMap<tr::String, tr::String> hashmaballs(settings);
+	tr::HashMap<tr::String, tr::String> hashmaballs(tr::scratchpad, settings);
 	// this also resizes bcuz the load factor is 0.1 and the capacity is 4 (comically small)
 	hashmaballs["Sigma"] = "balls!";
 	hashmaballs["Balls"] = "sigma!";

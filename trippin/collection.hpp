@@ -29,7 +29,6 @@
 #include <stdlib.h>
 
 #include "memory.hpp"
-#include "log.hpp"
 #include "string.hpp"
 
 namespace tr {
@@ -76,26 +75,28 @@ class HashMap
 	};
 
 	HashMapSettings<K> settings;
+
+	Arena& arena;
 	Bucket* buffer = nullptr;
+
 	// occupied includes removed keys, length doesn't
 	usize occupied = 0;
 	usize length = 0;
 	usize capacity = 0;
 
 public:
-	HashMap(HashMapSettings<K> setting) : settings(setting)
+	explicit HashMap(Arena& arena, HashMapSettings<K> setting) : settings(setting), arena(arena)
 	{
 		this->capacity = this->settings.initial_capacity;
-		this->buffer = reinterpret_cast<Bucket*>(calloc(this->settings.initial_capacity, sizeof(Bucket)));
-		TR_ASSERT_MSG(this->buffer != nullptr, "couldn't allocate hashmap");
+		this->buffer = reinterpret_cast<Bucket*>(
+			arena.alloc(this->settings.initial_capacity * sizeof(Bucket))
+		);
 	}
 
-	HashMap() : HashMap(DEFAULT_SETTINGS) {}
+	explicit HashMap(Arena& arena) : HashMap(arena, DEFAULT_SETTINGS) {}
 
-	~HashMap()
-	{
-		::free(this->buffer);
-	}
+	// man fuck you
+	HashMap()
 
 	// Returns the index based on a key. That's how hash maps work.
 	usize get_index(const K& key)
@@ -107,8 +108,9 @@ public:
 	{
 		usize old_cap = this->capacity;
 		this->capacity *= 2;
-		Bucket* new_buffer = reinterpret_cast<Bucket*>(calloc(this->capacity, sizeof(Bucket)));
-		TR_ASSERT_MSG(new_buffer != nullptr, "couldn't grow hashmap");
+		Bucket* new_buffer = reinterpret_cast<Bucket*>(
+			this->arena.alloc(this->capacity * sizeof(Bucket))
+		);
 
 		// changing the capacity fucks with the hashing
 		// so we have to copy everything to new indexes
@@ -131,7 +133,6 @@ public:
 			}
 		}
 
-		::free(this->buffer);
 		this->buffer = new_buffer;
 	}
 
