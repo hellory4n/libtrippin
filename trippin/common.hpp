@@ -3,7 +3,7 @@
  * https://github.com/hellory4n/libtrippin
  *
  * trippin/common.hpp
- * Crap that can be safely included by every other header
+ * Numbers, macros, and utility structs
  *
  * Copyright (C) 2025 by hellory4n <hellory4n@gmail.com>
  *
@@ -28,6 +28,11 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <functional>
+// TODO implement these yourself you scoundrel
+// std::function is fine
+#include <variant>
+#include <optional>
 
 // TODO there should be msvc versions probably
 
@@ -83,6 +88,197 @@ void init();
 
 // Deinitializes the bloody library lmao.
 void free();
+
+// i love circular dependencies.
+// Oh god oh fuck. Note this crashes and kills everything, `tr::error` doesn't.
+[[noreturn, gnu::format(printf, 1, 2)]]
+void panic(const char* fmt, ...);
+
+// Functional propaganda
+template<typename L, typename R>
+class Either
+{
+	enum class Side : uint8 { LEFT, RIGHT };
+
+	// TODO implement it yourself you scoundrel
+	std::variant<L, R> value;
+	Side side;
+
+public:
+	Either(const L& left) : value(left), side(Side::LEFT) {}
+	Either(const R& right) : value(right), side(Side::RIGHT) {}
+
+	// If true, it's left. Else, it's right.
+	bool is_left() const { return this->side == Side::LEFT; }
+	// If true, it's right. Else, it's left.
+	bool is_right() const { return this->side == Side::RIGHT; }
+
+	// Returns the left value, or panics if it's not left
+	L& left() const
+	{
+		if (!this->is_left()) tr::panic("Either<L, R> is right, not left");
+		else return this->value.left;
+	}
+
+	// Returns the right value, or panics if it's not right
+	R& right() const
+	{
+		if (!this->is_right()) tr::panic("Either<L, R> is right, not left");
+		else return this->value.right;
+	}
+
+	// Calls a function (usually a lambda) depending on whether it's left, or right.
+	void match(std::function<void(L& left)> left_func, std::function<void(R& right)> right_func)
+	{
+		if (this->is_left()) left_func(this->left());
+		else right_func(this->right());
+	}
+};
+
+// Like how the spicy modern languages handle null. Note you have to use `MaybeRef<T>` for references,
+// because C++.
+template<typename T>
+class Maybe
+{
+	// TODO implement it yourself you scoundrel
+	std::optional<T> value;
+	bool has_value = false;
+
+public:
+	// Initializes a Maybe<T> as null
+	Maybe() : value(), has_value(false) {}
+
+	// Intializes a Maybe<T> with a value
+	Maybe(const T& val) : value(val), has_value(true) {}
+
+	// TODO bring this back if it haunts me at some point
+	// Maybe(const Maybe& other) : has_value(other.has_value)
+	// {
+	// 	if (this->has_value) this->value.value = other.value;
+	// 	else this->value.waste_of_space = 0;
+	// }
+
+	// Maybe& operator=(const Maybe& other)
+	// {
+	// 	if (this != &other) {
+	// 		if (this->has_value && other.has_value) {
+	// 			this->value = other.value;
+	// 		} else if (this->has_value && !other.has_value) {
+	// 			this->value.~T();
+	// 			this->has_value = false;
+	// 		} else if (!this->has_value && other.has_value) {
+	// 			this->value = other.value;
+	// 			this->has_value = true;
+	// 		}
+	// 	}
+	// 	return *this;
+	// }
+
+	// If true, the maybe is, in fact, a definitely.
+	bool is_valid() const
+	{
+		return this->has_value;
+	}
+
+	// Gets the value or panics if it's null
+	T& unwrap() const
+	{
+		if (this->has_value) return this->value.value();
+		else tr::panic("couldn't unwrap Maybe<T>");
+	}
+
+	// Similar to the `??`/null coalescing operator in modern languages
+	const T& value_or(const T& other) const { return this->is_valid() ? this->unwrap() : other; }
+
+	// Calls a function (usually a lambda) depending on whether it's valid or not.
+	void match(std::function<void(T& val)> valid_func, std::function<void()> invalid_func)
+	{
+		if (this->is_valid()) valid_func(this->unwrap());
+		else invalid_func();
+	}
+
+	bool operator==(const Maybe& other)
+	{
+		// TODO is this stupid?
+		bool is_valid = this->is_valid() == other.is_valid();
+		bool value_eq = is_valid;
+		if (this->is_valid() && other.is_valid()) {
+			value_eq = this->unwrap() == other.unwrap();
+		}
+		return is_valid && value_eq;
+	}
+
+	bool operator!=(const Maybe& other) { return !(*this == other); }
+};
+
+// Like `Maybe<T>`, but for pointers/references. C++ didn't let me do `Maybe<T&>` lmao. This also doesn't
+// call destructors, as it's assumed you didn't create the value it's pointing to, if you did, you'd use
+// `Maybe<T>`
+template<typename T>
+class MaybePtr
+{
+	T* value = nullptr;
+
+public:
+	// Intializes a MaybePtr<T> as null
+	MaybePtr() : value(nullptr) {}
+
+	// Initializes a MaybePtr<T> with a value.
+	MaybePtr(T* val) : value(val) {}
+
+	// Initializes a MaybePtr<T> with a value.
+	MaybePtr(T& val) : value(&val) {}
+
+	// If true, the maybe is, in fact, a definitely.
+	bool is_valid() const
+	{
+		return this->value != nullptr;
+	}
+
+	// Gets the value as a reference, or panics if it's null
+	T& unwrap_ref() const
+	{
+		if (this->is_valid()) return *this->value;
+		else tr::panic("couldn't unwrap MaybePtr<T>");
+	}
+
+	// Gets the value as a pointer, or panics if it's null
+	T* unwrap_ptr() const
+	{
+		if (this->is_valid()) return this->value;
+		else tr::panic("couldn't unwrap MaybePtr<T>");
+	}
+
+	// Similar to the `??`/null coalescing operator in modern languages
+	T& value_or(const T& other) const { return this->is_valid() ? this->unwrap_ref() : other; }
+
+	// Similar to the `??`/null coalescing operator in modern languages
+	T* value_or(const T* other) const { return this->is_valid() ? this->unwrap_ptr() : other; }
+
+	// Calls a function (usually a lambda) depending on whether it's valid or not.
+	void match(std::function<void(T& val)> valid_func, std::function<void()> invalid_func)
+	{
+		if (this->is_valid()) valid_func(this->unwrap_ref());
+		else invalid_func();
+	}
+
+	// Calls a function (usually a lambda) depending on whether it's valid or not.
+	void match(std::function<void(T* val)> valid_func, std::function<void()> invalid_func)
+	{
+		if (this->is_valid()) valid_func(this->unwrap_ptr());
+		else invalid_func();
+	}
+};
+
+// It's a pair lmao.
+template<typename L, typename R>
+struct Pair
+{
+	L left;
+	R right;
+
+	Pair(const L& left, const R& right) : left(left), right(right) {}
+};
 
 }
 

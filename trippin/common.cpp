@@ -76,4 +76,3 @@ void tr::free()
 	// TODO multiple log files
 	fclose(tr::logfile);
 }
-

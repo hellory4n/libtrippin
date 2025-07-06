@@ -34,7 +34,6 @@
 
 #include "common.hpp"
 #include "log.hpp"
-#include "utility.hpp"
 
 namespace tr {
 
@@ -182,13 +181,13 @@ template<typename T>
 class Array
 {
 	T* ptr = nullptr;
-	MaybePtr<Arena> src_arena;
+	Arena* src_arena;
 	usize length = 0;
 	usize capacity = 0;
 
 public:
 	// Initializes an empty array at an arena.
-	explicit Array(Arena& arena, usize len) : src_arena(arena), length(len), capacity(len)
+	explicit Array(Arena& arena, usize len) : src_arena(&arena), length(len), capacity(len)
 	{
 		// you may initialize with a length of 0 so you can then add crap
 		if (len > 0) {
@@ -197,7 +196,7 @@ public:
 	}
 
 	// Initializes an array from a buffer. (the data is copied into the arena)
-	explicit Array(Arena& arena, T* data, usize len) : src_arena(arena), length(len), capacity(len)
+	explicit Array(Arena& arena, T* data, usize len) : src_arena(&arena), length(len), capacity(len)
 	{
 		this->ptr = reinterpret_cast<T*>(arena.alloc(sizeof(T) * len));
 		// 'void* memcpy(void*, const void*, size_t)' forming offset [1, 1024] is out of the bounds [0, 1]
@@ -214,7 +213,7 @@ public:
 	}
 
 	// Initializes an array that points to any buffer. You really should only use this for temporary arrays.
-	explicit Array(T* data, usize len) : src_arena(), ptr(data), length(len), capacity(len) {}
+	explicit Array(T* data, usize len) : src_arena(nullptr), ptr(data), length(len), capacity(len) {}
 
 	// why bjarne stroustrup why can't i make this myself why is std::initializer_list<T> special i know
 	// this is from c++11 but i don't care i'm gonna blame bjarne stroustrup inventor of C incremented
@@ -227,7 +226,7 @@ public:
 	}
 
 	// man fuck you
-	Array() : src_arena(), ptr(nullptr), length(0), capacity(0) {}
+	Array() : src_arena(nullptr), ptr(nullptr), length(0), capacity(0) {}
 
 	T& operator[](usize idx) const
 	{
@@ -263,7 +262,7 @@ public:
 	// if you try to use this on an array without an arena, it will panic.
 	void add(T val)
 	{
-		if (!this->src_arena.is_valid()) {
+		if (this->src_arena == nullptr) {
 			tr::panic("resizing arena-less tr::Array<T> is not allowed");
 		}
 
@@ -277,7 +276,7 @@ public:
 		// TODO use pages to not waste so much memory
 		T* old_buffer = this->ptr;
 		this->capacity *= 2;
-		this->ptr = reinterpret_cast<T*>(src_arena.unwrap_ref().alloc(this->capacity * sizeof(T)));
+		this->ptr = reinterpret_cast<T*>(src_arena->alloc(this->capacity * sizeof(T)));
 		// you may initialize with a length of 0 so you can then add crap
 		if (this->length > 0) {
 			memcpy(this->ptr, old_buffer, this->length * sizeof(T));

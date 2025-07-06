@@ -48,23 +48,23 @@ void use_log_file(const char* path);
 
 // Log.
 [[gnu::format(printf, 1, 2)]]
-void log(const char *fmt, ...);
+void log(const char* fmt, ...);
 
 // Log. (gray edition) (this is for libraries that use libtrippin so you can filter out library logs)
 [[gnu::format(printf, 1, 2)]]
-void info(const char *fmt, ...);
+void info(const char* fmt, ...);
 
 // Oh nose.
 [[gnu::format(printf, 1, 2)]]
-void warn(const char *fmt, ...);
+void warn(const char* fmt, ...);
 
 // Oh god oh fuck. Note this doesn't crash and die everything, `tr::panic` does.
 [[gnu::format(printf, 1, 2)]]
-void error(const char *fmt, ...);
+void error(const char* fmt, ...);
 
 // Oh god oh fuck. Note this crashes and kills everything, `tr::error` doesn't.
 [[noreturn, gnu::format(printf, 1, 2)]]
-void panic(const char *fmt, ...);
+void panic(const char* fmt, ...);
 
 // Formatted assert?????????
 [[gnu::format(printf, 4, 5)]]
