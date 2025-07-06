@@ -13,6 +13,7 @@ namespace test {
 	static void memory();
 	static void arrays();
 	static void strings();
+	static void hashmaps();
 }
 
 static void test::logging()
@@ -70,6 +71,70 @@ static void test::arrays()
 static void test::strings()
 {
 	tr::log("\n==== STRINGS ====");
+
+	tr::String str = "sigma";
+	tr::log("str: %s (length %zu)", str.buf(), str.len());
+
+	tr::String maballs = tr::sprintf(tr::scratchpad, 256, "%s balls", str.buf());
+	tr::log("%s", maballs.buf());
+
+	TR_ASSERT(str == "sigma");
+	TR_ASSERT(str != "ballshshjs");
+	TR_ASSERT(str != "sigmaaaa pelotas");
+	TR_ASSERT(str.substr(tr::scratchpad, 1, 3) == "igm");
+	tr::Array<usize> sigma = tr::String("sigmysigmy").find(tr::scratchpad, "ig");
+	TR_ASSERT(sigma.len() == 2);
+	tr::String sigmaa = tr::String("figma").concat(tr::scratchpad, " balls");
+	TR_ASSERT(sigmaa == "figma balls");
+	TR_ASSERT(sigmaa.starts_with("figm"));
+	TR_ASSERT(sigmaa.ends_with("alls"));
+
+	TR_ASSERT(tr::String("/path/to/file.txt").file(tr::scratchpad) == "file.txt");
+	TR_ASSERT(tr::String("/path/to/file.txt").directory(tr::scratchpad) == "/path/to");
+	TR_ASSERT(tr::String("/path/to/teapot.blend.1").extension(tr::scratchpad) == ".blend.1");
+	TR_ASSERT(tr::String("app://sigma").is_absolute());
+	TR_ASSERT(tr::String("C:\\sigma").is_absolute());
+	TR_ASSERT(!tr::String("sigma").is_absolute());
+	TR_ASSERT(!tr::String("./sigma").is_absolute());
+	TR_ASSERT(tr::String("~/sigma").is_absolute());
+
+	// split string :)
+	tr::String strma = "crap,shit,fuck,balls";
+	tr::Array<tr::String> splitma = strma.split(tr::scratchpad, ',');
+	for (auto c : splitma) {
+		tr::log("split[%zu] = %s", c.i, c.val.buf());
+	}
+}
+
+static void test::hashmaps()
+{
+	tr::log("\n==== HASHMAPS ====");
+
+	tr::HashMap<tr::String, tr::String> hashma;
+	hashma["Sigma"] = "balls!";
+	tr::log("hashma[\"Sigma\"] = \"%s\"", hashma["Sigma"].buf());
+
+	// check collsiions
+	tr::HashMapSettings<tr::String> settings{};
+	settings.load_factor = 0.1;
+	settings.initial_capacity = 4;
+	settings.hash_func = [](const tr::String&) -> uint64 {
+		return 68;
+	};
+
+	tr::HashMap<tr::String, tr::String> hashmaballs(settings);
+	// this also resizes bcuz the load factor is 0.1 and the capacity is 4 (comically small)
+	hashmaballs["Sigma"] = "balls!";
+	hashmaballs["Balls"] = "sigma!";
+	hashmaballs["oh no it go it gone bye bye (bye)"] = "ball. one";
+	hashmaballs["oSgmggg"] = "ball. one ball.";
+	hashmaballs.remove("oh no it go it gone bye bye (bye)");
+
+	// iterator
+	for (auto item : hashmaballs) {
+		tr::log("hashmaballs[%s] = \"%s\"", item.left.buf(), item.right.buf());
+	}
+	tr::log("length %zu, capacity %zu", hashmaballs.len(), hashmaballs.cap());
 }
 
 int main()
@@ -81,6 +146,7 @@ int main()
 	test::memory();
 	test::arrays();
 	test::strings();
+	test::hashmaps();
 
 	tr::free();
 

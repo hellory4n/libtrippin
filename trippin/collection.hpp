@@ -34,107 +34,38 @@
 
 namespace tr {
 
-// Dynamically sized list. You can add and remove items to it, something you can't do to a regular
-// tr::Array<T>
-template<typename T>
-class List
-{
-	usize len = 0;
-	usize cap = 0;
-	// void* bcuz gcc says "warning: 'void* realloc(void*, size_t)' moving an object of non-trivially copyable
-	// type 'class tr::String'; use 'new' and 'delete' instead" shut the fuck up man
-	void* ptr = nullptr;
-
-	static constexpr usize INITIAL_CAPACITY = 8;
-
-public:
-	List() : len(0), cap(INITIAL_CAPACITY)
-	{
-		this->ptr = reinterpret_cast<T*>(calloc(INITIAL_CAPACITY, sizeof(T)));
-		TR_ASSERT_MSG(this->ptr != nullptr, "couldn't allocate list");
-	}
-
-	~List()
-	{
-		::free(this->ptr);
-		this->ptr = nullptr;
-	}
-
-	// Returns the length of the list
-	usize length() const { return this->len; }
-
-	// Returns how many items the list can fit without resizing
-	usize capacity() const { return this->cap; }
-
-	// Adds an item to the end of the list
-	void add(const T& val)
-	{
-		// does it already fit?
-		if (this->len < this->cap) {
-			// just doing idx = val; makes c++ pull an epic prank and corrupt everything somehow
-			// and i don't want to support your fucking copy/move constructors shut the fuck up man
-			void* place = &reinterpret_cast<T*>(this->ptr)[this->len++];
-			memcpy(place, &val, sizeof(T));
-			return;
-		}
-
-		// resize :)
-		this->cap *= 2;
-		this->ptr = reinterpret_cast<T*>(realloc(this->ptr, sizeof(T) * this->cap));
-
-		// just doing idx = val; makes c++ pull an epic prank and corrupt everything somehow
-		// and i don't want to support your fucking copy/move constructors shut the fuck up man
-		void* place = &reinterpret_cast<T*>(this->ptr)[this->len++];
-		memcpy(place, &val, sizeof(T));
-	}
-
-	// Reserves space in the list
-	void reserve(usize items)
-	{
-		// TODO could be better
-		this->cap += items * 2;
-		this->ptr = realloc(this->ptr, sizeof(T) * this->cap);
-	}
-
-	// Returns the last item in the list
-	T& last() const { return (*this)[this->len - 1]; }
-
-	T* buffer() const { return reinterpret_cast<T*>(this->ptr); }
-
-	T& operator[](usize idx) const
-	{
-		if (idx >= this->len) {
-			tr::panic("index out of range: %zu in a list of %zu", idx, this->len);
-		}
-		return reinterpret_cast<T*>(this->ptr)[idx];
-	}
-
-	// fucking iterator
-	class Iterator {
-	public:
-		Iterator(T* ptr, usize index) : idx(index), ptr(ptr) {}
-		ArrayItem<T> operator*() const { return {this->idx, *this->ptr}; }
-		Iterator& operator++() { this->ptr++; this->idx++; return *this; }
-		bool operator!=(const Iterator& other) const { return ptr != other.ptr; }
-	private:
-		usize idx;
-		T* ptr;
-	};
-
-	Iterator begin() const { return Iterator(this->buffer(), 0); }
-	Iterator end()   const { return Iterator(this->buffer() + this->length(), this->length()); }
-};
-
 // Hashes an array of bytes, which is useful if you need to hash an array of bytes. Implemented with xxHash3
 // 64-bits
 uint64 hash(tr::Array<uint8> array);
 
-// im losing my mind im going insane im watching my life go down the drain TODO better name its a miracle
-// it works in the first place
-template<typename K, typename V, uint64 (*HashFunc)(K key), usize InitialCapacity>
-class AdvancedHashMap
+// internal don't use probably :)
+template<typename K>
+uint64 __default_hash_function(const K& key)
 {
-	static constexpr float64 LOAD_FACTOR = 0.5;
+	return tr::hash(Array<uint8>(reinterpret_cast<uint8*>(&key), sizeof(K)));
+}
+// internal don't use probably :)
+template<>
+inline uint64 __default_hash_function<String>(const String& key)
+{
+	return tr::hash(Array<uint8>(reinterpret_cast<uint8*>(key.buf()), key.len()));
+}
+
+// Useful for when you need *advanced* hashmaps
+template<typename K>
+struct HashMapSettings
+{
+	float64 load_factor;
+	usize initial_capacity;
+	uint64 (*hash_func)(const K& key);
+};
+
+// ahahsmhap :DD if you're interested this works with open addressing and linear probing, i'll probably
+// change it if my brain expands to megamind levels of brain
+template<typename K, typename V>
+class HashMap
+{
+	static constexpr HashMapSettings<K> DEFAULT_SETTINGS = {0.5, 256, tr::__default_hash_function};
 
 	struct Bucket
 	{
@@ -144,33 +75,39 @@ class AdvancedHashMap
 		bool dead;
 	};
 
+	HashMapSettings<K> settings;
 	Bucket* buffer = nullptr;
-	usize len = 0;
-	usize cap = 0;
+	// occupied includes removed keys, length doesn't
+	usize occupied = 0;
+	usize length = 0;
+	usize capacity = 0;
 
 public:
-	AdvancedHashMap() : cap(InitialCapacity)
+	HashMap(HashMapSettings<K> setting) : settings(setting)
 	{
-		this->buffer = reinterpret_cast<Bucket*>(calloc(InitialCapacity, sizeof(Bucket)));
+		this->capacity = this->settings.initial_capacity;
+		this->buffer = reinterpret_cast<Bucket*>(calloc(this->settings.initial_capacity, sizeof(Bucket)));
 		TR_ASSERT_MSG(this->buffer != nullptr, "couldn't allocate hashmap");
 	}
 
-	~AdvancedHashMap()
+	HashMap() : HashMap(DEFAULT_SETTINGS) {}
+
+	~HashMap()
 	{
 		::free(this->buffer);
 	}
 
 	// Returns the index based on a key. That's how hash maps work.
-	usize get_index(K key)
+	usize get_index(const K& key)
 	{
-		return HashFunc(key) % this->cap;
+		return this->settings.hash_func(key) % this->capacity;
 	}
 
 	void grow()
 	{
-		usize old_cap = this->cap;
-		this->cap *= 2;
-		Bucket* new_buffer = reinterpret_cast<Bucket*>(calloc(this->cap, sizeof(Bucket)));
+		usize old_cap = this->capacity;
+		this->capacity *= 2;
+		Bucket* new_buffer = reinterpret_cast<Bucket*>(calloc(this->capacity, sizeof(Bucket)));
 		TR_ASSERT_MSG(new_buffer != nullptr, "couldn't grow hashmap");
 
 		// changing the capacity fucks with the hashing
@@ -182,7 +119,7 @@ public:
 			usize idx = this->get_index(old_bucket.key);
 
 			// linear probe with wrap‑around
-			for (usize probe = idx; ; probe = (probe + 1) % this->cap) {
+			for (usize probe = idx; ; probe = (probe + 1) % this->capacity) {
 				Bucket& new_bucket = new_buffer[probe];
 				if (!new_bucket.occupied) {
 					new_bucket.occupied = true;
@@ -201,18 +138,18 @@ public:
 	// Checks how full the hashmap is and resizes if necessary
 	void check_grow()
 	{
-		float64 used = static_cast<float64>(this->len) / this->cap;
-		if (used <= LOAD_FACTOR) {
+		float64 used = static_cast<float64>(this->occupied) / this->capacity;
+		if (used <= this->settings.load_factor) {
 			return;
 		}
 		this->grow();
 	}
 
 	// Returns the bucket and whether it's occupied (true for occupied, false for empty)
-	Pair<Bucket*, bool> find(K key)
+	Pair<Bucket*, bool> find(const K& key)
 	{
 		usize idx = this->get_index(key);
-		for (usize probe = idx; ; probe = (probe + 1) % cap) {
+		for (usize probe = idx; ; probe = (probe + 1) % capacity) {
 			Bucket& b = this->buffer[probe];
 			if (b.occupied) {
 				if (b.key == key && !b.dead) {
@@ -228,7 +165,7 @@ public:
 		return {nullptr, false};
 	}
 
-	V& operator[](K key)
+	V& operator[](const K& key)
 	{
 		// operator[] is also used for putting crap :)
 		this->check_grow();
@@ -238,7 +175,8 @@ public:
 		if (!bucket.right) {
 			bucket.left->occupied = true;
 			bucket.left->key = key;
-			this->len++;
+			this->occupied++;
+			this->length++;
 		}
 
 		return bucket.left->value;
@@ -246,28 +184,29 @@ public:
 
 	// If true, the hashmap has that key. Useful because the `[]` operator automatically inserts an item if
 	// it's not there.
-	bool contains(K key)
+	bool contains(const K& key)
 	{
 		return this->find(key).right;
 	}
 
 	// Removes the key from the hashmap. Returns true if the key is was found, returns false otherwise.
-	bool remove(K key)
+	bool remove(const K& key)
 	{
 		Pair<Bucket*, bool> bucket = this->find(key);
 		// you can't kill someone that hasn't been born
 		// don't quote me on this
 		if (bucket.right) {
 			bucket.left->dead = true;
+			this->length--;
 		}
 
 		return bucket.right;
 	}
 
 	// Returns how many items the hashmap currently has
-	usize length() { return this->len; }
+	usize len() { return this->length; }
 	// Returns the total amount of items the hashmap can currently hold (it'll grow when it's 50% full)
-	usize capacity() { return this->cap; }
+	usize cap() { return this->capacity; }
 
 	// fucking iterator
 	class Iterator {
@@ -277,7 +216,7 @@ public:
 			this->advance_to_valid();
 		}
 
-		Pair<K, V> operator*() const
+		Pair<K&, V&> operator*() const
 		{
 			Bucket& b = this->buffer[this->idx];
 			return {b.key, b.value};
@@ -309,27 +248,9 @@ public:
 		}
 	};
 
-	Iterator begin() const { return Iterator(this->buffer, 0, this->cap); }
-	Iterator end()   const { return Iterator(this->buffer + this->cap, this->cap, this->cap); }
+	Iterator begin() const { return Iterator(this->buffer, 0, this->capacity); }
+	Iterator end()   const { return Iterator(this->buffer + this->capacity, this->capacity, this->capacity); }
 };
-
-// internal don't use probably :)
-template<typename T>
-uint64 __default_hash_function(T key)
-{
-	return tr::hash(Array<uint8>(reinterpret_cast<uint8*>(&key), sizeof(T)));
-}
-// internal don't use probably :)
-template<>
-inline uint64 __default_hash_function<String>(String key)
-{
-	return tr::hash(Array<uint8>(reinterpret_cast<uint8*>(key.buf()), key.len()));
-}
-
-// ahahsmhap :DD if you're interested this works with open addressing and linear probing, i'll probably
-// change it if my brain expands to megamind levels of brain
-template<typename K, typename V>
-using HashMap = AdvancedHashMap<K, V, __default_hash_function, 256>;
 
 // TODO HashSet<T>, Stack<T>, Queue<T>, LinkedList<T>
 

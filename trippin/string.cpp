@@ -30,19 +30,6 @@
 
 #include "string.hpp"
 
-[[gnu::format(printf, 3, 4)]]
-tr::String tr::sprintf(Arena& arena, usize maxlen, const char* fmt, ...)
-{
-	String str(arena, maxlen);
-	va_list args;
-	va_start(args, fmt);
-	vsnprintf(str.buf(), maxlen, fmt, args);
-	va_end(args);
-	// just in case
-	str[str.len() - 1] = '\0';
-	return str;
-}
-
 bool tr::String::operator==(const tr::String& other) const
 {
 	return strncmp(*this, other, tr::max(this->len(), other.len())) == 0;
@@ -179,4 +166,21 @@ tr::Array<tr::String> tr::String::split(tr::Arena& arena, char delimiter) const
 	}
 
 	return Array<String>(arena, strings.buf(), strings.len());
+}
+
+[[gnu::format(printf, 3, 4)]]
+tr::String tr::sprintf(Arena& arena, usize maxlen, const char* fmt, ...)
+{
+	String str(tr::scratchpad, maxlen);
+	va_list args;
+	va_start(args, fmt);
+	vsnprintf(str.buf(), maxlen, fmt, args);
+	va_end(args);
+	// just in case
+	str[str.len() - 1] = '\0';
+
+	// just so .len() is useful :D
+	str = String(arena, str.buf(), strnlen(str.buf(), maxlen));
+
+	return str;
 }
