@@ -32,8 +32,12 @@
 	#define NOIME
 	#define NOMINMAX
 	#include <windows.h>
+
+	// conflicts :D
+	#define WIN32_ERROR ERROR
 	#undef ERROR
 #else
+	#include <stdio.h>
 	#include <sys/stat.h>
 	#include <sys/types.h>
 	#include <dirent.h>
@@ -129,9 +133,9 @@ tr::MaybePtr<tr::File> tr::File::open(tr::Arena& arena, tr::String path, FileMod
 	file.mode = mode;
 
 	// get length :)))))))))
-	fseek(file.fptr, 0, SEEK_END);
-	file.length = ftell(file.fptr);
-	::rewind(file.fptr);
+	fseek(reinterpret_cast<FILE*>(file.fptr), 0, SEEK_END);
+	file.length = ftell(reinterpret_cast<FILE*>(file.fptr));
+	::rewind(reinterpret_cast<FILE*>(file.fptr));
 
 	return file;
 }
@@ -140,7 +144,7 @@ void tr::File::close()
 {
 	// is_std exists so it doesn't close tr::std_out and company
 	if (!this->is_std && this->fptr != nullptr) {
-		fclose(this->fptr);
+		fclose(reinterpret_cast<FILE*>(this->fptr));
 		this->fptr = nullptr;
 	}
 }
@@ -156,7 +160,7 @@ tr::File::~File()
 int64 tr::File::position()
 {
 	TR_ASSERT_MSG(this->fptr != nullptr, "uninitialized tr::File, initialize it you dumbass");
-	return ftell(this->fptr);
+	return ftell(reinterpret_cast<FILE*>(this->fptr));
 }
 
 int64 tr::File::len()

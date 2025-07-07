@@ -67,13 +67,60 @@ public:
 	String path;
 	FileErrorType type;
 
+	// Checks errno.h/WinError.h so it gets the latest error :)
+	explicit FileError(String path);
+
 	// This is required on Linux for some fucking reason
 	static void reset_errors();
 
-	// Checks errno.h/WinError.h so it gets the latest error :)
-	FileError(String path);
-
 	String message() override;
+};
+
+// So spicy. E should inherit implement Error
+template<typename T, typename E = StringError>
+class Result
+{
+	Either<T, E> value;
+
+public:
+	Result(const T& val) : value(val) {}
+	Result(const E& err) : value(err) {}
+
+	// If true, the result has a value. Else, it has an error.
+	bool is_valid() const { return value.is_left(); }
+
+	T& unwrap() const
+	{
+		if (!this->is_valid()) {
+			Error* errormaballs = reinterpret_cast<Error*>(value.right());
+			String error;
+			if (errormaballs == nullptr) {
+				error = "unknown error";
+				#ifdef DEBUG
+				tr::panic("tr::Result<T, E> is supposed to use tr::Error you distinguished gentleman/lady/everything in between");
+				#else
+				tr::warn("warning: tr::Result<T, E> is supposed to use tr::Error you distinguished gentleman/lady/everything in between");
+				#endif
+			}
+			else {
+				error = errormaballs->message();
+			}
+
+			tr::panic("couldn't unwrap tr::Result<T, E>: %s", error.buf());
+		}
+
+		return this->value.left();
+	}
+
+	// Similar to the `??`/null coalescing operator in modern languages
+	const T& value_or(const T& other) const { return this->is_valid() ? this->unwrap() : other; }
+
+	// Calls a function (usually a lambda) depending on whether it's valid or not.
+	void match(std::function<void(T& val)> valid_func, std::function<void(E& err)> error_func)
+	{
+		if (this->is_valid()) valid_func(this->value.left());
+		else error_func(this->value.right());
+	}
 };
 
 }

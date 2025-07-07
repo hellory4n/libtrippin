@@ -26,11 +26,10 @@
 #ifndef _TRIPPIN_IOFS_H
 #define _TRIPPIN_IOFS_H
 
-#include <stdio.h>
-
 #include "common.hpp"
 #include "memory.hpp"
 #include "string.hpp"
+#include "error.hpp"
 
 namespace tr {
 
@@ -150,7 +149,9 @@ enum class FileMode : uint8 {
 // All backward slashes are automatically converted to forward slashes for consistency.
 class File : public Reader, public Writer
 {
-	FILE* fptr = nullptr;
+	// do you know how disastrous would it be to include windows.h in a header? just for fucking HANDLE?
+	// which is literally just void*? i would rather die
+	void* fptr = nullptr;
 	int64 length = -1;
 	// so it doesn't close stdout
 	bool is_std = false;
@@ -165,8 +166,8 @@ public:
 	File() : fptr(nullptr), length(0), is_std(false), mode(FileMode::UNKNOWN) {}
 	~File();
 
-	// Opens a fucking file from fucking somewhere. Returns null on error
-	static MaybePtr<File> open(Arena& arena, String path, FileMode mode);
+	// Opens a fucking file from fucking somewhere. Returns null on error.
+	static Result<File*, FileError> open(Arena& arena, String path, FileMode mode);
 
 	// Closes the file :) files are reference counted so this is done automatically
 	void close();
@@ -196,8 +197,8 @@ public:
 	// Writes bytes into the stream
 	void write_bytes(Array<uint8> bytes) override;
 
-	// Returns the internal C file
-	FILE* cfile();
+	// Returns the internal file handle. This is `FILE*` on Linux, and `HANDLE` on Windows.
+	void* cfile();
 
 	// If true, the file can be read.
 	bool can_read();
