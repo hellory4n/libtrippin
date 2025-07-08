@@ -176,7 +176,7 @@ struct ArrayItem
 };
 
 // A slice of memory, usually from an arena but can point to anywhere. Similar to a Go slice, or other
-// examples.
+// examples. Arrays don't own the value and don't use fancy RAII fuckery, so you can pass them by value.
 template<typename T>
 class Array
 {

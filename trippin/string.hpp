@@ -34,7 +34,8 @@
 namespace tr {
 
 // Literally just a wrapper around `tr::Array`, so it works better with strings. Also all of the functions
-// that return strings copy the original strings first.
+// that return strings copy the original strings first. Strings don't own the value and don't use fancy
+// RAII fuckery, so you can pass them by value.
 class String
 {
 	Array<char> array;

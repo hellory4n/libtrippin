@@ -39,42 +39,52 @@
 
 void tr::FileError::reset_errors()
 {
-	// this isn't necessary for windows GetLastError()
-	// but windows sometimes uses errno
-	// why bill gates why
 	errno = 0;
+	#ifdef _WIN32
+	SetLastError(0);
+	#endif
 }
 
-tr::FileError::FileError(tr::String path) : path(path)
+tr::FileError tr::FileError::from_errno(tr::String path_a, tr::String path_b, tr::FileOperation op)
 {
+	FileError man = {};
+	man.path_a = path_a;
+	man.path_b = path_b;
+	man.op = op;
 	FileErrorType t = FileErrorType::UNKNOWN;
 
-	#ifdef _WIN32
-	#else // posix
 	switch (errno) {
-		case ENOENT:        t = FileErrorType::NOT_FOUND;                break;
-		case EACCES:        t = FileErrorType::ACCESS_DENIED;            break;
-		case EBUSY:         t = FileErrorType::DEVICE_OR_RESOURCE_BUSY;  break;
-		case ENOSPC:        t = FileErrorType::NO_SPACE_LEFT;            break;
-		case EEXIST:        t = FileErrorType::FILE_EXISTS;              break;
-		case EBADF:         t = FileErrorType::BAD_HANDLE;               break;
-		case EIO:           t = FileErrorType::HARDWARE_ERROR;           break;
-		case EISDIR:        t = FileErrorType::IS_DIRECTORY;             break;
-		case ENOTDIR:       t = FileErrorType::IS_NOT_DIRECTORY;         break;
-		case EMFILE:        t = FileErrorType::TOO_MANY_OPEN_FILES;      break;
-		case ENFILE:        t = FileErrorType::TOO_MANY_OPEN_FILES;      break;
-		case EPIPE:         t = FileErrorType::BROKEN_PIPE;              break;
-		case ENAMETOOLONG:  t = FileErrorType::FILENAME_TOO_LONG;        break;
-		case EINVAL:        t = FileErrorType::INVALID_ARGUMENT;         break;
-		case EROFS:         t = FileErrorType::READ_ONLY_FILESYSTEM;     break;
-		case ESPIPE:        t = FileErrorType::ILLEGAL_SEEK;             break;
-		case ENOTEMPTY:     t = FileErrorType::DIRECTORY_NOT_EMPTY;      break;
-		default:            t = FileErrorType::UNKNOWN;                  break;
+		case ENOENT:        t = FileErrorType::NOT_FOUND;                  break;
+		case EACCES:        t = FileErrorType::ACCESS_DENIED;              break;
+		case EBUSY:         t = FileErrorType::DEVICE_OR_RESOURCE_BUSY;    break;
+		case ENOSPC:        t = FileErrorType::NO_SPACE_LEFT;              break;
+		case EEXIST:        t = FileErrorType::FILE_EXISTS;                break;
+		case EBADF:         t = FileErrorType::BAD_HANDLE;                 break;
+		case EIO:           t = FileErrorType::HARDWARE_ERROR_OR_UNKNOWN;  break;
+		case EISDIR:        t = FileErrorType::IS_DIRECTORY;               break;
+		case ENOTDIR:       t = FileErrorType::IS_NOT_DIRECTORY;           break;
+		case EMFILE:        t = FileErrorType::TOO_MANY_OPEN_FILES;        break;
+		case ENFILE:        t = FileErrorType::TOO_MANY_OPEN_FILES;        break;
+		case EPIPE:         t = FileErrorType::BROKEN_PIPE;                break;
+		case ENAMETOOLONG:  t = FileErrorType::FILENAME_TOO_LONG;          break;
+		case EINVAL:        t = FileErrorType::INVALID_ARGUMENT;           break;
+		case EROFS:         t = FileErrorType::READ_ONLY_FILESYSTEM;       break;
+		case ESPIPE:        t = FileErrorType::ILLEGAL_SEEK;               break;
+		case ENOTEMPTY:     t = FileErrorType::DIRECTORY_NOT_EMPTY;        break;
+		default:            t = FileErrorType::UNKNOWN;                    break;
 	}
-	#endif
 
-	this->type = t;
+	man.type = t;
+	return man;
 }
+
+#ifdef _WIN32
+// Checks Windows' `GetLastError` for errors :)
+tr::FileError tr::FileError::from_win32(tr::String path)
+{
+	// TODO fuck off
+}
+#endif
 
 tr::String tr::FileError::message()
 {

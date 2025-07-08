@@ -42,31 +42,33 @@ public:
 	// shut up
 	virtual ~Reader() {}
 
-	// Returns the current position of the cursor, or -1 if unknown/unsupported
-	virtual int64 position() = 0;
+	// Returns the current position of the cursor, if available
+	virtual Result<int64, Error> position() = 0;
 
-	// Returns the length of the stream in bytes, or -1 if unknown/unsupported
-	virtual int64 len() = 0;
+	// Returns the length of the stream in bytes, if available
+	virtual Result<int64, Error> len() = 0;
 
 	// If true, the stream ended.
-	virtual bool eof() = 0;
+	virtual Result<bool, Error> eof() = 0;
 
 	// Moves the cursor without reading anything
-	virtual void seek(uint64 bytes, SeekFrom from) = 0;
+	virtual Maybe<Error> seek(int64 bytes, SeekFrom from) = 0;
 
-	// Goes back to the beginning of the stream, and returns true if that's supported.
-	virtual bool rewind() = 0;
+	// Goes back to the beginning of the stream, if available
+	virtual Maybe<Error> rewind() = 0;
 
 	// Reads any amount of bytes, and returns how many bytes were actually read.
-	virtual uint64 read_bytes(void* out, uint64 size, uint64 items) = 0;
+	virtual Result<int64, Error> read_bytes(void* out, int64 size, int64 items) = 0;
 
 	// Wrapper for `read_bytes`, returns null if it couldn't read the struct
 	template<typename T>
 	Maybe<T> read_struct()
 	{
 		T man;
-		uint64 bytes = this->read_bytes(&man, sizeof(T), 1);
-		if (bytes == sizeof(T)) return man;
+		Result<int64> sir = this->read_bytes(&man, sizeof(T), 1);
+		if (!sir.is_valid()) return {};
+
+		if (sir.unwrap() == sizeof(T)) return man;
 		else return {};
 	}
 
@@ -75,8 +77,10 @@ public:
 	Maybe<Array<T>> read_array(Arena& arena, usize items)
 	{
 		T* man;
-		uint64 bytes = this->read_bytes(&man, sizeof(T), items);
-		if (bytes == sizeof(T) * items && man != nullptr) return Array<T>(arena, man, items);
+		Result<int64> sir = this->read_bytes(&man, sizeof(T), items);
+		if (!sir.is_valid()) return {};
+
+		if (sir.unwrap() == sizeof(T) * items && man != nullptr) return Array<T>(arena, man, items);
 		else return {};
 	}
 
@@ -85,14 +89,15 @@ public:
 
 	// Reads a line of text :) Supports both Unix `\n` and Windows `\r\n`, no one is gonna be using classic
 	// MacOS with this
-	String read_line(Arena& arena);
+	Maybe<String> read_line(Arena& arena);
 
 	// Reads the entire stream as bytes
-	Array<uint8> read_all_bytes(Arena& arena);
+	Maybe<Array<uint8>> read_all_bytes(Arena& arena);
 
 	// Reads the entire stream as text
-	String read_all_text(Arena& arena);
+	Maybe<String> read_all_text(Arena& arena);
 
+	// TODO scanf or whatever the fuck
 };
 
 // Interface for writing to streams of bytes
@@ -103,35 +108,38 @@ public:
 	virtual ~Writer() {}
 
 	// It flushes the stream :)
-	virtual void flush() = 0;
+	virtual Maybe<Error> flush() = 0;
 
 	// Writes bytes into the stream
-	virtual void write_bytes(Array<uint8> bytes) = 0;
+	virtual Maybe<Error> write_bytes(Array<uint8> bytes) = 0;
 
 	// Writes a struct into the stream
 	template<typename T>
-	void write_struct(T data)
+	Maybe<Error> write_struct(T data)
 	{
 		Array<uint8> manfuckyou(reinterpret_cast<uint8*>(&data), sizeof(T));
-		this->write_bytes(manfuckyou);
+		return this->write_bytes(manfuckyou);
 	}
 
 	// Writes an array into the stream. If `include_len` is true, it'll include an uint64 with the length
 	// (in items, not bytes) before the actual data.
 	template<typename T>
-	void write_array(Array<T> array, bool include_len)
+	Maybe<Error> write_array(Array<T> array, bool include_len)
 	{
 		if (include_len) {
-			this->write_struct(array.len());
+			Maybe<Error> mayhaps = this->write_struct(array.len());
+			if (mayhaps.is_valid()) return mayhaps;
 		}
 
 		Array<uint8> manfuckyou(reinterpret_cast<uint8*>(array.buffer()), array.len());
-		this->write_bytes(manfuckyou);
+		return this->write_bytes(manfuckyou);
 	}
 
 	// Writes a string into the stream. If `include_len` is true, it'll include an uint64 with the length
 	// before the actual string.
-	void write_string(String str, bool include_len);
+	Maybe<Error> write_string(String str, bool include_len);
+
+	// TODO printf or whatever the fuck
 };
 
 enum class FileMode : uint8 {
@@ -149,9 +157,15 @@ enum class FileMode : uint8 {
 // All backward slashes are automatically converted to forward slashes for consistency.
 class File : public Reader, public Writer
 {
-	// do you know how disastrous would it be to include windows.h in a header? just for fucking HANDLE?
-	// which is literally just void*? i would rather die
+	// so it can use it for errors
+	String path = "";
+	// i may eventually use windows' HANDLE
+	// and including windows.h in a header is insane
+	// i would rather die
 	void* fptr = nullptr;
+	// no need to calculate that more than once
+	// probably
+	// TODO what if there's a need to calculate that more than once
 	int64 length = -1;
 	// so it doesn't close stdout
 	bool is_std = false;
@@ -163,42 +177,38 @@ class File : public Reader, public Writer
 	friend void tr::init();
 
 public:
-	File() : fptr(nullptr), length(0), is_std(false), mode(FileMode::UNKNOWN) {}
+	File() {}
 	~File();
 
 	// Opens a fucking file from fucking somewhere. Returns null on error.
 	static Result<File*, FileError> open(Arena& arena, String path, FileMode mode);
 
-	// Closes the file :) files are reference counted so this is done automatically
+	// Closes the file :)
 	void close();
 
-	// Returns the current position of the cursor, or -1 if unknown/unsupported
-	int64 position() override;
+	// Returns the current position of the cursor, if available
+	Result<int64, Error> position() override;
 
-	// Returns the length of the file in bytes, or -1 if unknown/unsupported
-	int64 len() override;
+	// Returns the length of the file in bytes, if available
+	Result<int64, Error> len() override;
 
 	// If true, the file ended. That's what "eof" means, End Of File
-	bool eof() override;
+	Result<bool, Error> eof() override;
 
 	// Moves the cursor without reading anything
-	void seek(uint64 bytes, SeekFrom from) override;
+	Maybe<Error> seek(int64 bytes, SeekFrom from) override;
 
-	// Goes back to the beginning of the file. Always returns true, that's part of the `tr::Reader`
-	// interface lmao.
-	bool rewind() override;
+	// Goes back to the beginning of the file.
+	Maybe<Error> rewind() override;
 
 	// Reads any amount of bytes, and returns how many bytes were actually read.
-	uint64 read_bytes(void* out, uint64 size, uint64 items) override;
+	Result<int64, Error> read_bytes(void* out, int64 size, int64 items) override;
 
 	// It flushes the stream :)
-	void flush() override;
+	Maybe<Error> flush() override;
 
 	// Writes bytes into the stream
-	void write_bytes(Array<uint8> bytes) override;
-
-	// Returns the internal file handle. This is `FILE*` on Linux, and `HANDLE` on Windows.
-	void* cfile();
+	Maybe<Error> write_bytes(Array<uint8> bytes) override;
 
 	// If true, the file can be read.
 	bool can_read();
@@ -218,31 +228,32 @@ extern File std_out;
 // `stderr` but `tr::File`.
 extern File std_err;
 
-// Removes a file from a path, returns true if it succeeds.
-bool remove_file(String path);
+// Removes a file from a path
+Maybe<Error> remove_file(String path);
 
-// Renames or moves a file, returns true if it succeeds. Note this fails if the destination already exists
+// Moves or renames a file, returns true if it succeeds. Note this fails if the destination already exists
 // (unlike posix's `rename()` which overwrites the destination)
-bool rename_file(String from, String to);
+Maybe<Error> move_file(String from, String to);
 
 // Returns true if the file exists
 bool file_exists(String path);
 
-// Copies a file, returns true if it succeeded.
-bool copy_file(String src, String dst);
+// Copies a file lmao.
+Maybe<Error> copy_file(String src, String dst);
 
-// Creates a directory. This is recursive, so `tr::Directory::create("dir/otherdir")` will make both `dir`
-// and `otherdir`. Returns true if it succeeded.
-bool create_dir(String path);
+// Creates a directory. This is recursive, so `tr::create_dir("dir/otherdir")` will make both `dir`
+// and `otherdir`.
+Maybe<Error> create_dir(String path);
 
-// Removes a directory. Returns true if it succeeded.
-bool remove_dir(String path);
+// Removes a directory. You can only remove empty directories, if you want to remove their contents you'll
+// have to do that yourself.
+Maybe<Error> remove_dir(String path);
 
 // Lists all the files/directories
-Array<String> list(Arena& arena, String path);
+Result<Array<String>, Error> list_dir(Arena& arena, String path);
 
-// If true, the path is a file. Else, it's a directory. Returns null if it doesn't exist.
-Maybe<bool> is_file(String path);
+// If true, the path is a file. Else, it's a directory.
+Result<bool, Error> is_file(String path);
 
 }
 

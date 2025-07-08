@@ -38,7 +38,7 @@ public:
 	virtual ~Error() {}
 
 	// Returns the error message
-	virtual String message() = 0;
+	virtual String message() { return "unknown error"; };
 };
 
 // Basic error interface
@@ -55,22 +55,43 @@ public:
 // Error codes based on POSIX errno.h and WinError.h
 enum class FileErrorType : int32
 {
-	UNKNOWN, NOT_FOUND, ACCESS_DENIED, DEVICE_OR_RESOURCE_BUSY, NO_SPACE_LEFT, FILE_EXISTS, BAD_HANDLE,
-	HARDWARE_ERROR, IS_DIRECTORY, IS_NOT_DIRECTORY, TOO_MANY_OPEN_FILES, BROKEN_PIPE, FILENAME_TOO_LONG,
-	INVALID_ARGUMENT, READ_ONLY_FILESYSTEM, ILLEGAL_SEEK, DIRECTORY_NOT_EMPTY,
+	UNKNOWN,
+	NOT_FOUND, ACCESS_DENIED, DEVICE_OR_RESOURCE_BUSY, NO_SPACE_LEFT, FILE_EXISTS, BAD_HANDLE,
+	HARDWARE_ERROR_OR_UNKNOWN, IS_DIRECTORY, IS_NOT_DIRECTORY, TOO_MANY_OPEN_FILES, BROKEN_PIPE,
+	FILENAME_TOO_LONG, INVALID_ARGUMENT, READ_ONLY_FILESYSTEM, ILLEGAL_SEEK, DIRECTORY_NOT_EMPTY,
+};
+
+// This is just for getting the error message lmao.
+enum class FileOperation : int32
+{
+	UNKNOWN,
+	OPEN_FILE, CLOSE_FILE, GET_FILE_POSITION, GET_FILE_LENGTH, IS_EOF, SEEK_FILE, REWIND_FILE,
+	READ_FILE, FLUSH_FILE, WRITE_FILE, REMOVE_FILE, MOVE_FILE, COPY_FILE, CREATE_DIR, REMOVE_DIR,
+	LIST_DIR, IS_FILE,
 };
 
 // Error for filesystem craps.
 class FileError : public Error
 {
 public:
-	String path;
-	FileErrorType type;
+	String path_a = "";
+	String path_b = "";
+	FileErrorType type = FileErrorType::UNKNOWN;
+	FileOperation op = FileOperation::UNKNOWN;
 
-	// Checks errno.h/WinError.h so it gets the latest error :)
-	explicit FileError(String path);
+	FileError() {}
+	FileError(String path_a, String path_b, FileErrorType type, FileOperation op) :
+		path_a(path_a), path_b(path_b), type(type), op(op) {}
 
-	// This is required on Linux for some fucking reason
+	// Checks errno for errors :)
+	static FileError from_errno(String path_a, String path_b, FileOperation op);
+
+	#ifdef _WIN32
+	// Checks Windows' `GetLastError` for errors :)
+	static FileError from_win32(String path_a, String path_b, FileOperation op);
+	#endif
+
+	// Why.
 	static void reset_errors();
 
 	String message() override;

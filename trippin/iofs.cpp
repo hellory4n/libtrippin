@@ -42,7 +42,7 @@
 	#include <sys/types.h>
 	#include <dirent.h>
 	#include <unistd.h>
-	// #include <errno.h>
+	#include <errno.h>
 #endif
 
 #include "log.hpp"
@@ -52,18 +52,22 @@
 tr::Maybe<tr::String> tr::Reader::read_string(tr::Arena& arena, usize length)
 {
 	String str(arena, length);
-	uint64 read = this->read_bytes(str.buf(), sizeof(char), length);
-	if (read != length) return {};
+	Result<int64, Error> read = this->read_bytes(str.buf(), sizeof(char), length);
+	if (!read.is_valid()) return {};
+
+	if (read.unwrap() != int64(length)) return {};
 	else return str;
 }
 
-tr::String tr::Reader::read_line(Arena& arena)
+tr::Maybe<tr::String> tr::Reader::read_line(Arena& arena)
 {
 	Array<char> linema(tr::scratchpad, 0);
 
 	while (true) {
 		char byte = '\0';
-		uint64 read = this->read_bytes(&byte, sizeof(char), 1);
+		Result<int64, Error> result = this->read_bytes(&byte, sizeof(char), 1);
+		if (!result.is_valid()) return {};
+		int64 read = result.unwrap();
 
 		// eof? idfk man
 		if (read == 0) break;
@@ -74,7 +78,9 @@ tr::String tr::Reader::read_line(Arena& arena)
 		// windows :(
 		if (byte == '\r') {
 			char next_byte = '\0';
-			read = this->read_bytes(&next_byte, sizeof(char), 1);
+			result = this->read_bytes(&next_byte, sizeof(char), 1);
+			if (!result.is_valid()) return {};
+			read = result.unwrap();
 
 			// eof still counts
 			if (read == 0 || next_byte == '\n') break;
@@ -87,32 +93,55 @@ tr::String tr::Reader::read_line(Arena& arena)
 	return String(arena, linema.buf(), linema.len() + 1);
 }
 
-tr::Array<uint8> tr::Reader::read_all_bytes(tr::Arena& arena)
+tr::Maybe<tr::Array<uint8>> tr::Reader::read_all_bytes(tr::Arena& arena)
 {
-	Array<uint8> man(arena, this->len());
-	this->read_bytes(man.buf(), sizeof(uint8), this->len());
-	return man;
+	Result<int64, Error> length = this->len();
+	if (!length.is_valid()) return {};
+	int64 lenfrfr = length.unwrap();
+
+	Array<uint8> man(arena, lenfrfr);
+	Result<int64, Error> die = this->read_bytes(man.buf(), sizeof(uint8), lenfrfr);
+	if (die.is_valid()) return man;
+	else return {};
 }
 
-tr::String tr::Reader::read_all_text(tr::Arena& arena)
+tr::Maybe<tr::String> tr::Reader::read_all_text(tr::Arena& arena)
 {
-	String str(arena, this->len());
-	this->read_bytes(str.buf(), sizeof(uint8), this->len());
-	return str;
+	Result<int64, Error> length = this->len();
+	if (!length.is_valid()) return {};
+	int64 lenfrfr = length.unwrap();
+
+	String man(arena, lenfrfr);
+	Result<int64, Error> die = this->read_bytes(man.buf(), sizeof(char), lenfrfr);
+	if (die.is_valid()) return man;
+	else return {};
 }
 
-void tr::Writer::write_string(tr::String str, bool include_len)
+tr::Maybe<tr::Error> tr::Writer::write_string(tr::String str, bool include_len)
 {
 	if (include_len) {
-		this->write_struct(str.len());
+		Maybe<Error> help = this->write_struct(str.len());
+		if (help.is_valid()) return help;
 	}
 
 	Array<uint8> manfuckyou(reinterpret_cast<uint8*>(str.buf()), str.len());
-	this->write_bytes(manfuckyou);
+	return this->write_bytes(manfuckyou);
 }
 
-tr::MaybePtr<tr::File> tr::File::open(tr::Arena& arena, tr::String path, FileMode mode)
+#ifdef _WIN32
+/*
+ * WINDOWS IMPLEMENTATION
+ */
+// TODO use only windows APIs (massive pain in the ass)
+#else
+/*
+ * POSIX IMPLEMENTATION
+ */
+
+tr::Result<tr::File*, tr::FileError> tr::File::open(tr::Arena& arena, tr::String path, FileMode mode)
 {
+	FileError::reset_errors();
+
 	// get mode
 	String modefrfr;
 	switch (mode) {
@@ -127,21 +156,24 @@ tr::MaybePtr<tr::File> tr::File::open(tr::Arena& arena, tr::String path, FileMod
 
 	File& file = arena.make<File>();
 	file.fptr = fopen(path, modefrfr);
-	if (file.fptr == nullptr) return {};
+	if (file.fptr == nullptr) return FileError::from_errno(path, "", FileOperation::OPEN_FILE);
 
 	file.is_std = false;
 	file.mode = mode;
+	file.path = path;
 
 	// get length :)))))))))
 	fseek(reinterpret_cast<FILE*>(file.fptr), 0, SEEK_END);
 	file.length = ftell(reinterpret_cast<FILE*>(file.fptr));
 	::rewind(reinterpret_cast<FILE*>(file.fptr));
 
-	return file;
+	return &file;
 }
 
 void tr::File::close()
 {
+	FileError::reset_errors();
+
 	// is_std exists so it doesn't close tr::std_out and company
 	if (!this->is_std && this->fptr != nullptr) {
 		fclose(reinterpret_cast<FILE*>(this->fptr));
@@ -151,33 +183,35 @@ void tr::File::close()
 
 tr::File::~File()
 {
+	FileError::reset_errors();
 	this->close();
 }
 
-// TODO consider being less offensive?
-// not offensive as in "libtrippin has gone woke :("
-
-int64 tr::File::position()
+tr::Result<int64, tr::Error> tr::File::position()
 {
-	TR_ASSERT_MSG(this->fptr != nullptr, "uninitialized tr::File, initialize it you dumbass");
-	return ftell(reinterpret_cast<FILE*>(this->fptr));
+	FileError::reset_errors();
+
+	int64 pos = ftell(reinterpret_cast<FILE*>(this->fptr));
+	if (errno != 0) return FileError::from_errno(this->path, "", FileOperation::GET_FILE_POSITION);
+	else return pos;
 }
 
-int64 tr::File::len()
+tr::Result<int64, tr::Error> tr::File::len()
 {
-	TR_ASSERT_MSG(this->fptr != nullptr, "uninitialized tr::File, initialize it you dumbass");
+	FileError::reset_errors();
 	return this->length;
 }
 
-bool tr::File::eof()
+tr::Result<bool, tr::Error> tr::File::eof()
 {
-	TR_ASSERT_MSG(this->fptr != nullptr, "uninitialized tr::File, initialize it you dumbass");
-	return feof(this->fptr) != 0;
+	FileError::reset_errors();
+
+	return feof(reinterpret_cast<FILE*>(this->fptr)) != 0;
 }
 
-void tr::File::seek(uint64 bytes, tr::SeekFrom from)
+tr::Maybe<tr::Error> tr::File::seek(int64 bytes, tr::SeekFrom from)
 {
-	TR_ASSERT_MSG(this->fptr != nullptr, "uninitialized tr::File, initialize it you dumbass");
+	FileError::reset_errors();
 
 	int whence = SEEK_CUR;
 	switch (from) {
@@ -186,46 +220,48 @@ void tr::File::seek(uint64 bytes, tr::SeekFrom from)
 		case SeekFrom::END:     whence = SEEK_END; break;
 	}
 
-	fseek(this->fptr, bytes, whence);
+	fseek(reinterpret_cast<FILE*>(this->fptr), bytes, whence);
+	if (errno != 0) return FileError::from_errno(this->path, "", FileOperation::SEEK_FILE);
+	else return {};
 }
 
-bool tr::File::rewind()
+tr::Maybe<tr::Error> tr::File::rewind()
 {
-	TR_ASSERT_MSG(this->fptr != nullptr, "uninitialized tr::File, initialize it you dumbass");
-	::rewind(this->fptr);
-	return true;
+	FileError::reset_errors();
+
+	::rewind(reinterpret_cast<FILE*>(this->fptr));
+	if (errno != 0) return FileError::from_errno(this->path, "", FileOperation::REWIND_FILE);
+	else return {};
 }
 
-uint64 tr::File::read_bytes(void* out, uint64 size, uint64 items)
+tr::Result<int64, tr::Error> tr::File::read_bytes(void* out, int64 size, int64 items)
 {
-	TR_ASSERT_MSG(this->fptr != nullptr, "uninitialized tr::File, initialize it you dumbass");
+	FileError::reset_errors();
 	TR_ASSERT_MSG(out != nullptr, "you dumbass it's supposed to go somewhere if you don't want to use it use File::seek() dumbass");
 	TR_ASSERT_MSG(this->can_read(), "dumbass you can't read this file");
 
-	// TODO is this necessary?
-	TR_ASSERT_MSG(size > 0, "dumbass why would you read 0 bytes");
-	TR_ASSERT_MSG(items > 0, "dumbass why would you read 0 bytes");
-
-	return fread(out, size, items, this->fptr);
+	usize bytes = fread(out, size, items, reinterpret_cast<FILE*>(this->fptr));
+	if (errno != 0) return FileError::from_errno(this->path, "", FileOperation::READ_FILE);
+	else return bytes;
 }
 
-void tr::File::flush()
+tr::Maybe<tr::Error> tr::File::flush()
 {
-	TR_ASSERT_MSG(this->fptr != nullptr, "uninitialized tr::File, initialize it you dumbass");
-	fflush(this->fptr);
+	FileError::reset_errors();
+
+	fflush(reinterpret_cast<FILE*>(this->fptr));
+	if (errno != 0) return FileError::from_errno(this->path, "", FileOperation::FLUSH_FILE);
+	else return {};
 }
 
-void tr::File::write_bytes(Array<uint8> bytes)
+tr::Maybe<tr::Error> tr::File::write_bytes(Array<uint8> bytes)
 {
-	TR_ASSERT_MSG(this->fptr != nullptr, "uninitialized tr::File, initialize it you dumbass");
+	FileError::reset_errors();
 	TR_ASSERT_MSG(this->can_write(), "dumbass you can't write to this file");
 
-	fwrite(bytes.buf(), sizeof(uint8), bytes.len(), this->fptr);
-}
-
-FILE* tr::File::cfile()
-{
-	return this->fptr;
+	fwrite(bytes.buf(), sizeof(uint8), bytes.len(), reinterpret_cast<FILE*>(this->fptr));
+	if (errno != 0) return FileError::from_errno(this->path, "", FileOperation::WRITE_FILE);
+	else return {};
 }
 
 bool tr::File::can_read()
@@ -254,40 +290,40 @@ bool tr::File::can_write()
 	}
 }
 
-bool tr::remove_file(tr::String path)
+tr::Maybe<tr::Error> tr::remove_file(tr::String path)
 {
-	return remove(path) == 0;
+	FileError::reset_errors();
+
+	remove(path);
+	if (errno != 0) return FileError::from_errno(path, "", FileOperation::REMOVE_FILE);
+	else return {};
 }
 
-bool tr::rename_file(tr::String from, tr::String to)
+tr::Maybe<tr::Error> tr::move_file(tr::String from, tr::String to)
 {
+	FileError::reset_errors();
+
 	// libc rename() is different on windows and posix
 	// on posix it replaces the destination if it already exists
 	// on windows it fails in that case
+	if (tr::file_exists(to)) return FileError(from, to, FileErrorType::FILE_EXISTS, FileOperation::MOVE_FILE);
 
-	if (tr::file_exists(to)) return false;
-
-	#ifdef _WIN32
-	return MoveFileEx(from, to, MOVEFILE_REPLACE_EXISTING) != 0;
-	#else
-	return rename(from, to) == 0;
-	#endif
+	rename(from, to);
+	if (errno != 0) return FileError::from_errno(from, to, FileOperation::MOVE_FILE);
+	else return {};
 }
 
 bool tr::file_exists(tr::String path)
 {
+	FileError::reset_errors();
+
 	// we could just fopen(path, "r") then check if that's null, but then it would return false on permission
 	// errors, even though it does in fact exist
-	#ifdef _WIN32
-	DWORD attrib = GetFileAttributesA(path);
-	return attrib != INVALID_FILE_ATTRIBUTES && !(attrib & FILE_ATTRIBUTE_DIRECTORY);
-	#else
 	struct stat buffer;
     return stat(path, &buffer) == 0;
-	#endif
 }
 
-bool tr::create_dir(tr::String)
+tr::Maybe<tr::Error> tr::create_dir(tr::String)
 {
 	tr::panic("i didn't finish this function i'm busy uh getting milk");
 	// TODO use String.split dumbass
@@ -318,3 +354,5 @@ bool tr::create_dir(tr::String)
 	// return true;
 	// #endif
 }
+
+#endif
