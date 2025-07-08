@@ -37,9 +37,7 @@ bool tr::String::operator==(const tr::String& other) const
 
 tr::String tr::String::substr(tr::Arena& arena, usize start, usize end) const
 {
-	// shut up asan
-	String str = String(this->buf() + start, end + 1)
-		.duplicate(arena);
+	String str = String(this->buf() + start, end + 1).duplicate(arena);
 	str[end] = '\0';
 	return str;
 }

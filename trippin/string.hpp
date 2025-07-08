@@ -38,7 +38,7 @@ namespace tr {
 // RAII fuckery, so you can pass them by value.
 class String
 {
-	Array<char> array;
+	Array<char> array = {};
 
 public:
 	// Initializes a string from an arena and C string.

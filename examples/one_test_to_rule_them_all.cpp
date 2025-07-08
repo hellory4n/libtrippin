@@ -61,9 +61,8 @@ static void test::arrays()
 {
 	tr::log("\n==== ARRAYS ====");
 
-	tr::Array<int64> array = {1, 2, 3, 4, 5};
-	array = array.duplicate(tr::scratchpad);
-	// array.add(66); // its deprecated :)
+	tr::Array<int64> array(tr::scratchpad, {1, 2, 3, 4, 5});
+	array.add(66);
 	for (tr::ArrayItem<int64> item : array) {
 		tr::log("array[%zu] = %li", item.i, item.val);
 	}
@@ -173,10 +172,15 @@ int main()
 	tr::init();
 
 	test::logging();
+	tr::scratchpad.reset();
 	test::memory();
+	tr::scratchpad.reset();
 	test::arrays();
+	tr::scratchpad.reset();
 	test::strings();
+	tr::scratchpad.reset();
 	test::hashmaps();
+	tr::scratchpad.reset();
 	// put this one last bcuz its the most likely to fail
 	test::filesystem();
 

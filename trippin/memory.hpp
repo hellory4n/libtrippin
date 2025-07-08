@@ -225,6 +225,9 @@ public:
 		this->ptr = const_cast<T*>(initlist.begin());
 	}
 
+	explicit Array(Arena& arena, std::initializer_list<T> initlist) :
+		Array(arena, const_cast<T*>(initlist.begin()), initlist.size()) {}
+
 	// man fuck you
 	Array() : ptr(nullptr), src_arena(nullptr), length(0), capacity(0) {}
 
