@@ -49,24 +49,30 @@
 
 #include "iofs.hpp"
 
-tr::Maybe<tr::String> tr::Reader::read_string(tr::Arena& arena, usize length)
+tr::Result<tr::String, tr::Error> tr::Reader::read_string(tr::Arena& arena, usize length)
 {
 	String str(arena, length);
 	Result<int64, Error> read = this->read_bytes(str.buf(), sizeof(char), length);
-	if (!read.is_valid()) return {};
+	if (!read.is_valid()) return Result<String, Error>(read.unwrap_err());
 
-	if (read.unwrap() != int64(length)) return {};
+	if (read.unwrap() != int64(length)) {
+		return StringError(
+			tr::sprintf(tr::scratchpad, 256, "expected %li bytes, got %li (might be EOF)",
+				length, read.unwrap()
+			)
+		);
+	}
 	else return str;
 }
 
-tr::Maybe<tr::String> tr::Reader::read_line(Arena& arena)
+tr::Result<tr::String, tr::Error> tr::Reader::read_line(Arena& arena)
 {
 	Array<char> linema(tr::scratchpad, 0);
 
 	while (true) {
 		char byte = '\0';
 		Result<int64, Error> result = this->read_bytes(&byte, sizeof(char), 1);
-		if (!result.is_valid()) return {};
+		if (!result.is_valid()) return Result<String, Error>(result.unwrap_err());
 		int64 read = result.unwrap();
 
 		// eof? idfk man
@@ -79,7 +85,7 @@ tr::Maybe<tr::String> tr::Reader::read_line(Arena& arena)
 		if (byte == '\r') {
 			char next_byte = '\0';
 			result = this->read_bytes(&next_byte, sizeof(char), 1);
-			if (!result.is_valid()) return {};
+			if (!result.is_valid()) return Result<String, Error>(result.unwrap_err());
 			read = result.unwrap();
 
 			// eof still counts
@@ -93,35 +99,35 @@ tr::Maybe<tr::String> tr::Reader::read_line(Arena& arena)
 	return String(arena, linema.buf(), linema.len() + 1);
 }
 
-tr::Maybe<tr::Array<uint8>> tr::Reader::read_all_bytes(tr::Arena& arena)
+tr::Result<tr::Array<uint8>, tr::Error> tr::Reader::read_all_bytes(tr::Arena& arena)
 {
 	Result<int64, Error> length = this->len();
-	if (!length.is_valid()) return {};
+	if (!length.is_valid()) return Result<Array<uint8>, Error>(length.unwrap_err());
 	int64 lenfrfr = length.unwrap();
 
 	Array<uint8> man(arena, lenfrfr);
 	Result<int64, Error> die = this->read_bytes(man.buf(), sizeof(uint8), lenfrfr);
 	if (die.is_valid()) return man;
-	else return {};
+	else return Result<Array<uint8>, Error>(die.unwrap_err());
 }
 
-tr::Maybe<tr::String> tr::Reader::read_all_text(tr::Arena& arena)
+tr::Result<tr::String, tr::Error> tr::Reader::read_all_text(tr::Arena& arena)
 {
 	Result<int64, Error> length = this->len();
-	if (!length.is_valid()) return {};
+	if (!length.is_valid()) return Result<String, Error>(length.unwrap_err());
 	int64 lenfrfr = length.unwrap();
 
 	String man(arena, lenfrfr);
 	Result<int64, Error> die = this->read_bytes(man.buf(), sizeof(char), lenfrfr);
 	if (die.is_valid()) return man;
-	else return {};
+	else return Result<String, Error>(die.unwrap_err());
 }
 
-tr::Maybe<tr::Error> tr::Writer::write_string(tr::String str, bool include_len)
+tr::Result<void, tr::Error> tr::Writer::write_string(tr::String str, bool include_len)
 {
 	if (include_len) {
-		Maybe<Error> help = this->write_struct(str.len());
-		if (help.is_valid()) return help;
+		Result<void, Error> help = this->write_struct(str.len());
+		if (!help.is_valid()) return help;
 	}
 
 	Array<uint8> manfuckyou(reinterpret_cast<uint8*>(str.buf()), str.len());
@@ -138,7 +144,7 @@ tr::Maybe<tr::Error> tr::Writer::write_string(tr::String str, bool include_len)
  * POSIX IMPLEMENTATION
  */
 
-tr::Result<tr::File*, tr::FileError> tr::File::open(tr::Arena& arena, tr::String path, FileMode mode)
+tr::Result<tr::File, tr::FileError> tr::File::open(tr::String path, FileMode mode)
 {
 	FileError::reset_errors();
 
@@ -154,7 +160,7 @@ tr::Result<tr::File*, tr::FileError> tr::File::open(tr::Arena& arena, tr::String
 		default:                          modefrfr = "";    break;
 	}
 
-	File& file = arena.make<File>();
+	File file = {};
 	file.fptr = fopen(path, modefrfr);
 	if (file.fptr == nullptr) return FileError::from_errno(path, "", FileOperation::OPEN_FILE);
 
@@ -167,7 +173,7 @@ tr::Result<tr::File*, tr::FileError> tr::File::open(tr::Arena& arena, tr::String
 	file.length = ftell(reinterpret_cast<FILE*>(file.fptr));
 	::rewind(reinterpret_cast<FILE*>(file.fptr));
 
-	return &file;
+	return file;
 }
 
 void tr::File::close()
@@ -209,7 +215,7 @@ tr::Result<bool, tr::Error> tr::File::eof()
 	return feof(reinterpret_cast<FILE*>(this->fptr)) != 0;
 }
 
-tr::Maybe<tr::Error> tr::File::seek(int64 bytes, tr::SeekFrom from)
+tr::Result<void, tr::Error> tr::File::seek(int64 bytes, tr::SeekFrom from)
 {
 	FileError::reset_errors();
 
@@ -225,7 +231,7 @@ tr::Maybe<tr::Error> tr::File::seek(int64 bytes, tr::SeekFrom from)
 	else return {};
 }
 
-tr::Maybe<tr::Error> tr::File::rewind()
+tr::Result<void, tr::Error> tr::File::rewind()
 {
 	FileError::reset_errors();
 
@@ -245,7 +251,7 @@ tr::Result<int64, tr::Error> tr::File::read_bytes(void* out, int64 size, int64 i
 	else return bytes;
 }
 
-tr::Maybe<tr::Error> tr::File::flush()
+tr::Result<void, tr::Error> tr::File::flush()
 {
 	FileError::reset_errors();
 
@@ -254,7 +260,7 @@ tr::Maybe<tr::Error> tr::File::flush()
 	else return {};
 }
 
-tr::Maybe<tr::Error> tr::File::write_bytes(Array<uint8> bytes)
+tr::Result<void, tr::Error> tr::File::write_bytes(Array<uint8> bytes)
 {
 	FileError::reset_errors();
 	TR_ASSERT_MSG(this->can_write(), "dumbass you can't write to this file");
@@ -290,7 +296,7 @@ bool tr::File::can_write()
 	}
 }
 
-tr::Maybe<tr::Error> tr::remove_file(tr::String path)
+tr::Result<void, tr::Error> tr::remove_file(tr::String path)
 {
 	FileError::reset_errors();
 
@@ -299,7 +305,7 @@ tr::Maybe<tr::Error> tr::remove_file(tr::String path)
 	else return {};
 }
 
-tr::Maybe<tr::Error> tr::move_file(tr::String from, tr::String to)
+tr::Result<void, tr::Error> tr::move_file(tr::String from, tr::String to)
 {
 	FileError::reset_errors();
 
@@ -323,7 +329,7 @@ bool tr::file_exists(tr::String path)
     return stat(path, &buffer) == 0;
 }
 
-tr::Maybe<tr::Error> tr::create_dir(tr::String)
+tr::Result<void, tr::Error> tr::create_dir(tr::String)
 {
 	tr::panic("i didn't finish this function i'm busy uh getting milk");
 	// TODO use String.split dumbass

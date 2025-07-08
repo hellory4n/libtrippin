@@ -113,7 +113,7 @@ public:
 	T& unwrap() const
 	{
 		if (!this->is_valid()) {
-			Error* errormaballs = reinterpret_cast<Error*>(value.right());
+			Error* errormaballs = dynamic_cast<Error*>(&value.right());
 			String error;
 			if (errormaballs == nullptr) {
 				error = "unknown error";
@@ -133,6 +133,14 @@ public:
 		return this->value.left();
 	}
 
+	E unwrap_err() const
+	{
+		if (this->is_valid()) {
+			tr::panic("couldn't unwrap tr::Result<T, E>'s error, as it's valid");
+		}
+		return this->value.right();
+	}
+
 	// Similar to the `??`/null coalescing operator in modern languages
 	const T& value_or(const T& other) const { return this->is_valid() ? this->unwrap() : other; }
 
@@ -141,6 +149,57 @@ public:
 	{
 		if (this->is_valid()) valid_func(this->value.left());
 		else error_func(this->value.right());
+	}
+};
+
+// Result for when you don't need the result :D
+template<typename E>
+class Result<void, E>
+{
+	Maybe<E> value;
+
+public:
+	Result() : value() {}
+	Result(const E& err) : value(err) {}
+
+	// If false, it has an error.
+	bool is_valid() const { return !value.is_valid(); }
+
+	// Pretty much just asserts that it's valid :D
+	void unwrap() const
+	{
+		if (!this->is_valid()) {
+			Error* errormaballs = dynamic_cast<Error*>(&value.unwrap());
+			String error;
+			if (errormaballs == nullptr) {
+				error = "unknown error";
+				#ifdef DEBUG
+				tr::panic("tr::Result<T, E> is supposed to use tr::Error you distinguished gentleman/lady/everything in between");
+				#else
+				tr::warn("warning: tr::Result<T, E> is supposed to use tr::Error you distinguished gentleman/lady/everything in between");
+				#endif
+			}
+			else {
+				error = errormaballs->message();
+			}
+
+			tr::panic("couldn't unwrap tr::Result<T, E>: %s", error.buf());
+		}
+	}
+
+	E unwrap_err() const
+	{
+		if (this->is_valid()) {
+			tr::panic("couldn't unwrap tr::Result<T, E>'s error, as it's valid");
+		}
+		return this->value.right();
+	}
+
+	// Calls a function (usually a lambda) depending on whether it's valid or not.
+	void match(std::function<void()> valid_func, std::function<void(E& err)> error_func)
+	{
+		if (this->is_valid()) valid_func();
+		else error_func(this->value.unwrap());
 	}
 };
 

@@ -213,11 +213,11 @@ public:
 	}
 
 	// Initializes an array that points to any buffer. You really should only use this for temporary arrays.
-	explicit Array(T* data, usize len) : src_arena(nullptr), ptr(data), length(len), capacity(len) {}
+	explicit Array(T* data, usize len) : ptr(data), src_arena(nullptr), length(len), capacity(len) {}
 
 	// why bjarne stroustrup why can't i make this myself why is std::initializer_list<T> special i know
 	// this is from c++11 but i don't care i'm gonna blame bjarne stroustrup inventor of C incremented
-	Array(std::initializer_list<T> initlist)
+	Array(std::initializer_list<T> initlist) : src_arena(nullptr)
 	{
 		this->capacity = initlist.size();
 		this->length = initlist.size();
@@ -226,7 +226,7 @@ public:
 	}
 
 	// man fuck you
-	Array() : src_arena(nullptr), ptr(nullptr), length(0), capacity(0) {}
+	Array() : ptr(nullptr), src_arena(nullptr), length(0), capacity(0) {}
 
 	T& operator[](usize idx) const
 	{

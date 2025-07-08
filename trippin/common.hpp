@@ -117,14 +117,14 @@ public:
 	L& left() const
 	{
 		if (!this->is_left()) tr::panic("Either<L, R> is right, not left");
-		else return this->value.left;
+		else return const_cast<L&>(std::get<0>(this->value));
 	}
 
 	// Returns the right value, or panics if it's not right
 	R& right() const
 	{
 		if (!this->is_right()) tr::panic("Either<L, R> is right, not left");
-		else return this->value.right;
+		else return const_cast<R&>(std::get<1>(this->value));
 	}
 
 	// Calls a function (usually a lambda) depending on whether it's left, or right.
@@ -183,7 +183,7 @@ public:
 	// Gets the value or panics if it's null
 	T& unwrap() const
 	{
-		if (this->has_value) return this->value.value();
+		if (this->has_value) return const_cast<T&>(this->value.value());
 		else tr::panic("couldn't unwrap Maybe<T>");
 	}
 

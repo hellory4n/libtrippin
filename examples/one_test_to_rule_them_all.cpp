@@ -14,6 +14,7 @@ namespace test {
 	static void arrays();
 	static void strings();
 	static void hashmaps();
+	static void filesystem();
 }
 
 static void test::logging()
@@ -137,6 +138,35 @@ static void test::hashmaps()
 	tr::log("length %zu, capacity %zu", hashmaballs.len(), hashmaballs.cap());
 }
 
+static void test::filesystem()
+{
+	tr::log("\n==== FILESYSTEM ====");
+	// so much .unwrap() it looks like rust
+	// i want it to crash if something goes wrong tho so that's why
+
+	tr::File wf = tr::File::open("fucker.txt", tr::FileMode::WRITE_TEXT).unwrap();
+	wf.write_string("Crap crappington.\nother line", false);
+	wf.close();
+
+	tr::File rf = tr::File::open("fucker.txt", tr::FileMode::READ_TEXT).unwrap();
+	tr::String line1 = rf.read_line(tr::scratchpad).unwrap();
+	tr::String line2 = rf.read_line(tr::scratchpad).unwrap();
+	tr::log("line 1: %s; line 2: %s", line1.buf(), line2.buf());
+	rf.close();
+
+	tr::std_out.write_string("EVIL PRINTF FROM LIBTRIPPIN\n", false).unwrap();
+	tr::std_out.write_string("please input some fucking bullshit: ", false).unwrap();
+	tr::String line = tr::std_in.read_line(tr::scratchpad).unwrap();
+	tr::std_out.write_string("the fucking bullshit: ", false).unwrap();
+	tr::std_out.write_string(line, false).unwrap();
+	tr::std_out.write_string("\n", false).unwrap();
+
+	// help.
+	tr::move_file("fucker.txt", "fuckoffman.txt").unwrap();
+	TR_ASSERT(tr::file_exists("fuckoffman.txt"));
+	tr::remove_file("fuckoffman.txt").unwrap();
+}
+
 int main()
 {
 	tr::use_log_file("log.txt");
@@ -147,6 +177,8 @@ int main()
 	test::arrays();
 	test::strings();
 	test::hashmaps();
+	// put this one last bcuz its the most likely to fail
+	test::filesystem();
 
 	tr::free();
 

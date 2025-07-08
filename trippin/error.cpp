@@ -88,6 +88,58 @@ tr::FileError tr::FileError::from_win32(tr::String path)
 
 tr::String tr::FileError::message()
 {
-	// TODO make this shit
-	return "FileError messages not implemented yet lmao";
+	String operation;
+	switch (this->op) {
+		case FileOperation::OPEN_FILE:         operation = "couldn't open file";             break;
+		case FileOperation::CLOSE_FILE:        operation = "couldn't close file";            break;
+		case FileOperation::GET_FILE_POSITION: operation = "couldn't get file position";     break;
+		case FileOperation::GET_FILE_LENGTH:   operation = "couldn't get file length";       break;
+		case FileOperation::IS_EOF:            operation = "couldn't check if file ended";   break;
+		case FileOperation::SEEK_FILE:         operation = "couldn't seek file";             break;
+		case FileOperation::REWIND_FILE:       operation = "couldn't rewind file";           break;
+		case FileOperation::READ_FILE:         operation = "couldn't read file";             break;
+		case FileOperation::FLUSH_FILE:        operation = "couldn't flush file";            break;
+		case FileOperation::WRITE_FILE:        operation = "couldn't write file";            break;
+		case FileOperation::REMOVE_FILE:       operation = "couldn't remove file";           break;
+		case FileOperation::MOVE_FILE:         operation = "couldn't move file";             break;
+		case FileOperation::COPY_FILE:         operation = "couldn't copy file";             break;
+		case FileOperation::CREATE_DIR:        operation = "couldn't create directory";      break;
+		case FileOperation::REMOVE_DIR:        operation = "couldn't remove directory";      break;
+		case FileOperation::LIST_DIR:          operation = "couldn't list directory";        break;
+		case FileOperation::IS_FILE:           operation = "couldn't check if path is file"; break;
+		default:                               operation = "couldn't do file operation";     break;
+	}
+
+	String error;
+	switch (this->type) {
+		case FileErrorType::UNKNOWN:                   error = "unknown error";                         break;
+		case FileErrorType::NOT_FOUND:                 error = "no such file or directory";             break;
+		case FileErrorType::ACCESS_DENIED:             error = "access denied";                         break;
+		case FileErrorType::DEVICE_OR_RESOURCE_BUSY:   error = "device or resource busy";               break;
+		case FileErrorType::NO_SPACE_LEFT:             error = "no space left on device";               break;
+		case FileErrorType::FILE_EXISTS:               error = "file exists";                           break;
+		case FileErrorType::BAD_HANDLE:                error = "bad file handle";                       break;
+		case FileErrorType::HARDWARE_ERROR_OR_UNKNOWN: error = "i/o error (might be a hardware issue)"; break;
+		case FileErrorType::IS_DIRECTORY:              error = "is directory";                          break;
+		case FileErrorType::IS_NOT_DIRECTORY:          error = "is not directory";                      break;
+		case FileErrorType::TOO_MANY_OPEN_FILES:       error = "too many open files";                   break;
+		case FileErrorType::BROKEN_PIPE:               error = "broken pipe";                           break;
+		case FileErrorType::FILENAME_TOO_LONG:         error = "filename too long";                     break;
+		case FileErrorType::INVALID_ARGUMENT:          error = "invalid argument";                      break;
+		case FileErrorType::READ_ONLY_FILESYSTEM:      error = "read-only filesystem";                  break;
+		case FileErrorType::ILLEGAL_SEEK:              error = "illegal seek";                          break;
+		case FileErrorType::DIRECTORY_NOT_EMPTY:       error = "directory not empty";                   break;
+	}
+
+	// these operations use 2 paths :)
+	if (this->op == FileOperation::COPY_FILE || this->op == FileOperation::MOVE_FILE) {
+		return tr::sprintf(tr::scratchpad, 512, "%s (source '%s', destination '%s'): %s",
+			operation.buf(), this->path_a.buf(), this->path_b.buf(), error.buf()
+		);
+	}
+	else {
+		return tr::sprintf(tr::scratchpad, 512, "%s (path '%s'): %s",
+			operation.buf(), this->path_a.buf(), error.buf()
+		);
+	}
 }
