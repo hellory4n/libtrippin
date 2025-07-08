@@ -143,6 +143,8 @@ static void test::filesystem()
 	// so much .unwrap() it looks like rust
 	// i want it to crash if something goes wrong tho so that's why
 
+	auto fuck = tr::File::open("fucker.txt", tr::FileMode::WRITE_TEXT);
+	tr::panic("oh no");
 	tr::File& wf = *tr::File::open("fucker.txt", tr::FileMode::WRITE_TEXT).unwrap();
 	wf.write_string("Crap crappington.\nother line", false);
 	wf.close();

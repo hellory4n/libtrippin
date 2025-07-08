@@ -98,11 +98,11 @@ void panic(const char* fmt, ...);
 template<typename L, typename R>
 class Either
 {
-	enum class Side : uint8 { LEFT, RIGHT };
+	enum class Side : uint8 { UNINITIALIZED, LEFT, RIGHT };
 
 	// TODO implement it yourself you scoundrel
-	std::variant<L, R> value;
-	Side side;
+	std::variant<L, R> value = {};
+	Side side = Side::UNINITIALIZED;
 
 public:
 	Either(const L& left) : value(left), side(Side::LEFT) {}
@@ -141,7 +141,7 @@ template<typename T>
 class Maybe
 {
 	// TODO implement it yourself you scoundrel
-	std::optional<T> value;
+	std::optional<T> value = {};
 	bool has_value = false;
 
 public:

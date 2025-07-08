@@ -101,7 +101,7 @@ public:
 template<typename T, typename E = StringError>
 class Result
 {
-	Either<T, E> value;
+	Either<T, E> value = {};
 
 public:
 	Result(const T& val) : value(val) {}
