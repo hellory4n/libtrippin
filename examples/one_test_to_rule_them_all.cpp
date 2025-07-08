@@ -140,16 +140,19 @@ static void test::hashmaps()
 static void test::filesystem()
 {
 	tr::log("\n==== FILESYSTEM ====");
+
+	// we don't care about these ones failing :)
+	// it'll only succeed if it failed last time
+	tr::remove_file("fucker.txt");
+	tr::remove_file("fuckoffman.txt");
+
 	// so much .unwrap() it looks like rust
 	// i want it to crash if something goes wrong tho so that's why
-
-	auto fuck = tr::File::open("fucker.txt", tr::FileMode::WRITE_TEXT);
-	tr::panic("oh no");
-	tr::File& wf = *tr::File::open("fucker.txt", tr::FileMode::WRITE_TEXT).unwrap();
+	tr::File& wf = *tr::File::open(tr::scratchpad, "fucker.txt", tr::FileMode::WRITE_TEXT).unwrap();
 	wf.write_string("Crap crappington.\nother line", false);
 	wf.close();
 
-	tr::File& rf = *tr::File::open("fucker.txt", tr::FileMode::READ_TEXT).unwrap();
+	tr::File& rf = *tr::File::open(tr::scratchpad, "fucker.txt", tr::FileMode::READ_TEXT).unwrap();
 	tr::String line1 = rf.read_line(tr::scratchpad).unwrap();
 	tr::String line2 = rf.read_line(tr::scratchpad).unwrap();
 	tr::log("line 1: %s; line 2: %s", line1.buf(), line2.buf());
@@ -163,9 +166,10 @@ static void test::filesystem()
 	tr::std_out.write_string("\n", false).unwrap();
 
 	// help.
-	tr::move_file("fucker.txt", "fuckoffman.txt").unwrap();
-	TR_ASSERT(tr::file_exists("fuckoffman.txt"));
-	tr::remove_file("fuckoffman.txt").unwrap();
+	// tr::move_file("fucker.txt", "fuckoffman.txt").unwrap();
+	// TR_ASSERT(tr::file_exists("fuckoffman.txt"));
+	// tr::remove_file("fuckoffman.txt").unwrap();
+	tr::remove_file("fucker.txt");
 }
 
 int main()

@@ -123,7 +123,7 @@ public:
 	virtual Result<void, Error> flush() = 0;
 
 	// Writes bytes into the stream
-	virtual Result<void, Error> write_bytes(Array<uint8> bytes) { tr::panic("unimplemented :(");};
+	virtual Result<void, Error> write_bytes(Array<uint8> bytes) = 0;
 
 	// Writes a struct into the stream
 	template<typename T>
@@ -171,14 +171,17 @@ class File : public Reader, public Writer
 {
 	// so it can use it for errors
 	String path = "";
+
 	// i may eventually use windows' HANDLE
 	// and including windows.h in a header is insane
 	// i would rather die
 	void* fptr = nullptr;
+
 	// no need to calculate that more than once
 	// probably
 	// TODO what if there's a need to calculate that more than once
 	int64 length = -1;
+
 	// so it doesn't close stdout
 	bool is_std = false;
 
@@ -189,11 +192,11 @@ class File : public Reader, public Writer
 	friend void tr::init();
 
 public:
-	File() {}
+	File() : path(""), fptr(nullptr), length(-1), is_std(false), mode(FileMode::UNKNOWN) {}
 	~File();
 
 	// Opens a fucking file from fucking somewhere. Returns null on error.
-	static Result<File*, FileError> open(String path, FileMode mode);
+	static Result<File*, FileError> open(Arena& arena, String path, FileMode mode);
 
 	// Closes the file :)
 	void close();
@@ -241,31 +244,31 @@ extern File std_out;
 extern File std_err;
 
 // Removes a file from a path
-Result<void, Error> remove_file(String path);
+Result<void, FileError> remove_file(String path);
 
 // Moves or renames a file, returns true if it succeeds. Note this fails if the destination already exists
 // (unlike posix's `rename()` which overwrites the destination)
-Result<void, Error> move_file(String from, String to);
+Result<void, FileError> move_file(String from, String to);
 
 // Returns true if the file exists
 bool file_exists(String path);
 
 // Copies a file lmao.
-Result<void, Error> copy_file(String src, String dst);
+Result<void, FileError> copy_file(String src, String dst);
 
 // Creates a directory. This is recursive, so `tr::create_dir("dir/otherdir")` will make both `dir`
 // and `otherdir`.
-Result<void, Error> create_dir(String path);
+Result<void, FileError> create_dir(String path);
 
 // Removes a directory. You can only remove empty directories, if you want to remove their contents you'll
 // have to do that yourself.
-Result<void, Error> remove_dir(String path);
+Result<void, FileError> remove_dir(String path);
 
 // Lists all the files/directories
-Result<Array<String>, Error> list_dir(Arena& arena, String path);
+Result<Array<String>, FileError> list_dir(Arena& arena, String path);
 
 // If true, the path is a file. Else, it's a directory.
-Result<bool, Error> is_file(String path);
+Result<bool, FileError> is_file(String path);
 
 }
 

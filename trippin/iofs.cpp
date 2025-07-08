@@ -96,7 +96,8 @@ tr::Result<tr::String, tr::Error> tr::Reader::read_line(Arena& arena)
 		linema.add(byte);
 	}
 
-	return String(arena, linema.buf(), linema.len() + 1);
+	if (linema.len() == 0) return String("");
+	else return String(arena, linema.buf(), linema.len() + 1);
 }
 
 tr::Result<tr::Array<uint8>, tr::Error> tr::Reader::read_all_bytes(tr::Arena& arena)
@@ -144,7 +145,7 @@ tr::Result<void, tr::Error> tr::Writer::write_string(tr::String str, bool includ
  * POSIX IMPLEMENTATION
  */
 
-tr::Result<tr::File*, tr::FileError> tr::File::open(tr::String path, FileMode mode)
+tr::Result<tr::File*, tr::FileError> tr::File::open(tr::Arena& arena, tr::String path, FileMode mode)
 {
 	FileError::reset_errors();
 
@@ -160,7 +161,7 @@ tr::Result<tr::File*, tr::FileError> tr::File::open(tr::String path, FileMode mo
 		default:                          modefrfr = "";    break;
 	}
 
-	File file = {};
+	File& file = arena.make<File>();
 	file.fptr = fopen(path, modefrfr);
 	if (file.fptr == nullptr) return FileError::from_errno(path, "", FileOperation::OPEN_FILE);
 
@@ -296,7 +297,7 @@ bool tr::File::can_write()
 	}
 }
 
-tr::Result<void, tr::Error> tr::remove_file(tr::String path)
+tr::Result<void, tr::FileError> tr::remove_file(tr::String path)
 {
 	FileError::reset_errors();
 
@@ -305,7 +306,7 @@ tr::Result<void, tr::Error> tr::remove_file(tr::String path)
 	else return {};
 }
 
-tr::Result<void, tr::Error> tr::move_file(tr::String from, tr::String to)
+tr::Result<void, tr::FileError> tr::move_file(tr::String from, tr::String to)
 {
 	FileError::reset_errors();
 
@@ -329,7 +330,7 @@ bool tr::file_exists(tr::String path)
     return stat(path, &buffer) == 0;
 }
 
-tr::Result<void, tr::Error> tr::create_dir(tr::String)
+tr::Result<void, tr::FileError> tr::create_dir(tr::String)
 {
 	tr::panic("i didn't finish this function i'm busy uh getting milk");
 	// TODO use String.split dumbass

@@ -38,7 +38,7 @@ public:
 	virtual ~Error() {}
 
 	// Returns the error message
-	virtual String message() { return "unknown error"; };
+	virtual String message() { return "unknown error (tr::Error being used directly)"; };
 };
 
 // Basic error interface
@@ -163,7 +163,7 @@ public:
 	Result(const E& err) : value(err) {}
 
 	// If false, it has an error.
-	bool is_valid() const { return !value.is_valid(); }
+	bool is_valid() const { return !this->value.is_valid(); }
 
 	// Pretty much just asserts that it's valid :D
 	void unwrap() const

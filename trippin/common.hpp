@@ -31,7 +31,6 @@
 #include <functional>
 // TODO implement these yourself you scoundrel
 // std::function is fine
-#include <variant>
 #include <optional>
 
 // TODO there should be msvc versions probably
@@ -100,13 +99,13 @@ class Either
 {
 	enum class Side : uint8 { UNINITIALIZED, LEFT, RIGHT };
 
-	// TODO implement it yourself you scoundrel
-	std::variant<L, R> value = {};
+	L _left;
+	R _right;
 	Side side = Side::UNINITIALIZED;
 
 public:
-	Either(const L& left) : value(left), side(Side::LEFT) {}
-	Either(const R& right) : value(right), side(Side::RIGHT) {}
+	Either(const L& left) : _left(left), side(Side::LEFT) {}
+	Either(const R& right) : _right(right), side(Side::RIGHT) {}
 
 	// If true, it's left. Else, it's right.
 	bool is_left() const { return this->side == Side::LEFT; }
@@ -117,14 +116,14 @@ public:
 	L& left() const
 	{
 		if (!this->is_left()) tr::panic("Either<L, R> is right, not left");
-		else return const_cast<L&>(std::get<0>(this->value));
+		else return const_cast<L&>(this->_left);
 	}
 
 	// Returns the right value, or panics if it's not right
 	R& right() const
 	{
 		if (!this->is_right()) tr::panic("Either<L, R> is right, not left");
-		else return const_cast<R&>(std::get<1>(this->value));
+		else return const_cast<R&>(this->_right);
 	}
 
 	// Calls a function (usually a lambda) depending on whether it's left, or right.
@@ -141,38 +140,15 @@ template<typename T>
 class Maybe
 {
 	// TODO implement it yourself you scoundrel
-	std::optional<T> value = {};
+	Either<T, uint8> value = {};
 	bool has_value = false;
 
 public:
 	// Initializes a Maybe<T> as null
-	Maybe() : value(), has_value(false) {}
+	Maybe() : value(0), has_value(false) {}
 
 	// Intializes a Maybe<T> with a value
 	Maybe(const T& val) : value(val), has_value(true) {}
-
-	// TODO bring this back if it haunts me at some point
-	// Maybe(const Maybe& other) : has_value(other.has_value)
-	// {
-	// 	if (this->has_value) this->value.value = other.value;
-	// 	else this->value.waste_of_space = 0;
-	// }
-
-	// Maybe& operator=(const Maybe& other)
-	// {
-	// 	if (this != &other) {
-	// 		if (this->has_value && other.has_value) {
-	// 			this->value = other.value;
-	// 		} else if (this->has_value && !other.has_value) {
-	// 			this->value.~T();
-	// 			this->has_value = false;
-	// 		} else if (!this->has_value && other.has_value) {
-	// 			this->value = other.value;
-	// 			this->has_value = true;
-	// 		}
-	// 	}
-	// 	return *this;
-	// }
 
 	// If true, the maybe is, in fact, a definitely.
 	bool is_valid() const
@@ -183,7 +159,7 @@ public:
 	// Gets the value or panics if it's null
 	T& unwrap() const
 	{
-		if (this->has_value) return const_cast<T&>(this->value.value());
+		if (this->has_value) return const_cast<T&>(this->value.left());
 		else tr::panic("couldn't unwrap Maybe<T>");
 	}
 
@@ -196,19 +172,6 @@ public:
 		if (this->is_valid()) valid_func(this->unwrap());
 		else invalid_func();
 	}
-
-	bool operator==(const Maybe& other)
-	{
-		// TODO is this stupid?
-		bool is_valid = this->is_valid() == other.is_valid();
-		bool value_eq = is_valid;
-		if (this->is_valid() && other.is_valid()) {
-			value_eq = this->unwrap() == other.unwrap();
-		}
-		return is_valid && value_eq;
-	}
-
-	bool operator!=(const Maybe& other) { return !(*this == other); }
 };
 
 // Like `Maybe<T>`, but for pointers/references. C++ didn't let me do `Maybe<T&>` lmao. This also doesn't

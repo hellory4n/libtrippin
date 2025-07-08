@@ -199,6 +199,8 @@ public:
 	explicit Array(Arena& arena, T* data, usize len) : src_arena(&arena), length(len), capacity(len)
 	{
 		this->ptr = reinterpret_cast<T*>(arena.alloc(sizeof(T) * len));
+		if (len == 0) return;
+
 		// 'void* memcpy(void*, const void*, size_t)' forming offset [1, 1024] is out of the bounds [0, 1]
 		// the warning is wrong :)
 		#ifdef TR_ONLY_GCC
