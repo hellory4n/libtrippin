@@ -144,7 +144,7 @@ tr::Result<void, tr::Error> tr::Writer::write_string(tr::String str, bool includ
  * POSIX IMPLEMENTATION
  */
 
-tr::Result<tr::File, tr::FileError> tr::File::open(tr::String path, FileMode mode)
+tr::Result<tr::File*, tr::FileError> tr::File::open(tr::String path, FileMode mode)
 {
 	FileError::reset_errors();
 
@@ -173,7 +173,7 @@ tr::Result<tr::File, tr::FileError> tr::File::open(tr::String path, FileMode mod
 	file.length = ftell(reinterpret_cast<FILE*>(file.fptr));
 	::rewind(reinterpret_cast<FILE*>(file.fptr));
 
-	return file;
+	return &file;
 }
 
 void tr::File::close()
@@ -183,8 +183,8 @@ void tr::File::close()
 	// is_std exists so it doesn't close tr::std_out and company
 	if (!this->is_std && this->fptr != nullptr) {
 		fclose(reinterpret_cast<FILE*>(this->fptr));
-		this->fptr = nullptr;
 	}
+	this->fptr = nullptr;
 }
 
 tr::File::~File()

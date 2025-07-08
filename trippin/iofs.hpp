@@ -123,7 +123,7 @@ public:
 	virtual Result<void, Error> flush() = 0;
 
 	// Writes bytes into the stream
-	virtual Result<void, Error> write_bytes(Array<uint8> bytes) = 0;
+	virtual Result<void, Error> write_bytes(Array<uint8> bytes) { tr::panic("unimplemented :(");};
 
 	// Writes a struct into the stream
 	template<typename T>
@@ -193,7 +193,7 @@ public:
 	~File();
 
 	// Opens a fucking file from fucking somewhere. Returns null on error.
-	static Result<File, FileError> open(String path, FileMode mode);
+	static Result<File*, FileError> open(String path, FileMode mode);
 
 	// Closes the file :)
 	void close();

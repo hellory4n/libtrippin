@@ -181,7 +181,7 @@ template<typename T>
 class Array
 {
 	T* ptr = nullptr;
-	Arena* src_arena;
+	Arena* src_arena = nullptr;
 	usize length = 0;
 	usize capacity = 0;
 
