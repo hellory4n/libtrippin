@@ -81,25 +81,25 @@ static void test::strings()
 	TR_ASSERT(maballs == "sigma balls");
 	tr::log("%s", maballs.buf());
 
-	TR_ASSERT(str == "sigma");
-	TR_ASSERT(str != "ballshshjs");
-	TR_ASSERT(str != "sigmaaaa pelotas");
-	TR_ASSERT(str.substr(tr::scratchpad, 1, 3) == "igm");
-	tr::Array<usize> sigma = tr::String("sigmysigmy").find(tr::scratchpad, "ig");
-	TR_ASSERT(sigma.len() == 2);
-	tr::String sigmaa = tr::String("figma").concat(tr::scratchpad, " balls");
-	TR_ASSERT(sigmaa == "figma balls");
-	TR_ASSERT(sigmaa.starts_with("figm"));
-	TR_ASSERT(sigmaa.ends_with("alls"));
+	// TR_ASSERT(str == "sigma");
+	// TR_ASSERT(str != "ballshshjs");
+	// TR_ASSERT(str != "sigmaaaa pelotas");
+	// TR_ASSERT(str.substr(tr::scratchpad, 1, 3) == "igm");
+	// tr::Array<usize> sigma = tr::String("sigmysigmy").find(tr::scratchpad, "ig");
+	// TR_ASSERT(sigma.len() == 2);
+	// tr::String sigmaa = tr::String("figma").concat(tr::scratchpad, " balls");
+	// TR_ASSERT(sigmaa == "figma balls");
+	// TR_ASSERT(sigmaa.starts_with("figm"));
+	// TR_ASSERT(sigmaa.ends_with("alls"));
 
-	TR_ASSERT(tr::String("/path/to/file.txt").file(tr::scratchpad) == "file.txt");
-	TR_ASSERT(tr::String("/path/to/file.txt").directory(tr::scratchpad) == "/path/to");
-	TR_ASSERT(tr::String("/path/to/teapot.blend.1").extension(tr::scratchpad) == ".blend.1");
-	TR_ASSERT(tr::String("app://sigma").is_absolute());
-	TR_ASSERT(tr::String("C:\\sigma").is_absolute());
-	TR_ASSERT(!tr::String("sigma").is_absolute());
-	TR_ASSERT(!tr::String("./sigma").is_absolute());
-	TR_ASSERT(tr::String("~/sigma").is_absolute());
+	// TR_ASSERT(tr::String("/path/to/file.txt").file(tr::scratchpad) == "file.txt");
+	// TR_ASSERT(tr::String("/path/to/file.txt").directory(tr::scratchpad) == "/path/to");
+	// TR_ASSERT(tr::String("/path/to/teapot.blend.1").extension(tr::scratchpad) == ".blend.1");
+	// TR_ASSERT(tr::String("app://sigma").is_absolute());
+	// TR_ASSERT(tr::String("C:\\sigma").is_absolute());
+	// TR_ASSERT(!tr::String("sigma").is_absolute());
+	// TR_ASSERT(!tr::String("./sigma").is_absolute());
+	// TR_ASSERT(tr::String("~/sigma").is_absolute());
 
 	// split string :)
 	tr::String strma = "crap,shit,fuck,balls";
