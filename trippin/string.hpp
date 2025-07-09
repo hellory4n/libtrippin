@@ -27,6 +27,7 @@
 #define _TRIPPIN_STRING_H
 
 #include <string.h>
+#include <stdarg.h>
 
 #include "memory.hpp"
 #include "common.hpp"
@@ -142,9 +143,12 @@ public:
 [[gnu::format(printf, 3, 4), deprecated("specifying size is no longer necessary")]]
 String sprintf(Arena& arena, usize maxlen, const char* fmt, ...);
 
+String sprintf(Arena& arena, const char* fmt, va_list arg);
+
 // It's just `sprintf` for `tr::String` lmao.
 [[gnu::format(printf, 2, 3)]]
 String sprintf(Arena& arena, const char* fmt, ...);
+
 
 // TODO StringBuilder
 

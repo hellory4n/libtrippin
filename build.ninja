@@ -1,8 +1,8 @@
 # this crap is simple enough to not need a fancy generator like starry3d :)
 # TODO compile all of the examples
 cxx = clang++
-cflags = -std=c++17 -Wall -Wextra -Wpedantic -Wuninitialized -Wshadow -fno-omit-frame-pointer -O0 -g -DDEBUG -D_DEBUG -I. -I..
-ldflags = -lm -lstdc++
+cflags = -std=c++17 -Wall -Wextra -Wpedantic -Wuninitialized -Wshadow -fno-omit-frame-pointer -O0 -g -DDEBUG -D_DEBUG -I. -I.. -fsanitize=undefined
+ldflags = -lm -lstdc++ -fsanitize=undefined
 
 rule compile
   command = $cxx $cflags -c $in -o $out

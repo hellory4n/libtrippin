@@ -277,7 +277,7 @@ public:
 		}
 
 		// does it already fit?
-		if (this->length + 1 <= this->capacity) {
+		if (this->length < this->capacity) {
 			(*this)[this->length++] = val;
 			return;
 		}

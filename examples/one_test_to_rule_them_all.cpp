@@ -78,6 +78,7 @@ static void test::strings()
 	tr::log("str: %s (length %zu)", str.buf(), str.len());
 
 	tr::String maballs = tr::sprintf(tr::scratchpad, "%s balls", str.buf());
+	TR_ASSERT(maballs == "sigma balls");
 	tr::log("%s", maballs.buf());
 
 	TR_ASSERT(str == "sigma");

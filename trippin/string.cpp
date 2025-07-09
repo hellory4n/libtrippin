@@ -183,19 +183,25 @@ tr::String tr::sprintf(tr::Arena& arena, usize maxlen, const char* fmt, ...)
 	return str;
 }
 
+tr::String tr::sprintf(tr::Arena& arena, const char* fmt, va_list arg)
+{
+	// if we don't do that it corrupts the varargs and fucks with everything :DDDDDDD
+	va_list arg2;
+	va_copy(arg2, arg);
+
+	int size = vsnprintf(nullptr, 0, fmt, arg2);
+	// the string constructor handles the null terminator shut up
+	String str(arena, size + 1);
+	vsnprintf(str.buf(), size + 1, fmt, arg);
+	return str;
+}
+
 [[gnu::format(printf, 2, 3)]]
 tr::String tr::sprintf(tr::Arena& arena, const char* fmt, ...)
 {
-	// first get size
 	va_list args;
 	va_start(args, fmt);
-	int size = vsnprintf(nullptr, 0, fmt, args);
+	String str = tr::sprintf(arena, fmt, args);
 	va_end(args);
-	tr::log("sprintf autosizificator is %i", size);
-
-	// then actually write
-	String str(arena, size * 2);
-	vsnprintf(str.buf(), size * 2, fmt, args);
-	str.array.length = size;
 	return str;
 }
