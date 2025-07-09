@@ -151,7 +151,7 @@ tr::String tr::String::replace(tr::Arena& arena, char from, char to) const
 [[nodiscard]]
 tr::Array<tr::String> tr::String::split(tr::Arena& arena, char delimiter) const
 {
-	Array<String> strings(tr::scratchpad, 0);
+	Array<String> strings(tr::scratchpad);
 	String str = this->duplicate(tr::scratchpad);
 	char delim[2] = {delimiter, '\0'};
 

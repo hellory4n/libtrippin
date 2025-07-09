@@ -183,27 +183,37 @@ class String;
 template<typename T>
 class Array
 {
+	// used for when you don't set the length (which you usually do if you're just gonna use .add())
+	static constexpr usize INITIAL_CAPACITY = 16;
+
 	T* ptr = nullptr;
 	Arena* src_arena = nullptr;
 	usize length = 0;
 	usize capacity = 0;
 
-	friend String sprintf(Arena& arena, const char* fmt, ...);
-
 public:
 	// Initializes an empty array at an arena.
 	explicit Array(Arena& arena, usize len) : src_arena(&arena), length(len), capacity(len)
 	{
-		// you may initialize with a length of 0 so you can then add crap
-		if (len > 0) {
-			this->ptr = reinterpret_cast<T*>(arena.alloc(sizeof(T) * len));
+		// you may initialize with a length of 0 so you can then add crap later
+		// i'm just keeping this behavior so it doesn't break everything :)
+		if (len == 0) {
+			len = INITIAL_CAPACITY;
 		}
+
+		this->ptr = reinterpret_cast<T*>(arena.alloc(sizeof(T) * len));
 	}
 
 	// Initializes an array from a buffer. (the data is copied into the arena)
 	explicit Array(Arena& arena, T* data, usize len) : src_arena(&arena), length(len), capacity(len)
 	{
-		this->ptr = reinterpret_cast<T*>(arena.alloc(sizeof(T) * len));
+		// you may initialize with a length of 0 so you can then add crap later
+		// i'm just keeping this behavior so it doesn't break everything :)
+		if (len == 0) {
+			this->length = INITIAL_CAPACITY;
+		}
+
+		this->ptr = reinterpret_cast<T*>(arena.alloc(sizeof(T) * this->length));
 		if (len == 0) return;
 
 		// 'void* memcpy(void*, const void*, size_t)' forming offset [1, 1024] is out of the bounds [0, 1]
@@ -237,6 +247,9 @@ public:
 
 	// man fuck you
 	Array() : ptr(nullptr), src_arena(nullptr), length(0), capacity(0) {}
+
+	// Initializes the array with just an arena so you can add crap later :)
+	explicit Array(Arena& arena) : Array(arena, INITIAL_CAPACITY) {}
 
 	T& operator[](usize idx) const
 	{

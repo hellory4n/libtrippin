@@ -40,7 +40,6 @@ namespace tr {
 class String
 {
 	Array<char> array = {};
-	friend String sprintf(Arena& arena, const char* fmt, ...);
 
 public:
 	// Initializes a string from an arena and C string.
@@ -140,7 +139,8 @@ public:
 };
 
 // It's just `sprintf` for `tr::String` lmao.
-[[gnu::format(printf, 3, 4), deprecated("specifying size is no longer necessary")]]
+[[gnu::format(printf, 3, 4)]]
+[[deprecated("specifying size is no longer necessary (and there's not a good reason to specify it)")]]
 String sprintf(Arena& arena, usize maxlen, const char* fmt, ...);
 
 String sprintf(Arena& arena, const char* fmt, va_list arg);
