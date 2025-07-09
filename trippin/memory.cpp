@@ -100,7 +100,7 @@ void* tr::ArenaPage::alloc(usize size, usize align)
 	return aligned_ptr;
 }
 
-tr::Arena::Arena(usize page_size) : page_size(page_size)
+tr::Arena::Arena(usize pg_size) : page_size(pg_size)
 {
 	// it doesn't make a page until you allocate something
 	TR_ASSERT_MSG(this->page_size != 0, "you doofus why would you make an arena of 0 bytes");

@@ -80,15 +80,15 @@ public:
 	FileOperation op = FileOperation::UNKNOWN;
 
 	FileError() {}
-	FileError(String path_a, String path_b, FileErrorType type, FileOperation op) :
-		path_a(path_a), path_b(path_b), type(type), op(op) {}
+	FileError(String patha, String pathb, FileErrorType errtype, FileOperation operation) :
+		path_a(patha), path_b(pathb), type(errtype), op(operation) {}
 
 	// Checks errno for errors :)
-	static FileError from_errno(String path_a, String path_b, FileOperation op);
+	static FileError from_errno(String patha, String pathb, FileOperation operation);
 
 	#ifdef _WIN32
 	// Checks Windows' `GetLastError` for errors :)
-	static FileError from_win32(String path_a, String path_b, FileOperation op);
+	static FileError from_win32(String patha, String pathb, FileOperation operation);
 	#endif
 
 	// Why.

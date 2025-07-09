@@ -123,7 +123,7 @@ public:
 
 	// Initializes the arena. `page_size` is the base size for the buffers, you can have more buffers or
 	// bigger buffers.
-	explicit Arena(usize page_size);
+	explicit Arena(usize pg_size);
 
 	// Frees the arena.
 	~Arena();
@@ -175,9 +175,6 @@ struct ArrayItem
 	T& val;
 };
 
-// shut up
-class String;
-
 // A slice of memory, usually from an arena but can point to anywhere. Similar to a Go slice, or other
 // examples. Arrays don't own the value and don't use fancy RAII fuckery, so you can pass them by value.
 template<typename T>
@@ -196,12 +193,13 @@ public:
 	explicit Array(Arena& arena, usize len) : src_arena(&arena), length(len), capacity(len)
 	{
 		// you may initialize with a length of 0 so you can then add crap later
-		// i'm just keeping this behavior so it doesn't break everything :)
+		// i'm just keeping this behavior so it doesn't break everything that used Array(arena, 0)
 		if (len == 0) {
-			len = INITIAL_CAPACITY;
+			this->length = INITIAL_CAPACITY;
+			this->capacity = INITIAL_CAPACITY;
 		}
 
-		this->ptr = reinterpret_cast<T*>(arena.alloc(sizeof(T) * len));
+		this->ptr = reinterpret_cast<T*>(arena.alloc(sizeof(T) * this->length));
 	}
 
 	// Initializes an array from a buffer. (the data is copied into the arena)
@@ -211,6 +209,7 @@ public:
 		// i'm just keeping this behavior so it doesn't break everything :)
 		if (len == 0) {
 			this->length = INITIAL_CAPACITY;
+			this->capacity = INITIAL_CAPACITY;
 		}
 
 		this->ptr = reinterpret_cast<T*>(arena.alloc(sizeof(T) * this->length));
@@ -269,7 +268,7 @@ public:
 	// fucking iterator
 	class Iterator {
 	public:
-		Iterator(T* ptr, usize index) : idx(index), ptr(ptr) {}
+		Iterator(T* pointer, usize index) : idx(index), ptr(pointer) {}
 		ArrayItem<T> operator*() const { return {this->idx, *this->ptr}; }
 		Iterator& operator++() { this->ptr++; this->idx++; return *this; }
 		bool operator!=(const Iterator& other) const { return ptr != other.ptr; }
@@ -283,7 +282,7 @@ public:
 
 	// Adds a new item to the array, and resizes it if necessary. This only works on arena-allocated arrays,
 	// if you try to use this on an array without an arena, it will panic.
-	void add(T val)
+	void add(const T& val)
 	{
 		if (this->src_arena == nullptr) {
 			tr::panic("resizing arena-less tr::Array<T> is not allowed");

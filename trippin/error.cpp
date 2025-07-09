@@ -45,12 +45,12 @@ void tr::FileError::reset_errors()
 	#endif
 }
 
-tr::FileError tr::FileError::from_errno(tr::String path_a, tr::String path_b, tr::FileOperation op)
+tr::FileError tr::FileError::from_errno(tr::String patha, tr::String pathb, tr::FileOperation operation)
 {
 	FileError man = {};
-	man.path_a = path_a;
-	man.path_b = path_b;
-	man.op = op;
+	man.path_a = patha;
+	man.path_b = pathb;
+	man.op = operation;
 	FileErrorType t = FileErrorType::UNKNOWN;
 
 	switch (errno) {

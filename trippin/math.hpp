@@ -45,7 +45,10 @@ struct Vec2
 	T y;
 
 	constexpr Vec2() : x(0), y(0) {}
+	// shut up :)
+	TR_GCC_IGNORE_WARNING(-Wshadow)
 	constexpr Vec2(T x, T y) : x(x), y(y) {}
+	TR_GCC_RESTORE();
 	explicit constexpr Vec2(T v) : x(v), y(v) {}
 
 	// TODO these could be implemented with evil macro fuckery but idk if i want to do that
@@ -130,7 +133,10 @@ struct Vec3
 	T z;
 
 	constexpr Vec3() : x(0), y(0), z(0) {}
+	// shut up
+	TR_GCC_IGNORE_WARNING(-Wshadow)
 	constexpr Vec3(T x, T y, T z) : x(x), y(y), z(z) {}
+	TR_GCC_RESTORE();
 	explicit constexpr Vec3(T v) : x(v), y(v), z(v) {}
 
 	constexpr Vec3 operator+(Vec3 r)  { return Vec3(this->x + r.x, this->y + r.y, this->z + r.z);  }
@@ -205,8 +211,10 @@ struct Vec3
 	// swizzling operators
 	// i know this is insane
 	// i didnt write this myself im not insane
+	TR_GCC_IGNORE_WARNING(-Wshadow)
 	constexpr Vec3(T x, Vec2<T> other) : Vec3(x, other.y, other.z) {}
 	constexpr Vec3(Vec2<T> other, T z) : Vec3(other.x, other.y, z) {}
+	TR_GCC_RESTORE()
 	constexpr Vec2<T> xx() const { return {this->x, this->x}; }
 	constexpr Vec2<T> xy() const { return {this->x, this->y}; }
 	constexpr Vec2<T> xz() const { return {this->x, this->z}; }
@@ -272,7 +280,10 @@ struct Vec4
 	T w;
 
 	constexpr Vec4() : x(0), y(0), z(0), w(0) {}
+	// shut up :)
+	TR_GCC_IGNORE_WARNING(-Wshadow);
 	constexpr Vec4(T x, T y, T z, T w) : x(x), y(y), z(z), w(w) {}
+	TR_GCC_RESTORE();
 	explicit constexpr Vec4(T v) : x(v), y(v), z(v), w(v) {}
 	constexpr Vec4(Color c);
 
@@ -349,11 +360,13 @@ struct Vec4
 	// swizzling operators
 	// i know this is insane
 	// i didnt write this myself im not insane
+	TR_GCC_IGNORE_WARNING(-Wshadow)
 	constexpr Vec4(T x, T y, Vec2<T> other) : Vec4(x, y, other.z, other.w) {}
 	constexpr Vec4(Vec2<T> other, T z, T w) : Vec4(other.x, other.y, z, w) {}
 	constexpr Vec4(T x, Vec2<T> other, T w) : Vec4(x, other.y, other.z, w) {}
 	constexpr Vec4(T x, Vec3<T> other) : Vec4(x, other.y, other.z, other.w) {}
 	constexpr Vec4(Vec3<T> other, T w) : Vec4(other.x, other.y, other.z, w) {}
+	TR_GCC_RESTORE()
 	constexpr Vec2<T> xx() const { return {this->x, this->x}; }
 	constexpr Vec2<T> xy() const { return {this->x, this->y}; }
 	constexpr Vec2<T> xz() const { return {this->x, this->z}; }
@@ -821,8 +834,11 @@ struct Color
 	uint8 a = 255;
 
 	constexpr Color();
+	// shut up :)
+	TR_GCC_IGNORE_WARNING(-Wshadow)
 	constexpr Color(uint8 r, uint8 g, uint8 b) : r(r), g(g), b(b), a(255) {}
 	constexpr Color(uint8 r, uint8 g, uint8 b, uint8 a) : r(r), g(g), b(b), a(a) {}
+	TR_GCC_RESTORE()
 	constexpr Color(Vec4<float32> vec) :
 		r(tr::clamp(vec.x, 0.f, 1.f) * 255), g(tr::clamp(vec.y, 0.f, 1.f) * 255),
 		b(tr::clamp(vec.z, 0.f, 1.f) * 255), a(tr::clamp(vec.w, 0.f, 1.f) * 255) {}

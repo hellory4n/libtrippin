@@ -237,7 +237,7 @@ struct Pair
 	L left;
 	R right;
 
-	Pair(const L& left, const R& right) : left(left), right(right) {}
+	Pair(const L& l, const R& r) : left(l), right(r) {}
 };
 
 }

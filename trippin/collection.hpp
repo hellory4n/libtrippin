@@ -77,7 +77,7 @@ class HashMap
 
 	HashMapSettings<K> settings;
 
-	Arena* arena = nullptr;
+	Arena* src_arena = nullptr;
 	Bucket* buffer = nullptr;
 
 	// occupied includes removed keys, length doesn't
@@ -86,11 +86,11 @@ class HashMap
 	usize capacity = 0;
 
 public:
-	explicit HashMap(Arena& arena, HashMapSettings<K> setting) : settings(setting), arena(&arena)
+	explicit HashMap(Arena& arena, HashMapSettings<K> setting) : settings(setting), src_arena(&arena)
 	{
 		this->capacity = this->settings.initial_capacity;
 		this->buffer = reinterpret_cast<Bucket*>(
-			this->arena->alloc(this->settings.initial_capacity * sizeof(Bucket))
+			this->src_arena->alloc(this->settings.initial_capacity * sizeof(Bucket))
 		);
 	}
 
@@ -110,7 +110,7 @@ public:
 		usize old_cap = this->capacity;
 		this->capacity *= 2;
 		Bucket* new_buffer = reinterpret_cast<Bucket*>(
-			this->arena->alloc(this->capacity * sizeof(Bucket))
+			this->src_arena->alloc(this->capacity * sizeof(Bucket))
 		);
 
 		// changing the capacity fucks with the hashing
@@ -213,7 +213,7 @@ public:
 	// fucking iterator
 	class Iterator {
 	public:
-		Iterator(Bucket* buffer, usize idx, usize cap) : buffer(buffer), idx(idx), cap(cap)
+		Iterator(Bucket* buf, usize index, usize capacity) : buffer(buf), idx(index), cap(capacity)
 		{
 			this->advance_to_valid();
 		}
