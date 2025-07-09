@@ -57,7 +57,7 @@ tr::Result<tr::String, tr::Error> tr::Reader::read_string(tr::Arena& arena, usiz
 
 	if (read.unwrap() != int64(length)) {
 		return StringError(
-			tr::sprintf(tr::scratchpad, 256, "expected %li bytes, got %li (might be EOF)",
+			tr::sprintf(tr::scratchpad, "expected %li bytes, got %li (might be EOF)",
 				length, read.unwrap()
 			)
 		);
@@ -198,8 +198,9 @@ tr::Result<int64, tr::Error> tr::File::position()
 {
 	FileError::reset_errors();
 
+	// TODO windows is stupid so ftell doesn't work with files that are more than 2 gb
 	int64 pos = ftell(reinterpret_cast<FILE*>(this->fptr));
-	if (errno != 0) return FileError::from_errno(this->path, "", FileOperation::GET_FILE_POSITION);
+	if (pos < 0) return FileError::from_errno(this->path, "", FileOperation::GET_FILE_POSITION);
 	else return pos;
 }
 
@@ -227,8 +228,8 @@ tr::Result<void, tr::Error> tr::File::seek(int64 bytes, tr::SeekFrom from)
 		case SeekFrom::END:     whence = SEEK_END; break;
 	}
 
-	fseek(reinterpret_cast<FILE*>(this->fptr), bytes, whence);
-	if (errno != 0) return FileError::from_errno(this->path, "", FileOperation::SEEK_FILE);
+	int i = fseek(reinterpret_cast<FILE*>(this->fptr), bytes, whence);
+	if (i != 0) return FileError::from_errno(this->path, "", FileOperation::SEEK_FILE);
 	else return {};
 }
 
@@ -256,8 +257,8 @@ tr::Result<void, tr::Error> tr::File::flush()
 {
 	FileError::reset_errors();
 
-	fflush(reinterpret_cast<FILE*>(this->fptr));
-	if (errno != 0) return FileError::from_errno(this->path, "", FileOperation::FLUSH_FILE);
+	int i = fflush(reinterpret_cast<FILE*>(this->fptr));
+	if (i == EOF) return FileError::from_errno(this->path, "", FileOperation::FLUSH_FILE);
 	else return {};
 }
 

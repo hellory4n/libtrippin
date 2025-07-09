@@ -133,12 +133,12 @@ tr::String tr::FileError::message()
 
 	// these operations use 2 paths :)
 	if (this->op == FileOperation::COPY_FILE || this->op == FileOperation::MOVE_FILE) {
-		return tr::sprintf(tr::scratchpad, 512, "%s (source '%s', destination '%s'): %s",
+		return tr::sprintf(tr::scratchpad, "%s (source '%s', destination '%s'): %s",
 			operation.buf(), this->path_a.buf(), this->path_b.buf(), error.buf()
 		);
 	}
 	else {
-		return tr::sprintf(tr::scratchpad, 512, "%s (path '%s'): %s",
+		return tr::sprintf(tr::scratchpad, "%s (path '%s'): %s",
 			operation.buf(), this->path_a.buf(), error.buf()
 		);
 	}

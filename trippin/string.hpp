@@ -39,6 +39,7 @@ namespace tr {
 class String
 {
 	Array<char> array = {};
+	friend String sprintf(Arena& arena, const char* fmt, ...);
 
 public:
 	// Initializes a string from an arena and C string.
@@ -138,8 +139,12 @@ public:
 };
 
 // It's just `sprintf` for `tr::String` lmao.
-[[gnu::format(printf, 3, 4)]]
+[[gnu::format(printf, 3, 4), deprecated("specifying size is no longer necessary")]]
 String sprintf(Arena& arena, usize maxlen, const char* fmt, ...);
+
+// It's just `sprintf` for `tr::String` lmao.
+[[gnu::format(printf, 2, 3)]]
+String sprintf(Arena& arena, const char* fmt, ...);
 
 // TODO StringBuilder
 

@@ -29,9 +29,6 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <functional>
-// TODO implement these yourself you scoundrel
-// std::function is fine
-#include <optional>
 
 // TODO there should be msvc versions probably
 
@@ -99,8 +96,8 @@ class Either
 {
 	enum class Side : uint8 { UNINITIALIZED, LEFT, RIGHT };
 
-	L _left;
-	R _right;
+	L _left = L();
+	R _right = R();
 	Side side = Side::UNINITIALIZED;
 
 public:

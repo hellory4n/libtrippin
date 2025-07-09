@@ -26,6 +26,8 @@
 #ifndef _TRIPPIN_LOG_H
 #define _TRIPPIN_LOG_H
 
+#include "common.hpp"
+
 namespace tr {
 
 namespace ConsoleColor {
@@ -75,6 +77,10 @@ void __impl_assert(const char* file, int line, bool x, const char* fmt, ...);
 
 #define TR_ASSERT(X) \
 	tr::__impl_assert(__FILE__, __LINE__, X, "failed assert: " #X)
+
+// Exits the application. The reason you'd use this instead of libc's `exit()` is because this deinitializes
+// crap such as libtrippin (you can add your own functions to run here)
+void quit(int32 error_code);
 
 }
 

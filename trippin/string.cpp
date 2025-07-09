@@ -166,8 +166,8 @@ tr::Array<tr::String> tr::String::split(tr::Arena& arena, char delimiter) const
 	return Array<String>(arena, strings.buf(), strings.len());
 }
 
-[[gnu::format(printf, 3, 4)]]
-tr::String tr::sprintf(Arena& arena, usize maxlen, const char* fmt, ...)
+[[gnu::format(printf, 3, 4), deprecated("specifying size is no longer necessary")]]
+tr::String tr::sprintf(tr::Arena& arena, usize maxlen, const char* fmt, ...)
 {
 	String str(tr::scratchpad, maxlen);
 	va_list args;
@@ -180,5 +180,22 @@ tr::String tr::sprintf(Arena& arena, usize maxlen, const char* fmt, ...)
 	// just so .len() is useful :D
 	str = String(arena, str.buf(), strnlen(str.buf(), maxlen));
 
+	return str;
+}
+
+[[gnu::format(printf, 2, 3)]]
+tr::String tr::sprintf(tr::Arena& arena, const char* fmt, ...)
+{
+	// first get size
+	va_list args;
+	va_start(args, fmt);
+	int size = vsnprintf(nullptr, 0, fmt, args);
+	va_end(args);
+	tr::log("sprintf autosizificator is %i", size);
+
+	// then actually write
+	String str(arena, size * 2);
+	vsnprintf(str.buf(), size * 2, fmt, args);
+	str.array.length = size;
 	return str;
 }

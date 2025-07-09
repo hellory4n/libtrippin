@@ -175,6 +175,9 @@ struct ArrayItem
 	T& val;
 };
 
+// shut up
+class String;
+
 // A slice of memory, usually from an arena but can point to anywhere. Similar to a Go slice, or other
 // examples. Arrays don't own the value and don't use fancy RAII fuckery, so you can pass them by value.
 template<typename T>
@@ -184,6 +187,8 @@ class Array
 	Arena* src_arena = nullptr;
 	usize length = 0;
 	usize capacity = 0;
+
+	friend String sprintf(Arena& arena, const char* fmt, ...);
 
 public:
 	// Initializes an empty array at an arena.

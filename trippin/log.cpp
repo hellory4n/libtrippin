@@ -29,6 +29,7 @@
 #include <time.h>
 #include <signal.h>
 
+#include "common.hpp"
 #include "log.hpp"
 
 // TODO logging should use tr::String and tr::File
@@ -73,6 +74,10 @@ static void __log(const char* color, const char* prefix, bool panic, const char*
 	fflush(stdout);
 
 	if (panic) {
+		tr::free();
+		// TODO signal for when this happens
+		// so that everything (starry3d) can safely close :)
+
 		// windows doesn't have SIGTRAP (which sets a breakpoint) for some fucking reason
 		// TODO there's probably a windows equivalent but i don't care enough to find that
 		#ifndef _WIN32
@@ -142,4 +147,10 @@ void tr::__impl_assert(const char* file, int line, bool x, const char* fmt, ...)
 		__log(tr::ConsoleColor::ERROR, prefix, true, fmt, args);
 		va_end(args);
 	}
+}
+
+void tr::quit(int32 error_code)
+{
+	tr::free();
+	exit(error_code);
 }

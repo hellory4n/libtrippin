@@ -6,7 +6,8 @@ Most biggest most massive library of all time. I'm insane.
 
 - [libtrippin](./libtrippin.h) v2.3.0: Most massive library of all time
     - C++17 with no external dependencies (only libc/stdc++)
-    - Arenas and reference counting
+    - Cross-platform (Windows and POSIX)
+    - Arenas for memory management
     - Arrays, lists, hashmaps, strings
     - Basic math
     - Logging
@@ -17,9 +18,7 @@ Most biggest most massive library of all time. I'm insane.
 
 Just add all the `.hpp`/`.cpp` files from `trippin/` to your project
 
-On Linux make sure you linked the math library `-lm`
-
-If some for reason you want to use engineer then [read this](./engineerbuild/README.md)
+On Linux you have to link with the math library `-lm`
 
 ## Examples
 

@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <trippin/common.hpp>
 #include <trippin/log.hpp>
 #include <trippin/math.hpp>
@@ -15,6 +16,7 @@ namespace test {
 	static void strings();
 	static void hashmaps();
 	static void filesystem();
+	static void all();
 }
 
 static void test::logging()
@@ -75,7 +77,7 @@ static void test::strings()
 	tr::String str = "sigma";
 	tr::log("str: %s (length %zu)", str.buf(), str.len());
 
-	tr::String maballs = tr::sprintf(tr::scratchpad, 256, "%s balls", str.buf());
+	tr::String maballs = tr::sprintf(tr::scratchpad, "%s balls", str.buf());
 	tr::log("%s", maballs.buf());
 
 	TR_ASSERT(str == "sigma");
@@ -172,21 +174,62 @@ static void test::filesystem()
 	tr::remove_file("fucker.txt");
 }
 
-int main()
+static void test::all()
+{
+	test::logging();
+	test::memory();
+	test::arrays();
+	test::strings();
+	test::hashmaps();
+	test::filesystem();
+}
+
+int main(int argc, char* argv[])
 {
 	tr::use_log_file("log.txt");
 	tr::init();
 
-	test::logging();
-	test::memory();
-	test::arrays();
-	// test::strings();
-	test::hashmaps();
-	// put this one last bcuz its the most likely to fail
-	test::filesystem();
+	if (argc >= 2) {
+		tr::String arg = argv[1];
+		if (arg == "--logging") {
+			test::logging();
+		}
+		else if (arg == "-- memory") {
+			test::memory();
+		}
+		else if (arg == "--array") {
+			test::arrays();
+		}
+		else if (arg == "--string") {
+			test::strings();
+		}
+		else if (arg == "--hashmap") {
+			test::hashmaps();
+		}
+		else if (arg == "--filesystem") {
+			test::filesystem();
+		}
+		else if (arg == "--all") {
+			test::all();
+		}
+		else {
+			printf("The libtrippin tester 5000™\n");
+			printf("Options:\n");
+			printf("- --logging: Test logging\n");
+			printf("- --memory: Test memory\n");
+			printf("- --array: Test arrays\n");
+			printf("- --string: Test strings\n");
+			printf("- --hashmap: Test hashmaps\n");
+			printf("- --filesystem: Test filesystem\n");
+			printf("- --all: Test everything\n");
+		}
+	}
+	else {
+		printf("No options given, assuming --all\n");
+		test::all();
+	}
 
 	tr::free();
-
 	return 0;
 
 	// tr::log("sir");
