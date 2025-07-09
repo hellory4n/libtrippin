@@ -195,11 +195,11 @@ public:
 		// you may initialize with a length of 0 so you can then add crap later
 		// i'm just keeping this behavior so it doesn't break everything that used Array(arena, 0)
 		if (len == 0) {
-			this->length = INITIAL_CAPACITY;
+			this->length = 0;
 			this->capacity = INITIAL_CAPACITY;
 		}
 
-		this->ptr = reinterpret_cast<T*>(arena.alloc(sizeof(T) * this->length));
+		this->ptr = reinterpret_cast<T*>(arena.alloc(sizeof(T) * this->capacity));
 	}
 
 	// Initializes an array from a buffer. (the data is copied into the arena)
@@ -208,11 +208,11 @@ public:
 		// you may initialize with a length of 0 so you can then add crap later
 		// i'm just keeping this behavior so it doesn't break everything :)
 		if (len == 0) {
-			this->length = INITIAL_CAPACITY;
+			this->length = 0;
 			this->capacity = INITIAL_CAPACITY;
 		}
 
-		this->ptr = reinterpret_cast<T*>(arena.alloc(sizeof(T) * this->length));
+		this->ptr = reinterpret_cast<T*>(arena.alloc(sizeof(T) * this->capacity));
 		if (len == 0) return;
 
 		// 'void* memcpy(void*, const void*, size_t)' forming offset [1, 1024] is out of the bounds [0, 1]
@@ -248,7 +248,7 @@ public:
 	Array() : ptr(nullptr), src_arena(nullptr), length(0), capacity(0) {}
 
 	// Initializes the array with just an arena so you can add crap later :)
-	explicit Array(Arena& arena) : Array(arena, INITIAL_CAPACITY) {}
+	explicit Array(Arena& arena) : Array(arena, 0) {}
 
 	T& operator[](usize idx) const
 	{
@@ -295,7 +295,6 @@ public:
 		}
 
 		// reallocate array
-		// TODO use pages to not waste so much memory
 		T* old_buffer = this->ptr;
 		this->capacity *= 2;
 		this->ptr = reinterpret_cast<T*>(src_arena->alloc(this->capacity * sizeof(T)));
