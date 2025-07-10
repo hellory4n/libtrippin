@@ -353,36 +353,29 @@ bool tr::file_exists(tr::String path)
     return stat(path, &buffer) == 0;
 }
 
-tr::Result<void, tr::FileError> tr::create_dir(tr::String)
+tr::Result<void, tr::FileError> tr::create_dir(tr::String path)
 {
-	tr::panic("i didn't finish this function i'm busy uh getting milk");
-	// TODO use String.split dumbass
-	// TODO may i ask you what the fuck is this
+	// it's recursive :)
+	// TODO windows should replace '/' with '\' and then split by that lmao.
+	Array<String> dirs = path.split(tr::scratchpad, '/');
 
-	// // it's supposed to be recursive :D
-	// Arena& tmp = new Arena(tr::kb_to_bytes(4));
-	// Ref<List<String>> dirs = new List<String>();
+	for (auto [_, dir] : dirs) {
+		if (tr::file_exists(dir)) continue;
 
-	// usize idx = 0;
-	// for (ArrayItem<char> c : path) {
-	// 	if ((c.val != '/' && c.val != '\\') || c.i < path.len()) continue;
+		if (mkdir(dir, 0755) == -1) {
+			return FileError::from_errno(path, "", FileOperation::CREATE_DIR);
+		}
+	}
 
-	// 	dirs->add(path.substr(tmp, idx, c.i));
-	// 	idx = c.i + 1;
-	// }
-	// tr::panic("fuck...");
-	// if (dirs->length() == 0) return false;
+	return {};
+}
 
-	// #ifdef _WIN32
-	// #else
-	// for (ArrayItem<String> dir : *dirs) {
-	// 	if (mkdir(dir.val, 0755) != 0 && errno != EEXIST) {
-	// 		return false;
-	// 	}
-	// }
-	// tr::panic("hehe");
-	// return true;
-	// #endif
+tr::Result<void, tr::FileError> tr::remove_dir(tr::String path)
+{
+	if (rmdir(path) != 0) {
+		return FileError::from_errno(path, "", FileOperation::REMOVE_DIR);
+	}
+	return {};
 }
 
 #endif

@@ -51,6 +51,7 @@ tr::FileError tr::FileError::from_errno(tr::String patha, tr::String pathb, tr::
 	man.path_a = patha;
 	man.path_b = pathb;
 	man.op = operation;
+	man.errno_code = errno;
 	FileErrorType t = FileErrorType::UNKNOWN;
 
 	switch (errno) {
@@ -133,13 +134,13 @@ tr::String tr::FileError::message()
 
 	// these operations use 2 paths :)
 	if (this->op == FileOperation::COPY_FILE || this->op == FileOperation::MOVE_FILE) {
-		return tr::sprintf(tr::scratchpad, "%s (source '%s', destination '%s'): %s",
-			operation.buf(), this->path_a.buf(), this->path_b.buf(), error.buf()
+		return tr::sprintf(tr::scratchpad, "%s (source '%s', destination '%s', errno %i): %s",
+			operation.buf(), this->path_a.buf(), this->path_b.buf(), this->errno_code, error.buf()
 		);
 	}
 	else {
-		return tr::sprintf(tr::scratchpad, "%s (path '%s'): %s",
-			operation.buf(), this->path_a.buf(), error.buf()
+		return tr::sprintf(tr::scratchpad, "%s (path '%s', errno %i): %s",
+			operation.buf(), this->path_a.buf(), this->errno_code, error.buf()
 		);
 	}
 }

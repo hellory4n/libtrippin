@@ -53,7 +53,7 @@ public:
 };
 
 // Error codes based on POSIX errno.h and WinError.h
-enum class FileErrorType : int32
+enum class FileErrorType
 {
 	UNKNOWN,
 	NOT_FOUND, ACCESS_DENIED, DEVICE_OR_RESOURCE_BUSY, NO_SPACE_LEFT, FILE_EXISTS, BAD_HANDLE,
@@ -62,7 +62,7 @@ enum class FileErrorType : int32
 };
 
 // This is just for getting the error message lmao.
-enum class FileOperation : int32
+enum class FileOperation
 {
 	UNKNOWN,
 	OPEN_FILE, CLOSE_FILE, GET_FILE_POSITION, GET_FILE_LENGTH, IS_EOF, SEEK_FILE, REWIND_FILE,
@@ -78,6 +78,10 @@ public:
 	String path_b = "";
 	FileErrorType type = FileErrorType::UNKNOWN;
 	FileOperation op = FileOperation::UNKNOWN;
+	int errno_code = 0;
+	#ifdef _WIN32
+	int win32_code = 0;
+	#endif
 
 	FileError() {}
 	FileError(String patha, String pathb, FileErrorType errtype, FileOperation operation) :

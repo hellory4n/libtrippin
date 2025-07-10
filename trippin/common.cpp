@@ -75,6 +75,7 @@ void tr::init()
 
 void tr::free()
 {
+	// TODO what happens if a function panics here?
 	tr::on_quit.emit();
 	tr::info("deinitialized libtrippin");
 }

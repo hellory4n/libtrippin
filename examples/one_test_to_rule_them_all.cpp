@@ -179,7 +179,10 @@ static void test::filesystem()
 	// tr::move_file("fucker.txt", "fuckoffman.txt").unwrap();
 	// TR_ASSERT(tr::file_exists("fuckoffman.txt"));
 	// tr::remove_file("fuckoffman.txt").unwrap();
-	tr::remove_file("fucker.txt");
+
+	tr::create_dir("crap/dir").unwrap();
+	tr::remove_dir("dir").unwrap();
+	tr::remove_dir("crap").unwrap();
 }
 
 static void test::all()
