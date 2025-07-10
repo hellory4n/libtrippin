@@ -261,9 +261,6 @@ Result<void, FileError> move_file(String from, String to);
 // Returns true if the file exists
 bool file_exists(String path);
 
-// Copies a file lmao.
-Result<void, FileError> copy_file(String src, String dst);
-
 // Creates a directory. This is recursive, so `tr::create_dir("dir/otherdir")` will make both `dir`
 // and `otherdir`.
 Result<void, FileError> create_dir(String path);
@@ -272,8 +269,11 @@ Result<void, FileError> create_dir(String path);
 // have to do that yourself.
 Result<void, FileError> remove_dir(String path);
 
-// Lists all the files/directories
-Result<Array<String>, FileError> list_dir(Arena& arena, String path);
+// Lists all the files/directories in a directory. The returned array has the paths relative to the
+// directory path. The array does NOT include `.` and `..`. If `include_hidden` is false, it'll skip hidden
+// files and directories. On POSIX that's anything that starts with a dot. Windows doesn't follow that
+// convention and instead lets any file/directory be hidden.
+Result<Array<String>, FileError> list_dir(Arena& arena, String path, bool include_hidden = true);
 
 // If true, the path is a file. Else, it's a directory.
 Result<bool, FileError> is_file(String path);

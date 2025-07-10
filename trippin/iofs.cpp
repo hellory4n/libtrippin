@@ -378,4 +378,45 @@ tr::Result<void, tr::FileError> tr::remove_dir(tr::String path)
 	return {};
 }
 
+tr::Result<tr::Array<tr::String>, tr::FileError> tr::list_dir(tr::Arena& arena, tr::String path,
+	bool include_hidden)
+{
+	DIR* dir = opendir(path);
+	if (dir == nullptr) {
+		return FileError::from_errno(path, "", FileOperation::LIST_DIR);
+	}
+
+	Array<String> entries(arena);
+	struct dirent* entry;
+
+	while ((entry = readdir(dir)) != nullptr) {
+        if (String(entry->d_name) == ".") continue;
+        if (String(entry->d_name) == "..") continue;
+
+		if (!include_hidden) {
+			if (String(entry->d_name).starts_with(".")) continue;
+		}
+
+		entries.add(String(arena, entry->d_name, strlen(entry->d_name)));
+    }
+
+	return entries;
+}
+
+tr::Result<bool, tr::FileError> tr::is_file(tr::String path)
+{
+	struct stat statma;
+	if (stat(path, &statma) != 0) {
+		return FileError::from_errno(path, "", FileOperation::IS_FILE);
+	}
+
+	// TODO there's other types but they're similar to files so i'm counting all of them as files too
+	if (S_ISDIR(statma.st_mode)) {
+		return false;
+	}
+	else {
+		return true;
+	}
+}
+
 #endif

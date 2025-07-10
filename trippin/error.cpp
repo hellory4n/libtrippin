@@ -103,7 +103,6 @@ tr::String tr::FileError::message()
 		case FileOperation::WRITE_FILE:        operation = "couldn't write file";            break;
 		case FileOperation::REMOVE_FILE:       operation = "couldn't remove file";           break;
 		case FileOperation::MOVE_FILE:         operation = "couldn't move file";             break;
-		case FileOperation::COPY_FILE:         operation = "couldn't copy file";             break;
 		case FileOperation::CREATE_DIR:        operation = "couldn't create directory";      break;
 		case FileOperation::REMOVE_DIR:        operation = "couldn't remove directory";      break;
 		case FileOperation::LIST_DIR:          operation = "couldn't list directory";        break;
@@ -133,7 +132,7 @@ tr::String tr::FileError::message()
 	}
 
 	// these operations use 2 paths :)
-	if (this->op == FileOperation::COPY_FILE || this->op == FileOperation::MOVE_FILE) {
+	if (this->op == FileOperation::MOVE_FILE) {
 		return tr::sprintf(tr::scratchpad, "%s (source '%s', destination '%s', errno %i): %s",
 			operation.buf(), this->path_a.buf(), this->path_b.buf(), this->errno_code, error.buf()
 		);

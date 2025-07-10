@@ -183,6 +183,15 @@ static void test::filesystem()
 	tr::create_dir("crap/dir").unwrap();
 	tr::remove_dir("dir").unwrap();
 	tr::remove_dir("crap").unwrap();
+
+	tr::Array<tr::String> crap = tr::list_dir(tr::scratchpad, ".", false).unwrap();
+	tr::log("this directory has: (not including hidden)");
+	for (auto [_, name] : crap) {
+		tr::log("- %s", name.buf());
+	}
+
+	TR_ASSERT(tr::is_file("README.md").unwrap());
+	TR_ASSERT(!tr::is_file("trippin").unwrap());
 }
 
 static void test::all()
