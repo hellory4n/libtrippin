@@ -163,9 +163,10 @@ public:
 	usize capacity() const;
 };
 
-// Temporary arena intended for temporary allocations. In other words, a sane `alloca()`. This should be
-// reset whenever is reasonable for your application (e.g. every frame for a game)
-extern Arena scratchpad;
+Arena __new_scratchpad();
+
+// Temporary arena intended for temporary allocations. In other words, a sane `alloca()`.
+static thread_local Arena scratchpad = tr::__new_scratchpad();
 
 // This is just for iterators
 template<typename T>

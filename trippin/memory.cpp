@@ -220,3 +220,10 @@ tr::MemoryInfo tr::get_memory_info()
 {
 	return tr::memory_info;
 }
+
+tr::Arena tr::__new_scratchpad()
+{
+	// each scratchpad is both thread local AND static
+	// the default (64 kb) would be way too much
+	return tr::Arena(tr::kb_to_bytes(2));
+}

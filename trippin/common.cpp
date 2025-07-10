@@ -34,9 +34,7 @@
 
 // they have to live somewhere
 namespace tr {
-	// TODO should these be larger?
 	Arena core_arena(tr::kb_to_bytes(128));
-	Arena scratchpad(tr::kb_to_bytes(128));
 
 	MemoryInfo memory_info;
 	Array<File*> logfiles(core_arena);

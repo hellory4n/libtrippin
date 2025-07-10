@@ -155,6 +155,9 @@ tr::Array<tr::String> tr::String::split(tr::Arena& arena, char delimiter) const
 	String str = this->duplicate(tr::scratchpad);
 	char delim[2] = {delimiter, '\0'};
 
+	// TODO apparently strtok is tragic for multithreading lmao
+	// there's strtok_r but it's only for posix
+	// WHY BILL GATES WHY
 	char* token = strtok(str, delim);
 	while (token != nullptr) {
 		String m = String(arena, token, strlen(token));
