@@ -172,7 +172,6 @@ enum class FileMode : uint8 {
 
 // Files are definitely important. It's important to note that libtrippin ALWAYS uses forward slashes (`/`)
 // for paths, as every platform supports them, even Windows (since 95/NT, both of which are pretty old).
-// All backward slashes are automatically converted to forward slashes for consistency.
 class File : public Reader, public Writer
 {
 	// so it can use it for errors
