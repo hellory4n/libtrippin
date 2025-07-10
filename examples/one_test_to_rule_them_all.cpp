@@ -30,7 +30,11 @@ static void test::logging()
 	// tr::assert(false, "trajìque");
 	// tr::panic("AHHHHHHH");
 
-	tr::log("S%sa", "igm");
+	tr::log("S%sa (formatted arguments)", "igm");
+
+	tr::call_on_quit([&]() -> void {
+		tr::log("CUSTOM FUNCTION THAT RUNS ON QUIT/PANIC??? SCRUMPTIOUS");
+	});
 }
 
 static void test::memory()

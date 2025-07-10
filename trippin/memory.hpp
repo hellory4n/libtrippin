@@ -311,7 +311,7 @@ public:
 		this->ptr = reinterpret_cast<T*>(src_arena->alloc(this->capacity * sizeof(T)));
 		// you may initialize with a length of 0 so you can then add crap
 		if (this->length > 0) {
-			memcpy(this->ptr, old_buffer, this->length * sizeof(T));
+			memcpy(reinterpret_cast<void*>(this->ptr), old_buffer, this->length * sizeof(T));
 		}
 
 		(*this)[this->length++] = val;

@@ -27,6 +27,7 @@
 #define _TRIPPIN_COLLECTION_H
 
 #include <stdlib.h>
+#include <utility>
 
 #include "common.hpp"
 #include "memory.hpp"
@@ -252,6 +253,62 @@ public:
 
 	Iterator begin() const { return Iterator(this->buffer, 0, this->capacity); }
 	Iterator end()   const { return Iterator(this->buffer + this->capacity, this->capacity, this->capacity); }
+};
+
+// I sure love events signals whatever. The reason you're supposed to use this instead of a function
+// pointer/`std::function` is that this can have multiple listeners, which is probably important.
+template<typename... Args>
+class Signal
+{
+	using SignalFunc = std::function<void(Args...)>;
+	Array<SignalFunc> listeners;
+
+public:
+	Signal(Arena& arena) : listeners(arena) {}
+
+	// Adds a listener to the signal :)
+	void connect(SignalFunc func)
+	{
+		this->listeners.add(func);
+	}
+
+	// TODO disconnect()
+
+	// Emits the signal to all listeners that's what a signal does lmao.
+	void emit(Args&&... args)
+	{
+		for (auto [_, func] : this->listeners) {
+			func(std::forward<Args>(args)...);
+		}
+	}
+};
+
+// I sure love events signals whatever. The reason you're supposed to use this instead of a function
+// pointer/`std::function` is that this can have multiple listeners, which is probably important.
+template<>
+class Signal<void>
+{
+	using SignalFunc = std::function<void(void)>;
+	Array<SignalFunc> listeners;
+
+public:
+	Signal(Arena& arena) : listeners(arena) {}
+
+	// Adds a listener to the signal :)
+	void connect(SignalFunc func)
+	{
+		this->listeners.add(func);
+	}
+
+	// TODO disconnect()
+
+	// Emits the signal to all listeners that's what a signal does lmao.
+	void emit()
+	{
+		for (auto [_, func] : this->listeners) {
+			func();
+		}
+	}
 };
 
 // TODO HashSet<T>, Stack<T>, Queue<T>, LinkedList<T>

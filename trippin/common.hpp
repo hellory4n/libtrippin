@@ -85,6 +85,13 @@ void init();
 // Deinitializes the bloody library lmao.
 void free();
 
+// Exits the application. The reason you'd use this instead of libc's `exit()` is because this deinitializes
+// crap such as libtrippin (you can add your own functions to run here)
+void quit(int32 error_code);
+
+// Adds a function to run when the program quits/panics.
+void call_on_quit(std::function<void(void)> func);
+
 // i love circular dependencies.
 // Oh god oh fuck. Note this crashes and kills everything, `tr::error` doesn't.
 [[noreturn, gnu::format(printf, 1, 2)]]
@@ -239,7 +246,6 @@ struct Pair
 
 	Pair(const L& l, const R& r) : left(l), right(r) {}
 };
-
 
 }
 

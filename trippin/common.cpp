@@ -23,13 +23,14 @@
  *
  */
 
+#include <stdlib.h>
 // i'm using it tho??????????
 #include <stdio.h> // IWYU pragma: keep
 
 #include "log.hpp"
 #include "memory.hpp"
 #include "iofs.hpp"
-
+#include "collection.hpp"
 #include "common.hpp"
 
 // they have to live somewhere
@@ -42,6 +43,8 @@ namespace tr {
 	File std_in;
 	File std_out;
 	File std_err;
+
+	Signal<void> on_quit(core_arena);
 }
 
 void tr::init()
@@ -72,5 +75,17 @@ void tr::init()
 
 void tr::free()
 {
+	tr::on_quit.emit();
 	tr::info("deinitialized libtrippin");
+}
+
+void tr::quit(int32 error_code)
+{
+	tr::free();
+	exit(error_code);
+}
+
+void tr::call_on_quit(std::function<void(void)> func)
+{
+	tr::on_quit.connect(func);
 }

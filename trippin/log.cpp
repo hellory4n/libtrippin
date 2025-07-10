@@ -147,9 +147,3 @@ void tr::__impl_assert(const char* file, int line, bool x, const char* fmt, ...)
 		va_end(args);
 	}
 }
-
-void tr::quit(int32 error_code)
-{
-	tr::free();
-	exit(error_code);
-}
