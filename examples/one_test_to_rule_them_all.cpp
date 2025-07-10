@@ -176,9 +176,9 @@ static void test::filesystem()
 	tr::std_out.write_string("\n", false).unwrap();
 
 	// help.
-	// tr::move_file("fucker.txt", "fuckoffman.txt").unwrap();
-	// TR_ASSERT(tr::file_exists("fuckoffman.txt"));
-	// tr::remove_file("fuckoffman.txt").unwrap();
+	tr::move_file("fucker.txt", "fuckoffman.txt").unwrap();
+	TR_ASSERT(tr::file_exists("fuckoffman.txt"));
+	tr::remove_file("fuckoffman.txt").unwrap();
 
 	tr::create_dir("crap/dir").unwrap();
 	tr::remove_dir("dir").unwrap();

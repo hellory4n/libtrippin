@@ -338,8 +338,8 @@ tr::Result<void, tr::FileError> tr::move_file(tr::String from, tr::String to)
 	// on windows it fails in that case
 	if (tr::file_exists(to)) return FileError(from, to, FileErrorType::FILE_EXISTS, FileOperation::MOVE_FILE);
 
-	rename(from, to);
-	if (errno != 0) return FileError::from_errno(from, to, FileOperation::MOVE_FILE);
+	int i = rename(from, to);
+	if (i == -1) return FileError::from_errno(from, to, FileOperation::MOVE_FILE);
 	else return {};
 }
 
