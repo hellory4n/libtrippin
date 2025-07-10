@@ -45,7 +45,7 @@ namespace ConsoleColor {
 	#endif
 }
 
-// Sets the log file to somewhere.
+// Sets the log file to somewhere. There can be multiple log files.
 void use_log_file(const char* path);
 
 // Log.

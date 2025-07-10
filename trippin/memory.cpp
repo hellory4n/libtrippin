@@ -52,6 +52,9 @@ tr::ArenaPage::ArenaPage(usize size, usize align) : bufsize(size), alignment(ali
 		size, tr::bytes_to_kb(size), tr::bytes_to_mb(size)
 	);
 
+	// i dont want to read garbage man
+	memset(this->buffer, 0, this->bufsize);
+
 	// man
 	tr::memory_info.alive_pages++;
 	tr::memory_info.cumulative_pages++;

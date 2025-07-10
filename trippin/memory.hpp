@@ -258,6 +258,16 @@ public:
 		return this->ptr[idx];
 	}
 
+	// Similar to `operator[]`, but when getting an index out of bounds, instead of panicking, it returns
+	// null, which is probably useful sometimes.
+	MaybePtr<T> try_get(usize idx) const
+	{
+		if (idx >= this->length) {
+			return {};
+		}
+		return &this->ptr[idx];
+	}
+
 	// Returns the buffer.
 	T* buf() const      { return this->ptr; }
 	// Returns the length of the array.

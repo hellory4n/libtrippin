@@ -31,47 +31,46 @@
 
 #include "common.hpp"
 #include "log.hpp"
-
-// TODO logging should use tr::String and tr::File
+#include "memory.hpp"
+#include "iofs.hpp"
 
 namespace tr {
-	extern FILE* logfile;
+	extern Arena core_arena;
+	extern Array<File*> logfiles;
+	void __log(const char* color, const char* prefix, bool panic, const char* fmt, va_list arg);
 }
 
 void tr::use_log_file(const char* path)
 {
-	tr::logfile = fopen(path, "w");
-	TR_ASSERT_MSG(tr::logfile != nullptr,
-		"couldn't open %s, either the path is inaccessible or there's no permissions to write here", path);
+	Result<File*, FileError> f = File::open(core_arena, path, FileMode::WRITE_TEXT);
+	if (!f.is_valid()) {
+		tr::warn("couldn't use log file '%s': %s", path, f.unwrap_err().message().buf());
+	}
+	File* file = f.unwrap();
+	logfiles.add(file);
 
 	tr::info("using log file \"%s\"", path);
 }
 
-static void __log(const char* color, const char* prefix, bool panic, const char* fmt, va_list arg)
+void tr::__log(const char* color, const char* prefix, bool panic, const char* fmt, va_list arg)
 {
 	// you understand mechanical hands are the ruler of everything (ah)
+	// TODO tr::time?? idfk
 	char timestr[32];
 	time_t now = time(nullptr);
 	struct tm* tm_info = localtime(&now);
 	strftime(timestr, sizeof(timestr), "%Y-%m-%d %H:%M:%S", tm_info);
 
-	// TODO maybe increase in the future?
-	char buf[256];
-	vsnprintf(buf, sizeof(buf), fmt, arg);
+	String buf = tr::sprintf(tr::scratchpad, fmt, arg);
 
-	if (tr::logfile == nullptr) {
-		printf(
-			"%s [%s] no log file available. did you forget to call tr::init()?%s\n",
-			color, timestr, tr::ConsoleColor::RESET
-		);
-	}
-	else {
-		fprintf(tr::logfile, "[%s] %s%s\n", timestr, prefix, buf);
-		fflush(tr::logfile);
-	}
+	for (auto [_, file] : tr::logfiles) {
+		if (file->is_std) file->write_string(color);
+		file->printf("[%s] %s%s", timestr, prefix, buf.buf());
+		if (file->is_std) file->write_string(ConsoleColor::RESET);
+		file->write_string("\n");
 
-	printf("%s[%s] %s%s%s\n", color, timestr, prefix, buf, tr::ConsoleColor::RESET);
-	fflush(stdout);
+		file->flush();
+	}
 
 	if (panic) {
 		tr::free();

@@ -23,7 +23,8 @@
  *
  */
 
-#include <stdio.h>
+// i'm using it tho??????????
+#include <stdio.h> // IWYU pragma: keep
 
 #include "log.hpp"
 #include "memory.hpp"
@@ -38,7 +39,7 @@ namespace tr {
 	Arena scratchpad(tr::kb_to_bytes(128));
 
 	MemoryInfo memory_info;
-	FILE* logfile;
+	Array<File*> logfiles(core_arena);
 
 	File std_in;
 	File std_out;
@@ -66,13 +67,12 @@ void tr::init()
 	tr::std_err.is_std = true;
 	tr::std_err.mode = FileMode::WRITE_TEXT;
 
+	logfiles.add(&tr::std_out);
+
 	tr::info("initialized libtrippin %s", tr::VERSION);
 }
 
 void tr::free()
 {
 	tr::info("deinitialized libtrippin");
-	// TODO this is suspicious as fuck
-	// TODO multiple log files
-	fclose(tr::logfile);
 }

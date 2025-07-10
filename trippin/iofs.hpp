@@ -149,9 +149,15 @@ public:
 
 	// Writes a string into the stream. If `include_len` is true, it'll include an uint64 with the length
 	// before the actual string.
-	Result<void, Error> write_string(String str, bool include_len);
+	Result<void, Error> write_string(String str, bool include_len = false);
 
-	// TODO printf or whatever the fuck
+	// Writes a formatted string into the stream. So pretty much just fprintf.
+	[[gnu::format(printf, 2, 3)]] // `this` is the first argument i guess
+	Result<void, Error> printf(const char* fmt, ...);
+
+	// Similar to `Writer.printf()`, but it adds a newline at the end.
+	[[gnu::format(printf, 2, 3)]] // `this` is the first argument i guess
+	Result<void, Error> println(const char* fmt, ...);
 };
 
 enum class FileMode : uint8 {
@@ -189,7 +195,9 @@ class File : public Reader, public Writer
 	FileMode mode = FileMode::UNKNOWN;
 
 	// it sets std_in/std_out/std_err lmao
-	friend void tr::init();
+	friend void init();
+	// it checks for is_std :)
+	friend void __log(const char* color, const char* prefix, bool panic, const char* fmt, va_list arg);
 
 public:
 	File() : path(""), fptr(nullptr), length(-1), is_std(false), mode(FileMode::UNKNOWN) {}

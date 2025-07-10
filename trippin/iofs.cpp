@@ -135,6 +135,28 @@ tr::Result<void, tr::Error> tr::Writer::write_string(tr::String str, bool includ
 	return this->write_bytes(manfuckyou);
 }
 
+tr::Result<void, tr::Error> tr::Writer::printf(const char* fmt, ...)
+{
+	va_list args;
+	va_start(args, fmt);
+	String str = tr::sprintf(tr::scratchpad, fmt, args);
+	va_end(args);
+
+	return this->write_string(str);
+}
+
+tr::Result<void, tr::Error> tr::Writer::println(const char* fmt, ...)
+{
+	va_list args;
+	va_start(args, fmt);
+	tr::String str = tr::sprintf(tr::scratchpad, fmt, args);
+	va_end(args);
+
+	Result<void, Error> man = this->write_string(str);
+	if (!man.is_valid()) return man;
+	return this->write_string("\n");
+}
+
 #ifdef _WIN32
 /*
  * WINDOWS IMPLEMENTATION

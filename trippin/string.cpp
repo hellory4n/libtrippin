@@ -191,8 +191,9 @@ tr::String tr::sprintf(tr::Arena& arena, const char* fmt, va_list arg)
 
 	int size = vsnprintf(nullptr, 0, fmt, arg2);
 	// the string constructor handles the null terminator shut up
-	String str(arena, size + 1);
-	vsnprintf(str.buf(), size + 1, fmt, arg);
+	String str(arena, size);
+	vsnprintf(str.buf(), size+1, fmt, arg);
+	str[size] = '\0';
 	return str;
 }
 
