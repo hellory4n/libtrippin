@@ -59,7 +59,7 @@ tr::Result<tr::String, tr::Error> tr::Reader::read_string(tr::Arena& arena, usiz
 
 	if (read.unwrap() != int64(length)) {
 		return StringError(
-			tr::sprintf(tr::scratchpad, "expected %zu bytes, got %lli (might be EOF)",
+			tr::sprintf(tr::scratchpad(), "expected %zu bytes, got %lli (might be EOF)",
 				length, read.unwrap()
 			)
 		);
@@ -69,7 +69,7 @@ tr::Result<tr::String, tr::Error> tr::Reader::read_string(tr::Arena& arena, usiz
 
 tr::Result<tr::String, tr::Error> tr::Reader::read_line(Arena& arena)
 {
-	Array<char> linema(tr::scratchpad, 0);
+	Array<char> linema(tr::scratchpad(), 0);
 
 	while (true) {
 		char byte = '\0';
@@ -141,7 +141,7 @@ tr::Result<void, tr::Error> tr::Writer::printf(const char* fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
-	String str = tr::sprintf(tr::scratchpad, fmt, args);
+	String str = tr::sprintf_args(tr::scratchpad(), fmt, args);
 	va_end(args);
 
 	return this->write_string(str);
@@ -151,7 +151,7 @@ tr::Result<void, tr::Error> tr::Writer::println(const char* fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
-	tr::String str = tr::sprintf(tr::scratchpad, fmt, args);
+	tr::String str = tr::sprintf_args(tr::scratchpad(), fmt, args);
 	va_end(args);
 
 	Result<void, Error> man = this->write_string(str);
@@ -189,7 +189,7 @@ tr::Result<tr::File*, tr::FileError> tr::File::open(tr::Arena& arena, tr::String
 
 	file.is_std = false;
 	file.mode = mode;
-	file.path = path;
+	file.path = path.duplicate(arena);
 
 	// get length :)))))))))
 	_fseeki64(reinterpret_cast<FILE*>(file.fptr), 0, SEEK_END);
@@ -355,7 +355,7 @@ tr::Result<void, tr::FileError> tr::create_dir(tr::String path)
 
 	// it's recursive :)
 	// TODO windows should replace '/' with '\' and then split by that lmao.
-	Array<String> dirs = path.split(tr::scratchpad, '/');
+	Array<String> dirs = path.split(tr::scratchpad(), '/');
 
 	for (auto [_, dir] : dirs) {
 		if (tr::file_exists(dir)) continue;
@@ -447,7 +447,7 @@ tr::Result<tr::File*, tr::FileError> tr::File::open(tr::Arena& arena, tr::String
 
 	file.is_std = false;
 	file.mode = mode;
-	file.path = path;
+	file.path = path.duplicate(arena);
 
 	// get length :)))))))))
 	fseek(reinterpret_cast<FILE*>(file.fptr), 0, SEEK_END);
@@ -616,7 +616,7 @@ tr::Result<void, tr::FileError> tr::create_dir(tr::String path)
 	FileError::reset_errors();
 
 	// it's recursive :)
-	Array<String> dirs = path.split(tr::scratchpad, '/');
+	Array<String> dirs = path.split(tr::scratchpad(), '/');
 
 	for (auto [_, dir] : dirs) {
 		if (tr::file_exists(dir)) continue;

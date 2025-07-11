@@ -169,12 +169,12 @@ tr::String tr::FileError::message()
 	// these operations use 2 paths :)
 	#ifndef _WIN32
 	if (this->op == FileOperation::MOVE_FILE) {
-		return tr::sprintf(tr::scratchpad, "%s (source '%s', destination '%s', errno %i): %s",
+		return tr::sprintf(tr::scratchpad(), "%s (source '%s', destination '%s', errno %i): %s",
 			operation.buf(), this->path_a.buf(), this->path_b.buf(), this->errno_code, error.buf()
 		);
 	}
 	else {
-		return tr::sprintf(tr::scratchpad, "%s (path '%s', errno %i): %s",
+		return tr::sprintf(tr::scratchpad(), "%s (path '%s', errno %i): %s",
 			operation.buf(), this->path_a.buf(), this->errno_code, error.buf()
 		);
 	}
@@ -182,24 +182,24 @@ tr::String tr::FileError::message()
 	// on windows we currently use both errno and win32
 	if (this->errno_code != 0) {
 		if (this->op == FileOperation::MOVE_FILE) {
-			return tr::sprintf(tr::scratchpad, "%s (source '%s', destination '%s', errno %i): %s",
+			return tr::sprintf(tr::scratchpad(), "%s (source '%s', destination '%s', errno %i): %s",
 				operation.buf(), this->path_a.buf(), this->path_b.buf(), this->errno_code, error.buf()
 			);
 		}
 		else {
-			return tr::sprintf(tr::scratchpad, "%s (path '%s', errno %i): %s",
+			return tr::sprintf(tr::scratchpad(), "%s (path '%s', errno %i): %s",
 				operation.buf(), this->path_a.buf(), this->errno_code, error.buf()
 			);
 		}
 	}
 	else {
 		if (this->op == FileOperation::MOVE_FILE) {
-			return tr::sprintf(tr::scratchpad, "%s (source '%s', destination '%s', win32 error %i): %s",
+			return tr::sprintf(tr::scratchpad(), "%s (source '%s', destination '%s', win32 error %i): %s",
 				operation.buf(), this->path_a.buf(), this->path_b.buf(), this->win32_code, error.buf()
 			);
 		}
 		else {
-			return tr::sprintf(tr::scratchpad, "%s (path '%s', win32 error %i): %s",
+			return tr::sprintf(tr::scratchpad(), "%s (path '%s', win32 error %i): %s",
 				operation.buf(), this->path_a.buf(), this->win32_code, error.buf()
 			);
 		}

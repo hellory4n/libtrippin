@@ -67,10 +67,10 @@ static void test::arrays()
 {
 	tr::log("\n==== ARRAYS ====");
 
-	tr::Array<int64> array(tr::scratchpad, {1, 2, 3, 4, 5});
+	tr::Array<int64> array(tr::scratchpad(), {1, 2, 3, 4, 5});
 	array.add(66);
 	for (tr::ArrayItem<int64> item : array) {
-		tr::log("array[%zu] = %li", item.i, item.val);
+		tr::log("array[%zu] = %lli", item.i, item.val);
 	}
 
 	TR_ASSERT(!array.try_get(893463).is_valid());
@@ -84,24 +84,24 @@ static void test::strings()
 	tr::String str = "sigma";
 	tr::log("str: %s (length %zu)", str.buf(), str.len());
 
-	tr::String maballs = tr::sprintf(tr::scratchpad, "%s balls", str.buf());
+	tr::String maballs = tr::sprintf(tr::scratchpad(), "%s balls", str.buf());
 	TR_ASSERT(maballs == "sigma balls");
 	tr::log("%s", maballs.buf());
 
 	TR_ASSERT(str == "sigma");
 	TR_ASSERT(str != "ballshshjs");
 	TR_ASSERT(str != "sigmaaaa pelotas");
-	TR_ASSERT(str.substr(tr::scratchpad, 1, 3) == "igm");
-	tr::Array<usize> sigma = tr::String("sigmysigmy").find(tr::scratchpad, "ig");
+	TR_ASSERT(str.substr(tr::scratchpad(), 1, 3) == "igm");
+	tr::Array<usize> sigma = tr::String("sigmysigmy").find(tr::scratchpad(), "ig");
 	TR_ASSERT(sigma.len() == 2);
-	tr::String sigmaa = tr::String("figma").concat(tr::scratchpad, " balls");
+	tr::String sigmaa = tr::String("figma").concat(tr::scratchpad(), " balls");
 	TR_ASSERT(sigmaa == "figma balls");
 	TR_ASSERT(sigmaa.starts_with("figm"));
 	TR_ASSERT(sigmaa.ends_with("alls"));
 
-	TR_ASSERT(tr::String("/path/to/file.txt").file(tr::scratchpad) == "file.txt");
-	TR_ASSERT(tr::String("/path/to/file.txt").directory(tr::scratchpad) == "/path/to");
-	TR_ASSERT(tr::String("/path/to/teapot.blend.1").extension(tr::scratchpad) == ".blend.1");
+	TR_ASSERT(tr::String("/path/to/file.txt").file(tr::scratchpad()) == "file.txt");
+	TR_ASSERT(tr::String("/path/to/file.txt").directory(tr::scratchpad()) == "/path/to");
+	TR_ASSERT(tr::String("/path/to/teapot.blend.1").extension(tr::scratchpad()) == ".blend.1");
 	TR_ASSERT(tr::String("app://sigma").is_absolute());
 	TR_ASSERT(tr::String("C:\\sigma").is_absolute());
 	TR_ASSERT(!tr::String("sigma").is_absolute());
@@ -110,7 +110,7 @@ static void test::strings()
 
 	// split string :)
 	tr::String strma = "crap,shit,fuck,balls";
-	tr::Array<tr::String> splitma = strma.split(tr::scratchpad, ',');
+	tr::Array<tr::String> splitma = strma.split(tr::scratchpad(), ',');
 	for (auto c : splitma) {
 		tr::log("split[%zu] = %s", c.i, c.val.buf());
 	}
@@ -120,7 +120,7 @@ static void test::hashmaps()
 {
 	tr::log("\n==== HASHMAPS ====");
 
-	tr::HashMap<tr::String, tr::String> hashma(tr::scratchpad);
+	tr::HashMap<tr::String, tr::String> hashma(tr::scratchpad());
 	hashma["Sigma"] = "balls!";
 	tr::log("hashma[\"Sigma\"] = \"%s\"", hashma["Sigma"].buf());
 
@@ -132,7 +132,7 @@ static void test::hashmaps()
 		return 68;
 	};
 
-	tr::HashMap<tr::String, tr::String> hashmaballs(tr::scratchpad, settings);
+	tr::HashMap<tr::String, tr::String> hashmaballs(tr::scratchpad(), settings);
 	// this also resizes bcuz the load factor is 0.1 and the capacity is 4 (comically small)
 	hashmaballs["Sigma"] = "balls!";
 	hashmaballs["Balls"] = "sigma!";
@@ -158,19 +158,19 @@ static void test::filesystem()
 
 	// so much .unwrap() it looks like rust
 	// i want it to crash if something goes wrong tho so that's why
-	tr::File& wf = *tr::File::open(tr::scratchpad, "fucker.txt", tr::FileMode::WRITE_TEXT).unwrap();
+	tr::File& wf = *tr::File::open(tr::scratchpad(), "fucker.txt", tr::FileMode::WRITE_TEXT).unwrap();
 	wf.write_string("Crap crappington.\nother line", false);
 	wf.close();
 
-	tr::File& rf = *tr::File::open(tr::scratchpad, "fucker.txt", tr::FileMode::READ_TEXT).unwrap();
-	tr::String line1 = rf.read_line(tr::scratchpad).unwrap();
-	tr::String line2 = rf.read_line(tr::scratchpad).unwrap();
+	tr::File& rf = *tr::File::open(tr::scratchpad(), "fucker.txt", tr::FileMode::READ_TEXT).unwrap();
+	tr::String line1 = rf.read_line(tr::scratchpad()).unwrap();
+	tr::String line2 = rf.read_line(tr::scratchpad()).unwrap();
 	tr::log("line 1: %s; line 2: %s", line1.buf(), line2.buf());
 	rf.close();
 
 	tr::std_out.write_string("EVIL PRINTF FROM LIBTRIPPIN\n", false).unwrap();
 	tr::std_out.write_string("please input some fucking bullshit: ", false).unwrap();
-	tr::String line = tr::std_in.read_line(tr::scratchpad).unwrap();
+	tr::String line = tr::std_in.read_line(tr::scratchpad()).unwrap();
 	tr::std_out.write_string("the fucking bullshit: ", false).unwrap();
 	tr::std_out.write_string(line, false).unwrap();
 	tr::std_out.write_string("\n", false).unwrap();
@@ -184,7 +184,7 @@ static void test::filesystem()
 	tr::remove_dir("dir").unwrap();
 	tr::remove_dir("crap").unwrap();
 
-	tr::Array<tr::String> crap = tr::list_dir(tr::scratchpad, ".", false).unwrap();
+	tr::Array<tr::String> crap = tr::list_dir(tr::scratchpad(), ".", false).unwrap();
 	tr::log("this directory has: (not including hidden)");
 	for (auto [_, name] : crap) {
 		tr::log("- %s", name.buf());
@@ -285,7 +285,7 @@ int main(int argc, char* argv[])
 	// it_depends_yknow.right();
 
 	// auto should_i_call_it_both = tr::Pair<int64, float64>(1, 2.2);
-	// tr::log("pair left: %li, pair right %f", should_i_call_it_both.left, should_i_call_it_both.right);
+	// tr::log("pair left: %lli, pair right %f", should_i_call_it_both.left, should_i_call_it_both.right);
 
 	// tr::MaybeRefma<tr::Arena> arena = new tr::Arena(tr::kb_to_bytes(2));
 	// // arena.prealloc(tr::mb_to_bytes(1));
@@ -306,12 +306,12 @@ int main(int argc, char* argv[])
 
 	// auto random = tr::Random();
 	// tr::log("sogmarand %f", random.next(1.0, 1.4));
-	// tr::log("sogmarand %li", random.next<int64>(1, 69'000'000'000));
+	// tr::log("sogmarand %lli", random.next<int64>(1, 69'000'000'000));
 
 	// auto lerp_a = tr::Vec2<int64>(1, 2);
 	// auto lerp_b = tr::Vec2<int64>(15393, 2376);
 	// tr::Vec2<int64> lerp = tr::lerp(lerp_a, lerp_b, 0.5);
-	// tr::log("lerp vec2<int64>: %li, %li", lerp.x, lerp.y);
+	// tr::log("lerp vec2<int64>: %lli, %lli", lerp.x, lerp.y);
 
 	// tr::String str = "sigma";
 	// tr::log("str: %s (length %zu)", str.buf(), str.len());
@@ -404,7 +404,7 @@ int main(int argc, char* argv[])
 	// tr::Ref<tr::File> read_file = tr::File::open("sigma.txt", tr::FileMode::READ_TEXT).unwrap();
 	// tr::String line1 = read_file->read_line(arena);
 	// tr::String line2 = read_file->read_line(arena);
-	// tr::log("file: %li bytes\n%s\n%s", read_file->len(), line1.buf(), line2.buf());
+	// tr::log("file: %lli bytes\n%s\n%s", read_file->len(), line1.buf(), line2.buf());
 	// read_file->close();
 
 	// tr::rename_file("sigma.txt", "die.txt");

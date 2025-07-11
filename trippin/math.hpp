@@ -48,7 +48,7 @@ struct Vec2
 	// shut up :)
 	TR_GCC_IGNORE_WARNING(-Wshadow)
 	constexpr Vec2(T x, T y) : x(x), y(y) {}
-	TR_GCC_RESTORE();
+	TR_GCC_RESTORE()
 	explicit constexpr Vec2(T v) : x(v), y(v) {}
 
 	// TODO these could be implemented with evil macro fuckery but idk if i want to do that

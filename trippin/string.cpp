@@ -46,10 +46,10 @@ tr::Array<usize> tr::String::find(tr::Arena& arena, tr::String str, usize start,
 {
 	if (end == 0 || end > this->len()) end = this->len();
 
-	Array<usize> indexes(tr::scratchpad, 0);
+	Array<usize> indexes(tr::scratchpad(), 0);
 
 	for (usize i = start; i < end; i++) {
-		String substr = this->substr(tr::scratchpad, i, str.len());
+		String substr = this->substr(tr::scratchpad(), i, str.len());
 		if (substr == str) {
 			indexes.add(i);
 		}
@@ -138,8 +138,8 @@ bool tr::String::is_absolute() const
 [[nodiscard]]
 tr::String tr::String::replace(tr::Arena& arena, char from, char to) const
 {
-	Array<usize> indexes = this->find(tr::scratchpad, from);
-	String str = this->duplicate(tr::scratchpad);
+	Array<usize> indexes = this->find(tr::scratchpad(), from);
+	String str = this->duplicate(tr::scratchpad());
 
 	for (ArrayItem<usize> c : indexes) {
 		str[c.val] = to;
@@ -151,8 +151,8 @@ tr::String tr::String::replace(tr::Arena& arena, char from, char to) const
 [[nodiscard]]
 tr::Array<tr::String> tr::String::split(tr::Arena& arena, char delimiter) const
 {
-	Array<String> strings(tr::scratchpad);
-	String str = this->duplicate(tr::scratchpad);
+	Array<String> strings(tr::scratchpad());
+	String str = this->duplicate(tr::scratchpad());
 	char delim[2] = {delimiter, '\0'};
 
 	// TODO apparently strtok is tragic for multithreading lmao
@@ -172,7 +172,7 @@ tr::Array<tr::String> tr::String::split(tr::Arena& arena, char delimiter) const
 [[gnu::format(printf, 3, 4), deprecated("specifying size is no longer necessary")]]
 tr::String tr::sprintf(tr::Arena& arena, usize maxlen, const char* fmt, ...)
 {
-	String str(tr::scratchpad, maxlen);
+	String str(tr::scratchpad(), maxlen);
 	va_list args;
 	va_start(args, fmt);
 	vsnprintf(str.buf(), maxlen, fmt, args);
@@ -186,7 +186,7 @@ tr::String tr::sprintf(tr::Arena& arena, usize maxlen, const char* fmt, ...)
 	return str;
 }
 
-tr::String tr::sprintf(tr::Arena& arena, const char* fmt, va_list arg)
+tr::String tr::sprintf_args(tr::Arena& arena, const char* fmt, va_list arg)
 {
 	// if we don't do that it corrupts the varargs and fucks with everything :DDDDDDD
 	va_list arg2;
@@ -205,7 +205,7 @@ tr::String tr::sprintf(tr::Arena& arena, const char* fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
-	String str = tr::sprintf(arena, fmt, args);
+	String str = tr::sprintf_args(arena, fmt, args);
 	va_end(args);
 	return str;
 }

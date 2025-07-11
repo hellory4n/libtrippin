@@ -61,7 +61,7 @@ void tr::__log(const char* color, const char* prefix, bool panic, const char* fm
 	struct tm* tm_info = localtime(&now);
 	strftime(timestr, sizeof(timestr), "%Y-%m-%d %H:%M:%S", tm_info);
 
-	String buf = tr::sprintf(tr::scratchpad, fmt, arg);
+	String buf = tr::sprintf(tr::scratchpad(), fmt, arg);
 
 	for (auto [_, file] : tr::logfiles) {
 		if (file->is_std) file->write_string(color);

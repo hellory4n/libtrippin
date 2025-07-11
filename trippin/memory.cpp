@@ -34,6 +34,7 @@
 
 namespace tr {
 	extern MemoryInfo memory_info;
+	thread_local Arena __the_real_scratchpad(tr::kb_to_bytes(4));
 }
 
 tr::ArenaPage::ArenaPage(usize size, usize align) : bufsize(size), alignment(align)
@@ -105,6 +106,7 @@ void* tr::ArenaPage::alloc(usize size, usize align)
 
 tr::Arena::Arena(usize pg_size) : page_size(pg_size)
 {
+	tr::log("initializing arena of %lu", page_size);
 	// it doesn't make a page until you allocate something
 	TR_ASSERT_MSG(this->page_size != 0, "you doofus why would you make an arena of 0 bytes");
 }
@@ -221,9 +223,7 @@ tr::MemoryInfo tr::get_memory_info()
 	return tr::memory_info;
 }
 
-tr::Arena tr::__new_scratchpad()
+tr::Arena& tr::scratchpad()
 {
-	// each scratchpad is both thread local AND static
-	// the default (64 kb) would be way too much
-	return tr::Arena(tr::kb_to_bytes(2));
+	return tr::__the_real_scratchpad;
 }

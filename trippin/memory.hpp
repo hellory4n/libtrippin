@@ -163,10 +163,8 @@ public:
 	usize capacity() const;
 };
 
-Arena __new_scratchpad();
-
 // Temporary arena intended for temporary allocations. In other words, a sane `alloca()`.
-static thread_local Arena scratchpad = tr::__new_scratchpad();
+Arena& scratchpad();
 
 // This is just for iterators
 template<typename T>

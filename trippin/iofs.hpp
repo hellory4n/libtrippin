@@ -71,7 +71,7 @@ public:
 		if (sir.unwrap() == sizeof(T)) return man;
 		else {
 			return StringError(
-				tr::sprintf(tr::scratchpad, "expected %li bytes, got %li (might be EOF)",
+				tr::sprintf(tr::scratchpad(), "expected %lli bytes, got %lli (might be EOF)",
 					sizeof(T), sir.unwrap()
 				)
 			);
@@ -89,7 +89,7 @@ public:
 		if (sir.unwrap() == sizeof(T) * items && man != nullptr) return Array<T>(arena, man, items);
 		else {
 			return StringError(
-				tr::sprintf(tr::scratchpad, "expected %li bytes, got %li (might be EOF)",
+				tr::sprintf(tr::scratchpad(), "expected %lli bytes, got %lli (might be EOF)",
 					sizeof(T), sir.unwrap()
 				)
 			);
