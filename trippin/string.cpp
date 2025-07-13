@@ -65,7 +65,7 @@ tr::String tr::String::concat(tr::Arena& arena, tr::String other) const
 	String new_str(arena, this->buf(), this->len() + other.len());
 	// msvc is a little bitch
 	#ifdef TR_ONLY_MSVC
-	errno_t ohno = strncat_s(new_str.buf(), new_str.len(), other.buf(), other.len());
+	errno_t ohno = strncat_s(new_str.buf(), new_str.len() + 1, other.buf(), other.len());
 	TR_ASSERT(ohno != 0);
 	#else
 	strncat(new_str.buf(), other.buf(), other.len());
@@ -209,15 +209,36 @@ tr::String tr::sprintf(tr::Arena& arena, usize maxlen, const char* fmt, ...)
 
 tr::String tr::sprintf_args(tr::Arena& arena, const char* fmt, va_list arg)
 {
-	// if we don't do that it corrupts the varargs and fucks with everything :DDDDDDD
-	va_list arg2;
-	va_copy(arg2, arg);
+	// TODO does this work on mingw gcc?
 
-	int size = vsnprintf(nullptr, 0, fmt, arg2);
+	va_list arglen;
+	va_copy(arglen, arg);
+
+	// get size
+	// I LOVE WINDOWS!!!!!!!!!!
+	#ifdef _WIN32
+	int size = _vscprintf(fmt, arglen);
+	#else
+	int size = vsnprintf(nullptr, 0, fmt, arglen);
+	#endif
+	va_end(arglen);
+
 	// the string constructor handles the null terminator shut up
 	String str(arena, size);
-	vsnprintf(str.buf(), size+1, fmt, arg);
+
+	// do the formatting frfrfrfr
+	va_list argfmt;
+	va_copy(argfmt, arg);
+	#ifdef _WIN32
+	vsnprintf_s(str.buf(), size + 1, _TRUNCATE, fmt, argfmt);
+	#else
+	vsnprintf(str.buf(), size + 1, fmt, argfmt);
+	#endif
+	va_end(argfmt);
+
+	// just in case
 	str[size] = '\0';
+
 	return str;
 }
 
