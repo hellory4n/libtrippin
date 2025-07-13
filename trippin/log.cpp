@@ -72,7 +72,7 @@ void tr::__log(const char* color, const char* prefix, bool panic, const char* fm
 
 	va_list argmaballs;
 	va_copy(argmaballs, arg);
-	String buf = tr::sprintf_args(tr::scratchpad(), fmt, argmaballs);
+	String buf = tr::fmt_args(tr::scratchpad(), fmt, argmaballs);
 	va_end(argmaballs);
 
 	for (auto [_, file] : tr::logfiles) {
@@ -87,6 +87,7 @@ void tr::__log(const char* color, const char* prefix, bool panic, const char* fm
 	if (panic) {
 		tr::free();
 
+		// i dont care about every other compiler
 		#ifdef _WIN32
 		__debugbreak();
 		#else

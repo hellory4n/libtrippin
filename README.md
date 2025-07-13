@@ -24,9 +24,22 @@ It should compile with GCC, Clang, and MSVC (Visual Studio)
 
 On Linux you also have to link with the math library `-lm`
 
+Also make sure to add this at the start of your program:
+
+```cpp
+tr::use_log_file("log.txt");
+tr::init();
+```
+
+And at the end of your program:
+
+```cpp
+tr::free();
+```
+
 ## Examples
 
-See the examples folder for more crap.
+See the docs folder for more crap.
 
 ### Logging
 
@@ -57,19 +70,20 @@ tr::free();
 #include <trippin/log.hpp>
 #include <trippin/memory.hpp>
 
-// initialize an arena
-// tr::Ref is for reference counting
-tr::Ref<tr::Arena> arena = new tr::Arena(tr::kb_to_bytes(64));
+tr::Arena arena;
 
 // arenas are infinite
 // allocate as many as you want!
-auto* crap = arena->alloc<CrapStruct>();
+auto* crap = reinterpret_cast<CrapStruct*>(arena.alloc(sizeof(CrapStruct)));
+// nicer wrapper, it even supports passing arguments to the constructor
+CrapStruct& crap = arena.make<CrapStruct>();
 
 // you can also allocate arrays
-int32 items[] = {1, 2, 3, 4, 5};
-tr::Array<int32> array(arena, TR_ARRLEN(int32, items));
-for (auto item : array) {
-    tr::log("array[%zu] = %i", item.i, item.val);
+// tr::scratchpad() is a temporary arena (like a sane alloca)
+tr::Array<int64> array(tr::scratchpad(), {1, 2, 3, 4, 5});
+array.add(6);
+for (auto [i, num] : array) {
+    tr::log("array[%zu] = %li", i, num);
 }
 ```
 
@@ -80,13 +94,13 @@ for (auto item : array) {
 
 // temporary string
 tr::String str = "hi mom";
-tr::log("%s", str.buffer());
+tr::log("%s", str.buf());
 
 // arena string
 tr::String str(arena, "a string", sizeof("a string"));
 
 // you can do formatting too
-tr::String str = tr::sprintf(arena, 32, "hi %s", "mom");
+tr::String str = tr::fmt(arena, "hi %s", "mom");
 ```
 
 ### Math
@@ -103,35 +117,31 @@ for (usize i = 0; i < 3; i++) {
 TR_ASSERT(vecma.x > 0.0f);
 ```
 
-### Lists and hashmaps
+### Collections
 
 ```cpp
 #include <trippin/collection.hpp>
 
-// lists can change size
-tr::Ref<tr::List<int32>> list = new tr::List<int32>();
-list->add(1);
-list->add(2);
-list->add(848068024);
-
-for (auto item : *list) {
-    tr::log("list[%zu] = %i", item.i, item.val);
-}
-
 // hashmaps are hashmaps lmao
-// quite the fucking mouthful but it's just HashMap<String, String>
-auto hashmap = tr::Ref<tr::HashMap<tr::String, tr::String>>(new tr::HashMap<tr::String, tr::String>());
-(*hashmap)["john"] = "bob";
-(*hashmap)["bob"] = "greg";
-(*hashmap)["greg"] = "craig";
-(*hashmap)["craig"] = "fuck craig";
-hashmap->remove("craig");
+tr::HashMap<tr::String, tr::String> map(arena);
+map["john"] = "bob";
+map["bob"] = "greg";
+map["greg"] = "craig";
+map["craig"] = "fuck craig";
+map.remove("craig");
 
 // hashmaps aren't sorted
 // so it'll show up in a seemingly random order
-for (auto item : *hashmap) {
-    tr::log("hashmap['%s'] = '%s'", item.left.buffer(), item.right.buffer());
+for (auto [key, value] : map) {
+    tr::log("hashmap['%s'] = '%s'", key.buf(), value.buf());
 }
+
+// there's also signals so that's cool
+tr::Signal<int64> signa(arena);
+signa.connect([&](int64 x) -> void {
+    tr::log("SOMETHING HAS HAPPENED???");
+});
+signa.emit(759823);
 ```
 
 ### Files
@@ -140,13 +150,14 @@ for (auto item : *hashmap) {
 #include <trippin/iofs.hpp>
 
 // reading
-tr::Ref<tr::File> file = tr::File::open("file.txt", tr::FileMode::READ_TEXT).unwrap();
-tr::String line = file->read_line(arena);
+// .unwrap() will panic on error, you probably shouldn't do that in most cases
+tr::File& file = *tr::File::open(arena, "file.txt", tr::FileMode::READ_TEXT).unwrap();
+tr::String line = file.read_line(arena).unwrap();
 // it closes automatically!
 
 // writing
-tr::Ref<tr::File> file = tr::File::open("otherfile.bin", tr::FileMode::WRITE_BINARY).unwrap();
-file->write_string("Man...\nso true", false);
+tr::File& file = *tr::File::open(arena, "otherfile.bin", tr::FileMode::WRITE_BINARY).unwrap();
+file->write_string("Man...\nso true");
 file->write_struct(2758952);
 ```
 

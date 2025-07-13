@@ -140,14 +140,14 @@ public:
 
 // It's just `sprintf` for `tr::String` lmao.
 [[gnu::format(printf, 3, 4)]]
-[[deprecated("specifying size is no longer necessary (and there's not a good reason to specify it)")]]
+[[deprecated("specifying size is no longer necessary (and there's not a good reason to specify it, also the function is tr::fmt now lmao)")]]
 String sprintf(Arena& arena, usize maxlen, const char* fmt, ...);
 
-String sprintf_args(Arena& arena, const char* fmt, va_list arg);
+String fmt_args(Arena& arena, const char* fmt, va_list arg);
 
 // It's just `sprintf` for `tr::String` lmao.
 [[gnu::format(printf, 2, 3)]]
-String sprintf(Arena& arena, const char* fmt, ...);
+String fmt(Arena& arena, const char* fmt, ...);
 
 
 // TODO StringBuilder

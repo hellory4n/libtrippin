@@ -1,3 +1,4 @@
+#include <trippin/common.hpp>
 #include <trippin/log.hpp>
 
 int main(void)

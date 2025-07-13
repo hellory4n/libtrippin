@@ -59,7 +59,7 @@ tr::Result<tr::String, tr::Error> tr::Reader::read_string(tr::Arena& arena, usiz
 
 	if (read.unwrap() != int64(length)) {
 		return StringError(
-			tr::sprintf(tr::scratchpad(), "expected %zu bytes, got %li (might be EOF)",
+			tr::fmt(tr::scratchpad(), "expected %zu bytes, got %li (might be EOF)",
 				length, read.unwrap()
 			)
 		);
@@ -126,13 +126,8 @@ tr::Result<tr::String, tr::Error> tr::Reader::read_all_text(tr::Arena& arena)
 	else return Result<String, Error>(die.unwrap_err());
 }
 
-tr::Result<void, tr::Error> tr::Writer::write_string(tr::String str, bool include_len)
+tr::Result<void, tr::Error> tr::Writer::write_string(tr::String str)
 {
-	if (include_len) {
-		Result<void, Error> help = this->write_struct(str.len());
-		if (!help.is_valid()) return help;
-	}
-
 	Array<uint8> manfuckyou(reinterpret_cast<uint8*>(str.buf()), str.len());
 	return this->write_bytes(manfuckyou);
 }
@@ -141,7 +136,7 @@ tr::Result<void, tr::Error> tr::Writer::printf(const char* fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
-	String str = tr::sprintf_args(tr::scratchpad(), fmt, args);
+	String str = tr::fmt_args(tr::scratchpad(), fmt, args);
 	va_end(args);
 
 	return this->write_string(str);
@@ -151,7 +146,7 @@ tr::Result<void, tr::Error> tr::Writer::println(const char* fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
-	tr::String str = tr::sprintf_args(tr::scratchpad(), fmt, args);
+	tr::String str = tr::fmt_args(tr::scratchpad(), fmt, args);
 	va_end(args);
 
 	Result<void, Error> man = this->write_string(str);
@@ -254,7 +249,6 @@ tr::Result<int64, tr::Error> tr::File::position()
 {
 	FileError::reset_errors();
 
-	// TODO windows is stupid so ftell doesn't work with files that are more than 2 gb
 	int64 pos = _ftelli64(reinterpret_cast<FILE*>(this->fptr));
 	if (pos < 0) return FileError::from_errno(this->path, "", FileOperation::GET_FILE_POSITION);
 	else return pos;
@@ -388,8 +382,7 @@ tr::Result<void, tr::FileError> tr::create_dir(tr::String path)
 	FileError::reset_errors();
 
 	// it's recursive :)
-	// TODO windows should replace '/' with '\' and then split by that lmao.
-	Array<String> dirs = path.split(tr::scratchpad(), '/');
+	Array<String> dirs = path.replace(tr::scratchpad(), '\\', '/').split(tr::scratchpad(), '/');
 
 	for (auto [_, dir] : dirs) {
 		if (tr::file_exists(dir)) continue;
@@ -513,7 +506,6 @@ tr::Result<int64, tr::Error> tr::File::position()
 {
 	FileError::reset_errors();
 
-	// TODO windows is stupid so ftell doesn't work with files that are more than 2 gb
 	int64 pos = ftell(reinterpret_cast<FILE*>(this->fptr));
 	if (pos < 0) return FileError::from_errno(this->path, "", FileOperation::GET_FILE_POSITION);
 	else return pos;

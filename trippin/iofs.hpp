@@ -71,7 +71,7 @@ public:
 		if (sir.unwrap() == sizeof(T)) return man;
 		else {
 			return StringError(
-				tr::sprintf(tr::scratchpad(), "expected %li bytes, got %li (might be EOF)",
+				tr::fmt(tr::scratchpad(), "expected %li bytes, got %li (might be EOF)",
 					sizeof(T), sir.unwrap()
 				)
 			);
@@ -89,7 +89,7 @@ public:
 		if (sir.unwrap() == sizeof(T) * items && man != nullptr) return Array<T>(arena, man, items);
 		else {
 			return StringError(
-				tr::sprintf(tr::scratchpad(), "expected %li bytes, got %li (might be EOF)",
+				tr::fmt(tr::scratchpad(), "expected %li bytes, got %li (might be EOF)",
 					sizeof(T), sir.unwrap()
 				)
 			);
@@ -147,9 +147,8 @@ public:
 		return this->write_bytes(manfuckyou);
 	}
 
-	// Writes a string into the stream. If `include_len` is true, it'll include an uint64 with the length
-	// before the actual string.
-	Result<void, Error> write_string(String str, bool include_len = false);
+	// Writes a string into the stream.
+	Result<void, Error> write_string(String str);
 
 	// Writes a formatted string into the stream. So pretty much just fprintf.
 	[[gnu::format(printf, 2, 3)]] // `this` is the first argument i guess

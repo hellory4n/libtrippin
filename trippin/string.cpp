@@ -206,7 +206,7 @@ tr::String tr::sprintf(tr::Arena& arena, usize maxlen, const char* fmt, ...)
 	return str;
 }
 
-tr::String tr::sprintf_args(tr::Arena& arena, const char* fmt, va_list arg)
+tr::String tr::fmt_args(tr::Arena& arena, const char* fmt, va_list arg)
 {
 	// TODO does this work on mingw gcc?
 
@@ -242,11 +242,11 @@ tr::String tr::sprintf_args(tr::Arena& arena, const char* fmt, va_list arg)
 }
 
 [[gnu::format(printf, 2, 3)]]
-tr::String tr::sprintf(tr::Arena& arena, const char* fmt, ...)
+tr::String tr::fmt(tr::Arena& arena, const char* fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
-	String str = tr::sprintf_args(arena, fmt, args);
+	String str = tr::fmt_args(arena, fmt, args);
 	va_end(args);
 	return str;
 }
