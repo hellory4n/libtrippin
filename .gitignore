@@ -21,3 +21,9 @@ vgcore*
 # man.
 .ninja_log
 .ninja_lock
+
+# visual studio is silly
+windows/*
+!windows/libtrippin.sln
+!windows/libtrippin.vcxproj
+!windows/libtrippin.vcxproj.filters
