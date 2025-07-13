@@ -66,7 +66,7 @@ tr::String tr::String::concat(tr::Arena& arena, tr::String other) const
 	// msvc is a little bitch
 	#ifdef TR_ONLY_MSVC
 	errno_t ohno = strncat_s(new_str.buf(), new_str.len() + 1, other.buf(), other.len());
-	TR_ASSERT(ohno != 0);
+	TR_ASSERT(ohno == 0);
 	#else
 	strncat(new_str.buf(), other.buf(), other.len());
 	#endif

@@ -28,6 +28,9 @@
 #include <stdarg.h>
 #include <time.h>
 #include <signal.h>
+#ifdef _WIN32
+	#include <intrin.h>
+#endif
 
 #include "common.hpp"
 #include "log.hpp"
@@ -69,9 +72,8 @@ void tr::__log(const char* color, const char* prefix, bool panic, const char* fm
 
 	va_list argmaballs;
 	va_copy(argmaballs, arg);
-	String buf = tr::sprintf(tr::scratchpad(), fmt, argmaballs);
+	String buf = tr::sprintf_args(tr::scratchpad(), fmt, argmaballs);
 	va_end(argmaballs);
-	printf("buffer is %s\n", buf.buf());
 
 	for (auto [_, file] : tr::logfiles) {
 		if (file->is_std) file->write_string(color);
@@ -84,15 +86,11 @@ void tr::__log(const char* color, const char* prefix, bool panic, const char* fm
 
 	if (panic) {
 		tr::free();
-		// TODO signal for when this happens
-		// so that everything (starry3d) can safely close :)
-
-		// windows doesn't have SIGTRAP (which sets a breakpoint) for some fucking reason
-		// TODO there's probably a windows equivalent but i don't care enough to find that
-		#ifndef _WIN32
-		raise(SIGTRAP);
+		
+		#ifdef _WIN32
+		__debugbreak();
 		#else
-		raise(SIGABRT);
+		__builtin_trap();
 		#endif
 	}
 }
