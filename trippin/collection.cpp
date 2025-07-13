@@ -25,11 +25,18 @@
 
 #include "collection.hpp"
 
-#define XXH_STATIC_LINKING_ONLY
-#define XXH_IMPLEMENTATION
-#include "libxxhash.h"
+constexpr uint64 FNV_OFFSET_BASIS = 0xcbf29ce484222325;
+// IM IN MY PRIME™ AND THIS AINT EVEN FINAL FORM
+constexpr uint64 FNV_PRIME = 0x100000001b3;
 
 uint64 tr::hash(tr::Array<uint8> array)
 {
-	return XXH3_64bits(array.buf(), array.len());
+	uint64 hash = FNV_OFFSET_BASIS;
+
+	for (auto [_, byte] : array) {
+		hash ^= byte;
+		hash *= FNV_PRIME;
+	}
+
+	return hash;
 }

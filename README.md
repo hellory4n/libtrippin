@@ -159,8 +159,3 @@ No fuck off.
 ### Why?
 
 That's enough questions.
-
-## Copyright pls don't sue me cheers mate
-
-- `trippin/libxxhash.h`: Copyright (c) 2012-2021 Yann Collet, licensed under the BSD-2-Clause License
-- Everything else: Copyright (C) 2025 by hellory4n, licensed under the BSD-0-Clause License

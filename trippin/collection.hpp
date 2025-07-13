@@ -35,8 +35,8 @@
 
 namespace tr {
 
-// Hashes an array of bytes, which is useful if you need to hash an array of bytes. Implemented with xxHash3
-// 64-bits
+// Hashes an array of bytes, which is useful if you need to hash an array of bytes. Implemented with 64-bit
+// FNV-1a
 uint64 hash(tr::Array<uint8> array);
 
 // internal don't use probably :)
