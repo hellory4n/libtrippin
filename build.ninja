@@ -1,9 +1,9 @@
 # this crap is simple enough to not need a fancy generator like starry3d :)
 # TODO compile all of the examples
 # TODO a generator would be nice tho
-cxx = x86_64-w64-mingw32-g++
-cflags = -std=c++17 -Wall -Wextra -Wpedantic -Wuninitialized -Wshadow -Og -ggdb3 -DDEBUG -D_DEBUG -I. -I..
-ldflags = -lstdc++ -static
+cxx = clang++
+cflags = -std=c++17 -Wall -Wextra -Wpedantic -Wuninitialized -Wshadow -O2 -g -DDEBUG -D_DEBUG -I. -I..
+ldflags = -lm -lstdc++
 
 rule compile
   command = $cxx $cflags -c $in -o $out

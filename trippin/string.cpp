@@ -165,7 +165,8 @@ tr::Array<tr::String> tr::String::split(tr::Arena& arena, char delimiter) const
 
 	// windows has strtok_s, posix has strtok_r
 	// they're pretty much the same thing
-	// interestingly strtok_s is optional (from c11) but also microsoft's strtok_s is different because FUCK ME
+	// interestingly strtok_s is optional (from c11) but also microsoft's strtok_s is different
+	// because FUCK ME
 	// TODO does mingw gcc have microsoft's strtok_s?
 	#ifdef _WIN32
 	char* context = nullptr;
@@ -176,14 +177,12 @@ tr::Array<tr::String> tr::String::split(tr::Arena& arena, char delimiter) const
 		token = strtok_s(nullptr, delim, &context);
 	}
 	#else
-	// TODO use strtok_r
-	// i'm editing this on visual studio so it doesnt have it
-	char* token = strtok(str, delim);
+	char* saveptr;
+	char* token = strtok_r(str, delim, &saveptr);
 	while (token != nullptr) {
 		String m = String(arena, token, strlen(token));
 		strings.add(m);
-		// WHY DENNIS RITCHIE WHY
-		token = strtok(nullptr, delim);
+		token = strtok_r(nullptr, delim, &saveptr);
 	}
 	#endif
 

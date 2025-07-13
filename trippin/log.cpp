@@ -27,7 +27,6 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <time.h>
-#include <signal.h>
 #ifdef _WIN32
 	#include <intrin.h>
 #endif
@@ -65,10 +64,11 @@ void tr::__log(const char* color, const char* prefix, bool panic, const char* fm
 	#ifdef _WIN32
 	struct tm tm_info;
 	localtime_s(&tm_info, &now);
+	strftime(timestr, sizeof(timestr), "%Y-%m-%d %H:%M:%S", &tm_info);
 	#else
 	struct tm* tm_info = localtime(&now);
+	strftime(timestr, sizeof(timestr), "%Y-%m-%d %H:%M:%S", tm_info);
 	#endif
-	strftime(timestr, sizeof(timestr), "%Y-%m-%d %H:%M:%S", &tm_info);
 
 	va_list argmaballs;
 	va_copy(argmaballs, arg);
@@ -86,7 +86,7 @@ void tr::__log(const char* color, const char* prefix, bool panic, const char* fm
 
 	if (panic) {
 		tr::free();
-		
+
 		#ifdef _WIN32
 		__debugbreak();
 		#else

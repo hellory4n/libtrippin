@@ -59,7 +59,7 @@ tr::Result<tr::String, tr::Error> tr::Reader::read_string(tr::Arena& arena, usiz
 
 	if (read.unwrap() != int64(length)) {
 		return StringError(
-			tr::sprintf(tr::scratchpad(), "expected %zu bytes, got %lli (might be EOF)",
+			tr::sprintf(tr::scratchpad(), "expected %zu bytes, got %li (might be EOF)",
 				length, read.unwrap()
 			)
 		);
@@ -213,6 +213,7 @@ tr::Result<tr::File*, tr::FileError> tr::File::open(tr::Arena& arena, tr::String
 		case FileMode::WRITE_BINARY:      modefrfr = L"wb";  break;
 		case FileMode::READ_WRITE_TEXT:   modefrfr = L"rb+"; break;
 		case FileMode::READ_WRITE_BINARY: modefrfr = L"rb+"; break;
+		default:                          modefrfr = L"";    break;
 	}
 
 	File& file = arena.make<File>();
@@ -378,7 +379,7 @@ tr::Result<void, tr::FileError> tr::move_file(tr::String from, tr::String to)
 
 bool tr::file_exists(tr::String path)
 {
-	DWORD attr = GetFileAttributes(from_trippin_to_win32_str(path));
+	DWORD attr = GetFileAttributesW(from_trippin_to_win32_str(path));
 	return (attr != INVALID_FILE_ATTRIBUTES && !(attr & FILE_ATTRIBUTE_DIRECTORY));
 }
 
@@ -393,7 +394,7 @@ tr::Result<void, tr::FileError> tr::create_dir(tr::String path)
 	for (auto [_, dir] : dirs) {
 		if (tr::file_exists(dir)) continue;
 
-		if (!CreateDirectory(from_trippin_to_win32_str(dir), nullptr)) {
+		if (!CreateDirectoryW(from_trippin_to_win32_str(dir), nullptr)) {
 			return FileError::from_win32(path, "", FileOperation::CREATE_DIR);
 		}
 	}
@@ -405,7 +406,7 @@ tr::Result<void, tr::FileError> tr::remove_dir(tr::String path)
 {
 	FileError::reset_errors();
 
-	if (!RemoveDirectory(from_trippin_to_win32_str(path))) {
+	if (!RemoveDirectoryW(from_trippin_to_win32_str(path))) {
 		return FileError::from_win32(path, "", FileOperation::REMOVE_DIR);
 	}
 	return {};
@@ -415,10 +416,10 @@ tr::Result<tr::Array<tr::String>, tr::FileError> tr::list_dir(tr::Arena& arena, 
 	bool include_hidden)
 {
 	// this looks so horrible what the fuck is wrong with you bill gates
-	WIN32_FIND_DATA find_file_data;
+	WIN32_FIND_DATAW find_file_data;
 	HANDLE hfind;
 
-	hfind = FindFirstFile(from_trippin_to_win32_str(path), &find_file_data);
+	hfind = FindFirstFileW(from_trippin_to_win32_str(path), &find_file_data);
 
 	if (hfind == INVALID_HANDLE_VALUE) {
 		return FileError::from_win32(path, "", FileOperation::LIST_DIR);
@@ -437,7 +438,7 @@ tr::Result<tr::Array<tr::String>, tr::FileError> tr::list_dir(tr::Arena& arena, 
 
 		entries.add(from_win32_to_trippin_str(find_file_data.cFileName));
 	}
-	while (FindNextFile(hfind, &find_file_data) != 0);
+	while (FindNextFileW(hfind, &find_file_data) != 0);
 
 	FindClose(hfind);
 	return entries;
@@ -445,7 +446,7 @@ tr::Result<tr::Array<tr::String>, tr::FileError> tr::list_dir(tr::Arena& arena, 
 
 tr::Result<bool, tr::FileError> tr::is_file(tr::String path)
 {
-	DWORD attributes = GetFileAttributes(from_trippin_to_win32_str(path));
+	DWORD attributes = GetFileAttributesW(from_trippin_to_win32_str(path));
 
 	if (attributes == INVALID_FILE_ATTRIBUTES) {
 		return FileError::from_win32(path, "", FileOperation::IS_FILE);

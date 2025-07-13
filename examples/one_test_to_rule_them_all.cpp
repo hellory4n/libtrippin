@@ -70,7 +70,7 @@ static void test::arrays()
 	tr::Array<int64> array(tr::scratchpad(), {1, 2, 3, 4, 5});
 	array.add(66);
 	for (tr::ArrayItem<int64> item : array) {
-		tr::log("array[%zu] = %lli", item.i, item.val);
+		tr::log("array[%zu] = %li", item.i, item.val);
 	}
 
 	TR_ASSERT(!array.try_get(893463).is_valid());
@@ -190,8 +190,8 @@ static void test::filesystem()
 		tr::log("- %s", name.buf());
 	}
 
-	TR_ASSERT(tr::is_file("README.md").unwrap());
-	TR_ASSERT(!tr::is_file("trippin").unwrap());
+	TR_ASSERT(tr::is_file("log.txt").unwrap());
+	TR_ASSERT(!tr::is_file("../").unwrap());
 }
 
 static void test::all()
@@ -288,7 +288,7 @@ int main(int argc, char* argv[])
 	// it_depends_yknow.right();
 
 	// auto should_i_call_it_both = tr::Pair<int64, float64>(1, 2.2);
-	// tr::log("pair left: %lli, pair right %f", should_i_call_it_both.left, should_i_call_it_both.right);
+	// tr::log("pair left: %li, pair right %f", should_i_call_it_both.left, should_i_call_it_both.right);
 
 	// tr::MaybeRefma<tr::Arena> arena = new tr::Arena(tr::kb_to_bytes(2));
 	// // arena.prealloc(tr::mb_to_bytes(1));
@@ -309,12 +309,12 @@ int main(int argc, char* argv[])
 
 	// auto random = tr::Random();
 	// tr::log("sogmarand %f", random.next(1.0, 1.4));
-	// tr::log("sogmarand %lli", random.next<int64>(1, 69'000'000'000));
+	// tr::log("sogmarand %li", random.next<int64>(1, 69'000'000'000));
 
 	// auto lerp_a = tr::Vec2<int64>(1, 2);
 	// auto lerp_b = tr::Vec2<int64>(15393, 2376);
 	// tr::Vec2<int64> lerp = tr::lerp(lerp_a, lerp_b, 0.5);
-	// tr::log("lerp vec2<int64>: %lli, %lli", lerp.x, lerp.y);
+	// tr::log("lerp vec2<int64>: %li, %li", lerp.x, lerp.y);
 
 	// tr::String str = "sigma";
 	// tr::log("str: %s (length %zu)", str.buf(), str.len());
@@ -407,7 +407,7 @@ int main(int argc, char* argv[])
 	// tr::Ref<tr::File> read_file = tr::File::open("sigma.txt", tr::FileMode::READ_TEXT).unwrap();
 	// tr::String line1 = read_file->read_line(arena);
 	// tr::String line2 = read_file->read_line(arena);
-	// tr::log("file: %lli bytes\n%s\n%s", read_file->len(), line1.buf(), line2.buf());
+	// tr::log("file: %li bytes\n%s\n%s", read_file->len(), line1.buf(), line2.buf());
 	// read_file->close();
 
 	// tr::rename_file("sigma.txt", "die.txt");

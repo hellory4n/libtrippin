@@ -8,17 +8,21 @@ Most biggest most massive library of all time. I'm insane.
     - C++17 with no external dependencies (only libc/stdc++)
     - Cross-platform (Windows and POSIX)
     - Arenas for memory management
-    - Arrays, lists, hashmaps, strings
-    - Basic math
+    - Arrays, strings, hashmaps
+    - Simple math for games
     - Logging
     - Files/IO
     - And more
 
 ## Usage
 
-Just add all the `.hpp`/`.cpp` files from `trippin/` to your project
+Make sure you're using C++17, it won't compile with anything older.
 
-On Linux you have to link with the math library `-lm`
+Now add all the `.hpp`/`.cpp` files from `trippin/` to your project
+
+It should compile with GCC, Clang, and MSVC (Visual Studio)
+
+On Linux you also have to link with the math library `-lm`
 
 ## Examples
 
