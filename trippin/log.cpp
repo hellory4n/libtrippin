@@ -67,7 +67,11 @@ void tr::__log(const char* color, const char* prefix, bool panic, const char* fm
 	#endif
 	strftime(timestr, sizeof(timestr), "%Y-%m-%d %H:%M:%S", &tm_info);
 
-	String buf = tr::sprintf(tr::scratchpad(), fmt, arg);
+	va_list argmaballs;
+	va_copy(argmaballs, arg);
+	String buf = tr::sprintf(tr::scratchpad(), fmt, argmaballs);
+	va_end(argmaballs);
+	printf("buffer is %s\n", buf.buf());
 
 	for (auto [_, file] : tr::logfiles) {
 		if (file->is_std) file->write_string(color);

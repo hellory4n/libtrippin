@@ -206,6 +206,9 @@ static void test::all()
 
 int main(int argc, char* argv[])
 {
+	tr::String fuckyou = tr::sprintf(tr::scratchpad(), "fuck %i %s", 69402, "you");
+	printf("%s\n", fuckyou.buf());
+
 	tr::use_log_file("log.txt");
 	tr::init();
 
