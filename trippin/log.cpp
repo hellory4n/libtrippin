@@ -58,8 +58,14 @@ void tr::__log(const char* color, const char* prefix, bool panic, const char* fm
 	// TODO tr::time?? idfk
 	char timestr[32];
 	time_t now = time(nullptr);
+	// FUCK ME
+	#ifdef _WIN32
+	struct tm tm_info;
+	localtime_s(&tm_info, &now);
+	#else
 	struct tm* tm_info = localtime(&now);
-	strftime(timestr, sizeof(timestr), "%Y-%m-%d %H:%M:%S", tm_info);
+	#endif
+	strftime(timestr, sizeof(timestr), "%Y-%m-%d %H:%M:%S", &tm_info);
 
 	String buf = tr::sprintf(tr::scratchpad(), fmt, arg);
 

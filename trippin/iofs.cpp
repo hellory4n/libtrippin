@@ -165,27 +165,60 @@ tr::Result<void, tr::Error> tr::Writer::println(const char* fmt, ...)
  */
 
 // TODO use only windows APIs (massive pain in the ass)
-// TODO windows doesn't use utf-8, it uses utf-16
+
+// you know how hard it is to remember LPCWSTR???? and visual studio takes a week to show the autocomplete
+using WinStrConst = LPCWSTR;
+using WinStrMut = LPWSTR;
+
+// windows uses utf-16 :(
+static WinStrConst from_trippin_to_win32_str(tr::String str)
+{
+	// conveniently microsoft knows this is torture and gives a function for this exact purpose
+	int size = MultiByteToWideChar(CP_UTF8, 0, str.buf(), -1, nullptr, 0);
+	// TODO idk if it can go negative but the headers don't have documentation, and the search online button uses bing
+	// let's just say, that this table right here, is bill gates! *smashes table* YEAHHHHHHHHHHHHHH
+	// https://www.youtube.com/watch?v=WGFLPbpdMS8
+	TR_ASSERT_MSG(size != 0, "blame it on windows");
+
+	WinStrMut new_str = reinterpret_cast<WinStrMut>(tr::scratchpad().alloc((size + 1) * sizeof(wchar_t)));
+	int result = MultiByteToWideChar(CP_UTF8, 0, str.buf(), -1, new_str, size);
+	TR_ASSERT_MSG(result != 0, "blame it on windows");
+	return new_str;
+}
+
+static tr::String from_win32_to_trippin_str(WinStrConst str)
+{
+	int size = WideCharToMultiByte(CP_UTF8, 0, str, -1, nullptr, 0, nullptr, nullptr);
+	TR_ASSERT_MSG(size != 0, "blame it on windows");
+
+	tr::String new_str(tr::scratchpad(), size);
+	int result = WideCharToMultiByte(CP_UTF8, 0, str, -1, new_str.buf(), size, nullptr, nullptr);
+	TR_ASSERT_MSG(result != 0, "blame it on windows");
+	return new_str;
+}
 
 tr::Result<tr::File*, tr::FileError> tr::File::open(tr::Arena& arena, tr::String path, FileMode mode)
 {
 	FileError::reset_errors();
 
 	// get mode
-	String modefrfr;
+	WinStrConst modefrfr = L"";
 	switch (mode) {
-		case FileMode::READ_TEXT:         modefrfr = "r";   break;
-		case FileMode::READ_BINARY:       modefrfr = "rb";  break;
-		case FileMode::WRITE_TEXT:        modefrfr = "w";   break;
-		case FileMode::WRITE_BINARY:      modefrfr = "wb";  break;
-		case FileMode::READ_WRITE_TEXT:   modefrfr = "r+";  break;
-		case FileMode::READ_WRITE_BINARY: modefrfr = "rb+"; break;
-		default:                          modefrfr = "";    break;
+		// on text mode windows does evil fuckery that we don't want
+		// we want everything to be unix like
+		// so we have to use binary mode
+		case FileMode::READ_TEXT:         modefrfr = L"rb";  break;
+		case FileMode::READ_BINARY:       modefrfr = L"rb";  break;
+		case FileMode::WRITE_TEXT:        modefrfr = L"wb";  break;
+		case FileMode::WRITE_BINARY:      modefrfr = L"wb";  break;
+		case FileMode::READ_WRITE_TEXT:   modefrfr = L"rb+"; break;
+		case FileMode::READ_WRITE_BINARY: modefrfr = L"rb+"; break;
 	}
 
 	File& file = arena.make<File>();
-	file.fptr = fopen(path, modefrfr);
-	if (file.fptr == nullptr) return FileError::from_errno(path, "", FileOperation::OPEN_FILE);
+	// normal fopen gives an error on visual studio??
+	errno_t ohno = _wfopen_s(reinterpret_cast<FILE**>(&file.fptr), from_trippin_to_win32_str(path), modefrfr);
+	if (ohno != 0) return FileError::from_errno(path, "", FileOperation::OPEN_FILE);
 
 	file.is_std = false;
 	file.mode = mode;
@@ -345,8 +378,8 @@ tr::Result<void, tr::FileError> tr::move_file(tr::String from, tr::String to)
 
 bool tr::file_exists(tr::String path)
 {
-	DWORD attr = GetFileAttributesA(path);
-    return (attr != INVALID_FILE_ATTRIBUTES && !(attr & FILE_ATTRIBUTE_DIRECTORY));
+	DWORD attr = GetFileAttributes(from_trippin_to_win32_str(path));
+	return (attr != INVALID_FILE_ATTRIBUTES && !(attr & FILE_ATTRIBUTE_DIRECTORY));
 }
 
 tr::Result<void, tr::FileError> tr::create_dir(tr::String path)
@@ -360,7 +393,7 @@ tr::Result<void, tr::FileError> tr::create_dir(tr::String path)
 	for (auto [_, dir] : dirs) {
 		if (tr::file_exists(dir)) continue;
 
-		if (!CreateDirectory(dir, nullptr)) {
+		if (!CreateDirectory(from_trippin_to_win32_str(dir), nullptr)) {
 			return FileError::from_win32(path, "", FileOperation::CREATE_DIR);
 		}
 	}
@@ -372,7 +405,7 @@ tr::Result<void, tr::FileError> tr::remove_dir(tr::String path)
 {
 	FileError::reset_errors();
 
-	if (!RemoveDirectory(path)) {
+	if (!RemoveDirectory(from_trippin_to_win32_str(path))) {
 		return FileError::from_win32(path, "", FileOperation::REMOVE_DIR);
 	}
 	return {};
@@ -385,7 +418,7 @@ tr::Result<tr::Array<tr::String>, tr::FileError> tr::list_dir(tr::Arena& arena, 
 	WIN32_FIND_DATA find_file_data;
 	HANDLE hfind;
 
-	hfind = FindFirstFile(path, &find_file_data);
+	hfind = FindFirstFile(from_trippin_to_win32_str(path), &find_file_data);
 
 	if (hfind == INVALID_HANDLE_VALUE) {
 		return FileError::from_win32(path, "", FileOperation::LIST_DIR);
@@ -395,15 +428,16 @@ tr::Result<tr::Array<tr::String>, tr::FileError> tr::list_dir(tr::Arena& arena, 
 
 	// idk why it uses do-while i stole this
 	do {
-		if (String(find_file_data.cFileName) == ".") continue;
-		if (String(find_file_data.cFileName) == "..") continue;
+		if (wcscmp(find_file_data.cFileName, L".") == 0) continue;
+		if (wcscmp(find_file_data.cFileName, L"..") == 0) continue;
 
 		if (!include_hidden) {
 			if (find_file_data.dwFileAttributes & FILE_ATTRIBUTE_HIDDEN) continue;
 		}
 
-		entries.add(String(arena, find_file_data.cFileName, strlen(find_file_data.cFileName)));
-	} while (FindNextFile(hfind, &find_file_data) != 0);
+		entries.add(from_win32_to_trippin_str(find_file_data.cFileName));
+	}
+	while (FindNextFile(hfind, &find_file_data) != 0);
 
 	FindClose(hfind);
 	return entries;
@@ -411,7 +445,7 @@ tr::Result<tr::Array<tr::String>, tr::FileError> tr::list_dir(tr::Arena& arena, 
 
 tr::Result<bool, tr::FileError> tr::is_file(tr::String path)
 {
-	DWORD attributes = GetFileAttributesA(path);
+	DWORD attributes = GetFileAttributes(from_trippin_to_win32_str(path));
 
 	if (attributes == INVALID_FILE_ATTRIBUTES) {
 		return FileError::from_win32(path, "", FileOperation::IS_FILE);
@@ -608,7 +642,7 @@ bool tr::file_exists(tr::String path)
 	// we could just fopen(path, "r") then check if that's null, but then it would return false on permission
 	// errors, even though it does in fact exist
 	struct stat buffer;
-    return stat(path, &buffer) == 0;
+	return stat(path, &buffer) == 0;
 }
 
 tr::Result<void, tr::FileError> tr::create_dir(tr::String path)
@@ -653,15 +687,15 @@ tr::Result<tr::Array<tr::String>, tr::FileError> tr::list_dir(tr::Arena& arena, 
 	struct dirent* entry;
 
 	while ((entry = readdir(dir)) != nullptr) {
-        if (String(entry->d_name) == ".") continue;
-        if (String(entry->d_name) == "..") continue;
+		if (String(entry->d_name) == ".") continue;
+		if (String(entry->d_name) == "..") continue;
 
 		if (!include_hidden) {
 			if (String(entry->d_name).starts_with(".")) continue;
 		}
 
 		entries.add(String(arena, entry->d_name, strlen(entry->d_name)));
-    }
+	}
 
 	return entries;
 }

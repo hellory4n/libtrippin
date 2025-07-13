@@ -32,12 +32,18 @@
 
 // TODO there should be msvc versions probably
 
-// is this gcc or clang?
-// some warnings are different
+// get compiler
+// checking between gcc and clang is useful because some warnings are different
 #if defined(__clang__)
 	#define TR_ONLY_CLANG
 #elif defined(__GNUC__)
 	#define TR_ONLY_GCC
+#elif defined(_MSC_VER)
+	#define TR_ONLY_MSVC
+#endif
+
+#if defined(__GNUC__) && defined(_WIN32)
+	#define TR_ONLY_MINGW_GCC
 #endif
 
 // but they're similar enough that we can usually check for both

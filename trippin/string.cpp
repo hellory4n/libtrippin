@@ -30,6 +30,8 @@
 
 #include "string.hpp"
 
+// TODO maybe use less <string.h> bcuz it can get fucky
+
 bool tr::String::operator==(const tr::String& other) const
 {
 	return strncmp(*this, other, tr::max(this->len(), other.len())) == 0;
@@ -61,7 +63,13 @@ tr::Array<usize> tr::String::find(tr::Arena& arena, tr::String str, usize start,
 tr::String tr::String::concat(tr::Arena& arena, tr::String other) const
 {
 	String new_str(arena, this->buf(), this->len() + other.len());
+	// msvc is a little bitch
+	#ifdef TR_ONLY_MSVC
+	errno_t ohno = strncat_s(new_str.buf(), new_str.len(), other.buf(), other.len());
+	TR_ASSERT(ohno != 0);
+	#else
 	strncat(new_str.buf(), other.buf(), other.len());
+	#endif
 	return new_str;
 }
 
@@ -155,9 +163,21 @@ tr::Array<tr::String> tr::String::split(tr::Arena& arena, char delimiter) const
 	String str = this->duplicate(tr::scratchpad());
 	char delim[2] = {delimiter, '\0'};
 
-	// TODO apparently strtok is tragic for multithreading lmao
-	// there's strtok_r but it's only for posix
-	// WHY BILL GATES WHY
+	// windows has strtok_s, posix has strtok_r
+	// they're pretty much the same thing
+	// interestingly strtok_s is optional (from c11) but also microsoft's strtok_s is different because FUCK ME
+	// TODO does mingw gcc have microsoft's strtok_s?
+	#ifdef _WIN32
+	char* context = nullptr;
+	char* token = strtok_s(str, delim, &context);
+	while (token != nullptr) {
+		String m = String(arena, token, strlen(token));
+		strings.add(m);
+		token = strtok_s(nullptr, delim, &context);
+	}
+	#else
+	// TODO use strtok_r
+	// i'm editing this on visual studio so it doesnt have it
 	char* token = strtok(str, delim);
 	while (token != nullptr) {
 		String m = String(arena, token, strlen(token));
@@ -165,6 +185,7 @@ tr::Array<tr::String> tr::String::split(tr::Arena& arena, char delimiter) const
 		// WHY DENNIS RITCHIE WHY
 		token = strtok(nullptr, delim);
 	}
+	#endif
 
 	return Array<String>(arena, strings.buf(), strings.len());
 }
