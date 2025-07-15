@@ -493,11 +493,12 @@ void tr::__init_paths()
 		}
 		else {
 			if (len == MAX_PATH) {
-				exe_dir[MAX_PATH] = '\0';
+				exedir[MAX_PATH] = '\0';
 			}
 
 			// utfma balls guys amirite
 			tr::exe_dir = from_win32_to_trippin_str(exedir);
+			tr::exe_dir = tr::exe_dir.directory(tr::core_arena);
 		}
 	}
 	else {
