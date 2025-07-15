@@ -70,6 +70,8 @@ void tr::init()
 
 	logfiles.add(&tr::std_out);
 
+	tr::__init_paths();
+
 	tr::info("initialized libtrippin %s", tr::VERSION);
 }
 

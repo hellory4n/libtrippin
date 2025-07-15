@@ -276,6 +276,18 @@ Result<Array<String>, FileError> list_dir(Arena& arena, String path, bool includ
 // If true, the path is a file. Else, it's a directory.
 Result<bool, FileError> is_file(String path);
 
+// Fancy path utility thing. The `app://` prefix is relative to the exectuable's directory, while `user://`
+// refers to the directory intended for saving user crap (e.g. `%APPDATA%` on windows). You should
+// configure this first with `tr::set_paths`
+String path(Arena& arena, String path);
+
+// Sets the paths used by `tr::path`. For example `tr::set_paths("assets", "handsome_app")`, or even
+// `tr::set_paths("res", "BallsEnterprises/SpheresPro")`
+void set_paths(String appdir, String userdir);
+
+// internal :)
+void __init_paths();
+
 }
 
 #endif

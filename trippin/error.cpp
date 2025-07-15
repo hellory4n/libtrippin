@@ -169,12 +169,12 @@ tr::String tr::FileError::message()
 	// these operations use 2 paths :)
 	#ifndef _WIN32
 	if (this->op == FileOperation::MOVE_FILE) {
-		return tr::sprintf(tr::scratchpad(), "%s (source '%s', destination '%s', errno %i): %s",
+		return tr::fmt(tr::scratchpad(), "%s (source '%s', destination '%s', errno %i): %s",
 			operation.buf(), this->path_a.buf(), this->path_b.buf(), this->errno_code, error.buf()
 		);
 	}
 	else {
-		return tr::sprintf(tr::scratchpad(), "%s (path '%s', errno %i): %s",
+		return tr::fmt(tr::scratchpad(), "%s (path '%s', errno %i): %s",
 			operation.buf(), this->path_a.buf(), this->errno_code, error.buf()
 		);
 	}

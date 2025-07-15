@@ -39,6 +39,7 @@
 
 	#include <stdio.h>
 #else
+	#include <stdlib.h>
 	#include <stdio.h>
 	#include <sys/stat.h>
 	#include <sys/types.h>
@@ -50,6 +51,16 @@
 #include "log.hpp"
 
 #include "iofs.hpp"
+
+namespace tr {
+	extern Arena core_arena;
+
+	String exe_dir;
+	String appdata_dir;
+
+	String app_dir;
+	String user_dir;
+}
 
 tr::Result<tr::String, tr::Error> tr::Reader::read_string(tr::Arena& arena, usize length)
 {
@@ -152,6 +163,27 @@ tr::Result<void, tr::Error> tr::Writer::println(const char* fmt, ...)
 	Result<void, Error> man = this->write_string(str);
 	if (!man.is_valid()) return man;
 	return this->write_string("\n");
+}
+
+tr::String tr::path(tr::Arena& arena, tr::String path)
+{
+	if (path.starts_with("app://")) {
+		String pathfrfr = path.substr(tr::scratchpad(), sizeof("app://")-1, path.len());
+		return tr::fmt(arena, "%s/%s/%s", tr::exe_dir.buf(), tr::app_dir.buf(), pathfrfr.buf());
+	}
+	else if (path.starts_with("user://")) {
+		String pathfrfr = path.substr(tr::scratchpad(), sizeof("user://")-1, path.len());
+		return tr::fmt(arena, "%s/%s/%s", tr::appdata_dir.buf(), tr::user_dir.buf(), pathfrfr.buf());
+	}
+	else {
+		return path.duplicate(arena);
+	}
+}
+
+void tr::set_paths(tr::String appdir, tr::String userdir)
+{
+	tr::app_dir = appdir.duplicate(tr::core_arena);
+	tr::user_dir = userdir.duplicate(tr::core_arena);
 }
 
 #ifdef _WIN32
@@ -448,6 +480,35 @@ tr::Result<bool, tr::FileError> tr::is_file(tr::String path)
 	return !(attributes & FILE_ATTRIBUTE_DIRECTORY);
 }
 
+void tr::__init_paths()
+{
+	// we're first getting it as utf-16 then converting it back to utf-8 just in case lmao
+	WinStrMut exedir = reinterpret_cast<WinStrMut>(tr::core_arena.alloc(MAX_PATH * sizeof(wchar_t)));
+	HMODULE hmodule = GetModuleHandle(nullptr);
+	if (hmodule != nullptr) {
+		DWORD len = GetModuleFileNameW(hmodule, exedir, MAX_PATH);
+		if (len == 0) {
+			tr::warn("couldn't get executable directory, using relative paths for app://");
+			tr::exe_dir = "./";
+		}
+		else {
+			if (len == MAX_PATH) {
+				exe_dir[MAX_PATH] = '\0';
+			}
+
+			// utfma balls guys amirite
+			tr::exe_dir = from_win32_to_trippin_str(exedir);
+		}
+	}
+	else {
+		tr::warn("couldn't get executable directory, using relative paths for app://");
+		tr::exe_dir = "./";
+	}
+
+	char* appdata = getenv("APPDATA");
+	tr::user_dir = String(appdata).duplicate(tr::core_arena);
+}
+
 #else
 /*
  * POSIX IMPLEMENTATION
@@ -709,6 +770,25 @@ tr::Result<bool, tr::FileError> tr::is_file(tr::String path)
 	else {
 		return true;
 	}
+}
+
+void tr::__init_paths()
+{
+	// TODO macOS exists
+	// TODO bsd exists
+	tr::exe_dir = String(tr::core_arena, PATH_MAX);
+	ssize_t len = readlink("/proc/self/exe", exe_dir, exe_dir.len());
+	if (len == -1) {
+		tr::warn("couldn't get executable directory, using relative paths for app://");
+		tr::exe_dir = "./";
+	}
+	else {
+		tr::exe_dir[usize(len)] = '\0';
+		tr::exe_dir = tr::exe_dir.directory(tr::core_arena);
+	}
+
+	char* home = getenv("HOME");
+	tr::appdata_dir = tr::fmt(tr::core_arena, "%s/.local/share", home);
 }
 
 #endif

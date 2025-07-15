@@ -192,6 +192,10 @@ static void test::filesystem()
 
 	TR_ASSERT(tr::is_file("log.txt").unwrap());
 	TR_ASSERT(!tr::is_file("../").unwrap());
+
+	tr::set_paths("assets", "libtrippin");
+	tr::log("app dir: %s", tr::path(tr::scratchpad(), "app://crap.txt").buf());
+	tr::log("user dir: %s", tr::path(tr::scratchpad(), "user://crap.txt").buf());
 }
 
 static void test::all()
