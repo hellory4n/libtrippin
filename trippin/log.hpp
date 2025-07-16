@@ -67,14 +67,14 @@ void error(const char* fmt, ...);
 void panic(const char* fmt, ...);
 
 // Formatted assert?????????
-[[gnu::format(printf, 4, 5)]]
-void __impl_assert(const char* file, int line, bool x, const char* fmt, ...);
+[[gnu::format(printf, 3, 4)]]
+void __impl_assert(bool x, const char* expr, const char* fmt, ...);
 
 #define TR_ASSERT_MSG(X, ...) \
-	tr::__impl_assert(__FILE__, __LINE__, X, "failed assert \"" #X "\": " __VA_ARGS__)
+	tr::__impl_assert((X), #X, __VA_ARGS__)
 
 #define TR_ASSERT(X) \
-	tr::__impl_assert(__FILE__, __LINE__, X, "failed assert: " #X)
+	tr::__impl_assert((X), #X, "aborting") // e.g. "failed assert \"false\": aborting"
 
 }
 

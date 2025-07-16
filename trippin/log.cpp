@@ -24,7 +24,6 @@
  */
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <stdarg.h>
 #include <time.h>
 #ifdef _WIN32
@@ -144,14 +143,15 @@ void tr::panic(const char* fmt, ...)
 	va_end(args);
 }
 
-[[gnu::format(printf, 4, 5)]]
-void tr::__impl_assert(const char* file, int line, bool x, const char* fmt, ...)
+[[gnu::format(printf, 3, 4)]]
+void tr::__impl_assert(bool x, const char* expr, const char* fmt, ...)
 {
 	if (!x) {
 		va_list args;
 		va_start(args, fmt);
-		char prefix[256];
-		snprintf(prefix, sizeof(prefix), "at %s:%i: ", file, line);
+
+		String prefix = tr::fmt(tr::scratchpad(), "failed assert \"%s\": ", expr);
+
 		__log(tr::ConsoleColor::ERROR, prefix, true, fmt, args);
 		va_end(args);
 	}
