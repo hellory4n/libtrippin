@@ -47,6 +47,7 @@ class StringError : public Error
 	String msg;
 
 public:
+	StringError() : msg("") {}
 	StringError(String str) : msg(str) {}
 
 	String message() override { return this->msg; }

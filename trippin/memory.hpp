@@ -38,7 +38,7 @@
 namespace tr {
 
 // Why the fuck not.
-struct [[deprecated("this api is just kinda crap")]] MemoryInfo {
+struct MemoryInfo {
 	// Currently allocated by arenas, in bytes
 	isize allocated = 0;
 	// Like `allocated`, but cumulative
@@ -60,6 +60,7 @@ struct [[deprecated("this api is just kinda crap")]] MemoryInfo {
 };
 
 // As the name implies, it gets the memory info. Idk why.
+[[deprecated("this api is just kinda crap")]]
 MemoryInfo get_memory_info();
 
 // Converts kilobytes to bytes

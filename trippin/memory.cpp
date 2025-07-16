@@ -217,6 +217,7 @@ usize tr::Arena::capacity() const
 	return this->bytes_capacity;
 }
 
+[[deprecated("this api is just kinda crap")]]
 tr::MemoryInfo tr::get_memory_info()
 {
 	return tr::memory_info;
