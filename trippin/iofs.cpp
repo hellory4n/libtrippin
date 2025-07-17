@@ -489,7 +489,7 @@ void tr::__init_paths()
 		DWORD len = GetModuleFileNameW(hmodule, exedir, MAX_PATH);
 		if (len == 0) {
 			tr::warn("couldn't get executable directory, using relative paths for app://");
-			tr::exe_dir = "./";
+			tr::exe_dir = ".";
 		}
 		else {
 			if (len == MAX_PATH) {
@@ -503,9 +503,10 @@ void tr::__init_paths()
 	}
 	else {
 		tr::warn("couldn't get executable directory, using relative paths for app://");
-		tr::exe_dir = "./";
+		tr::exe_dir = ".";
 	}
 
+	// TODO msvc complains about getenv
 	char* appdata = getenv("APPDATA");
 	tr::user_dir = String(appdata).duplicate(tr::core_arena);
 }
@@ -781,7 +782,7 @@ void tr::__init_paths()
 	ssize_t len = readlink("/proc/self/exe", exe_dir, exe_dir.len());
 	if (len == -1) {
 		tr::warn("couldn't get executable directory, using relative paths for app://");
-		tr::exe_dir = "./";
+		tr::exe_dir = ".";
 	}
 	else {
 		tr::exe_dir[usize(len)] = '\0';
