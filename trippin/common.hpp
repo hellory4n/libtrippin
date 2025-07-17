@@ -259,27 +259,27 @@ struct Pair
 
 // Defines bit flag fuckery for enum classes :)
 #define TR_BIT_FLAG(T) \
-	inline T operator|(T lhs, T rhs) \
+	constexpr T operator|(T lhs, T rhs) \
 	{ \
 		using N = std::underlying_type_t<T>; \
 		return static_cast<T>(static_cast<N>(lhs) | static_cast<N>(rhs)); \
 	} \
-	inline T operator&(T lhs, T rhs) \
+	constexpr T operator&(T lhs, T rhs) \
 	{ \
 		using N = std::underlying_type_t<T>; \
 		return static_cast<T>(static_cast<N>(lhs) & static_cast<N>(rhs)); \
 	} \
-	inline T operator~(T rhs) \
+	constexpr T operator~(T rhs) \
 	{ \
 		using N = std::underlying_type_t<T>; \
 		return static_cast<T>(~static_cast<N>(rhs)); \
 	} \
-	inline T& operator|=(T& lhs, T rhs) \
+	constexpr T& operator|=(T& lhs, T rhs) \
 	{ \
 		lhs = lhs | rhs; \
 		return lhs; \
 	} \
-	inline T& operator&=(T& lhs, T rhs) \
+	constexpr T& operator&=(T& lhs, T rhs) \
 	{ \
 		lhs = lhs & rhs; \
 		return lhs; \
@@ -287,7 +287,7 @@ struct Pair
 	/* getting the namespacing right would be too obnoxious so you're supposed to use this */ \
 	/* like it's a keyword instead of like `tr::hasflag`/`st::hasflag`/whatever which is */ \
 	/* the correct style we use */ \
-	bool hasflag(T value, T flag) \
+	constexpr bool hasflag(T value, T flag) \
 	{ \
 		return (value & flag) == flag; \
 	}
