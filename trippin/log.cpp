@@ -95,7 +95,9 @@ void tr::__log(const char* color, const char* prefix, bool panic, const char* fm
 	}
 }
 
+#if defined(TR_GCC_OR_CLANG) && !defined(TR_ONLY_MINGW_GCC)
 [[gnu::format(printf, 1, 2)]]
+#endif
 void tr::log(const char* fmt, ...)
 {
 	va_list args;
@@ -104,7 +106,9 @@ void tr::log(const char* fmt, ...)
 	va_end(args);
 }
 
+#if defined(TR_GCC_OR_CLANG) && !defined(TR_ONLY_MINGW_GCC)
 [[gnu::format(printf, 1, 2)]]
+#endif
 void tr::info(const char* fmt, ...)
 {
 	va_list args;
@@ -113,7 +117,9 @@ void tr::info(const char* fmt, ...)
 	va_end(args);
 }
 
+#if defined(TR_GCC_OR_CLANG) && !defined(TR_ONLY_MINGW_GCC)
 [[gnu::format(printf, 1, 2)]]
+#endif
 void tr::warn(const char* fmt, ...)
 {
 	va_list args;
@@ -122,7 +128,9 @@ void tr::warn(const char* fmt, ...)
 	va_end(args);
 }
 
+#if defined(TR_GCC_OR_CLANG) && !defined(TR_ONLY_MINGW_GCC)
 [[gnu::format(printf, 1, 2)]]
+#endif
 void tr::error(const char* fmt, ...)
 {
 	va_list args;
@@ -131,7 +139,10 @@ void tr::error(const char* fmt, ...)
 	va_end(args);
 }
 
-[[noreturn, gnu::format(printf, 1, 2)]]
+#if defined(TR_GCC_OR_CLANG) && !defined(TR_ONLY_MINGW_GCC)
+[[gnu::format(printf, 1, 2)]]
+#endif
+[[noreturn]]
 void tr::panic(const char* fmt, ...)
 {
 	va_list args;
@@ -143,7 +154,9 @@ void tr::panic(const char* fmt, ...)
 	va_end(args);
 }
 
+#if defined(TR_GCC_OR_CLANG) && !defined(TR_ONLY_MINGW_GCC)
 [[gnu::format(printf, 3, 4)]]
+#endif
 void tr::__impl_assert(bool x, const char* expr, const char* fmt, ...)
 {
 	if (!x) {

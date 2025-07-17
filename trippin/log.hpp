@@ -77,6 +77,7 @@ void error(const char* fmt, ...);
 [[gnu::format(printf, 1, 2)]]
 #endif
 // Oh god oh fuck. Note this crashes and kills everything, `tr::error` doesn't.
+[[noreturn]]
 void panic(const char* fmt, ...);
 
 #if defined(TR_GCC_OR_CLANG) && !defined(TR_ONLY_MINGW_GCC)
