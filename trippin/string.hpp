@@ -55,14 +55,19 @@ public:
 	}
 
 	// Initializes a string from any C string. You really should only use this for temporary arrays.
-	explicit String(const char* str, usize len)
+	constexpr explicit String(const char* str, usize len)
 	{
 		this->array = Array<char>(const_cast<char*>(str), len + 1);
 	}
 
 	// Initializes a string from any C string. You really should only use this for temporary arrays.
 	String(const char* str) : String(str, strlen(str)) {}
-	String() : String("") {}
+
+	// i sure love constexpr
+	template<usize N>
+    constexpr String(const char (&str)[N]) : String(str, N - 1) {}
+
+	constexpr String() : String(nullptr, 0) {}
 
 	String(char c)
 	{
@@ -71,7 +76,7 @@ public:
 	}
 
 	// man
-	char& operator[](usize idx) const { return this->array[idx]; }
+	constexpr char& operator[](usize idx) const { return this->array[idx]; }
 	// Returns the length, doesn't include the null terminator
 	usize len() const { return this->array.len() - 1; }
 	char* buf() const { return this->array.buf(); }

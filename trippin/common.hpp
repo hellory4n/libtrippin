@@ -31,8 +31,6 @@
 #include <functional>
 #include <type_traits> // IWYU pragma: keep
 
-// TODO there should be msvc versions probably
-
 // get compiler
 // checking between gcc and clang is useful because some warnings are different
 #if defined(__clang__)
@@ -52,6 +50,7 @@
 	#define TR_GCC_OR_CLANG
 #endif
 
+// TODO msvc version
 #ifdef TR_GCC_OR_CLANG
 	#define TR_GCC_PRAGMA(X) _Pragma(#X)
 

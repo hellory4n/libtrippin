@@ -229,11 +229,11 @@ public:
 	}
 
 	// Initializes an array that points to any buffer. You really should only use this for temporary arrays.
-	explicit Array(T* data, usize len) : ptr(data), src_arena(nullptr), length(len), capacity(len) {}
+	constexpr explicit Array(T* data, usize len) : ptr(data), src_arena(nullptr), length(len), capacity(len) {}
 
 	// why bjarne stroustrup why can't i make this myself why is std::initializer_list<T> special i know
 	// this is from c++11 but i don't care i'm gonna blame bjarne stroustrup inventor of C incremented
-	Array(std::initializer_list<T> initlist) : src_arena(nullptr)
+	constexpr Array(std::initializer_list<T> initlist) : src_arena(nullptr)
 	{
 		this->capacity = initlist.size();
 		this->length = initlist.size();
@@ -245,12 +245,12 @@ public:
 		Array(arena, const_cast<T*>(initlist.begin()), initlist.size()) {}
 
 	// man fuck you
-	Array() : ptr(nullptr), src_arena(nullptr), length(0), capacity(0) {}
+	constexpr Array() : ptr(nullptr), src_arena(nullptr), length(0), capacity(0) {}
 
 	// Initializes the array with just an arena so you can add crap later :)
 	explicit Array(Arena& arena) : Array(arena, 0) {}
 
-	T& operator[](usize idx) const
+	constexpr T& operator[](usize idx) const
 	{
 		if (idx >= this->length) {
 			tr::panic("index out of range: %zu in an array of %zu", idx, this->length);
@@ -260,7 +260,7 @@ public:
 
 	// Similar to `operator[]`, but when getting an index out of bounds, instead of panicking, it returns
 	// null, which is probably useful sometimes.
-	MaybePtr<T> try_get(usize idx) const
+	constexpr MaybePtr<T> try_get(usize idx) const
 	{
 		if (idx >= this->length) {
 			return {};
@@ -269,26 +269,26 @@ public:
 	}
 
 	// Returns the buffer.
-	T* buf() const      { return this->ptr; }
+	constexpr T* buf() const      { return this->ptr; }
 	// Returns the length of the array.
-	usize len() const   { return this->length; }
+	constexpr usize len() const   { return this->length; }
 	// Returns how many items the array can hold before having to resize.
-	usize cap() const  { return this->capacity; }
+	constexpr usize cap() const  { return this->capacity; }
 
 	// fucking iterator
 	class Iterator {
 	public:
-		Iterator(T* pointer, usize index) : idx(index), ptr(pointer) {}
-		ArrayItem<T> operator*() const { return {this->idx, *this->ptr}; }
-		Iterator& operator++() { this->ptr++; this->idx++; return *this; }
-		bool operator!=(const Iterator& other) const { return ptr != other.ptr; }
+		constexpr Iterator(T* pointer, usize index) : idx(index), ptr(pointer) {}
+		constexpr ArrayItem<T> operator*() const { return {this->idx, *this->ptr}; }
+		constexpr Iterator& operator++() { this->ptr++; this->idx++; return *this; }
+		constexpr bool operator!=(const Iterator& other) const { return ptr != other.ptr; }
 	private:
 		usize idx;
 		T* ptr;
 	};
 
-	Iterator begin() const { return Iterator(this->buf(), 0); }
-	Iterator end()   const { return Iterator(this->buf() + this->len(), this->len()); }
+	constexpr Iterator begin() const { return Iterator(this->buf(), 0); }
+	constexpr Iterator end()   const { return Iterator(this->buf() + this->len(), this->len()); }
 
 	// Adds a new item to the array, and resizes it if necessary. This only works on arena-allocated arrays,
 	// if you try to use this on an array without an arena, it will panic.
