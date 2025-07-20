@@ -101,9 +101,13 @@ void quit(int32 error_code);
 // Adds a function to run when the program quits/panics.
 void call_on_quit(std::function<void(void)> func);
 
+// mingw gcc complains about %zu and %li even tho it works fine :)
+// TODO this WILL break
+#if defined(TR_GCC_OR_CLANG) && !defined(TR_ONLY_MINGW_CC)
+[[noreturn, gnu::format(printf, 1, 2)]]
+#endif
 // i love circular dependencies.
 // Oh god oh fuck. Note this crashes and kills everything, `tr::error` doesn't.
-[[noreturn, gnu::format(printf, 1, 2)]]
 void panic(const char* fmt, ...);
 
 // Functional propaganda

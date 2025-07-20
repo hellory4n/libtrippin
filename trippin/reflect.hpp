@@ -29,6 +29,7 @@
 #include "common.hpp"
 #include "string.hpp"
 #include "collection.hpp"
+#include "math.hpp"
 
 namespace tr {
 
@@ -78,19 +79,19 @@ public:
 		return {};
 	}
 
-	static constexpr FieldType array_type()
+	static constexpr FieldType template_type()
 	{
 		static_assert(false, "using tr::TypeInfo without any implementation (read the docs for reflection)");
 		return FieldType::VOID;
 	}
 
-	static constexpr FieldType hashmap_key_type()
+	static constexpr FieldType left_template_type()
 	{
 		static_assert(false, "using tr::TypeInfo without any implementation (read the docs for reflection)");
 		return FieldType::VOID;
 	}
 
-	static constexpr FieldType hashmap_value_type()
+	static constexpr FieldType right_template_type()
 	{
 		static_assert(false, "using tr::TypeInfo without any implementation (read the docs for reflection)");
 		return FieldType::VOID;
@@ -107,9 +108,9 @@ public:
 	static constexpr FieldType type()          { return FieldType::BOOL; }
 	static constexpr Array<Field> fields()     { return {}; }
 
-	static constexpr FieldType array_type()         { return FieldType::VOID; }
-	static constexpr FieldType hashmap_key_type()   { return FieldType::VOID; }
-	static constexpr FieldType hashmap_value_type() { return FieldType::VOID; }
+	static constexpr FieldType template_type()         { return FieldType::VOID; }
+	static constexpr FieldType left_template_type()    { return FieldType::VOID; }
+	static constexpr FieldType right_template_type()   { return FieldType::VOID; }
 };
 
 template<>
@@ -120,9 +121,9 @@ public:
 	static constexpr FieldType type()          { return FieldType::CHAR; }
 	static constexpr Array<Field> fields()     { return {}; }
 
-	static constexpr FieldType array_type()         { return FieldType::VOID; }
-	static constexpr FieldType hashmap_key_type()   { return FieldType::VOID; }
-	static constexpr FieldType hashmap_value_type() { return FieldType::VOID; }
+	static constexpr FieldType template_type()         { return FieldType::VOID; }
+	static constexpr FieldType left_template_type()    { return FieldType::VOID; }
+	static constexpr FieldType right_template_type()   { return FieldType::VOID; }
 };
 
 template<>
@@ -133,9 +134,9 @@ public:
 	static constexpr FieldType type()          { return FieldType::INT8; }
 	static constexpr Array<Field> fields()     { return {}; }
 
-	static constexpr FieldType array_type()         { return FieldType::VOID; }
-	static constexpr FieldType hashmap_key_type()   { return FieldType::VOID; }
-	static constexpr FieldType hashmap_value_type() { return FieldType::VOID; }
+	static constexpr FieldType template_type()         { return FieldType::VOID; }
+	static constexpr FieldType left_template_type()    { return FieldType::VOID; }
+	static constexpr FieldType right_template_type()   { return FieldType::VOID; }
 };
 
 template<>
@@ -146,9 +147,9 @@ public:
 	static constexpr FieldType type()          { return FieldType::INT16; }
 	static constexpr Array<Field> fields()     { return {}; }
 
-	static constexpr FieldType array_type()         { return FieldType::VOID; }
-	static constexpr FieldType hashmap_key_type()   { return FieldType::VOID; }
-	static constexpr FieldType hashmap_value_type() { return FieldType::VOID; }
+	static constexpr FieldType template_type()         { return FieldType::VOID; }
+	static constexpr FieldType left_template_type()    { return FieldType::VOID; }
+	static constexpr FieldType right_template_type()   { return FieldType::VOID; }
 };
 
 template<>
@@ -159,9 +160,9 @@ public:
 	static constexpr FieldType type()          { return FieldType::INT32; }
 	static constexpr Array<Field> fields()     { return {}; }
 
-	static constexpr FieldType array_type()         { return FieldType::VOID; }
-	static constexpr FieldType hashmap_key_type()   { return FieldType::VOID; }
-	static constexpr FieldType hashmap_value_type() { return FieldType::VOID; }
+	static constexpr FieldType template_type()         { return FieldType::VOID; }
+	static constexpr FieldType left_template_type()    { return FieldType::VOID; }
+	static constexpr FieldType right_template_type()   { return FieldType::VOID; }
 };
 
 template<>
@@ -172,9 +173,9 @@ public:
 	static constexpr FieldType type()          { return FieldType::INT64; }
 	static constexpr Array<Field> fields()     { return {}; }
 
-	static constexpr FieldType array_type()         { return FieldType::VOID; }
-	static constexpr FieldType hashmap_key_type()   { return FieldType::VOID; }
-	static constexpr FieldType hashmap_value_type() { return FieldType::VOID; }
+	static constexpr FieldType template_type()         { return FieldType::VOID; }
+	static constexpr FieldType left_template_type()    { return FieldType::VOID; }
+	static constexpr FieldType right_template_type()   { return FieldType::VOID; }
 };
 
 template<>
@@ -185,9 +186,9 @@ public:
 	static constexpr FieldType type()          { return FieldType::UINT8; }
 	static constexpr Array<Field> fields()     { return {}; }
 
-	static constexpr FieldType array_type()         { return FieldType::VOID; }
-	static constexpr FieldType hashmap_key_type()   { return FieldType::VOID; }
-	static constexpr FieldType hashmap_value_type() { return FieldType::VOID; }
+	static constexpr FieldType template_type()         { return FieldType::VOID; }
+	static constexpr FieldType left_template_type()    { return FieldType::VOID; }
+	static constexpr FieldType right_template_type()   { return FieldType::VOID; }
 };
 
 template<>
@@ -198,9 +199,9 @@ public:
 	static constexpr FieldType type()          { return FieldType::UINT16; }
 	static constexpr Array<Field> fields()     { return {}; }
 
-	static constexpr FieldType array_type()         { return FieldType::VOID; }
-	static constexpr FieldType hashmap_key_type()   { return FieldType::VOID; }
-	static constexpr FieldType hashmap_value_type() { return FieldType::VOID; }
+	static constexpr FieldType template_type()         { return FieldType::VOID; }
+	static constexpr FieldType left_template_type()    { return FieldType::VOID; }
+	static constexpr FieldType right_template_type()   { return FieldType::VOID; }
 };
 
 template<>
@@ -211,9 +212,9 @@ public:
 	static constexpr FieldType type()          { return FieldType::UINT32; }
 	static constexpr Array<Field> fields()     { return {}; }
 
-	static constexpr FieldType array_type()         { return FieldType::VOID; }
-	static constexpr FieldType hashmap_key_type()   { return FieldType::VOID; }
-	static constexpr FieldType hashmap_value_type() { return FieldType::VOID; }
+	static constexpr FieldType template_type()         { return FieldType::VOID; }
+	static constexpr FieldType left_template_type()    { return FieldType::VOID; }
+	static constexpr FieldType right_template_type()   { return FieldType::VOID; }
 };
 
 template<>
@@ -224,9 +225,9 @@ public:
 	static constexpr FieldType type()          { return FieldType::UINT64; }
 	static constexpr Array<Field> fields()     { return {}; }
 
-	static constexpr FieldType array_type()         { return FieldType::VOID; }
-	static constexpr FieldType hashmap_key_type()   { return FieldType::VOID; }
-	static constexpr FieldType hashmap_value_type() { return FieldType::VOID; }
+	static constexpr FieldType template_type()         { return FieldType::VOID; }
+	static constexpr FieldType left_template_type()    { return FieldType::VOID; }
+	static constexpr FieldType right_template_type()   { return FieldType::VOID; }
 };
 
 template<>
@@ -237,9 +238,9 @@ public:
 	static constexpr FieldType type()          { return FieldType::FLOAT32; }
 	static constexpr Array<Field> fields()     { return {}; }
 
-	static constexpr FieldType array_type()         { return FieldType::VOID; }
-	static constexpr FieldType hashmap_key_type()   { return FieldType::VOID; }
-	static constexpr FieldType hashmap_value_type() { return FieldType::VOID; }
+	static constexpr FieldType template_type()         { return FieldType::VOID; }
+	static constexpr FieldType left_template_type()    { return FieldType::VOID; }
+	static constexpr FieldType right_template_type()   { return FieldType::VOID; }
 };
 
 template<>
@@ -250,9 +251,9 @@ public:
 	static constexpr FieldType type()          { return FieldType::FLOAT64; }
 	static constexpr Array<Field> fields()     { return {}; }
 
-	static constexpr FieldType array_type()         { return FieldType::VOID; }
-	static constexpr FieldType hashmap_key_type()   { return FieldType::VOID; }
-	static constexpr FieldType hashmap_value_type() { return FieldType::VOID; }
+	static constexpr FieldType template_type()         { return FieldType::VOID; }
+	static constexpr FieldType left_template_type()    { return FieldType::VOID; }
+	static constexpr FieldType right_template_type()   { return FieldType::VOID; }
 };
 
 template<>
@@ -263,9 +264,9 @@ public:
 	static constexpr FieldType type()          { return FieldType::STRING; }
 	static constexpr Array<Field> fields()     { return {}; }
 
-	static constexpr FieldType array_type()         { return FieldType::CHAR; }
-	static constexpr FieldType hashmap_key_type()   { return FieldType::VOID; }
-	static constexpr FieldType hashmap_value_type() { return FieldType::VOID; }
+	static constexpr FieldType template_type()         { return FieldType::CHAR; }
+	static constexpr FieldType left_template_type()    { return FieldType::VOID; }
+	static constexpr FieldType right_template_type()   { return FieldType::VOID; }
 };
 
 template<typename T>
@@ -279,9 +280,9 @@ public:
 	static constexpr FieldType type()          { return FieldType::ARRAY; }
 	static constexpr Array<Field> fields()     { return {}; }
 
-	static constexpr FieldType array_type()         { return FieldType::VOID; }
-	static constexpr FieldType hashmap_key_type()   { return FieldType::VOID; }
-	static constexpr FieldType hashmap_value_type() { return FieldType::VOID; }
+	static constexpr FieldType template_type()         { return FieldType::VOID; }
+	static constexpr FieldType left_template_type()    { return FieldType::VOID; }
+	static constexpr FieldType right_template_type()   { return FieldType::VOID; }
 };
 
 template<typename K, typename V>
@@ -292,9 +293,9 @@ public:
 	static constexpr FieldType type()          { return FieldType::HASHMAP; }
 	static constexpr Array<Field> fields()     { return {}; }
 
-	static constexpr FieldType array_type()         { return FieldType::VOID; }
-	static constexpr FieldType hashmap_key_type()   { return TypeInfo<K>::type(); }
-	static constexpr FieldType hashmap_value_type() { return TypeInfo<V>::type(); }
+	static constexpr FieldType template_type()         { return FieldType::VOID; }
+	static constexpr FieldType left_template_type()    { return TypeInfo<K>::type(); }
+	static constexpr FieldType right_template_type()   { return TypeInfo<V>::type(); }
 };
 
 // macros for custom types
@@ -307,11 +308,11 @@ public:
 	public: \
 		/* so it can be used later by TR_FIELD */ \
 		using Type = T; \
-		static constexpr tr::String name()                  { return #T; } \
-		static constexpr tr::FieldType type()               { return tr::FieldType::CUSTOM; } \
-		static constexpr tr::FieldType array_type()         { return tr::FieldType::VOID; } \
-		static constexpr tr::FieldType hashmap_key_type()   { return tr::FieldType::VOID; } \
-		static constexpr tr::FieldType hashmap_value_type() { return tr::FieldType::VOID; } \
+		static constexpr tr::String name()                   { return #T; } \
+		static constexpr tr::FieldType type()                { return tr::FieldType::CUSTOM; } \
+		static constexpr tr::FieldType template_type()       { return tr::FieldType::VOID; } \
+		static constexpr tr::FieldType left_template_type()  { return tr::FieldType::VOID; } \
+		static constexpr tr::FieldType right_template_type() { return tr::FieldType::VOID; } \
 		\
 		static constexpr tr::Array<tr::Field> fields() \
 		{ \
@@ -344,20 +345,39 @@ public:
 	tr::FieldType::VOID, {tr::TypeInfo<decltype(Type::F)::__K>::type(), \
 		tr::TypeInfo<decltype(Type::F)::__V>::type()}},
 
-// struct TestStruct
-// {
-// 	int32 balls;
-// 	bool saigma;
-// 	tr::Array<int32> test;
-// 	tr::HashMap<tr::String, tr::String> hashing_deez;
-// };
-
-// TR_START_TYPE_INFO(tr::TestStruct)
-// 	TR_FIELD(balls)
-// 	TR_FIELD(saigma)
-// 	TR_FIELD_ARRAY(test)
-// 	TR_FIELD_HASHMAP(hashing_deez)
-// TR_END_TYPE_INFO()
+// more definitions for everything ever :DDDDDDDDD
+// TODO should vectors use template_type()?
+TR_START_TYPE_INFO(tr::Vec2<int8>)    TR_FIELD(x) TR_FIELD(y)                         TR_END_TYPE_INFO()
+TR_START_TYPE_INFO(tr::Vec2<int16>)   TR_FIELD(x) TR_FIELD(y)                         TR_END_TYPE_INFO()
+TR_START_TYPE_INFO(tr::Vec2<int32>)   TR_FIELD(x) TR_FIELD(y)                         TR_END_TYPE_INFO()
+TR_START_TYPE_INFO(tr::Vec2<int64>)   TR_FIELD(x) TR_FIELD(y)                         TR_END_TYPE_INFO()
+TR_START_TYPE_INFO(tr::Vec2<uint8>)   TR_FIELD(x) TR_FIELD(y)                         TR_END_TYPE_INFO()
+TR_START_TYPE_INFO(tr::Vec2<uint16>)  TR_FIELD(x) TR_FIELD(y)                         TR_END_TYPE_INFO()
+TR_START_TYPE_INFO(tr::Vec2<uint32>)  TR_FIELD(x) TR_FIELD(y)                         TR_END_TYPE_INFO()
+TR_START_TYPE_INFO(tr::Vec2<uint64>)  TR_FIELD(x) TR_FIELD(y)                         TR_END_TYPE_INFO()
+TR_START_TYPE_INFO(tr::Vec2<float32>) TR_FIELD(x) TR_FIELD(y)                         TR_END_TYPE_INFO()
+TR_START_TYPE_INFO(tr::Vec2<float64>) TR_FIELD(x) TR_FIELD(y)                         TR_END_TYPE_INFO()
+TR_START_TYPE_INFO(tr::Vec3<int8>)    TR_FIELD(x) TR_FIELD(y) TR_FIELD(z)             TR_END_TYPE_INFO()
+TR_START_TYPE_INFO(tr::Vec3<int16>)   TR_FIELD(x) TR_FIELD(y) TR_FIELD(z)             TR_END_TYPE_INFO()
+TR_START_TYPE_INFO(tr::Vec3<int32>)   TR_FIELD(x) TR_FIELD(y) TR_FIELD(z)             TR_END_TYPE_INFO()
+TR_START_TYPE_INFO(tr::Vec3<int64>)   TR_FIELD(x) TR_FIELD(y) TR_FIELD(z)             TR_END_TYPE_INFO()
+TR_START_TYPE_INFO(tr::Vec3<uint8>)   TR_FIELD(x) TR_FIELD(y) TR_FIELD(z)             TR_END_TYPE_INFO()
+TR_START_TYPE_INFO(tr::Vec3<uint16>)  TR_FIELD(x) TR_FIELD(y) TR_FIELD(z)             TR_END_TYPE_INFO()
+TR_START_TYPE_INFO(tr::Vec3<uint32>)  TR_FIELD(x) TR_FIELD(y) TR_FIELD(z)             TR_END_TYPE_INFO()
+TR_START_TYPE_INFO(tr::Vec3<uint64>)  TR_FIELD(x) TR_FIELD(y) TR_FIELD(z)             TR_END_TYPE_INFO()
+TR_START_TYPE_INFO(tr::Vec3<float32>) TR_FIELD(x) TR_FIELD(y) TR_FIELD(z)             TR_END_TYPE_INFO()
+TR_START_TYPE_INFO(tr::Vec3<float64>) TR_FIELD(x) TR_FIELD(y) TR_FIELD(z)             TR_END_TYPE_INFO()
+TR_START_TYPE_INFO(tr::Vec4<int8>)    TR_FIELD(x) TR_FIELD(y) TR_FIELD(z) TR_FIELD(w) TR_END_TYPE_INFO()
+TR_START_TYPE_INFO(tr::Vec4<int16>)   TR_FIELD(x) TR_FIELD(y) TR_FIELD(z) TR_FIELD(w) TR_END_TYPE_INFO()
+TR_START_TYPE_INFO(tr::Vec4<int32>)   TR_FIELD(x) TR_FIELD(y) TR_FIELD(z) TR_FIELD(w) TR_END_TYPE_INFO()
+TR_START_TYPE_INFO(tr::Vec4<int64>)   TR_FIELD(x) TR_FIELD(y) TR_FIELD(z) TR_FIELD(w) TR_END_TYPE_INFO()
+TR_START_TYPE_INFO(tr::Vec4<uint8>)   TR_FIELD(x) TR_FIELD(y) TR_FIELD(z) TR_FIELD(w) TR_END_TYPE_INFO()
+TR_START_TYPE_INFO(tr::Vec4<uint16>)  TR_FIELD(x) TR_FIELD(y) TR_FIELD(z) TR_FIELD(w) TR_END_TYPE_INFO()
+TR_START_TYPE_INFO(tr::Vec4<uint32>)  TR_FIELD(x) TR_FIELD(y) TR_FIELD(z) TR_FIELD(w) TR_END_TYPE_INFO()
+TR_START_TYPE_INFO(tr::Vec4<uint64>)  TR_FIELD(x) TR_FIELD(y) TR_FIELD(z) TR_FIELD(w) TR_END_TYPE_INFO()
+TR_START_TYPE_INFO(tr::Vec4<float32>) TR_FIELD(x) TR_FIELD(y) TR_FIELD(z) TR_FIELD(w) TR_END_TYPE_INFO()
+TR_START_TYPE_INFO(tr::Vec4<float64>) TR_FIELD(x) TR_FIELD(y) TR_FIELD(z) TR_FIELD(w) TR_END_TYPE_INFO()
+TR_START_TYPE_INFO(tr::Color)         TR_FIELD(r) TR_FIELD(g) TR_FIELD(b) TR_FIELD(a) TR_END_TYPE_INFO()
 
 }
 
