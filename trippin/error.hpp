@@ -103,7 +103,7 @@ public:
 };
 
 // So spicy. E should inherit implement Error
-template<typename T, typename E = StringError>
+template<typename T, typename E>
 class Result
 {
 	Either<T, E> value = {};
@@ -207,6 +207,21 @@ public:
 		else error_func(this->value.unwrap());
 	}
 };
+
+// evil macro fuckery for less boilerplate
+
+#define __TR_CONCAT2(a, b) a##b
+#define __TR_CONCAT(a, b) __TR_CONCAT2(a, b)
+#define __TR_UNIQUE_NAME(base) __TR_CONCAT(base, __LINE__)
+
+#define TR_TRY_ASSIGN(var, ...) \
+	auto __TR_UNIQUE_NAME(__tr_try_tmp) = (__VA_ARGS__); \
+	if (__TR_UNIQUE_NAME(__tr_try_tmp).is_valid()) return __TR_UNIQUE_NAME(__tr_try_tmp).unwrap_err(); \
+	var = __TR_UNIQUE_NAME(__tr_try_tmp).unwrap()
+
+#define TR_TRY(...) \
+	auto __TR_UNIQUE_NAME(__tr_try_tmp) = (__VA_ARGS__); \
+	if (__TR_UNIQUE_NAME(__tr_try_tmp).is_valid()) return __TR_UNIQUE_NAME(__tr_try_tmp).unwrap_err()
 
 }
 

@@ -25,12 +25,17 @@
 
 #include "bundle.hpp"
 
-tr::Maybe<tr::Error> tr::__impl_serialize(const void* out, tr::Array<tr::Field> fields, tr::Writer& writer,
-	tr::Arena& arena)
+// quite the mouthful
+tr::Maybe<tr::Error> tr::__impl_serialize_text(const void* data, tr::Array<tr::Field> fields,
+	tr::Writer& writer, tr::Arena& arena, tr::String format, tr::Vec3<uint32> version)
 {
-	(void)out;
+	(void)data;
 	(void)fields;
 	(void)writer;
 	(void)arena;
+	(void)format;
+	(void)version;
+	// TR_TRY_ASSIGN(int32 fuckyou, writer.fuckyou());
+	// TR_TRY_ASSIGN(fuckyou, writer.fuckyou());
 	return StringError("oh no");
 }

@@ -218,7 +218,7 @@ static void test::bundle()
 	tr::log("\n==== BUNDLES ====");
 
 	tr::File& file = *tr::File::open(tr::scratchpad(), "test.tbob", tr::FileMode::WRITE_TEXT).unwrap();
-	tr::serialize_bundle(tr::scratchpad(), file, TestmaBalls()).unwrap();
+	tr::serialize_text_bundle(tr::scratchpad(), file, TestmaBalls()).unwrap();
 }
 
 static void test::all()

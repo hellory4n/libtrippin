@@ -65,7 +65,7 @@ public:
 	Result<T, Error> read_struct()
 	{
 		T man;
-		Result<int64> sir = this->read_bytes(&man, sizeof(T), 1);
+		Result<int64, Error> sir = this->read_bytes(&man, sizeof(T), 1);
 		if (!sir.is_valid()) return sir;
 
 		if (sir.unwrap() == sizeof(T)) return man;
@@ -83,7 +83,7 @@ public:
 	Result<Array<T>, Error> read_array(Arena& arena, usize items)
 	{
 		T* man;
-		Result<int64> sir = this->read_bytes(&man, sizeof(T), items);
+		Result<int64, Error> sir = this->read_bytes(&man, sizeof(T), items);
 		if (!sir.is_valid()) return sir;
 
 		if (sir.unwrap() == sizeof(T) * items && man != nullptr) return Array<T>(arena, man, items);
