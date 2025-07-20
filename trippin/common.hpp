@@ -161,6 +161,9 @@ class Maybe
 	bool has_value = false;
 
 public:
+	// used for reflection
+	using __T = T;
+
 	// Initializes a Maybe<T> as null
 	Maybe() : value(0), has_value(false) {}
 

@@ -36,7 +36,8 @@ namespace tr {
 // Yeah. This is useful for serialization and stuff.
 enum class FieldType
 {
-	VOID, CUSTOM, BOOL, CHAR,
+	VOID, CUSTOM, MAYBE,
+	BOOL, CHAR,
 	INT8, INT16, INT32, INT64,
 	UINT8, UINT16, UINT32, UINT64,
 	FLOAT32, FLOAT64,
@@ -285,6 +286,19 @@ public:
 	static constexpr FieldType right_template_type()   { return FieldType::VOID; }
 };
 
+template<typename T>
+class TypeInfo<Maybe<T>>
+{
+public:
+	static constexpr String name()             { return "tr::Maybe<T>"; }
+	static constexpr FieldType type()          { return FieldType::MAYBE; }
+	static constexpr Array<Field> fields()     { return {}; }
+
+	static constexpr FieldType template_type()         { return FieldType::VOID; }
+	static constexpr FieldType left_template_type()    { return FieldType::VOID; }
+	static constexpr FieldType right_template_type()   { return FieldType::VOID; }
+};
+
 template<typename K, typename V>
 class TypeInfo<HashMap<K, V>>
 {
@@ -333,6 +347,12 @@ public:
 	tr::FieldType::VOID, {tr::FieldType::VOID, tr::FieldType::VOID}},
 
 #define TR_FIELD_ARRAY(F) \
+	/* name, offset, type */ \
+	tr::Field{#F, offsetof(Type, F), tr::TypeInfo<decltype(Type::F)>::type(), \
+	/* evil fuckery to get the array's type */ \
+	tr::TypeInfo<decltype(Type::F)::__T>::type(), {tr::FieldType::VOID, tr::FieldType::VOID}},
+
+#define TR_FIELD_MAYBE(F) \
 	/* name, offset, type */ \
 	tr::Field{#F, offsetof(Type, F), tr::TypeInfo<decltype(Type::F)>::type(), \
 	/* evil fuckery to get the array's type */ \

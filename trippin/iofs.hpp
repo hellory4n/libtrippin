@@ -157,6 +157,9 @@ public:
 	// Similar to `Writer.printf()`, but it adds a newline at the end.
 	[[gnu::format(printf, 2, 3)]] // `this` is the first argument i guess
 	Result<void, Error> println(const char* fmt, ...);
+
+	// Writes an empty line. Mind-boggling.
+	Result<void, Error> println() { return this->write_string("\n"); }
 };
 
 enum class FileMode : uint8 {
