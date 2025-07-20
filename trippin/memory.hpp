@@ -189,6 +189,9 @@ class Array
 	usize capacity = 0;
 
 public:
+	// Used for the reflection crap
+	using __T = T;
+
 	// Initializes an empty array at an arena.
 	explicit Array(Arena& arena, usize len) : src_arena(&arena), length(len), capacity(len)
 	{

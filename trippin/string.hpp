@@ -26,13 +26,20 @@
 #ifndef _TRIPPIN_STRING_H
 #define _TRIPPIN_STRING_H
 
-#include <string.h>
 #include <stdarg.h>
 
 #include "memory.hpp"
 #include "common.hpp"
 
 namespace tr {
+
+// why won't you let me use strlen in constexpr :(
+constexpr usize constexpr_strlen(const char* str)
+{
+	usize i = 0;
+	while (str[i] != '\0') i++;
+	return i;
+}
 
 // Literally just a wrapper around `tr::Array`, so it works better with strings. Also all of the functions
 // that return strings copy the original strings first. Strings don't own the value and don't use fancy
@@ -60,14 +67,10 @@ public:
 		this->array = Array<char>(const_cast<char*>(str), len + 1);
 	}
 
-	// Initializes a string from any C string. You really should only use this for temporary arrays.
-	String(const char* str) : String(str, strlen(str)) {}
+	// Initializes a string from any C string. You really should only use this for temporary strings.
+	constexpr String(const char* str) : String(str, tr::constexpr_strlen(str)) {}
 
-	// i sure love constexpr
-	template<usize N>
-    constexpr String(const char (&str)[N]) : String(str, N - 1) {}
-
-	constexpr String() : String(nullptr, 0) {}
+	constexpr String() : String("") {}
 
 	String(char c)
 	{
