@@ -36,7 +36,7 @@ namespace tr {
 // Yeah. This is useful for serialization and stuff.
 enum class FieldType
 {
-	VOID, BOOL, CHAR, CUSTOM,
+	VOID, CUSTOM, BOOL, CHAR,
 	INT8, INT16, INT32, INT64,
 	UINT8, UINT16, UINT32, UINT64,
 	FLOAT32, FLOAT64,
@@ -49,11 +49,11 @@ struct Field
 	String name;
 	usize offset;
 	FieldType base_type;
-	FieldType array_type;
+	FieldType template_type;
 	struct {
-		FieldType key;
-		FieldType value;
-	} hashmap_type;
+		FieldType left;
+		FieldType right;
+	} pair_types;
 };
 
 // Default implementation so C++ doesn't complain
