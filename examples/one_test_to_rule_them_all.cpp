@@ -6,6 +6,8 @@
 #include <trippin/string.hpp>
 #include <trippin/collection.hpp>
 #include <trippin/iofs.hpp>
+#include <trippin/reflect.hpp>
+#include <trippin/bundle.hpp>
 
 // TODO use actual tests you dumbass
 
@@ -16,6 +18,7 @@ namespace test {
 	static void strings();
 	static void hashmaps();
 	static void filesystem();
+	static void bundle();
 	static void all();
 }
 
@@ -198,6 +201,26 @@ static void test::filesystem()
 	tr::log("user dir: %s", tr::path(tr::scratchpad(), "user://crap.txt").buf());
 }
 
+class TestmaBalls
+{
+public:
+	int8 fieeld;
+	tr::String fuckyou;
+};
+
+TR_START_TYPE_INFO(TestmaBalls)
+	TR_FIELD(fieeld)
+	TR_FIELD(fuckyou)
+TR_END_TYPE_INFO()
+
+static void test::bundle()
+{
+	tr::log("\n==== BUNDLES ====");
+
+	tr::File& file = *tr::File::open(tr::scratchpad(), "test.tbob", tr::FileMode::WRITE_TEXT).unwrap();
+	tr::serialize_bundle(tr::scratchpad(), file, TestmaBalls()).unwrap();
+}
+
 static void test::all()
 {
 	test::logging();
@@ -206,6 +229,7 @@ static void test::all()
 	test::strings();
 	test::hashmaps();
 	test::filesystem();
+	test::bundle();
 }
 
 int main(int argc, char* argv[])
@@ -234,6 +258,9 @@ int main(int argc, char* argv[])
 		else if (arg == "--filesystem") {
 			test::filesystem();
 		}
+		else if (arg == "--bundle") {
+			test::bundle();
+		}
 		else if (arg == "--all") {
 			test::all();
 		}
@@ -246,6 +273,7 @@ int main(int argc, char* argv[])
 			printf("- --string: Test strings\n");
 			printf("- --hashmap: Test hashmaps\n");
 			printf("- --filesystem: Test filesystem\n");
+			printf("- --bundle: Test bundles\n");
 			printf("- --all: Test everything\n");
 		}
 	}
