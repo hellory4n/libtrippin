@@ -21,9 +21,8 @@ build build/obj/trippin_math.o:                       compile trippin/math.cpp
 build build/obj/trippin_memory.o:                     compile trippin/memory.cpp
 build build/obj/trippin_string.o:                     compile trippin/string.cpp
 build build/obj/trippin_error.o:                      compile trippin/error.cpp
-build build/obj/trippin_bundle.o:                     compile trippin/bundle.cpp
 build build/obj/examples_one_test_to_rule_them_all.o: compile examples/one_test_to_rule_them_all.cpp
 
-build build/bin/example_all: link build/obj/trippin_collection.o build/obj/trippin_common.o build/obj/trippin_iofs.o build/obj/trippin_log.o build/obj/trippin_math.o build/obj/trippin_memory.o build/obj/trippin_string.o build/obj/trippin_error.o build/obj/trippin_bundle.o build/obj/examples_one_test_to_rule_them_all.o
+build build/bin/example_all: link build/obj/trippin_collection.o build/obj/trippin_common.o build/obj/trippin_iofs.o build/obj/trippin_log.o build/obj/trippin_math.o build/obj/trippin_memory.o build/obj/trippin_string.o build/obj/trippin_error.o build/obj/examples_one_test_to_rule_them_all.o
 
 default build/bin/example_all
