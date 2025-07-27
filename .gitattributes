@@ -1,3 +1,6 @@
-# both of these are bigger than libtrippin
-trippin/libxxhash.hpp linguist-vendored
 * text=auto eol=lf
+trippin/**/*.h linguist-language=C++
+# i love windows
+*.sln text=auto eol=crlf
+*.vcxproj text=auto eol=crlf
+*.vcxproj.filters text=auto eol=crlf

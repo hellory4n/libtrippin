@@ -83,10 +83,10 @@ static_assert(sizeof(usize) == sizeof(isize), "oh no usize and isize aren't the 
 namespace tr {
 
 // I sure love versions.
-static constexpr const char* VERSION = "v2.3.3";
+static constexpr const char* VERSION = "v2.4.0";
 
 // I sure love versions. Format is XYYZZ
-static constexpr uint32 VERSION_NUM = 2'03'03;
+static constexpr uint32 VERSION_NUM = 2'04'00;
 
 // Initializes the bloody library lmao.
 void init();
