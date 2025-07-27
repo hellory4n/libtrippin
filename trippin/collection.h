@@ -95,7 +95,7 @@ public:
 	explicit HashMap(Arena& arena, HashMapSettings<K> setting) : settings(setting), src_arena(&arena)
 	{
 		this->capacity = this->settings.initial_capacity;
-		this->buffer = reinterpret_cast<Bucket*>(
+		this->buffer = static_cast<Bucket*>(
 			this->src_arena->alloc(this->settings.initial_capacity * sizeof(Bucket))
 		);
 	}
@@ -115,7 +115,7 @@ public:
 	{
 		usize old_cap = this->capacity;
 		this->capacity *= 2;
-		Bucket* new_buffer = reinterpret_cast<Bucket*>(
+		Bucket* new_buffer = static_cast<Bucket*>(
 			this->src_arena->alloc(this->capacity * sizeof(Bucket))
 		);
 
@@ -317,7 +317,6 @@ public:
 };
 
 // TODO HashSet<T>, Stack<T>, Queue<T>, LinkedList<T>
-// actually why would you want to use linked list
 
 }
 

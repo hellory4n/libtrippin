@@ -62,6 +62,9 @@ namespace tr {
 	String user_dir;
 }
 
+// TODO this was written before TR_TRY and all that crap
+// so like, use that?
+
 tr::Result<tr::String, tr::Error> tr::Reader::read_string(tr::Arena& arena, int64 length)
 {
 	String str(arena, static_cast<usize>(length));
@@ -185,6 +188,8 @@ void tr::set_paths(tr::String appdir, tr::String userdir)
 	tr::app_dir = appdir.duplicate(tr::core_arena);
 	tr::user_dir = userdir.duplicate(tr::core_arena);
 }
+
+// TODO i think you're using reinterpret_cast<T> wrong
 
 #ifdef _WIN32
 /*

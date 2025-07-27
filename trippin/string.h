@@ -81,13 +81,14 @@ public:
 	// man
 	constexpr char& operator[](usize idx) const { return this->array[idx]; }
 	// Returns the length, doesn't include the null terminator
-	usize len() const { return this->array.len() - 1; }
-	char* buf() const { return this->array.buf(); }
-	operator char*() const { return this->buf(); }
-	operator const char*() const { return this->buf(); }
-	Array<char>::Iterator begin() const { return this->array.begin(); }
+	constexpr usize len() const { return this->array.len() - 1; }
+	constexpr char* buf() const { return this->array.buf(); }
+	constexpr operator char*() const { return this->buf(); }
+	constexpr operator const char*() const { return this->buf(); }
+	constexpr Array<char>::Iterator begin() const { return this->array.begin(); }
 	// this one is different since you don't want to iterate over the null terminator
-	Array<char>::Iterator end() const { return Array<char>::Iterator(const_cast<char*>(this->buf()) + this->len() - 1, this->len() - 1); }
+	constexpr Array<char>::Iterator end() const { return Array<char>::Iterator(const_cast<char*>(this->buf()) + this->len() - 1, this->len() - 1); }
+
 	String duplicate(Arena& arena) const
 	{
 		Array<char> arrayma = this->array.duplicate(arena);

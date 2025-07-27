@@ -146,9 +146,9 @@ public:
 		T* huh = new (baseball) T(std::forward<Args>(args)...);
 
 		// fancy fuckery to get destructors to be called :)
-		auto* call = reinterpret_cast<DestructorCall*>(this->alloc(sizeof(DestructorCall)));
+		auto* call = static_cast<DestructorCall*>(this->alloc(sizeof(DestructorCall)));
 		call->func = [](void* obj) -> void {
-			reinterpret_cast<T*>(obj)->~T();
+			static_cast<T*>(obj)->~T();
 		};
 		call->object = huh;
 		call->next = this->destructors;
@@ -202,7 +202,7 @@ public:
 			this->capacity = INITIAL_CAPACITY;
 		}
 
-		this->ptr = reinterpret_cast<T*>(arena.alloc(sizeof(T) * this->capacity));
+		this->ptr = static_cast<T*>(arena.alloc(sizeof(T) * this->capacity));
 	}
 
 	// Initializes an array from a buffer. (the data is copied into the arena)
@@ -215,7 +215,7 @@ public:
 			this->capacity = INITIAL_CAPACITY;
 		}
 
-		this->ptr = reinterpret_cast<T*>(arena.alloc(sizeof(T) * this->capacity));
+		this->ptr = static_cast<T*>(arena.alloc(sizeof(T) * this->capacity));
 		if (len == 0) return;
 
 		// 'void* memcpy(void*, const void*, size_t)' forming offset [1, 1024] is out of the bounds [0, 1]
@@ -224,7 +224,7 @@ public:
 		TR_GCC_IGNORE_WARNING(-Warray-bounds);
 		TR_GCC_IGNORE_WARNING(-Wstringop-overread);
 		#endif
-		memcpy(reinterpret_cast<void*>(this->ptr), data, len * sizeof(T));
+		memcpy(static_cast<void*>(this->ptr), data, len * sizeof(T));
 		#ifdef TR_ONLY_GCC
 		TR_GCC_RESTORE();
 		TR_GCC_RESTORE();
@@ -310,10 +310,10 @@ public:
 		// reallocate array
 		T* old_buffer = this->ptr;
 		this->capacity *= 2;
-		this->ptr = reinterpret_cast<T*>(src_arena->alloc(this->capacity * sizeof(T)));
-		// you may initialize with a length of 0 so you can then add crap
+		this->ptr = static_cast<T*>(src_arena->alloc(this->capacity * sizeof(T)));
+		// you may initialize with a length of 0 so you can then add crap later
 		if (this->length > 0) {
-			memcpy(reinterpret_cast<void*>(this->ptr), old_buffer, this->length * sizeof(T));
+			memcpy(static_cast<void*>(this->ptr), old_buffer, this->length * sizeof(T));
 		}
 
 		(*this)[this->length++] = val;

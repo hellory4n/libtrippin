@@ -83,7 +83,7 @@ usize tr::ArenaPage::available_space() const
 
 void* tr::ArenaPage::alloc(usize size, usize align)
 {
-	uint8* base = reinterpret_cast<uint8*>(this->buffer);
+	uint8* base = static_cast<uint8*>(this->buffer);
 	uint8* ptr = base + this->alloc_pos;
 	usize address = reinterpret_cast<usize>(ptr);
 
@@ -198,7 +198,7 @@ void tr::Arena::reset()
 	// source https://en.cppreference.com/w/cpp/string/byte/memset#Notes
 	// maybe i'm just stupid :)
 	for (usize i = 0; i < headfrfr->bufsize; i++) {
-		reinterpret_cast<uint8*>(headfrfr->buffer)[i] = 0;
+		static_cast<uint8*>(headfrfr->buffer)[i] = 0;
 	}
 	headfrfr->alloc_pos = 0;
 	headfrfr->prev = nullptr;
