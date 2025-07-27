@@ -28,6 +28,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <string.h>
 #include <functional>
 #include <type_traits> // IWYU pragma: keep
 
@@ -116,13 +117,29 @@ class Either
 {
 	enum class Side : uint8 { UNINITIALIZED, LEFT, RIGHT };
 
-	L _left = L();
-	R _right = R();
+	// I DON'T WANT TO INITIALIZE SHIT PLEASE SHUT THE FUCK UP I SWEAR TO FUCKING GOD
+	// TODO this is fucking evil
+	union {
+		uint8 _left[sizeof(L)];
+		uint8 _right[sizeof(R)];
+	};
 	Side side = Side::UNINITIALIZED;
 
+	// WHY CANT I HAVE A POINTER TO A REFERENCE IT'S LITERALLY JUST A FANCY POINTER A POINTER TO A POINTER
+	// WORKS BUT NOT A POINTER TO A REFERENCE WHY WHAT THE FUCK WHY
+	using NoRefL = typename std::remove_reference<L>::type;
+	using NoRefR = typename std::remove_reference<R>::type;
+
 public:
-	Either(const L& left) : _left(left), side(Side::LEFT) {}
-	Either(const R& right) : _right(right), side(Side::RIGHT) {}
+	Either(const L& left) : side(Side::LEFT)
+	{
+		memcpy(this->_left, reinterpret_cast<const void*>(&left), sizeof(L));
+	}
+
+	Either(const R& right) : side(Side::RIGHT)
+	{
+		memcpy(this->_right, reinterpret_cast<const void*>(&right), sizeof(R));
+	}
 
 	// If true, it's left. Else, it's right.
 	bool is_left() const { return this->side == Side::LEFT; }
@@ -132,15 +149,19 @@ public:
 	// Returns the left value, or panics if it's not left
 	L& left() const
 	{
-		if (!this->is_left()) tr::panic("Either<L, R> is right, not left");
-		else return const_cast<L&>(this->_left);
+		if (!this->is_left()) tr::panic("tr::Either<L, R> is right, NOT left");
+		// not sure why it thinks it's const but i'm making it const here just for clarity
+		// you saw the start of the class you know this is fucking evil already
+		else return *const_cast<NoRefL*>(reinterpret_cast<const NoRefL*>(this->_right));
 	}
 
 	// Returns the right value, or panics if it's not right
 	R& right() const
 	{
-		if (!this->is_right()) tr::panic("Either<L, R> is right, not left");
-		else return const_cast<R&>(this->_right);
+		if (!this->is_right()) tr::panic("tr::Either<L, R> is right, NOT left");
+		// not sure why it thinks it's const but i'm making it const here just for clarity
+		// you saw the start of the class you know this is fucking evil already
+		else return *const_cast<NoRefR*>(reinterpret_cast<const NoRefR*>(this->_right));
 	}
 
 	// Calls a function (usually a lambda) depending on whether it's left, or right.

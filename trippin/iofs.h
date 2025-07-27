@@ -43,71 +43,62 @@ public:
 	virtual ~Reader() {}
 
 	// Returns the current position of the cursor, if available
-	virtual Result<int64, Error> position() = 0;
+	virtual Result<int64, const Error&> position() = 0;
 
 	// Returns the length of the stream in bytes, if available
-	virtual Result<int64, Error> len() = 0;
+	virtual Result<int64, const Error&> len() = 0;
 
 	// If true, the stream ended.
-	virtual Result<bool, Error> eof() = 0;
+	virtual Result<bool, const Error&> eof() = 0;
 
 	// Moves the cursor without reading anything
-	virtual Result<void, Error> seek(int64 bytes, SeekFrom from) = 0;
+	virtual Result<void, const Error&> seek(int64 bytes, SeekFrom from) = 0;
 
 	// Goes back to the beginning of the stream, if available
-	virtual Result<void, Error> rewind() = 0;
+	virtual Result<void, const Error&> rewind() = 0;
 
 	// Reads any amount of bytes, and returns how many bytes were actually read.
-	virtual Result<int64, Error> read_bytes(void* out, int64 size, int64 items) = 0;
+	virtual Result<int64, const Error&> read_bytes(void* out, int64 size, int64 items) = 0;
 
 	// Wrapper for `read_bytes`, returns null if it couldn't read the struct
 	template<typename T>
-	Result<T, Error> read_struct()
+	Result<T, const Error&> read_struct()
 	{
-		T man;
-		Result<int64, Error> sir = this->read_bytes(&man, sizeof(T), 1);
-		if (!sir.is_valid()) return sir;
+		T man = nullptr;
+		TR_TRY_ASSIGN(int64 bytes_read, this->read_bytes(&man, sizeof(T), 1));
 
-		if (sir.unwrap() == sizeof(T)) return man;
+		if (bytes_read == sizeof(T) && man != nullptr) return man;
 		else {
-			return StringError(
-				tr::fmt(tr::scratchpad(), "expected %li bytes, got %li (might be EOF)",
-					sizeof(T), sir.unwrap()
-				)
-			);
+			return tr::scratchpad().make<StringError>("expected %li bytes, got %li (might be EOF)", sizeof(T), bytes_read);
 		}
 	}
 
 	// Wrapper for `read_bytes`, returns an array of N items or null if it isn't able to read the stream.
 	template<typename T>
-	Result<Array<T>, Error> read_array(Arena& arena, int64 items)
+	Result<Array<T>, const Error&> read_array(Arena& arena, int64 items)
 	{
-		T* man;
-		Result<int64, Error> sir = this->read_bytes(&man, sizeof(T), items);
-		if (!sir.is_valid()) return sir;
+		T* man = nullptr;
+		TR_TRY_ASSIGN(int64 bytes_read, this->read_bytes(&man, sizeof(T), items));
 
-		if (sir.unwrap() == sizeof(T) * items && man != nullptr) return Array<T>(arena, man, items);
+		if (bytes_read == sizeof(T) * items && man != nullptr) return Array<T>(arena, man, items);
 		else {
-			return StringError(
-				tr::fmt(tr::scratchpad(), "expected %li bytes, got %li (might be EOF)",
-					sizeof(T), sir.unwrap()
-				)
-			);
+			return tr::scratchpad().make<StringError>("expected %li bytes, got %li (might be EOF)",
+				sizeof(T) * items, bytes_read);
 		}
 	}
 
 	// Wrapper for `read_bytes`, returns a string or null if it isn't able to read the stream.
-	Result<String, Error> read_string(Arena& arena, int64 length);
+	Result<String, const Error&> read_string(Arena& arena, int64 length);
 
 	// Reads a line of text :) Supports both Unix `\n` and Windows `\r\n`, no one is gonna be using classic
 	// MacOS with this
-	Result<String, Error> read_line(Arena& arena);
+	Result<String, const Error&> read_line(Arena& arena);
 
 	// Reads the entire stream as bytes
-	Result<Array<uint8>, Error> read_all_bytes(Arena& arena);
+	Result<Array<uint8>, const Error&> read_all_bytes(Arena& arena);
 
 	// Reads the entire stream as text
-	Result<String, Error> read_all_text(Arena& arena);
+	Result<String, const Error&> read_all_text(Arena& arena);
 
 	// TODO scanf or whatever the fuck
 };
@@ -120,46 +111,42 @@ public:
 	virtual ~Writer() {}
 
 	// It flushes the stream :)
-	virtual Result<void, Error> flush() = 0;
+	virtual Result<void, const Error&> flush() = 0;
 
 	// Writes bytes into the stream
-	virtual Result<void, Error> write_bytes(Array<uint8> bytes) = 0;
+	virtual Result<void, const Error&> write_bytes(Array<uint8> bytes) = 0;
 
 	// Writes a struct into the stream
 	template<typename T>
-	Result<void, Error> write_struct(T data)
+	Result<void, const Error&> write_struct(T data)
 	{
 		Array<uint8> manfuckyou(reinterpret_cast<uint8*>(&data), sizeof(T));
 		return this->write_bytes(manfuckyou);
 	}
 
-	// Writes an array into the stream. If `include_len` is true, it'll include an uint64 with the length
-	// (in items, not bytes) before the actual data.
+	// Writes an array into the stream. Note this doesn't include the length or a null terminator, it just
+	// writes pure data into the stream.
 	template<typename T>
-	Result<void, Error> write_array(Array<T> array, bool include_len)
+	Result<void, const Error&> write_array(Array<T> array)
 	{
-		if (include_len) {
-			Result<void, Error> mayhaps = this->write_struct(array.len());
-			if (!mayhaps.is_valid()) return mayhaps;
-		}
-
 		Array<uint8> manfuckyou(reinterpret_cast<uint8*>(array.buffer()), array.len());
 		return this->write_bytes(manfuckyou);
 	}
 
-	// Writes a string into the stream.
-	Result<void, Error> write_string(String str);
+	// Writes a string into the stream. Note this doesn't include the length or a null terminator, it just
+	// writes pure data into the stream.
+	Result<void, const Error&> write_string(String str);
 
 	// Writes a formatted string into the stream. So pretty much just fprintf.
 	[[gnu::format(printf, 2, 3)]] // `this` is the first argument i guess
-	Result<void, Error> printf(const char* fmt, ...);
+	Result<void, const Error&> printf(const char* fmt, ...);
 
 	// Similar to `Writer.printf()`, but it adds a newline at the end.
 	[[gnu::format(printf, 2, 3)]] // `this` is the first argument i guess
-	Result<void, Error> println(const char* fmt, ...);
+	Result<void, const Error&> println(const char* fmt, ...);
 
 	// Writes an empty line. Mind-boggling.
-	Result<void, Error> println() { return this->write_string("\n"); }
+	Result<void, const Error&> println() { return this->write_string("\n"); }
 };
 
 enum class FileMode : uint8 {
@@ -205,34 +192,34 @@ public:
 	~File();
 
 	// Opens a fucking file from fucking somewhere. Returns null on error.
-	static Result<File*, FileError> open(Arena& arena, String path, FileMode mode);
+	static Result<File&, FileError> open(Arena& arena, String path, FileMode mode);
 
 	// Closes the file :)
 	void close();
 
 	// Returns the current position of the cursor, if available
-	Result<int64, Error> position() override;
+	Result<int64, const Error&> position() override;
 
 	// Returns the length of the file in bytes, if available
-	Result<int64, Error> len() override;
+	Result<int64, const Error&> len() override;
 
 	// If true, the file ended. That's what "eof" means, End Of File
-	Result<bool, Error> eof() override;
+	Result<bool, const Error&> eof() override;
 
 	// Moves the cursor without reading anything
-	Result<void, Error> seek(int64 bytes, SeekFrom from) override;
+	Result<void, const Error&> seek(int64 bytes, SeekFrom from) override;
 
 	// Goes back to the beginning of the file.
-	Result<void, Error> rewind() override;
+	Result<void, const Error&> rewind() override;
 
 	// Reads any amount of bytes, and returns how many bytes were actually read.
-	Result<int64, Error> read_bytes(void* out, int64 size, int64 items) override;
+	Result<int64, const Error&> read_bytes(void* out, int64 size, int64 items) override;
 
 	// It flushes the stream :)
-	Result<void, Error> flush() override;
+	Result<void, const Error&> flush() override;
 
 	// Writes bytes into the stream
-	Result<void, Error> write_bytes(Array<uint8> bytes) override;
+	Result<void, const Error&> write_bytes(Array<uint8> bytes) override;
 
 	// If true, the file can be read.
 	bool can_read();

@@ -39,6 +39,14 @@
 
 #include "trippin/error.h"
 
+tr::StringError::StringError(const char* fmt, ...)
+{
+	va_list arg;
+	va_start(arg, fmt);
+	this->msg = tr::fmt_args(tr::scratchpad(), fmt, arg);
+	va_end(arg);
+}
+
 void tr::FileError::reset_errors()
 {
 	errno = 0;
@@ -47,9 +55,9 @@ void tr::FileError::reset_errors()
 	#endif
 }
 
-tr::FileError tr::FileError::from_errno(tr::String patha, tr::String pathb, tr::FileOperation operation)
+tr::FileError& tr::FileError::from_errno(tr::String patha, tr::String pathb, tr::FileOperation operation)
 {
-	FileError man = {};
+	FileError& man = tr::scratchpad().make<FileError>();
 	man.path_a = patha;
 	man.path_b = pathb;
 	man.op = operation;
@@ -84,7 +92,7 @@ tr::FileError tr::FileError::from_errno(tr::String patha, tr::String pathb, tr::
 // Checks Windows' `GetLastError` for errors :)
 tr::FileError tr::FileError::from_win32(tr::String patha, tr::String pathb, tr::FileOperation operation)
 {
-	FileError man = {};
+	FileError& man = tr::scratchpad().make<FileError>();
 	man.path_a = patha;
 	man.path_b = pathb;
 	man.op = operation;
@@ -122,7 +130,7 @@ tr::FileError tr::FileError::from_win32(tr::String patha, tr::String pathb, tr::
 }
 #endif
 
-tr::String tr::FileError::message()
+tr::String tr::FileError::message() const
 {
 	String operation;
 	switch (this->op) {

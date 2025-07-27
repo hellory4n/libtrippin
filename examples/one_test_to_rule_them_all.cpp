@@ -158,11 +158,11 @@ static void test::filesystem()
 
 	// so much .unwrap() it looks like rust
 	// i want it to crash if something goes wrong tho so that's why
-	tr::File& wf = *tr::File::open(tr::scratchpad(), "fucker.txt", tr::FileMode::WRITE_TEXT).unwrap();
+	tr::File& wf = tr::File::open(tr::scratchpad(), "fucker.txt", tr::FileMode::WRITE_TEXT).unwrap();
 	wf.write_string("Crap crappington.\nother line");
 	wf.close();
 
-	tr::File& rf = *tr::File::open(tr::scratchpad(), "fucker.txt", tr::FileMode::READ_TEXT).unwrap();
+	tr::File& rf = tr::File::open(tr::scratchpad(), "fucker.txt", tr::FileMode::READ_TEXT).unwrap();
 	tr::String line1 = rf.read_line(tr::scratchpad()).unwrap();
 	tr::String line2 = rf.read_line(tr::scratchpad()).unwrap();
 	tr::log("line 1: %s; line 2: %s", line1.buf(), line2.buf());

@@ -43,12 +43,12 @@ namespace tr {
 
 void tr::use_log_file(const char* path)
 {
-	Result<File*, FileError> f = File::open(core_arena, path, FileMode::WRITE_TEXT);
+	Result<File&, FileError> f = File::open(core_arena, path, FileMode::WRITE_TEXT);
 	if (!f.is_valid()) {
 		tr::warn("couldn't use log file '%s': %s", path, f.unwrap_err().message().buf());
 	}
-	File* file = f.unwrap();
-	logfiles.add(file);
+	File& file = f.unwrap();
+	logfiles.add(&file);
 
 	tr::info("using log file \"%s\"", path);
 }

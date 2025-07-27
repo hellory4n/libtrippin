@@ -65,31 +65,24 @@ namespace tr {
 // TODO this was written before TR_TRY and all that crap
 // so like, use that?
 
-tr::Result<tr::String, tr::Error> tr::Reader::read_string(tr::Arena& arena, int64 length)
+tr::Result<tr::String, const tr::Error&> tr::Reader::read_string(tr::Arena& arena, int64 length)
 {
 	String str(arena, static_cast<usize>(length));
-	Result<int64, Error> read = this->read_bytes(str.buf(), sizeof(char), length);
-	if (!read.is_valid()) return Result<String, Error>(read.unwrap_err());
+	TR_TRY_ASSIGN(int64 read, this->read_bytes(str.buf(), sizeof(char), length));
 
-	if (read.unwrap() != int64(length)) {
-		return StringError(
-			tr::fmt(tr::scratchpad(), "expected %zu bytes, got %li (might be EOF)",
-				length, read.unwrap()
-			)
-		);
+	if (read != int64(length)) {
+		return tr::scratchpad().make<StringError>("expected %zu bytes, got %li (might be EOF)", length, read);
 	}
 	else return str;
 }
 
-tr::Result<tr::String, tr::Error> tr::Reader::read_line(Arena& arena)
+tr::Result<tr::String, const tr::Error&> tr::Reader::read_line(Arena& arena)
 {
 	Array<char> linema(tr::scratchpad(), 0);
 
 	while (true) {
 		char byte = '\0';
-		Result<int64, Error> result = this->read_bytes(&byte, sizeof(char), 1);
-		if (!result.is_valid()) return Result<String, Error>(result.unwrap_err());
-		int64 read = result.unwrap();
+		TR_TRY_ASSIGN(int64 read, this->read_bytes(&byte, sizeof(char), 1));
 
 		// eof? idfk man
 		if (read == 0) break;
@@ -100,9 +93,7 @@ tr::Result<tr::String, tr::Error> tr::Reader::read_line(Arena& arena)
 		// windows :(
 		if (byte == '\r') {
 			char next_byte = '\0';
-			result = this->read_bytes(&next_byte, sizeof(char), 1);
-			if (!result.is_valid()) return Result<String, Error>(result.unwrap_err());
-			read = result.unwrap();
+			TR_TRY_ASSIGN(read, this->read_bytes(&next_byte, sizeof(char), 1));
 
 			// eof still counts
 			if (read == 0 || next_byte == '\n') break;
@@ -116,37 +107,31 @@ tr::Result<tr::String, tr::Error> tr::Reader::read_line(Arena& arena)
 	else return String(arena, linema.buf(), linema.len() + 1);
 }
 
-tr::Result<tr::Array<uint8>, tr::Error> tr::Reader::read_all_bytes(tr::Arena& arena)
+tr::Result<tr::Array<uint8>, const tr::Error&> tr::Reader::read_all_bytes(tr::Arena& arena)
 {
-	Result<int64, Error> length = this->len();
-	if (!length.is_valid()) return Result<Array<uint8>, Error>(length.unwrap_err());
-	int64 lenfrfr = length.unwrap();
+	TR_TRY_ASSIGN(int64 length, this->len());
 
-	Array<uint8> man(arena, static_cast<usize>(lenfrfr));
-	Result<int64, Error> die = this->read_bytes(man.buf(), sizeof(uint8), lenfrfr);
-	if (die.is_valid()) return man;
-	else return Result<Array<uint8>, Error>(die.unwrap_err());
+	Array<uint8> man(arena, static_cast<usize>(length));
+	TR_TRY(this->read_bytes(man.buf(), sizeof(uint8), length));
+	return man;
 }
 
-tr::Result<tr::String, tr::Error> tr::Reader::read_all_text(tr::Arena& arena)
+tr::Result<tr::String, const tr::Error&> tr::Reader::read_all_text(tr::Arena& arena)
 {
-	Result<int64, Error> length = this->len();
-	if (!length.is_valid()) return Result<String, Error>(length.unwrap_err());
-	int64 lenfrfr = length.unwrap();
+	TR_TRY_ASSIGN(int64 length, this->len());
 
-	String man(arena, static_cast<usize>(lenfrfr));
-	Result<int64, Error> die = this->read_bytes(man.buf(), sizeof(char), lenfrfr);
-	if (die.is_valid()) return man;
-	else return Result<String, Error>(die.unwrap_err());
+	String man(arena, static_cast<usize>(length));
+	TR_TRY(this->read_bytes(man.buf(), sizeof(char), length));
+	return man;
 }
 
-tr::Result<void, tr::Error> tr::Writer::write_string(tr::String str)
+tr::Result<void, const tr::Error&> tr::Writer::write_string(tr::String str)
 {
 	Array<uint8> manfuckyou(reinterpret_cast<uint8*>(str.buf()), str.len());
 	return this->write_bytes(manfuckyou);
 }
 
-tr::Result<void, tr::Error> tr::Writer::printf(const char* fmt, ...)
+tr::Result<void, const tr::Error&> tr::Writer::printf(const char* fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
@@ -156,15 +141,14 @@ tr::Result<void, tr::Error> tr::Writer::printf(const char* fmt, ...)
 	return this->write_string(str);
 }
 
-tr::Result<void, tr::Error> tr::Writer::println(const char* fmt, ...)
+tr::Result<void, const tr::Error&> tr::Writer::println(const char* fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
 	tr::String str = tr::fmt_args(tr::scratchpad(), fmt, args);
 	va_end(args);
 
-	Result<void, Error> man = this->write_string(str);
-	if (!man.is_valid()) return man;
+	TR_TRY(this->write_string(str));
 	return this->write_string("\n");
 }
 
@@ -258,9 +242,9 @@ tr::Result<tr::File*, tr::FileError> tr::File::open(tr::Arena& arena, tr::String
 	file.path = path.duplicate(arena);
 
 	// get length :)))))))))
-	_fseeki64(reinterpret_cast<FILE*>(file.fptr), 0, SEEK_END);
-	file.length = _ftelli64(reinterpret_cast<FILE*>(file.fptr));
-	::rewind(reinterpret_cast<FILE*>(file.fptr));
+	_fseeki64(static_cast<FILE*>(file.fptr), 0, SEEK_END);
+	file.length = _ftelli64(static_cast<FILE*>(file.fptr));
+	::rewind(static_cast<FILE*>(file.fptr));
 
 	return &file;
 }
@@ -271,7 +255,7 @@ void tr::File::close()
 
 	// is_std exists so it doesn't close tr::std_out and company
 	if (!this->is_std && this->fptr != nullptr) {
-		fclose(reinterpret_cast<FILE*>(this->fptr));
+		fclose(static_cast<FILE*>(this->fptr));
 	}
 	this->fptr = nullptr;
 }
@@ -286,7 +270,7 @@ tr::Result<int64, tr::Error> tr::File::position()
 {
 	FileError::reset_errors();
 
-	int64 pos = _ftelli64(reinterpret_cast<FILE*>(this->fptr));
+	int64 pos = _ftelli64(static_cast<FILE*>(this->fptr));
 	if (pos < 0) return FileError::from_errno(this->path, "", FileOperation::GET_FILE_POSITION);
 	else return pos;
 }
@@ -301,7 +285,7 @@ tr::Result<bool, tr::Error> tr::File::eof()
 {
 	FileError::reset_errors();
 
-	return feof(reinterpret_cast<FILE*>(this->fptr)) != 0;
+	return feof(static_cast<FILE*>(this->fptr)) != 0;
 }
 
 tr::Result<void, tr::Error> tr::File::seek(int64 bytes, tr::SeekFrom from)
@@ -315,7 +299,7 @@ tr::Result<void, tr::Error> tr::File::seek(int64 bytes, tr::SeekFrom from)
 		case SeekFrom::END:     whence = SEEK_END; break;
 	}
 
-	int i = _fseeki64(reinterpret_cast<FILE*>(this->fptr), bytes, whence);
+	int i = _fseeki64(static_cast<FILE*>(this->fptr), bytes, whence);
 	if (i != 0) return FileError::from_errno(this->path, "", FileOperation::SEEK_FILE);
 	else return {};
 }
@@ -324,7 +308,7 @@ tr::Result<void, tr::Error> tr::File::rewind()
 {
 	FileError::reset_errors();
 
-	::rewind(reinterpret_cast<FILE*>(this->fptr));
+	::rewind(static_cast<FILE*>(this->fptr));
 	if (errno != 0) return FileError::from_errno(this->path, "", FileOperation::REWIND_FILE);
 	else return {};
 }
@@ -335,7 +319,7 @@ tr::Result<int64, tr::Error> tr::File::read_bytes(void* out, int64 size, int64 i
 	TR_ASSERT_MSG(out != nullptr, "you dumbass it's supposed to go somewhere if you don't want to use it use File::seek() dumbass");
 	TR_ASSERT_MSG(this->can_read(), "dumbass you can't read this file");
 
-	usize bytes = fread(out, size, items, reinterpret_cast<FILE*>(this->fptr));
+	usize bytes = fread(out, size, items, static_cast<FILE*>(this->fptr));
 	if (errno != 0) return FileError::from_errno(this->path, "", FileOperation::READ_FILE);
 	else return bytes;
 }
@@ -344,7 +328,7 @@ tr::Result<void, tr::Error> tr::File::flush()
 {
 	FileError::reset_errors();
 
-	int i = fflush(reinterpret_cast<FILE*>(this->fptr));
+	int i = fflush(static_cast<FILE*>(this->fptr));
 	if (i == EOF) return FileError::from_errno(this->path, "", FileOperation::FLUSH_FILE);
 	else return {};
 }
@@ -354,7 +338,7 @@ tr::Result<void, tr::Error> tr::File::write_bytes(Array<uint8> bytes)
 	FileError::reset_errors();
 	TR_ASSERT_MSG(this->can_write(), "dumbass you can't write to this file");
 
-	fwrite(bytes.buf(), sizeof(uint8), bytes.len(), reinterpret_cast<FILE*>(this->fptr));
+	fwrite(bytes.buf(), sizeof(uint8), bytes.len(), static_cast<FILE*>(this->fptr));
 	if (errno != 0) return FileError::from_errno(this->path, "", FileOperation::WRITE_FILE);
 	else return {};
 }
@@ -521,7 +505,7 @@ void tr::__init_paths()
  * POSIX IMPLEMENTATION
  */
 
-tr::Result<tr::File*, tr::FileError> tr::File::open(tr::Arena& arena, tr::String path, FileMode mode)
+tr::Result<tr::File&, tr::FileError> tr::File::open(tr::Arena& arena, tr::String path, tr::FileMode mode)
 {
 	FileError::reset_errors();
 
@@ -539,18 +523,20 @@ tr::Result<tr::File*, tr::FileError> tr::File::open(tr::Arena& arena, tr::String
 
 	File& file = arena.make<File>();
 	file.fptr = fopen(path, modefrfr);
-	if (file.fptr == nullptr) return FileError::from_errno(path, "", FileOperation::OPEN_FILE);
+	if (file.fptr == nullptr) {
+		return FileError::from_errno(path, "", FileOperation::OPEN_FILE);
+	}
 
 	file.is_std = false;
 	file.mode = mode;
 	file.path = path.duplicate(arena);
 
 	// get length :)))))))))
-	fseek(reinterpret_cast<FILE*>(file.fptr), 0, SEEK_END);
-	file.length = ftell(reinterpret_cast<FILE*>(file.fptr));
-	::rewind(reinterpret_cast<FILE*>(file.fptr));
+	fseek(static_cast<FILE*>(file.fptr), 0, SEEK_END);
+	file.length = ftell(static_cast<FILE*>(file.fptr));
+	::rewind(static_cast<FILE*>(file.fptr));
 
-	return &file;
+	return file;
 }
 
 void tr::File::close()
@@ -559,7 +545,7 @@ void tr::File::close()
 
 	// is_std exists so it doesn't close tr::std_out and company
 	if (!this->is_std && this->fptr != nullptr) {
-		fclose(reinterpret_cast<FILE*>(this->fptr));
+		fclose(static_cast<FILE*>(this->fptr));
 	}
 	this->fptr = nullptr;
 }
@@ -570,29 +556,29 @@ tr::File::~File()
 	this->close();
 }
 
-tr::Result<int64, tr::Error> tr::File::position()
+tr::Result<int64, const tr::Error&> tr::File::position()
 {
 	FileError::reset_errors();
 
-	int64 pos = ftell(reinterpret_cast<FILE*>(this->fptr));
+	int64 pos = ftell(static_cast<FILE*>(this->fptr));
 	if (pos < 0) return FileError::from_errno(this->path, "", FileOperation::GET_FILE_POSITION);
 	else return pos;
 }
 
-tr::Result<int64, tr::Error> tr::File::len()
+tr::Result<int64, const tr::Error&> tr::File::len()
 {
 	FileError::reset_errors();
 	return this->length;
 }
 
-tr::Result<bool, tr::Error> tr::File::eof()
+tr::Result<bool, const tr::Error&> tr::File::eof()
 {
 	FileError::reset_errors();
 
-	return feof(reinterpret_cast<FILE*>(this->fptr)) != 0;
+	return feof(static_cast<FILE*>(this->fptr)) != 0;
 }
 
-tr::Result<void, tr::Error> tr::File::seek(int64 bytes, tr::SeekFrom from)
+tr::Result<void, const tr::Error&> tr::File::seek(int64 bytes, tr::SeekFrom from)
 {
 	FileError::reset_errors();
 
@@ -603,49 +589,50 @@ tr::Result<void, tr::Error> tr::File::seek(int64 bytes, tr::SeekFrom from)
 		case SeekFrom::END:     whence = SEEK_END; break;
 	}
 
-	int i = fseek(reinterpret_cast<FILE*>(this->fptr), bytes, whence);
+	int i = fseek(static_cast<FILE*>(this->fptr), bytes, whence);
 	if (i != 0) return FileError::from_errno(this->path, "", FileOperation::SEEK_FILE);
 	else return {};
 }
 
-tr::Result<void, tr::Error> tr::File::rewind()
+tr::Result<void, const tr::Error&> tr::File::rewind()
 {
 	FileError::reset_errors();
 
-	::rewind(reinterpret_cast<FILE*>(this->fptr));
+	::rewind(static_cast<FILE*>(this->fptr));
 	if (errno != 0) return FileError::from_errno(this->path, "", FileOperation::REWIND_FILE);
 	else return {};
 }
 
-tr::Result<int64, tr::Error> tr::File::read_bytes(void* out, int64 size, int64 items)
+tr::Result<int64, const tr::Error&> tr::File::read_bytes(void* out, int64 size, int64 items)
 {
 	FileError::reset_errors();
+	// TODO TR_TRY_ASSERT
 	TR_ASSERT_MSG(out != nullptr, "you dumbass it's supposed to go somewhere if you don't want to use it use File::seek() dumbass");
 	TR_ASSERT_MSG(this->can_read(), "dumbass you can't read this file");
 
 	// TODO 32-bit won't be happy about this
 	usize bytes = fread(out, static_cast<usize>(size), static_cast<usize>(items),
-		reinterpret_cast<FILE*>(this->fptr));
+		static_cast<FILE*>(this->fptr));
 
 	if (errno != 0) return FileError::from_errno(this->path, "", FileOperation::READ_FILE);
 	else return static_cast<int64>(bytes);
 }
 
-tr::Result<void, tr::Error> tr::File::flush()
+tr::Result<void, const tr::Error&> tr::File::flush()
 {
 	FileError::reset_errors();
 
-	int i = fflush(reinterpret_cast<FILE*>(this->fptr));
+	int i = fflush(static_cast<FILE*>(this->fptr));
 	if (i == EOF) return FileError::from_errno(this->path, "", FileOperation::FLUSH_FILE);
 	else return {};
 }
 
-tr::Result<void, tr::Error> tr::File::write_bytes(Array<uint8> bytes)
+tr::Result<void, const tr::Error&> tr::File::write_bytes(Array<uint8> bytes)
 {
 	FileError::reset_errors();
 	TR_ASSERT_MSG(this->can_write(), "dumbass you can't write to this file");
 
-	fwrite(bytes.buf(), sizeof(uint8), bytes.len(), reinterpret_cast<FILE*>(this->fptr));
+	fwrite(bytes.buf(), sizeof(uint8), bytes.len(), static_cast<FILE*>(this->fptr));
 	if (errno != 0) return FileError::from_errno(this->path, "", FileOperation::WRITE_FILE);
 	else return {};
 }

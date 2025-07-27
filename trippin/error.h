@@ -38,7 +38,7 @@ public:
 	virtual ~Error() {}
 
 	// Returns the error message
-	virtual String message() { return "unknown error (tr::Error being used directly)"; };
+	virtual String message() const = 0;
 };
 
 // Basic error interface
@@ -49,8 +49,10 @@ class StringError : public Error
 public:
 	StringError() : msg("") {}
 	StringError(String str) : msg(str) {}
+	// Pretty much just a shorthand for `tr::StringError(tr::fmt(tr::scratchpad(), ...))`
+	StringError(const char* fmt, ...);
 
-	String message() override { return this->msg; }
+	String message() const override { return this->msg; }
 };
 
 // Error codes based on POSIX errno.h and WinError.h
@@ -89,17 +91,17 @@ public:
 		path_a(patha), path_b(pathb), type(errtype), op(operation) {}
 
 	// Checks errno for errors :)
-	static FileError from_errno(String patha, String pathb, FileOperation operation);
+	static FileError& from_errno(String patha, String pathb, FileOperation operation);
 
 	#ifdef _WIN32
 	// Checks Windows' `GetLastError` for errors :)
-	static FileError from_win32(String patha, String pathb, FileOperation operation);
+	static FileError& from_win32(String patha, String pathb, FileOperation operation);
 	#endif
 
 	// Why.
 	static void reset_errors();
 
-	String message() override;
+	String message() const override;
 };
 
 // So spicy. E should inherit implement Error
@@ -118,7 +120,7 @@ public:
 	T& unwrap() const
 	{
 		if (!this->is_valid()) {
-			Error* errormaballs = dynamic_cast<Error*>(&value.right());
+			const Error* errormaballs = dynamic_cast<const Error*>(&value.right());
 			String error;
 			if (errormaballs == nullptr) {
 				error = "unknown error";
@@ -174,7 +176,7 @@ public:
 	void unwrap() const
 	{
 		if (!this->is_valid()) {
-			Error* errormaballs = dynamic_cast<Error*>(&value.unwrap());
+			const Error* errormaballs = dynamic_cast<const Error*>(&value.unwrap());
 			String error;
 			if (errormaballs == nullptr) {
 				error = "unknown error";
@@ -197,7 +199,7 @@ public:
 		if (this->is_valid()) {
 			tr::panic("couldn't unwrap tr::Result<T, E>'s error, as it's valid");
 		}
-		return this->value.right();
+		return this->value.unwrap();
 	}
 
 	// Calls a function (usually a lambda) depending on whether it's valid or not.
