@@ -1,4 +1,4 @@
-#include <trippin/string.hpp>
+#include <trippin/string.h>
 
 int main(void)
 {

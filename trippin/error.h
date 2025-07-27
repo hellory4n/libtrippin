@@ -2,7 +2,7 @@
  * libtrippin: Most massive library of all time
  * https://github.com/hellory4n/libtrippin
  *
- * trippin/error.hpp
+ * trippin/error.h
  * I'm not a huge fan of exceptions.
  *
  * Copyright (C) 2025 by hellory4n <hellory4n@gmail.com>
@@ -26,8 +26,8 @@
 #ifndef _TRIPPIN_ERROR_H
 #define _TRIPPIN_ERROR_H
 
-#include "common.hpp"
-#include "string.hpp"
+#include "trippin/common.h"
+#include "trippin/string.h"
 
 namespace tr {
 

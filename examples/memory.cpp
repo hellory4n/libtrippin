@@ -1,5 +1,5 @@
-#include <trippin/log.hpp>
-#include <trippin/memory.hpp>
+#include <trippin/log.h>
+#include <trippin/memory.h>
 
 struct CrapStruct
 {

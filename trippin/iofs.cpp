@@ -25,6 +25,7 @@
 
 // :(
 // TODO macOS exists
+// though macOS should be easier as it supports posix
 #ifdef _WIN32
 	#define WIN32_LEAN_AND_MEAN
 	#define NOSERVICE
@@ -48,9 +49,8 @@
 	#include <errno.h>
 #endif
 
-#include "log.hpp"
-
-#include "iofs.hpp"
+#include "trippin/log.h"
+#include "trippin/iofs.h"
 
 namespace tr {
 	extern Arena core_arena;
@@ -62,9 +62,9 @@ namespace tr {
 	String user_dir;
 }
 
-tr::Result<tr::String, tr::Error> tr::Reader::read_string(tr::Arena& arena, usize length)
+tr::Result<tr::String, tr::Error> tr::Reader::read_string(tr::Arena& arena, int64 length)
 {
-	String str(arena, length);
+	String str(arena, static_cast<usize>(length));
 	Result<int64, Error> read = this->read_bytes(str.buf(), sizeof(char), length);
 	if (!read.is_valid()) return Result<String, Error>(read.unwrap_err());
 
@@ -119,7 +119,7 @@ tr::Result<tr::Array<uint8>, tr::Error> tr::Reader::read_all_bytes(tr::Arena& ar
 	if (!length.is_valid()) return Result<Array<uint8>, Error>(length.unwrap_err());
 	int64 lenfrfr = length.unwrap();
 
-	Array<uint8> man(arena, lenfrfr);
+	Array<uint8> man(arena, static_cast<usize>(lenfrfr));
 	Result<int64, Error> die = this->read_bytes(man.buf(), sizeof(uint8), lenfrfr);
 	if (die.is_valid()) return man;
 	else return Result<Array<uint8>, Error>(die.unwrap_err());
@@ -131,7 +131,7 @@ tr::Result<tr::String, tr::Error> tr::Reader::read_all_text(tr::Arena& arena)
 	if (!length.is_valid()) return Result<String, Error>(length.unwrap_err());
 	int64 lenfrfr = length.unwrap();
 
-	String man(arena, lenfrfr);
+	String man(arena, static_cast<usize>(lenfrfr));
 	Result<int64, Error> die = this->read_bytes(man.buf(), sizeof(char), lenfrfr);
 	if (die.is_valid()) return man;
 	else return Result<String, Error>(die.unwrap_err());
@@ -618,9 +618,12 @@ tr::Result<int64, tr::Error> tr::File::read_bytes(void* out, int64 size, int64 i
 	TR_ASSERT_MSG(out != nullptr, "you dumbass it's supposed to go somewhere if you don't want to use it use File::seek() dumbass");
 	TR_ASSERT_MSG(this->can_read(), "dumbass you can't read this file");
 
-	usize bytes = fread(out, size, items, reinterpret_cast<FILE*>(this->fptr));
+	// TODO 32-bit won't be happy about this
+	usize bytes = fread(out, static_cast<usize>(size), static_cast<usize>(items),
+		reinterpret_cast<FILE*>(this->fptr));
+
 	if (errno != 0) return FileError::from_errno(this->path, "", FileOperation::READ_FILE);
-	else return bytes;
+	else return static_cast<int64>(bytes);
 }
 
 tr::Result<void, tr::Error> tr::File::flush()

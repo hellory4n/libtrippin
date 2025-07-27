@@ -23,7 +23,7 @@
  *
  */
 
-#include "math.hpp"
+#include "trippin/math.h"
 
 tr::Vec4<float32>& tr::Matrix4x4::operator[](usize idx)
 {
@@ -325,7 +325,7 @@ tr::Matrix4x4 tr::Matrix4x4::perspective(float32 fovy, float32 aspect, float32 n
 tr::Random::Random(int64 seed)
 {
 	// i think this is how you implement splitmix64?
-	this->state[0] = seed;
+	this->state[0] = static_cast<uint64>(seed); // TODO don't?
 	for (size_t i = 1; i < 4; i++) {
 		this->state[i] = (this->state[i - 1] += UINT64_C(0x9E3779B97F4A7C15));
 		this->state[i] = (this->state[i] ^ (this->state[i] >> 30)) * UINT64_C(0xBF58476D1CE4E5B9);

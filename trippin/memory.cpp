@@ -27,10 +27,9 @@
 #include <new> // IWYU pragma: keep
 #include <stdlib.h>
 
-#include "log.hpp"
-#include "math.hpp"
-
-#include "memory.hpp"
+#include "trippin/log.h"
+#include "trippin/math.h"
+#include "trippin/memory.h"
 
 namespace tr {
 	extern MemoryInfo memory_info;

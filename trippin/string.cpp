@@ -26,9 +26,8 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#include "math.hpp"
-
-#include "string.hpp"
+#include "trippin/math.h"
+#include "trippin/string.h"
 
 // TODO maybe use less <string.h> bcuz it can get fucky
 
@@ -223,7 +222,8 @@ tr::String tr::fmt_args(tr::Arena& arena, const char* fmt, va_list arg)
 	va_end(arglen);
 
 	// the string constructor handles the null terminator shut up
-	String str(arena, size);
+	TR_ASSERT(size >= 0);
+	String str(arena, static_cast<usize>(size));
 
 	// do the formatting frfrfrfr
 	va_list argfmt;
@@ -231,12 +231,12 @@ tr::String tr::fmt_args(tr::Arena& arena, const char* fmt, va_list arg)
 	#ifdef _WIN32
 	vsnprintf_s(str.buf(), size + 1, _TRUNCATE, fmt, argfmt);
 	#else
-	vsnprintf(str.buf(), size + 1, fmt, argfmt);
+	vsnprintf(str.buf(), static_cast<usize>(size) + 1, fmt, argfmt);
 	#endif
 	va_end(argfmt);
 
 	// just in case
-	str[size] = '\0';
+	str[static_cast<usize>(size)] = '\0';
 
 	return str;
 }

@@ -1,4 +1,4 @@
-#include <trippin/collection.hpp>
+#include <trippin/collection.h>
 
 int main(void)
 {

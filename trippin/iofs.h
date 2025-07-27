@@ -2,7 +2,7 @@
  * libtrippin: Most massive library of all time
  * https://github.com/hellory4n/libtrippin
  *
- * trippin/iofs.hpp
+ * trippin/iofs.h
  * Stream and filesystem APIs
  *
  * Copyright (C) 2025 by hellory4n <hellory4n@gmail.com>
@@ -26,10 +26,10 @@
 #ifndef _TRIPPIN_IOFS_H
 #define _TRIPPIN_IOFS_H
 
-#include "common.hpp"
-#include "memory.hpp"
-#include "string.hpp"
-#include "error.hpp"
+#include "trippin/common.h"
+#include "trippin/memory.h"
+#include "trippin/string.h"
+#include "trippin/error.h"
 
 namespace tr {
 
@@ -80,7 +80,7 @@ public:
 
 	// Wrapper for `read_bytes`, returns an array of N items or null if it isn't able to read the stream.
 	template<typename T>
-	Result<Array<T>, Error> read_array(Arena& arena, usize items)
+	Result<Array<T>, Error> read_array(Arena& arena, int64 items)
 	{
 		T* man;
 		Result<int64, Error> sir = this->read_bytes(&man, sizeof(T), items);
@@ -97,7 +97,7 @@ public:
 	}
 
 	// Wrapper for `read_bytes`, returns a string or null if it isn't able to read the stream.
-	Result<String, Error> read_string(Arena& arena, usize length);
+	Result<String, Error> read_string(Arena& arena, int64 length);
 
 	// Reads a line of text :) Supports both Unix `\n` and Windows `\r\n`, no one is gonna be using classic
 	// MacOS with this

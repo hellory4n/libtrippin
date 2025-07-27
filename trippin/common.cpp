@@ -27,11 +27,11 @@
 // i'm using it tho??????????
 #include <stdio.h> // IWYU pragma: keep
 
-#include "log.hpp"
-#include "memory.hpp"
-#include "iofs.hpp"
-#include "collection.hpp"
-#include "common.hpp"
+#include "trippin/log.h"
+#include "trippin/memory.h"
+#include "trippin/iofs.h"
+#include "trippin/collection.h"
+#include "trippin/common.h"
 
 // they have to live somewhere
 namespace tr {

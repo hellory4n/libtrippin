@@ -1,8 +1,8 @@
-#include <trippin/common.hpp>
-#include <trippin/log.hpp>
-#include <trippin/string.hpp>
-#include <trippin/math.hpp>
-#include <trippin/error.hpp>
+#include <trippin/common.h>
+#include <trippin/log.h>
+#include <trippin/string.h>
+#include <trippin/math.h>
+#include <trippin/error.h>
 
 int main(void)
 {

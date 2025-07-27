@@ -2,7 +2,7 @@
 # TODO compile all of the examples
 # TODO a generator would be nice tho
 cxx = clang++
-cflags = -std=c++17 -Wall -Wextra -Wpedantic -Wuninitialized -Wshadow -O2 -g -DDEBUG -D_DEBUG -I. -I..
+cflags = -std=c++17 -O2 -g -DDEBUG -D_DEBUG -I. -I.. -Wall -Wextra -Wpedantic -Wuninitialized -Wshadow -Wconversion -Wold-style-cast
 ldflags = -lm -lstdc++
 
 rule compile

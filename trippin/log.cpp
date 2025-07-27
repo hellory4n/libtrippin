@@ -30,10 +30,10 @@
 	#include <intrin.h>
 #endif
 
-#include "common.hpp"
-#include "log.hpp"
-#include "memory.hpp"
-#include "iofs.hpp"
+#include "trippin/common.h"
+#include "trippin/log.h"
+#include "trippin/memory.h"
+#include "trippin/iofs.h"
 
 namespace tr {
 	extern Arena core_arena;

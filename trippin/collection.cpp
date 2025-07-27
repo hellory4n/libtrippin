@@ -23,7 +23,7 @@
  *
  */
 
-#include "collection.hpp"
+#include "trippin/collection.h"
 
 constexpr uint64 FNV_OFFSET_BASIS = 0xcbf29ce484222325;
 // IM IN MY PRIME™ AND THIS AINT EVEN FINAL FORM

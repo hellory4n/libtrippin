@@ -2,7 +2,7 @@
  * libtrippin: Most massive library of all time
  * https://github.com/hellory4n/libtrippin
  *
- * trippin/string.hpp
+ * trippin/string.h
  * Strings :)
  *
  * Copyright (C) 2025 by hellory4n <hellory4n@gmail.com>
@@ -28,8 +28,8 @@
 
 #include <stdarg.h>
 
-#include "memory.hpp"
-#include "common.hpp"
+#include "trippin/memory.h"
+#include "trippin/common.h"
 
 namespace tr {
 

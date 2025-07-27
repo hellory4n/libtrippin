@@ -1,11 +1,11 @@
 #include <stdio.h>
-#include <trippin/common.hpp>
-#include <trippin/log.hpp>
-#include <trippin/math.hpp>
-#include <trippin/memory.hpp>
-#include <trippin/string.hpp>
-#include <trippin/collection.hpp>
-#include <trippin/iofs.hpp>
+#include <trippin/common.h>
+#include <trippin/log.h>
+#include <trippin/math.h>
+#include <trippin/memory.h>
+#include <trippin/string.h>
+#include <trippin/collection.h>
+#include <trippin/iofs.h>
 
 // TODO use actual tests you dumbass
 
@@ -42,7 +42,7 @@ static void test::memory()
 	tr::log("\n==== MEMORY ====");
 
 	tr::Arena arena;
-	tr::Vec3<float32>& vecma3 = arena.make<tr::Vec3<float32>>(1, 2, 3);
+	tr::Vec3<float32>& vecma3 = arena.make<tr::Vec3<float32>>(1.0f, 2.0f, 3.0f);
 	tr::log("vecma3 %f, %f, %f", vecma3.x, vecma3.y, vecma3.z);
 
 	struct MaBalls {

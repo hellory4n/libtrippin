@@ -2,7 +2,7 @@
  * libtrippin: Most massive library of all time
  * https://github.com/hellory4n/libtrippin
  *
- * trippin/log.hpp
+ * trippin/log.h
  * Logging, assert, and panic
  *
  * Copyright (C) 2025 by hellory4n <hellory4n@gmail.com>
@@ -26,7 +26,7 @@
 #ifndef _TRIPPIN_LOG_H
 #define _TRIPPIN_LOG_H
 
-#include "common.hpp"
+#include "trippin/common.h"
 
 namespace tr {
 

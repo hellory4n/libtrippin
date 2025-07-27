@@ -2,7 +2,7 @@
  * libtrippin: Most massive library of all time
  * https://github.com/hellory4n/libtrippin
  *
- * trippin/math.hpp
+ * trippin/math.h
  * Vectors, matrices, RNG, and other math-y functions.
  *
  * Copyright (C) 2025 by hellory4n <hellory4n@gmail.com>
@@ -29,8 +29,8 @@
 #include <math.h>
 #include <time.h>
 
-#include "common.hpp"
-#include "log.hpp"
+#include "trippin/common.h"
+#include "trippin/log.h"
 
 namespace tr {
 
@@ -186,7 +186,11 @@ struct Vec3
 	}
 
 	constexpr float64 length() { return sqrt(this->mul_inner(*this)); }
-	constexpr Vec3<T> normalize() { return *this * (1 / this->length()); }
+	// warning: implicit conversion loses floating-point precision: 'float64' (aka 'double') to 'float'
+	// TODO there should be a better way but idk man
+	TR_GCC_IGNORE_WARNING(-Wimplicit-float-conversion)
+	constexpr Vec3<T> normalize() { return *this * (1.0 / this->length()); }
+	TR_GCC_RESTORE()
 
 	constexpr Vec3<T> reflect(Vec3<T> b)
 	{
@@ -839,9 +843,14 @@ struct Color
 	constexpr Color(uint8 r, uint8 g, uint8 b) : r(r), g(g), b(b), a(255) {}
 	constexpr Color(uint8 r, uint8 g, uint8 b, uint8 a) : r(r), g(g), b(b), a(a) {}
 	TR_GCC_RESTORE()
+
+	// warning: implicit conversion turns floating-point number into integer: 'float' to 'uint8'
+	// i know man
+	TR_GCC_IGNORE_WARNING(-Wfloat-conversion)
 	constexpr Color(Vec4<float32> vec) :
 		r(tr::clamp(vec.x, 0.f, 1.f) * 255), g(tr::clamp(vec.y, 0.f, 1.f) * 255),
 		b(tr::clamp(vec.z, 0.f, 1.f) * 255), a(tr::clamp(vec.w, 0.f, 1.f) * 255) {}
+	TR_GCC_RESTORE()
 
 	// Makes a color from a hex code, with a format of 0xRRGGBB
 	static constexpr Color rgb(uint32 hex)

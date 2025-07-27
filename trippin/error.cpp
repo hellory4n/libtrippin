@@ -37,7 +37,7 @@
 	#include <errno.h>
 #endif
 
-#include "error.hpp"
+#include "trippin/error.h"
 
 void tr::FileError::reset_errors()
 {

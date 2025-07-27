@@ -30,15 +30,14 @@
     <ClCompile Include="..\trippin\string.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\trippin\collection.hpp" />
-    <ClInclude Include="..\trippin\common.hpp" />
-    <ClInclude Include="..\trippin\error.hpp" />
-    <ClInclude Include="..\trippin\iofs.hpp" />
-    <ClInclude Include="..\trippin\libxxhash.h" />
-    <ClInclude Include="..\trippin\log.hpp" />
-    <ClInclude Include="..\trippin\math.hpp" />
-    <ClInclude Include="..\trippin\memory.hpp" />
-    <ClInclude Include="..\trippin\string.hpp" />
+    <ClInclude Include="..\trippin\collection.h" />
+    <ClInclude Include="..\trippin\common.h" />
+    <ClInclude Include="..\trippin\error.h" />
+    <ClInclude Include="..\trippin\iofs.h" />
+    <ClInclude Include="..\trippin\log.h" />
+    <ClInclude Include="..\trippin\math.h" />
+    <ClInclude Include="..\trippin\memory.h" />
+    <ClInclude Include="..\trippin\string.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\trippin\README.md" />

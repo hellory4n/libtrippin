@@ -2,7 +2,7 @@
  * libtrippin: Most massive library of all time
  * https://github.com/hellory4n/libtrippin
  *
- * trippin/collection.hpp
+ * trippin/collection.h
  * Additional collection types
  *
  * Copyright (C) 2025 by hellory4n <hellory4n@gmail.com>
@@ -28,10 +28,11 @@
 
 #include <stdlib.h>
 #include <utility>
+#include <functional>
 
-#include "common.hpp"
-#include "memory.hpp"
-#include "string.hpp"
+#include "trippin/common.h"
+#include "trippin/memory.h"
+#include "trippin/string.h"
 
 namespace tr {
 
@@ -145,7 +146,7 @@ public:
 	// Checks how full the hashmap is and resizes if necessary
 	void check_grow()
 	{
-		float64 used = static_cast<float64>(this->occupied) / this->capacity;
+		float64 used = static_cast<float64>(this->occupied) / static_cast<float64>(this->capacity);
 		if (used <= this->settings.load_factor) {
 			return;
 		}
@@ -316,6 +317,7 @@ public:
 };
 
 // TODO HashSet<T>, Stack<T>, Queue<T>, LinkedList<T>
+// actually why would you want to use linked list
 
 }
 

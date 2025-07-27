@@ -1,5 +1,5 @@
-#include <trippin/common.hpp>
-#include <trippin/log.hpp>
+#include <trippin/common.h>
+#include <trippin/log.h>
 
 int main(void)
 {
