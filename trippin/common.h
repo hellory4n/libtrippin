@@ -65,21 +65,28 @@
 	#define TR_GCC_RESTORE()
 #endif
 
-typedef int8_t int8;
-typedef int16_t int16;
-typedef int32_t int32;
-typedef int64_t int64;
-typedef uint8_t uint8;
-typedef uint16_t uint16;
-typedef uint32_t uint32;
-typedef uint64_t uint64;
-typedef float float32;
-typedef double float64;
-typedef size_t usize;
-typedef ptrdiff_t isize;
+// number types
+// i'm not a huge fan of random '_t's everywhere
+using int8     = int8_t;
+using int16    = int16_t;
+using int32    = int32_t;
+using int64    = int64_t;
+
+using uint8    = uint8_t;
+using uint16   = uint16_t;
+using uint32   = uint32_t;
+using uint64   = uint64_t;
+
+using float32  = float;
+using float64  = double;
+
+using usize    = size_t;
+using isize    = ptrdiff_t;
 
 // it's not guaranteed lmao
 static_assert(sizeof(usize) == sizeof(isize), "oh no usize and isize aren't the same size");
+static_assert(sizeof(float32) == 4, "float32 must be 32-bits (duh)");
+static_assert(sizeof(float64) == 8, "float64 must be 64-bits (duh)");
 
 namespace tr {
 
@@ -102,7 +109,7 @@ void quit(int32 error_code);
 // Adds a function to run when the program quits/panics.
 void call_on_quit(std::function<void(void)> func);
 
-// mingw gcc complains about %zu and %li even tho it works fine :)
+// mingw gcc complains about %zu and %li even tho it works fine
 // TODO this WILL break
 #if defined(TR_GCC_OR_CLANG) && !defined(TR_ONLY_MINGW_CC)
 [[noreturn, gnu::format(printf, 1, 2)]]
@@ -117,28 +124,89 @@ class Either
 {
 	enum class Side : uint8 { UNINITIALIZED, LEFT, RIGHT };
 
-	// I DON'T WANT TO INITIALIZE SHIT PLEASE SHUT THE FUCK UP I SWEAR TO FUCKING GOD
-	// TODO this is fucking evil
+	// c++ is a lot of fun
+	template<typename T>
+	using Storage = std::conditional_t<
+		std::is_reference_v<T>,
+		std::remove_reference_t<T>*,                 // store pointer for references
+		std::remove_cv_t<std::remove_reference_t<T>> // store decayed value for non-refs
+	>;
+
 	union {
-		uint8 _left[sizeof(L)];
-		uint8 _right[sizeof(R)];
+		Storage<L> _left;
+		Storage<R> _right;
 	};
 	Side side = Side::UNINITIALIZED;
 
-	// WHY CANT I HAVE A POINTER TO A REFERENCE IT'S LITERALLY JUST A FANCY POINTER A POINTER TO A POINTER
-	// WORKS BUT NOT A POINTER TO A REFERENCE WHY WHAT THE FUCK WHY
-	using NoRefL = typename std::remove_reference<L>::type;
-	using NoRefR = typename std::remove_reference<R>::type;
-
-public:
-	Either(const L& left) : side(Side::LEFT)
-	{
-		memcpy(this->_left, reinterpret_cast<const void*>(&left), sizeof(L));
+private:
+	void destroy() {
+		if (this->side == Side::LEFT) {
+			if constexpr (!std::is_reference_v<L>) {
+				using U = std::remove_cv_t<L>;
+				reinterpret_cast<U*>(&this->_left)->~U();
+			}
+		}
+		else {
+			if constexpr (!std::is_reference_v<R>) {
+				using U = std::remove_cv_t<R>;
+				reinterpret_cast<U*>(&this->_right)->~U();
+			}
+		}
 	}
 
-	Either(const R& right) : side(Side::RIGHT)
+public:
+	Either() : side(Side::UNINITIALIZED) {}
+
+	Either(L left) : side(Side::LEFT)
 	{
-		memcpy(this->_right, reinterpret_cast<const void*>(&right), sizeof(R));
+		// c++ is consuming my brain
+		// it's quite sad i hope they find a cure
+		if constexpr (std::is_reference_v<L>) {
+			this->_left = &left;
+		}
+		else {
+			this->_left = left;
+		}
+	}
+
+	Either(R right) : side(Side::RIGHT)
+	{
+		if constexpr (std::is_reference_v<R>) {
+			this->_right = &right;
+		}
+		else {
+			this->_right = right;
+		}
+	}
+
+	// evil rule of 3 fuckery
+	~Either() { this->destroy(); }
+
+	Either(const Either& other) : side(other.side) {
+		if (this->side == Side::LEFT) {
+			if constexpr (std::is_reference_v<L>) {
+				this->_left = other._left;
+			}
+			else {
+				new (&this->_left) L(*reinterpret_cast<const L*>(&other._left));
+			}
+		}
+		else {
+			if constexpr (std::is_reference_v<R>) {
+				this->_right = other._right;
+			}
+			else {
+				new (&this->_right) R(*reinterpret_cast<const R*>(&other._right));
+			}
+		}
+	}
+
+	Either& operator=(const Either& other) {
+		if (this != &other) {
+			this->destroy();
+			new (this) Either(other);
+		}
+		return *this;
 	}
 
 	// If true, it's left. Else, it's right.
@@ -147,25 +215,33 @@ public:
 	bool is_right() const { return this->side == Side::RIGHT; }
 
 	// Returns the left value, or panics if it's not left
-	L& left() const
+	L left() const
 	{
 		if (!this->is_left()) tr::panic("tr::Either<L, R> is right, NOT left");
-		// not sure why it thinks it's const but i'm making it const here just for clarity
-		// you saw the start of the class you know this is fucking evil already
-		else return *const_cast<NoRefL*>(reinterpret_cast<const NoRefL*>(this->_right));
+
+		if constexpr (std::is_reference_v<L>) {
+			return *this->_left;
+		}
+		else {
+			return *reinterpret_cast<const L*>(&this->_left);
+		}
 	}
 
 	// Returns the right value, or panics if it's not right
-	R& right() const
+	R right() const
 	{
 		if (!this->is_right()) tr::panic("tr::Either<L, R> is right, NOT left");
-		// not sure why it thinks it's const but i'm making it const here just for clarity
-		// you saw the start of the class you know this is fucking evil already
-		else return *const_cast<NoRefR*>(reinterpret_cast<const NoRefR*>(this->_right));
+
+		if constexpr (std::is_reference_v<R>) {
+			return *this->_right;
+		}
+		else {
+			return *reinterpret_cast<const R*>(&this->_right);
+		}
 	}
 
 	// Calls a function (usually a lambda) depending on whether it's left, or right.
-	void match(std::function<void(L& left)> left_func, std::function<void(R& right)> right_func)
+	void match(std::function<void(L left)> left_func, std::function<void(R right)> right_func)
 	{
 		if (this->is_left()) left_func(this->left());
 		else right_func(this->right());
@@ -189,7 +265,7 @@ public:
 	Maybe() : value(0), has_value(false) {}
 
 	// Intializes a Maybe<T> with a value
-	Maybe(const T& val) : value(val), has_value(true) {}
+	Maybe(T val) : value(val), has_value(true) {}
 
 	// If true, the maybe is, in fact, a definitely.
 	bool is_valid() const
@@ -198,17 +274,17 @@ public:
 	}
 
 	// Gets the value or panics if it's null
-	T& unwrap() const
+	T unwrap() const
 	{
-		if (this->has_value) return const_cast<T&>(this->value.left());
+		if (this->has_value) return this->value.left();
 		else tr::panic("couldn't unwrap Maybe<T>");
 	}
 
 	// Similar to the `??`/null coalescing operator in modern languages
-	const T& value_or(const T& other) const { return this->is_valid() ? this->unwrap() : other; }
+	const T value_or(const T other) const { return this->is_valid() ? this->unwrap() : other; }
 
 	// Calls a function (usually a lambda) depending on whether it's valid or not.
-	void match(std::function<void(T& val)> valid_func, std::function<void()> invalid_func)
+	void match(std::function<void(T val)> valid_func, std::function<void()> invalid_func)
 	{
 		if (this->is_valid()) valid_func(this->unwrap());
 		else invalid_func();

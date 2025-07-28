@@ -111,16 +111,18 @@ class Result
 	Either<T, E> value = {};
 
 public:
-	Result(const T& val) : value(val) {}
-	Result(const E& err) : value(err) {}
+	Result(T val) : value(val) {}
+	Result(E err) : value(err) {}
 
 	// If true, the result has a value. Else, it has an error.
 	bool is_valid() const { return value.is_left(); }
 
-	T& unwrap() const
+	T unwrap() const
 	{
 		if (!this->is_valid()) {
-			const Error* errormaballs = dynamic_cast<const Error*>(&value.right());
+			// error: taking the address of a temporary object of type 'T'
+			E pain = value.right();
+			const Error* errormaballs = dynamic_cast<const Error*>(&pain);
 			String error;
 			if (errormaballs == nullptr) {
 				error = "unknown error";
@@ -149,13 +151,12 @@ public:
 	}
 
 	// Similar to the `??`/null coalescing operator in modern languages
-	const T& value_or(const T& other) const { return this->is_valid() ? this->unwrap() : other; }
+	const T value_or(const T other) const { return this->is_valid() ? this->unwrap() : other; }
 
 	// Calls a function (usually a lambda) depending on whether it's valid or not.
-	void match(std::function<void(T& val)> valid_func, std::function<void(E& err)> error_func)
+	void match(std::function<void(T val)> valid_func, std::function<void(E err)> error_func)
 	{
-		if (this->is_valid()) valid_func(this->value.left());
-		else error_func(this->value.right());
+		this->value.match(valid_func, error_func);
 	}
 };
 
@@ -167,7 +168,7 @@ class Result<void, E>
 
 public:
 	Result() : value() {}
-	Result(const E& err) : value(err) {}
+	Result(E err) : value(err) { tr::panic(":("); }
 
 	// If false, it has an error.
 	bool is_valid() const { return !this->value.is_valid(); }
@@ -176,7 +177,9 @@ public:
 	void unwrap() const
 	{
 		if (!this->is_valid()) {
-			const Error* errormaballs = dynamic_cast<const Error*>(&value.unwrap());
+			// error: taking the address of a temporary object of type 'T'
+			E pain = value.unwrap();
+			const Error* errormaballs = dynamic_cast<const Error*>(&pain);
 			String error;
 			if (errormaballs == nullptr) {
 				error = "unknown error";
@@ -203,10 +206,9 @@ public:
 	}
 
 	// Calls a function (usually a lambda) depending on whether it's valid or not.
-	void match(std::function<void()> valid_func, std::function<void(E& err)> error_func)
+	void match(std::function<void()> valid_func, std::function<void(E err)> error_func)
 	{
-		if (this->is_valid()) valid_func();
-		else error_func(this->value.unwrap());
+		this->value.match(error_func, valid_func);
 	}
 };
 

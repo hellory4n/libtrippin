@@ -2,8 +2,8 @@
 # TODO compile all of the examples
 # TODO a generator would be nice tho
 cxx = clang++
-cflags = -std=c++17 -O2 -g -DDEBUG -D_DEBUG -I. -I.. -Wall -Wextra -Wpedantic -Wuninitialized -Wshadow -Wconversion -Wold-style-cast
-ldflags = -lm -lstdc++
+cflags = -std=c++17 -O2 -g -DDEBUG -D_DEBUG -I. -I.. -Wall -Wextra -Wpedantic -Wuninitialized -Wshadow -Wconversion -Wold-style-cast -fsanitize=address,undefined
+ldflags = -lm -lstdc++ -fsanitize=address,undefined
 
 rule compile
   command = $cxx $cflags -c $in -o $out
