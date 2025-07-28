@@ -203,7 +203,7 @@ static void test::all()
 	test::logging();
 	test::memory();
 	test::arrays();
-	// test::strings();
+	test::strings();
 	test::hashmaps();
 	test::filesystem();
 }

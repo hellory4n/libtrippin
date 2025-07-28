@@ -157,25 +157,25 @@ private:
 public:
 	Either() : side(Side::UNINITIALIZED) {}
 
-	Either(L left) : side(Side::LEFT)
+	Either(L l) : side(Side::LEFT)
 	{
 		// c++ is consuming my brain
 		// it's quite sad i hope they find a cure
 		if constexpr (std::is_reference_v<L>) {
-			this->_left = &left;
+			this->_left = &l;
 		}
 		else {
-			this->_left = left;
+			new(&this->_left) L(std::forward<L>(l));
 		}
 	}
 
-	Either(R right) : side(Side::RIGHT)
+	Either(R r) : side(Side::RIGHT)
 	{
 		if constexpr (std::is_reference_v<R>) {
-			this->_right = &right;
+			this->_right = &r;
 		}
 		else {
-			this->_right = right;
+			new(&this->_left) R(std::forward<R>(r));
 		}
 	}
 

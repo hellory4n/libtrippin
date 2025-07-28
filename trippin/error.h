@@ -168,7 +168,7 @@ class Result<void, E>
 
 public:
 	Result() : value() {}
-	Result(E err) : value(err) { tr::panic(":("); }
+	Result(E err) : value(err) {}
 
 	// If false, it has an error.
 	bool is_valid() const { return !this->value.is_valid(); }

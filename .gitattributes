@@ -1,5 +1,7 @@
 * text=auto eol=lf
-trippin/**/*.h linguist-language=C++
+trippin/**/*.h   diff=cpp
+trippin/**/*.cpp diff=cpp
+
 # i love windows
 *.sln text=auto eol=crlf
 *.vcxproj text=auto eol=crlf
