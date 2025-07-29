@@ -116,7 +116,7 @@ void call_on_quit(std::function<void(bool is_panic)> func);
 
 // mingw gcc complains about %zu and %li even tho it works fine
 // TODO this WILL break
-#if defined(TR_GCC_OR_CLANG) && !defined(TR_ONLY_MINGW_CC)
+#if defined(TR_GCC_OR_CLANG) && !defined(TR_ONLY_MINGW_GCC)
 [[gnu::format(printf, 1, 2)]]
 #endif
 // i love circular dependencies.
