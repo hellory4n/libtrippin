@@ -117,10 +117,11 @@ void call_on_quit(std::function<void(bool is_panic)> func);
 // mingw gcc complains about %zu and %li even tho it works fine
 // TODO this WILL break
 #if defined(TR_GCC_OR_CLANG) && !defined(TR_ONLY_MINGW_CC)
-[[noreturn, gnu::format(printf, 1, 2)]]
+[[gnu::format(printf, 1, 2)]]
 #endif
 // i love circular dependencies.
 // Oh god oh fuck. Note this crashes and kills everything, `tr::error` doesn't.
+[[noreturn]]
 void panic(const char* fmt, ...);
 
 // Functional propaganda

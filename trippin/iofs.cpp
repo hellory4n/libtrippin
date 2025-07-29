@@ -173,8 +173,6 @@ void tr::set_paths(tr::String appdir, tr::String userdir)
 	tr::user_dir = userdir.duplicate(tr::core_arena);
 }
 
-// TODO i think you're using reinterpret_cast<T> wrong
-
 #ifdef _WIN32
 /*
  * WINDOWS IMPLEMENTATION
@@ -196,7 +194,7 @@ static WinStrConst from_trippin_to_win32_str(tr::String str)
 	// https://www.youtube.com/watch?v=WGFLPbpdMS8
 	TR_ASSERT_MSG(size != 0, "blame it on windows");
 
-	WinStrMut new_str = reinterpret_cast<WinStrMut>(tr::scratchpad().alloc((size + 1) * sizeof(wchar_t)));
+	WinStrMut new_str = static_cast<WinStrMut>(tr::scratchpad().alloc((size + 1) * sizeof(wchar_t)));
 	int result = MultiByteToWideChar(CP_UTF8, 0, str.buf(), -1, new_str, size);
 	TR_ASSERT_MSG(result != 0, "blame it on windows");
 	return new_str;
@@ -213,7 +211,7 @@ static tr::String from_win32_to_trippin_str(WinStrConst str)
 	return new_str;
 }
 
-tr::Result<tr::File*, tr::FileError> tr::File::open(tr::Arena& arena, tr::String path, FileMode mode)
+tr::Result<tr::File&, tr::FileError> tr::File::open(tr::Arena& arena, tr::String path, FileMode mode)
 {
 	FileError::reset_errors();
 
@@ -246,7 +244,7 @@ tr::Result<tr::File*, tr::FileError> tr::File::open(tr::Arena& arena, tr::String
 	file.length = _ftelli64(static_cast<FILE*>(file.fptr));
 	::rewind(static_cast<FILE*>(file.fptr));
 
-	return &file;
+	return file;
 }
 
 void tr::File::close()
@@ -266,7 +264,7 @@ tr::File::~File()
 	this->close();
 }
 
-tr::Result<int64, tr::Error> tr::File::position()
+tr::Result<int64, const tr::Error&> tr::File::position()
 {
 	FileError::reset_errors();
 
@@ -275,20 +273,20 @@ tr::Result<int64, tr::Error> tr::File::position()
 	else return pos;
 }
 
-tr::Result<int64, tr::Error> tr::File::len()
+tr::Result<int64, const tr::Error&> tr::File::len()
 {
 	FileError::reset_errors();
 	return this->length;
 }
 
-tr::Result<bool, tr::Error> tr::File::eof()
+tr::Result<bool, const tr::Error&> tr::File::eof()
 {
 	FileError::reset_errors();
 
 	return feof(static_cast<FILE*>(this->fptr)) != 0;
 }
 
-tr::Result<void, tr::Error> tr::File::seek(int64 bytes, tr::SeekFrom from)
+tr::Result<void, const tr::Error&> tr::File::seek(int64 bytes, tr::SeekFrom from)
 {
 	FileError::reset_errors();
 
@@ -304,7 +302,7 @@ tr::Result<void, tr::Error> tr::File::seek(int64 bytes, tr::SeekFrom from)
 	else return {};
 }
 
-tr::Result<void, tr::Error> tr::File::rewind()
+tr::Result<void, const tr::Error&> tr::File::rewind()
 {
 	FileError::reset_errors();
 
@@ -313,7 +311,7 @@ tr::Result<void, tr::Error> tr::File::rewind()
 	else return {};
 }
 
-tr::Result<int64, tr::Error> tr::File::read_bytes(void* out, int64 size, int64 items)
+tr::Result<int64, const tr::Error&> tr::File::read_bytes(void* out, int64 size, int64 items)
 {
 	FileError::reset_errors();
 	TR_ASSERT_MSG(out != nullptr, "you dumbass it's supposed to go somewhere if you don't want to use it use File::seek() dumbass");
@@ -324,7 +322,7 @@ tr::Result<int64, tr::Error> tr::File::read_bytes(void* out, int64 size, int64 i
 	else return bytes;
 }
 
-tr::Result<void, tr::Error> tr::File::flush()
+tr::Result<void, const tr::Error&> tr::File::flush()
 {
 	FileError::reset_errors();
 
@@ -333,7 +331,7 @@ tr::Result<void, tr::Error> tr::File::flush()
 	else return {};
 }
 
-tr::Result<void, tr::Error> tr::File::write_bytes(Array<uint8> bytes)
+tr::Result<void, const tr::Error&> tr::File::write_bytes(Array<uint8> bytes)
 {
 	FileError::reset_errors();
 	TR_ASSERT_MSG(this->can_write(), "dumbass you can't write to this file");
@@ -472,7 +470,7 @@ tr::Result<bool, tr::FileError> tr::is_file(tr::String path)
 void tr::__init_paths()
 {
 	// we're first getting it as utf-16 then converting it back to utf-8 just in case lmao
-	WinStrMut exedir = reinterpret_cast<WinStrMut>(tr::core_arena.alloc(MAX_PATH * sizeof(wchar_t)));
+	WinStrMut exedir = static_cast<WinStrMut>(tr::core_arena.alloc(MAX_PATH * sizeof(wchar_t)));
 	HMODULE hmodule = GetModuleHandle(nullptr);
 	if (hmodule != nullptr) {
 		DWORD len = GetModuleFileNameW(hmodule, exedir, MAX_PATH);
@@ -495,9 +493,16 @@ void tr::__init_paths()
 		tr::exe_dir = ".";
 	}
 
-	// TODO msvc complains about getenv
+	// msvc complains about getenv
+	#ifdef _WIN32
+	char buf[MAX_PATH] = {};
+	// HOW IS char(*)[] INCOMPATIBLE WITH char**
+	_dupenv_s(reinterpret_cast<char**>(&buf), nullptr, "APPDATA");
+	tr::user_dir = String(buf).duplicate(tr::core_arena);
+	#else
 	char* appdata = getenv("APPDATA");
 	tr::user_dir = String(appdata).duplicate(tr::core_arena);
+	#endif
 }
 
 #else

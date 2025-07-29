@@ -90,7 +90,7 @@ tr::FileError& tr::FileError::from_errno(tr::String patha, tr::String pathb, tr:
 
 #ifdef _WIN32
 // Checks Windows' `GetLastError` for errors :)
-tr::FileError tr::FileError::from_win32(tr::String patha, tr::String pathb, tr::FileOperation operation)
+tr::FileError& tr::FileError::from_win32(tr::String patha, tr::String pathb, tr::FileOperation operation)
 {
 	FileError& man = tr::scratchpad().make<FileError>();
 	man.path_a = patha;
