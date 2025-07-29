@@ -214,18 +214,27 @@ public:
 
 // evil macro fuckery for less boilerplate
 
-#define __TR_CONCAT2(a, b) a##b
-#define __TR_CONCAT(a, b) __TR_CONCAT2(a, b)
-#define __TR_UNIQUE_NAME(base) __TR_CONCAT(base, __LINE__)
+#define __TR_CONCAT2(A, B) A##B
+#define __TR_CONCAT(A, B) __TR_CONCAT2(A, B)
+#define __TR_UNIQUE_NAME(Base) __TR_CONCAT(Base, __LINE__)
 
-#define TR_TRY_ASSIGN(var, ...) \
+// Shorthand for calling a function, unwrapping if valid, and returning an error otherwise
+// example: TR_TRY_ASSIGN(int32 var, some_function());
+#define TR_TRY_ASSIGN(Var, ...) \
 	auto __TR_UNIQUE_NAME(__tr_try_tmp) = (__VA_ARGS__); \
 	if (!__TR_UNIQUE_NAME(__tr_try_tmp).is_valid()) return __TR_UNIQUE_NAME(__tr_try_tmp).unwrap_err(); \
-	var = __TR_UNIQUE_NAME(__tr_try_tmp).unwrap()
+	Var = __TR_UNIQUE_NAME(__tr_try_tmp).unwrap()
 
+// `TR_TRY_ASSIGN` but for `tr::Result<void, E>`, or for when you don't care about the result
+// example: TR_TRY(some_function());
 #define TR_TRY(...) \
 	auto __TR_UNIQUE_NAME(__tr_try_tmp) = (__VA_ARGS__); \
 	if (!__TR_UNIQUE_NAME(__tr_try_tmp).is_valid()) return __TR_UNIQUE_NAME(__tr_try_tmp).unwrap_err()
+
+// Similar to `tr::assert`, but instead of panicking, it returns an error.
+// example: TR_TRY_ASSERT(false, tr::StringError("something went wrong"));
+#define TR_TRY_ASSERT(X, ...) \
+	if (!(X)) return (__VA_ARGS__)
 
 }
 

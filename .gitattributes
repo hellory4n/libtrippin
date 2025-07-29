@@ -1,5 +1,5 @@
 * text=auto eol=lf
-trippin/**/*.h   diff=cpp
+trippin/**/*.h diff=cpp
 trippin/**/*.cpp diff=cpp
 
 # i love windows

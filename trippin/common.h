@@ -395,6 +395,64 @@ struct Pair
 		return (value & flag) == flag; \
 	}
 
+// I love reinventing the wheel
+template<typename T>
+class RangeIterator
+{
+	T start;
+	T stop;
+	T current;
+	// TODO what happens if step is negative?
+	T step;
+
+public:
+	// DIE
+	TR_GCC_IGNORE_WARNING(-Wshadow)
+	explicit RangeIterator(T start, T end, T cur, T step)
+		: start(start), stop(end), current(cur), step(step) {}
+	TR_GCC_RESTORE()
+
+	T operator*() const { return this->current; }
+
+	RangeIterator& operator++()
+	{
+		// TODO could be checked once for a nano-optimization
+		if (this->start < this->stop) this->current += this->step;
+		else this->current -= this->step;
+		return *this;
+	}
+
+	bool operator!=(const RangeIterator& rhs) const
+	{
+		if (this->start < this->stop) return this->current < rhs.stop;
+		else return this->current > rhs.stop;
+	}
+
+	RangeIterator begin() { return *this; }
+	RangeIterator end()   { return *this; }
+};
+
+// Shorthand for a C-style loop. Similar to Go's `range()`
+template<typename T>
+RangeIterator<T> range(T start, T end, T step)
+{
+	return RangeIterator<T>(start, end, start, step);
+}
+
+// Shorthand for a C-style loop. Similar to Go's `range()`
+template<typename T>
+RangeIterator<T> range(T start, T end)
+{
+	return RangeIterator<T>(start, end, start, 1);
+}
+
+// Shorthand for a C-style loop. Similar to Go's `range()`
+template<typename T>
+RangeIterator<T> range(T end)
+{
+	return RangeIterator<T>(0, end, 0, 1);
+}
+
 }
 
 #endif

@@ -86,11 +86,14 @@ void tr::__log(const char* color, const char* prefix, bool panic, const char* fm
 	if (panic) {
 		tr::free();
 
-		// i dont care about every other compiler
-		#ifdef _WIN32
+		// i don't think anyone is gonna be compiling with intel c++ or whatever the fuck
+		// but it should still work anyway
+		#ifdef TR_ONLY_MSVC
 		__debugbreak();
-		#else
+		#elif defined(TR_GCC_OR_CLANG)
 		__builtin_trap();
+		#else
+		abort();
 		#endif
 	}
 }
@@ -124,7 +127,7 @@ void tr::warn(const char* fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
-	__log(tr::ConsoleColor::WARN, "", false, fmt, args);
+	__log(tr::ConsoleColor::WARN, "warning: ", false, fmt, args);
 	va_end(args);
 }
 
@@ -135,7 +138,7 @@ void tr::error(const char* fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
-	__log(tr::ConsoleColor::ERROR, "", false, fmt, args);
+	__log(tr::ConsoleColor::ERROR, "error: ", false, fmt, args);
 	va_end(args);
 }
 
