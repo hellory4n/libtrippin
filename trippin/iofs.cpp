@@ -494,7 +494,7 @@ void tr::__init_paths()
 	}
 
 	// msvc complains about getenv
-	#ifdef _WIN32
+	#ifdef TR_ONLY_MSVC
 	char buf[MAX_PATH] = {};
 	// HOW IS char(*)[] INCOMPATIBLE WITH char**
 	_dupenv_s(reinterpret_cast<char**>(&buf), nullptr, "APPDATA");
