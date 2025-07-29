@@ -4,7 +4,7 @@ Most biggest most massive library of all time. I'm insane.
 
 ## Featuring
 
-- [libtrippin](./libtrippin.h) v2.4.0: Most massive library of all time
+- [libtrippin](./trippin) v2.4.0: Most massive library of all time
     - C++17 with no external dependencies (only libc/stdc++)
     - Cross-platform (Windows and POSIX)
     - Arenas for memory management
@@ -19,9 +19,7 @@ Most biggest most massive library of all time. I'm insane.
 
 Make sure you're using C++17, it won't compile with anything older.
 
-Now add all the `.hpp`/`.cpp` files from `trippin/` to your project
-
-It should compile with GCC, Clang, and MSVC (Visual Studio)
+Now add all the `.h`/`.cpp` files from `trippin/` to your project
 
 On Linux you also have to link with the math library `-lm`
 
@@ -45,7 +43,7 @@ See the docs folder for more crap.
 ### Logging
 
 ```cpp
-#include <trippin/log.hpp>
+#include <trippin/log.h>
 
 tr::use_log_file("log.txt");
 tr::init();
@@ -68,8 +66,8 @@ tr::free();
 ### Memory
 
 ```cpp
-#include <trippin/log.hpp>
-#include <trippin/memory.hpp>
+#include <trippin/log.h>
+#include <trippin/memory.h>
 
 tr::Arena arena;
 
@@ -92,7 +90,7 @@ for (auto [i, num] : array) {
 ### Strings
 
 ```cpp
-#include <trippin/string.hpp>
+#include <trippin/string.h>
 
 // temporary string
 tr::String str = "hi mom";
@@ -108,12 +106,12 @@ tr::String str = tr::fmt(arena, "hi %s", "mom");
 ### Math
 
 ```cpp
-#include <trippin/log.hpp>
-#include <trippin/math.hpp>
+#include <trippin/log.h>
+#include <trippin/math.h>
 
 tr::Random sorandomxd;
 tr::Vec3<float32> vecma;
-for (usize i = 0; i < 3; i++) {
+for (auto i : tr::range<usize>(0, 3)) {
     vecma[i] = sorandomxd.next(0.0f, 999999999.9f);
 }
 TR_ASSERT(vecma.x > 0.0f);
@@ -122,7 +120,7 @@ TR_ASSERT(vecma.x > 0.0f);
 ### Collections
 
 ```cpp
-#include <trippin/collection.hpp>
+#include <trippin/collection.h>
 
 // hashmaps are hashmaps lmao
 tr::HashMap<tr::String, tr::String> map(arena);
@@ -146,19 +144,57 @@ signa.connect([&](int64 x) -> void {
 signa.emit(759823);
 ```
 
+### Errors
+
+```cpp
+#include <trippin/error.h>
+#include <trippin/memory.h>
+
+tr::Result<int32, tr::Error&> example_function()
+{
+    // on error
+    // you can use any type that implements tr::Error
+    return tr::scratchpad().make<tr::StringError>("unexpected happening it is happening unexpectedly");
+
+    // on success you can just return as usual
+    return 946259;
+}
+
+// usage
+// .unwrap() is for if you're *really* sure that it won't fail
+// it's not recommended because it will panic on fail
+int32 x = example_function().unwrap();
+
+// usually you should use the TR_TRY* macros instead
+TR_TRY_ASSIGN(int32 x, example_function());
+// which expands to (roughly)
+auto tmp = example_function();
+if (!tmp.is_valid()) {
+    return tmp.unwrap_err();
+}
+int32 x = tmp.unwrap();
+// but you can only use those macros in functions that return tr::Result<T, E>
+
+// additional macros:
+// TR_TRY is like TR_TRY_ASSIGN but ignoring the result
+TR_TRY(example_function());
+
+// TR_TRY_ASSERT returns an error instead of panicking on fail
+TR_TRY_ASSERT(2 + 2 == 5, tr::scratchpad().make<tr::StringError>("i might be wrong"));
+```
+
 ### Files
 
 ```cpp
-#include <trippin/iofs.hpp>
+#include <trippin/iofs.h>
 
 // reading
-// .unwrap() will panic on error, you probably shouldn't do that in most cases
-tr::File& file = *tr::File::open(arena, "file.txt", tr::FileMode::READ_TEXT).unwrap();
+tr::File& file = tr::File::open(arena, "file.txt", tr::FileMode::READ_TEXT).unwrap();
 tr::String line = file.read_line(arena).unwrap();
 // it closes automatically!
 
 // writing
-tr::File& file = *tr::File::open(arena, "otherfile.bin", tr::FileMode::WRITE_BINARY).unwrap();
+tr::File& file = tr::File::open(arena, "otherfile.bin", tr::FileMode::WRITE_BINARY).unwrap();
 file->write_string("Man...\nso true");
 file->write_struct(2758952);
 ```
