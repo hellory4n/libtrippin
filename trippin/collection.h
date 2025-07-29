@@ -88,10 +88,6 @@ class HashMap
 	usize capacity = 0;
 
 public:
-	// Used for reflection
-	using __K = K;
-	using __V = V;
-
 	explicit HashMap(Arena& arena, HashMapSettings<K> setting) : settings(setting), src_arena(&arena)
 	{
 		this->capacity = this->settings.initial_capacity;

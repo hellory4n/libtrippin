@@ -27,7 +27,7 @@ static void test::logging()
 	tr::info("sir");
 	tr::warn("sir");
 	tr::error("sir");
-	// tr::assert(false, "trajìque");
+	// TR_ASSERT_MSG(false, "trajìque");
 	// tr::panic("AHHHHHHH");
 
 	tr::log("S%sa (formatted arguments)", "igm");
@@ -42,7 +42,7 @@ static void test::memory()
 {
 	tr::log("\n==== MEMORY ====");
 
-	tr::Arena arena;
+	tr::Arena arena = {};
 	tr::Vec3<float32>& vecma3 = arena.make<tr::Vec3<float32>>(1.0f, 2.0f, 3.0f);
 	tr::log("vecma3 %f, %f, %f", vecma3.x, vecma3.y, vecma3.z);
 
@@ -126,7 +126,7 @@ static void test::hashmaps()
 	tr::log("hashma[\"Sigma\"] = \"%s\"", *hashma["Sigma"]);
 
 	// check collsiions
-	tr::HashMapSettings<tr::String> settings{};
+	tr::HashMapSettings<tr::String> settings = {};
 	settings.load_factor = 0.1;
 	settings.initial_capacity = 4;
 	settings.hash_func = [](const tr::String&) -> uint64 {
