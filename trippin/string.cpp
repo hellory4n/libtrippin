@@ -2,7 +2,7 @@
  * libtrippin: Most massive library of all time
  * https://github.com/hellory4n/libtrippin
  *
- * trippin/string.hpp
+ * trippin/string.cpp
  * Strings :)
  *
  * Copyright (C) 2025 by hellory4n <hellory4n@gmail.com>

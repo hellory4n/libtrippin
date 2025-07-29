@@ -32,8 +32,9 @@ static void test::logging()
 
 	tr::log("S%sa (formatted arguments)", "igm");
 
-	tr::call_on_quit([&]() -> void {
+	tr::call_on_quit([&](bool _) -> void {
 		tr::log("CUSTOM FUNCTION THAT RUNS ON QUIT/PANIC??? SCRUMPTIOUS");
+		// tr::panic("skill");
 	});
 }
 

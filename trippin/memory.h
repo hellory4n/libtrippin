@@ -60,7 +60,7 @@ struct MemoryInfo {
 };
 
 // As the name implies, it gets the memory info. Idk why.
-[[deprecated("this api is just kinda crap")]]
+[[deprecated("this api is just kinda crap, will be removed in v2.5")]]
 MemoryInfo get_memory_info();
 
 // Converts kilobytes to bytes
@@ -315,7 +315,8 @@ public:
 		this->ptr = static_cast<T*>(src_arena->alloc(this->capacity * sizeof(T)));
 		// you may initialize with a length of 0 so you can then add crap later
 		if (this->length > 0) {
-			memcpy(static_cast<void*>(this->ptr), old_buffer, this->length * sizeof(T));
+			memcpy(static_cast<void*>(this->ptr), static_cast<const void*>(old_buffer),
+				this->length * sizeof(T));
 		}
 
 		(*this)[this->length++] = val;

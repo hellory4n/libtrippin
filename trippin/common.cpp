@@ -2,7 +2,7 @@
  * libtrippin: Most massive library of all time
  * https://github.com/hellory4n/libtrippin
  *
- * trippin/common.hpp
+ * trippin/common.cpp
  * Numbers, macros, and utility structs
  *
  * Copyright (C) 2025 by hellory4n <hellory4n@gmail.com>
@@ -37,6 +37,7 @@
 namespace tr {
 	Arena core_arena(tr::kb_to_bytes(128));
 
+	// TODO remove in v2.5
 	MemoryInfo memory_info;
 	Array<File*> logfiles(core_arena);
 
@@ -44,7 +45,13 @@ namespace tr {
 	File std_out;
 	File std_err;
 
+	// TODO remove the old call_on_quit on v2.5
 	Signal<void> on_quit(core_arena);
+	// yes it's spelled that on purpose
+	Signal<bool> the_new_all_on_quit(core_arena);
+	bool panicking = false;
+	// so it doesn't keep emitting the signal forever
+	bool panicked_on_quit = false;
 }
 
 void tr::init()
@@ -77,8 +84,18 @@ void tr::init()
 
 void tr::free()
 {
-	// TODO what happens if a function panics here?
+	// so it doesn't keep emitting the signal forever
+	if (tr::panicked_on_quit) {
+		tr::warn("panicked from tr::call_on_quit, aborting");
+		return;
+	}
+
 	tr::on_quit.emit();
+	// c++ is fucking with the template va args
+	// idk why i can't just pass the variable
+	// but it works by negating it twice (which makes it the same)
+	// TODO rewrite in rust
+	tr::the_new_all_on_quit.emit(!!tr::panicking);
 	tr::info("deinitialized libtrippin");
 }
 
@@ -91,4 +108,9 @@ void tr::quit(int32 error_code)
 void tr::call_on_quit(std::function<void(void)> func)
 {
 	tr::on_quit.connect(func);
+}
+
+void tr::call_on_quit(std::function<void(bool is_panic)> func)
+{
+	tr::the_new_all_on_quit.connect(func);
 }

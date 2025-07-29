@@ -2,7 +2,7 @@
  * libtrippin: Most massive library of all time
  * https://github.com/hellory4n/libtrippin
  *
- * trippin/common.hpp
+ * trippin/common.h
  * Numbers, macros, and utility structs
  *
  * Copyright (C) 2025 by hellory4n <hellory4n@gmail.com>
@@ -30,7 +30,8 @@
 #include <stddef.h>
 #include <string.h>
 #include <functional>
-#include <type_traits> // IWYU pragma: keep
+#include <utility>
+#include <type_traits>
 
 // get compiler
 // checking between gcc and clang is useful because some warnings are different
@@ -83,10 +84,10 @@ using float64  = double;
 using usize    = size_t;
 using isize    = ptrdiff_t;
 
-// it's not guaranteed lmao
+// it's usually true, but not guaranteed by the standard
 static_assert(sizeof(usize) == sizeof(isize), "oh no usize and isize aren't the same size");
-static_assert(sizeof(float32) == 4, "float32 must be 32-bits (duh)");
-static_assert(sizeof(float64) == 8, "float64 must be 64-bits (duh)");
+static_assert(sizeof(float32) == 4,           "float32 must be 32-bits (duh)");
+static_assert(sizeof(float64) == 8,           "float64 must be 64-bits (duh)");
 
 namespace tr {
 
@@ -107,7 +108,11 @@ void free();
 void quit(int32 error_code);
 
 // Adds a function to run when the program quits/panics.
+[[deprecated("use the other overload, this will be removed in v2.5")]]
 void call_on_quit(std::function<void(void)> func);
+
+// Adds a function to run when the program quits/panics.
+void call_on_quit(std::function<void(bool is_panic)> func);
 
 // mingw gcc complains about %zu and %li even tho it works fine
 // TODO this WILL break

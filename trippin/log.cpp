@@ -26,7 +26,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <time.h>
-#ifdef _WIN32
+#ifdef _MSC_VER
 	#include <intrin.h>
 #endif
 
@@ -34,10 +34,15 @@
 #include "trippin/log.h"
 #include "trippin/memory.h"
 #include "trippin/iofs.h"
+#include "trippin/collection.h"
 
 namespace tr {
 	extern Arena core_arena;
 	extern Array<File*> logfiles;
+	extern Signal<bool> the_new_all_on_quit;
+	extern bool panicking;
+	extern bool panicked_on_quit;
+
 	void __log(const char* color, const char* prefix, bool panic, const char* fmt, va_list arg);
 }
 
@@ -75,15 +80,24 @@ void tr::__log(const char* color, const char* prefix, bool panic, const char* fm
 	va_end(argmaballs);
 
 	for (auto [_, file] : tr::logfiles) {
-		if (file->is_std) file->write_string(color);
+		if (file->is_std) {
+			file->write_string(color);
+		}
 		file->printf("[%s] %s%s", timestr, prefix, buf.buf());
-		if (file->is_std) file->write_string(ConsoleColor::RESET);
+		if (file->is_std) {
+			file->write_string(ConsoleColor::RESET);
+		}
 		file->write_string("\n");
 
 		file->flush();
 	}
 
 	if (panic) {
+		// i'm having a minor aneurysm rn
+		if (tr::panicking) {
+			tr::panicked_on_quit = true;
+		}
+		tr::panicking = true;
 		tr::free();
 
 		// i don't think anyone is gonna be compiling with intel c++ or whatever the fuck
