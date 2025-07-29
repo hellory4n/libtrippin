@@ -4,7 +4,7 @@ int main(void)
 {
 	// temporary string
 	tr::String str = "hi mom";
-	tr::log("%s", str.buf());
+	tr::log("%s", *str);
 
 	// arena string
 	tr::String str2(tr::scratchpad(), "a string", sizeof("a string"));

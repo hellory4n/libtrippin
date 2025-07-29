@@ -50,7 +50,7 @@ uint64 __default_hash_function(const K& key)
 template<>
 inline uint64 __default_hash_function<String>(const String& key)
 {
-	return tr::hash(Array<uint8>(reinterpret_cast<uint8*>(key.buf()), key.len()));
+	return tr::hash(Array<uint8>(reinterpret_cast<uint8*>(*key), key.len()));
 }
 
 // Useful for when you need *advanced* hashmaps

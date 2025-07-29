@@ -13,7 +13,7 @@ int main(void)
 	// hashmaps aren't sorted
 	// so it'll show up in a seemingly random order
 	for (auto [key, value] : map) {
-		tr::log("hashmap['%s'] = '%s'", key.buf(), value.buf());
+		tr::log("hashmap['%s'] = '%s'", *key, *value);
 	}
 
 	// there's also signals so that's cool

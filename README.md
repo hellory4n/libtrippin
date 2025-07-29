@@ -94,7 +94,7 @@ for (auto [i, num] : array) {
 
 // temporary string
 tr::String str = "hi mom";
-tr::log("%s", str.buf());
+tr::log("%s", *str);
 
 // arena string
 tr::String str(arena, "a string", sizeof("a string"));
@@ -133,7 +133,7 @@ map.remove("craig");
 // hashmaps aren't sorted
 // so it'll show up in a seemingly random order
 for (auto [key, value] : map) {
-    tr::log("hashmap['%s'] = '%s'", key.buf(), value.buf());
+    tr::log("hashmap['%s'] = '%s'", *key, *value);
 }
 
 // there's also signals so that's cool

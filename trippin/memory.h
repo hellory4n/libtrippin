@@ -272,11 +272,13 @@ public:
 	}
 
 	// Returns the buffer.
-	constexpr T* buf() const      { return this->ptr; }
+	constexpr T* buf() const       { return this->ptr; }
 	// Returns the length of the array.
-	constexpr usize len() const   { return this->length; }
+	constexpr usize len() const    { return this->length; }
 	// Returns how many items the array can hold before having to resize.
-	constexpr usize cap() const  { return this->capacity; }
+	constexpr usize cap() const    { return this->capacity; }
+	// Shorthand for `.buf()`
+	constexpr T* operator*() const { return this->buf(); }
 
 	// fucking iterator
 	class Iterator {

@@ -85,6 +85,8 @@ public:
 	constexpr char* buf() const { return this->array.buf(); }
 	constexpr operator char*() const { return this->buf(); }
 	constexpr operator const char*() const { return this->buf(); }
+	// Shorthand for `.buf()`
+	constexpr char* operator*() const { return this->buf(); }
 	constexpr Array<char>::Iterator begin() const { return this->array.begin(); }
 	// this one is different since you don't want to iterate over the null terminator
 	constexpr Array<char>::Iterator end() const { return Array<char>::Iterator(const_cast<char*>(this->buf()) + this->len() - 1, this->len() - 1); }

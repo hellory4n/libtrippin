@@ -82,11 +82,11 @@ static void test::strings()
 	tr::log("\n==== STRINGS ====");
 
 	tr::String str = "sigma";
-	tr::log("str: %s (length %zu)", str.buf(), str.len());
+	tr::log("str: %s (length %zu)", *str, str.len());
 
-	tr::String maballs = tr::fmt(tr::scratchpad(), "%s balls", str.buf());
+	tr::String maballs = tr::fmt(tr::scratchpad(), "%s balls", *str);
 	TR_ASSERT(maballs == "sigma balls");
-	tr::log("%s", maballs.buf());
+	tr::log("%s", *maballs);
 
 	TR_ASSERT(str == "sigma");
 	TR_ASSERT(str != "ballshshjs");
@@ -112,7 +112,7 @@ static void test::strings()
 	tr::String strma = "crap,shit,fuck,balls";
 	tr::Array<tr::String> splitma = strma.split(tr::scratchpad(), ',');
 	for (auto c : splitma) {
-		tr::log("split[%zu] = %s", c.i, c.val.buf());
+		tr::log("split[%zu] = %s", c.i, *c.val);
 	}
 }
 
@@ -122,7 +122,7 @@ static void test::hashmaps()
 
 	tr::HashMap<tr::String, tr::String> hashma(tr::scratchpad());
 	hashma["Sigma"] = "balls!";
-	tr::log("hashma[\"Sigma\"] = \"%s\"", hashma["Sigma"].buf());
+	tr::log("hashma[\"Sigma\"] = \"%s\"", *hashma["Sigma"]);
 
 	// check collsiions
 	tr::HashMapSettings<tr::String> settings{};
@@ -142,7 +142,7 @@ static void test::hashmaps()
 
 	// iterator
 	for (auto item : hashmaballs) {
-		tr::log("hashmaballs[%s] = \"%s\"", item.left.buf(), item.right.buf());
+		tr::log("hashmaballs[%s] = \"%s\"", *item.left, *item.right);
 	}
 	tr::log("length %zu, capacity %zu", hashmaballs.len(), hashmaballs.cap());
 }
@@ -165,7 +165,7 @@ static void test::filesystem()
 	tr::File& rf = tr::File::open(tr::scratchpad(), "fucker.txt", tr::FileMode::READ_TEXT).unwrap();
 	tr::String line1 = rf.read_line(tr::scratchpad()).unwrap();
 	tr::String line2 = rf.read_line(tr::scratchpad()).unwrap();
-	tr::log("line 1: %s; line 2: %s", line1.buf(), line2.buf());
+	tr::log("line 1: %s; line 2: %s", *line1, *line2);
 	rf.close();
 
 	tr::std_out.write_string("EVIL PRINTF FROM LIBTRIPPIN\n").unwrap();
@@ -187,15 +187,15 @@ static void test::filesystem()
 	tr::Array<tr::String> crap = tr::list_dir(tr::scratchpad(), ".", false).unwrap();
 	tr::log("this directory has: (not including hidden)");
 	for (auto [_, name] : crap) {
-		tr::log("- %s", name.buf());
+		tr::log("- %s", *name);
 	}
 
 	TR_ASSERT(tr::is_file("log.txt").unwrap());
 	TR_ASSERT(!tr::is_file("../").unwrap());
 
 	tr::set_paths("assets", "libtrippin");
-	tr::log("app dir: %s", tr::path(tr::scratchpad(), "app://crap.txt").buf());
-	tr::log("user dir: %s", tr::path(tr::scratchpad(), "user://crap.txt").buf());
+	tr::log("app dir: %s", *tr::path(tr::scratchpad(), "app://crap.txt"));
+	tr::log("user dir: %s", *tr::path(tr::scratchpad(), "user://crap.txt"));
 }
 
 static void test::all()
