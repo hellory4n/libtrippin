@@ -27,13 +27,18 @@
 #define _TRIPPIN_IOFS_H
 
 #include "trippin/common.h"
+#include "trippin/error.h"
 #include "trippin/memory.h"
 #include "trippin/string.h"
-#include "trippin/error.h"
 
 namespace tr {
 
-enum class SeekFrom { START, CURRENT, END };
+enum class SeekFrom
+{
+	START,
+	CURRENT,
+	END
+};
 
 // Interface for reading streams of bytes
 class Reader
@@ -61,37 +66,40 @@ public:
 	virtual Result<int64, const Error&> read_bytes(void* out, int64 size, int64 items) = 0;
 
 	// Wrapper for `read_bytes`, returns null if it couldn't read the struct
-	template<typename T>
+	template <typename T>
 	Result<T, const Error&> read_struct()
 	{
 		T man = nullptr;
 		TR_TRY_ASSIGN(int64 bytes_read, this->read_bytes(&man, sizeof(T), 1));
 
-		if (bytes_read == sizeof(T) && man != nullptr) return man;
-		else {
-			return tr::scratchpad().make<StringError>("expected %li bytes, got %li (might be EOF)", sizeof(T), bytes_read);
+		if (bytes_read == sizeof(T) && man != nullptr) {
+			return man;
 		}
+		return tr::scratchpad().make<StringError>(
+			"expected %li bytes, got %li (might be EOF)", sizeof(T), bytes_read);
 	}
 
-	// Wrapper for `read_bytes`, returns an array of N items or null if it isn't able to read the stream.
-	template<typename T>
+	// Wrapper for `read_bytes`, returns an array of N items or null if it isn't able to read
+	// the stream.
+	template <typename T>
 	Result<Array<T>, const Error&> read_array(Arena& arena, int64 items)
 	{
 		T* man = nullptr;
 		TR_TRY_ASSIGN(int64 bytes_read, this->read_bytes(&man, sizeof(T), items));
 
-		if (bytes_read == sizeof(T) * items && man != nullptr) return Array<T>(arena, man, items);
-		else {
-			return tr::scratchpad().make<StringError>("expected %li bytes, got %li (might be EOF)",
-				sizeof(T) * items, bytes_read);
+		if (bytes_read == sizeof(T) * items && man != nullptr) {
+			return Array<T>(arena, man, items);
 		}
+		return tr::scratchpad().make<StringError>(
+			"expected %li bytes, got %li (might be EOF)", sizeof(T) * items,
+			bytes_read);
 	}
 
 	// Wrapper for `read_bytes`, returns a string or null if it isn't able to read the stream.
 	Result<String, const Error&> read_string(Arena& arena, int64 length);
 
-	// Reads a line of text :) Supports both Unix `\n` and Windows `\r\n`, no one is gonna be using classic
-	// MacOS with this
+	// Reads a line of text :) Supports both Unix `\n` and Windows `\r\n`, no one is gonna be
+	// using classic MacOS with this
 	Result<String, const Error&> read_line(Arena& arena);
 
 	// Reads the entire stream as bytes
@@ -101,6 +109,7 @@ public:
 	Result<String, const Error&> read_all_text(Arena& arena);
 
 	// TODO scanf or whatever the fuck
+	// or maybe not
 };
 
 // Interface for writing to streams of bytes
@@ -117,50 +126,60 @@ public:
 	virtual Result<void, const Error&> write_bytes(Array<uint8> bytes) = 0;
 
 	// Writes a struct into the stream
-	template<typename T>
+	template <typename T>
 	Result<void, const Error&> write_struct(T data)
 	{
 		Array<uint8> manfuckyou(reinterpret_cast<uint8*>(&data), sizeof(T));
 		return this->write_bytes(manfuckyou);
 	}
 
-	// Writes an array into the stream. Note this doesn't include the length or a null terminator, it just
-	// writes pure data into the stream.
-	template<typename T>
+	// Writes an array into the stream. Note this doesn't include the length or a null
+	// terminator, it just writes pure data into the stream.
+	template <typename T>
 	Result<void, const Error&> write_array(Array<T> array)
 	{
 		Array<uint8> manfuckyou(reinterpret_cast<uint8*>(array.buffer()), array.len());
 		return this->write_bytes(manfuckyou);
 	}
 
-	// Writes a string into the stream. Note this doesn't include the length or a null terminator, it just
-	// writes pure data into the stream.
+	// Writes a string into the stream. Note this doesn't include the length or a null
+	// terminator, it just writes pure data into the stream.
 	Result<void, const Error&> write_string(String str);
 
 	// Writes a formatted string into the stream. So pretty much just fprintf.
-	[[gnu::format(printf, 2, 3)]] // `this` is the first argument i guess
+	[[gnu::format(printf, 2, 3)]]
+	// `this` is the first argument i guess
 	Result<void, const Error&> printf(const char* fmt, ...);
 
 	// Similar to `Writer.printf()`, but it adds a newline at the end.
-	[[gnu::format(printf, 2, 3)]] // `this` is the first argument i guess
+	[[gnu::format(printf, 2, 3)]]
+	// `this` is the first argument i guess
 	Result<void, const Error&> println(const char* fmt, ...);
 
 	// Writes an empty line. Mind-boggling.
-	Result<void, const Error&> println() { return this->write_string("\n"); }
+	Result<void, const Error&> println()
+	{
+		return this->write_string("\n");
+	}
 };
 
-enum class FileMode : uint8 {
+enum class FileMode : uint8
+{
 	UNKNOWN,
 	// r, rb
-	READ_TEXT, READ_BINARY,
+	READ_TEXT,
+	READ_BINARY,
 	// w, wb
-	WRITE_TEXT, WRITE_BINARY,
+	WRITE_TEXT,
+	WRITE_BINARY,
 	// r+, rb+
-	READ_WRITE_TEXT, READ_WRITE_BINARY,
+	READ_WRITE_TEXT,
+	READ_WRITE_BINARY,
 };
 
-// Files are definitely important. It's important to note that libtrippin ALWAYS uses forward slashes (`/`)
-// for paths, as every platform supports them, even Windows (since 95/NT, both of which are pretty old).
+// Files are definitely important. It's important to note that libtrippin ALWAYS uses forward
+// slashes (`/`) for paths, as every platform supports them, even Windows (since 95/NT, both of
+// which are pretty old).
 class File : public Reader, public Writer
 {
 	// so it can use it for errors
@@ -185,10 +204,11 @@ class File : public Reader, public Writer
 	// it sets std_in/std_out/std_err lmao
 	friend void init();
 	// it checks for is_std :)
-	friend void __log(const char* color, const char* prefix, bool panic, const char* fmt, va_list arg);
+	friend void _log(const char* color, const char* prefix, bool panic, const char* fmt,
+			 va_list arg);
 
 public:
-	File() : path(""), fptr(nullptr), length(-1), is_std(false), mode(FileMode::UNKNOWN) {}
+	File() : path("") {}
 	~File();
 
 	// Opens a fucking file from fucking somewhere. Returns null on error.
@@ -242,8 +262,8 @@ extern File std_err;
 // Removes a file from a path
 Result<void, FileError> remove_file(String path);
 
-// Moves or renames a file, returns true if it succeeds. Note this fails if the destination already exists
-// (unlike posix's `rename()` which overwrites the destination)
+// Moves or renames a file, returns true if it succeeds. Note this fails if the destination already
+// exists (unlike posix's `rename()` which overwrites the destination)
 Result<void, FileError> move_file(String from, String to);
 
 // Returns true if the file exists
@@ -253,22 +273,22 @@ bool file_exists(String path);
 // and `otherdir`.
 Result<void, FileError> create_dir(String path);
 
-// Removes a directory. You can only remove empty directories, if you want to remove their contents you'll
-// have to do that yourself.
+// Removes a directory. You can only remove empty directories, if you want to remove their contents
+// you'll have to do that yourself.
 Result<void, FileError> remove_dir(String path);
 
 // Lists all the files/directories in a directory. The returned array has the paths relative to the
-// directory path. The array does NOT include `.` and `..`. If `include_hidden` is false, it'll skip hidden
-// files and directories. On POSIX that's anything that starts with a dot. Windows doesn't follow that
-// convention and instead lets any file/directory be hidden.
+// directory path. The array does NOT include `.` and `..`. If `include_hidden` is false, it'll skip
+// hidden files and directories. On POSIX that's anything that starts with a dot. Windows doesn't
+// follow that convention and instead lets any file/directory be hidden.
 Result<Array<String>, FileError> list_dir(Arena& arena, String path, bool include_hidden = true);
 
 // If true, the path is a file. Else, it's a directory.
 Result<bool, FileError> is_file(String path);
 
-// Fancy path utility thing. The `app://` prefix is relative to the exectuable's directory, while `user://`
-// refers to the directory intended for saving user crap (e.g. `%APPDATA%` on windows). You should
-// configure this first with `tr::set_paths`
+// Fancy path utility thing. The `app://` prefix is relative to the exectuable's directory, while
+// `user://` refers to the directory intended for saving user crap (e.g. `%APPDATA%` on windows).
+// You should configure this first with `tr::set_paths`
 String path(Arena& arena, String path);
 
 // Sets the paths used by `tr::path`. For example `tr::set_paths("assets", "handsome_app")`, or even
@@ -276,8 +296,8 @@ String path(Arena& arena, String path);
 void set_paths(String appdir, String userdir);
 
 // internal :)
-void __init_paths();
+void _init_paths();
 
-}
+} // namespace tr
 
 #endif

@@ -1,7 +1,7 @@
 #include <trippin/common.h>
 #include <trippin/log.h>
 
-int main(void)
+int main()
 {
 	tr::use_log_file("log.txt");
 	tr::init();

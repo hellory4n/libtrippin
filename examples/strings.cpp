@@ -1,6 +1,6 @@
 #include <trippin/string.h>
 
-int main(void)
+int main()
 {
 	// temporary string
 	tr::String str = "hi mom";

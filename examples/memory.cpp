@@ -6,7 +6,7 @@ struct CrapStruct
 	uint8 man[128];
 };
 
-int main(void)
+int main()
 {
 	tr::Arena arena;
 

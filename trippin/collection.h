@@ -26,9 +26,9 @@
 #ifndef _TRIPPIN_COLLECTION_H
 #define _TRIPPIN_COLLECTION_H
 
-#include <stdlib.h>
-#include <utility>
+#include <cstdlib>
 #include <functional>
+#include <utility>
 
 #include "trippin/common.h"
 #include "trippin/memory.h"
@@ -36,25 +36,25 @@
 
 namespace tr {
 
-// Hashes an array of bytes, which is useful if you need to hash an array of bytes. Implemented with 64-bit
-// FNV-1a
+// Hashes an array of bytes, which is useful if you need to hash an array of bytes. Implemented with
+// 64-bit FNV-1a
 uint64 hash(tr::Array<uint8> array);
 
 // internal don't use probably :)
-template<typename K>
-uint64 __default_hash_function(const K& key)
+template <typename K>
+uint64 _default_hash_function(const K& key)
 {
 	return tr::hash(Array<uint8>(reinterpret_cast<uint8*>(&key), sizeof(K)));
 }
 // internal don't use probably :)
-template<>
-inline uint64 __default_hash_function<String>(const String& key)
+template <>
+inline uint64 _default_hash_function<String>(const String& key)
 {
 	return tr::hash(Array<uint8>(reinterpret_cast<uint8*>(*key), key.len()));
 }
 
 // Useful for when you need *advanced* hashmaps
-template<typename K>
+template <typename K>
 struct HashMapSettings
 {
 	float64 load_factor;
@@ -62,12 +62,13 @@ struct HashMapSettings
 	uint64 (*hash_func)(const K& key);
 };
 
-// ahahsmhap :DD if you're interested this works with open addressing and linear probing, i'll probably
-// change it if my brain expands to megamind levels of brain
-template<typename K, typename V>
+// ahahsmhap :DD if you're interested this works with open addressing and linear probing, i'll
+// probably change it if my brain expands to megamind levels of brain
+template <typename K, typename V>
 class HashMap
 {
-	static constexpr HashMapSettings<K> DEFAULT_SETTINGS = {0.5, 256, tr::__default_hash_function};
+	static constexpr HashMapSettings<K> DEFAULT_SETTINGS = {0.5, 256,
+								tr::_default_hash_function};
 
 	struct Bucket
 	{
@@ -88,12 +89,12 @@ class HashMap
 	usize capacity = 0;
 
 public:
-	explicit HashMap(Arena& arena, HashMapSettings<K> setting) : settings(setting), src_arena(&arena)
+	explicit HashMap(Arena& arena, HashMapSettings<K> setting)
+		: settings(setting), src_arena(&arena)
 	{
 		this->capacity = this->settings.initial_capacity;
 		this->buffer = static_cast<Bucket*>(
-			this->src_arena->alloc(this->settings.initial_capacity * sizeof(Bucket))
-		);
+			this->src_arena->alloc(this->settings.initial_capacity * sizeof(Bucket)));
 	}
 
 	explicit HashMap(Arena& arena) : HashMap(arena, DEFAULT_SETTINGS) {}
@@ -112,8 +113,7 @@ public:
 		usize old_cap = this->capacity;
 		this->capacity *= 2;
 		Bucket* new_buffer = static_cast<Bucket*>(
-			this->src_arena->alloc(this->capacity * sizeof(Bucket))
-		);
+			this->src_arena->alloc(this->capacity * sizeof(Bucket)));
 
 		// changing the capacity fucks with the hashing
 		// so we have to copy everything to new indexes
@@ -124,7 +124,7 @@ public:
 			usize idx = this->get_index(old_bucket.key);
 
 			// linear probe with wrap‑around
-			for (usize probe = idx; ; probe = (probe + 1) % this->capacity) {
+			for (usize probe = idx;; probe = (probe + 1) % this->capacity) {
 				Bucket& new_bucket = new_buffer[probe];
 				if (!new_bucket.occupied) {
 					new_bucket.occupied = true;
@@ -142,7 +142,9 @@ public:
 	// Checks how full the hashmap is and resizes if necessary
 	void check_grow()
 	{
-		float64 used = static_cast<float64>(this->occupied) / static_cast<float64>(this->capacity);
+		float64 used =
+			static_cast<float64>(this->occupied) / static_cast<float64>(this->capacity);
+
 		if (used <= this->settings.load_factor) {
 			return;
 		}
@@ -153,7 +155,7 @@ public:
 	Pair<Bucket*, bool> find(const K& key)
 	{
 		usize idx = this->get_index(key);
-		for (usize probe = idx; ; probe = (probe + 1) % capacity) {
+		for (usize probe = idx;; probe = (probe + 1) % capacity) {
 			Bucket& b = this->buffer[probe];
 			if (b.occupied) {
 				if (b.key == key && !b.dead) {
@@ -186,14 +188,15 @@ public:
 		return bucket.left->value;
 	}
 
-	// If true, the hashmap has that key. Useful because the `[]` operator automatically inserts an item if
-	// it's not there.
+	// If true, the hashmap has that key. Useful because the `[]` operator automatically inserts
+	// an item if it's not there.
 	bool contains(const K& key)
 	{
 		return this->find(key).right;
 	}
 
-	// Removes the key from the hashmap. Returns true if the key is was found, returns false otherwise.
+	// Removes the key from the hashmap. Returns true if the key is was found, returns false
+	// otherwise.
 	bool remove(const K& key)
 	{
 		Pair<Bucket*, bool> bucket = this->find(key);
@@ -208,14 +211,24 @@ public:
 	}
 
 	// Returns how many items the hashmap currently has
-	usize len() { return this->length; }
-	// Returns the total amount of items the hashmap can currently hold (it'll grow when it's 50% full)
-	usize cap() { return this->capacity; }
+	usize len()
+	{
+		return this->length;
+	}
+
+	// Returns the total amount of items the hashmap can currently hold (it'll grow when it's
+	// 50% full)
+	usize cap()
+	{
+		return this->capacity;
+	}
 
 	// fucking iterator
-	class Iterator {
+	class Iterator
+	{
 	public:
-		Iterator(Bucket* buf, usize index, usize capacity) : buffer(buf), idx(index), cap(capacity)
+		Iterator(Bucket* buf, usize index, usize capacity)
+			: buffer(buf), idx(index), cap(capacity)
 		{
 			this->advance_to_valid();
 		}
@@ -246,19 +259,27 @@ public:
 		void advance_to_valid()
 		{
 			// god
-			while (this->idx < this->cap && (!this->buffer[this->idx].occupied || this->buffer[this->idx].dead)) {
+			while (this->idx < this->cap && (!this->buffer[this->idx].occupied ||
+							 this->buffer[this->idx].dead)) {
 				this->idx++;
 			}
 		}
 	};
 
-	Iterator begin() const { return Iterator(this->buffer, 0, this->capacity); }
-	Iterator end()   const { return Iterator(this->buffer + this->capacity, this->capacity, this->capacity); }
+	Iterator begin() const
+	{
+		return Iterator(this->buffer, 0, this->capacity);
+	}
+
+	Iterator end() const
+	{
+		return Iterator(this->buffer + this->capacity, this->capacity, this->capacity);
+	}
 };
 
 // I sure love events signals whatever. The reason you're supposed to use this instead of a function
 // pointer/`std::function` is that this can have multiple listeners, which is probably important.
-template<typename... Args>
+template <typename... Args>
 class Signal
 {
 	using SignalFunc = std::function<void(Args...)>;
@@ -286,7 +307,7 @@ public:
 
 // I sure love events signals whatever. The reason you're supposed to use this instead of a function
 // pointer/`std::function` is that this can have multiple listeners, which is probably important.
-template<>
+template <>
 class Signal<void>
 {
 	using SignalFunc = std::function<void(void)>;
@@ -314,6 +335,6 @@ public:
 
 // TODO HashSet<T>, Stack<T>, Queue<T>, LinkedList<T>
 
-}
+} // namespace tr
 
 #endif

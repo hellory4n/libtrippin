@@ -1,8 +1,13 @@
-* text=auto eol=lf
-trippin/**/*.h diff=cpp
-trippin/**/*.cpp diff=cpp
+# so github doesn't say half of the repo is C
+*.h linguist-language=C++
+thirdparty/* linguist-vendored
+# auto-generated files
+# TODO make it part of the build process you distinguished gentleman
+*.glsl.h linguist-vendored
 
-# i love windows
-*.sln text=auto eol=crlf
-*.vcxproj text=auto eol=crlf
-*.vcxproj.filters text=auto eol=crlf
+# sane files
+* text=auto eol=lf
+# windows
+*.bat eol=crlf
+*.sln eol=crlf
+*.vcxproj eol=crlf

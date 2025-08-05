@@ -23,36 +23,38 @@
  *
  */
 
-#include <stdlib.h>
-// i'm using it tho??????????
-#include <stdio.h> // IWYU pragma: keep
+#include "trippin/common.h"
 
+#include <cstdio>
+#include <cstdlib>
+
+#include "trippin/collection.h"
+#include "trippin/iofs.h"
 #include "trippin/log.h"
 #include "trippin/memory.h"
-#include "trippin/iofs.h"
-#include "trippin/collection.h"
-#include "trippin/common.h"
 
 // they have to live somewhere
 namespace tr {
-	Arena core_arena(tr::kb_to_bytes(128));
 
-	// TODO remove in v2.5
-	MemoryInfo memory_info;
-	Array<File*> logfiles(core_arena);
+Arena core_arena(tr::kb_to_bytes(128));
 
-	File std_in;
-	File std_out;
-	File std_err;
+// TODO remove in v2.5
+MemoryInfo memory_info;
+Array<File*> logfiles(core_arena);
 
-	// TODO remove the old call_on_quit on v2.5
-	Signal<void> on_quit(core_arena);
-	// yes it's spelled that on purpose
-	Signal<bool> the_new_all_on_quit(core_arena);
-	bool panicking = false;
-	// so it doesn't keep emitting the signal forever
-	bool panicked_on_quit = false;
-}
+File std_in;
+File std_out;
+File std_err;
+
+// TODO remove the old call_on_quit on v2.5
+Signal<void> on_quit(core_arena);
+// yes it's spelled that on purpose
+Signal<bool> the_new_all_on_quit(core_arena);
+bool panicking = false;
+// so it doesn't keep emitting the signal forever
+bool panicked_on_quit = false;
+
+} // namespace tr
 
 void tr::init()
 {
@@ -77,7 +79,7 @@ void tr::init()
 
 	logfiles.add(&tr::std_out);
 
-	tr::__init_paths();
+	tr::_init_paths();
 
 	tr::info("initialized libtrippin %s", tr::VERSION);
 }
@@ -99,6 +101,7 @@ void tr::free()
 	tr::info("deinitialized libtrippin");
 }
 
+[[noreturn]]
 void tr::quit(int32 error_code)
 {
 	tr::free();

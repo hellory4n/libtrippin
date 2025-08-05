@@ -1,6 +1,6 @@
 #include <trippin/collection.h>
 
-int main(void)
+int main()
 {
 	// hashmaps are hashmaps lmao
 	tr::HashMap<tr::String, tr::String> map(tr::scratchpad());
@@ -18,8 +18,6 @@ int main(void)
 
 	// there's also signals so that's cool
 	tr::Signal<int64> signa(tr::scratchpad());
-	signa.connect([&](int64 x) -> void {
-		tr::log("SOMETHING HAS HAPPENED???");
-	});
+	signa.connect([&](int64 _) -> void { tr::log("SOMETHING HAS HAPPENED???"); });
 	signa.emit(759823);
 }

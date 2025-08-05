@@ -23,15 +23,17 @@
  *
  */
 
-#include <stdarg.h>
-#include <stdio.h>
-
-#include "trippin/math.h"
 #include "trippin/string.h"
 
-// TODO maybe use less <string.h> bcuz it can get fucky
+#include <cstdarg>
+#include <cstdio>
 
-bool tr::String::operator==(const tr::String& other) const
+#include "trippin/math.h"
+
+// TODO maybe use less <cstring> bcuz it can get fucky
+// it's probably not that hard to implement it yourself
+
+bool tr::String::operator==(tr::String other) const
 {
 	return strncmp(*this, other, tr::max(this->len(), other.len())) == 0;
 }
@@ -62,13 +64,13 @@ tr::Array<usize> tr::String::find(tr::Arena& arena, tr::String str, usize start,
 tr::String tr::String::concat(tr::Arena& arena, tr::String other) const
 {
 	String new_str(arena, this->buf(), this->len() + other.len());
-	// msvc is a little bitch
-	#ifdef TR_ONLY_MSVC
+// msvc is a little bitch
+#ifdef TR_ONLY_MSVC
 	errno_t ohno = strncat_s(new_str.buf(), new_str.len() + 1, other.buf(), other.len());
 	TR_ASSERT(ohno == 0);
-	#else
+#else
 	strncat(new_str.buf(), other.buf(), other.len());
-	#endif
+#endif
 	return new_str;
 }
 
@@ -117,22 +119,23 @@ tr::String tr::String::extension(Arena& arena) const
 
 bool tr::String::is_absolute() const
 {
-	if (this->starts_with("/"))    return true;
-	if (this->starts_with("~/"))   return true;
-	if (this->starts_with("./"))   return false;
-	if (this->starts_with("../"))  return false;
-	// i think windows supports those? lmao
-	if (this->starts_with(".\\"))  return false;
+	if (this->starts_with("/")) return true;
+	if (this->starts_with("~/")) return true;
+	if (this->starts_with("./")) return false;
+	if (this->starts_with("../")) return false;
+	if (this->starts_with(".\\")) return false;
 	if (this->starts_with("..\\")) return false;
 
 	// handle both windows drives and URI schemes
 	// they're both some letters followed by `:/`
 	for (ArrayItem<char> c : *this) {
 		// just ascii bcuz i doubt theres an uri scheme like lösarquívos://
-		if ((c.val >= '0' && c.val <= '9') || (c.val >= 'A' && c.val <= 'Z') || (c.val >= 'a' && c.val <= 'z')) {
+		if ((c.val >= '0' && c.val <= '9') || (c.val >= 'A' && c.val <= 'Z') ||
+		    (c.val >= 'a' && c.val <= 'z')) {
 			// pls don't crash
 			if (this->len() > c.i + 2) {
-				if ((*this)[c.i + 1] == ':' && ((*this)[c.i + 2] == '/' || (*this)[c.i + 2] == '\\')) {
+				if ((*this)[c.i + 1] == ':' &&
+				    ((*this)[c.i + 2] == '/' || (*this)[c.i + 2] == '\\')) {
 					return true;
 				}
 			}
@@ -162,12 +165,11 @@ tr::Array<tr::String> tr::String::split(tr::Arena& arena, char delimiter) const
 	String str = this->duplicate(tr::scratchpad());
 	char delim[2] = {delimiter, '\0'};
 
-	// windows has strtok_s, posix has strtok_r
-	// they're pretty much the same thing
-	// interestingly strtok_s is optional (from c11) but also microsoft's strtok_s is different
-	// because FUCK ME
-	// TODO does mingw gcc have microsoft's strtok_s?
-	#ifdef _WIN32
+// windows has strtok_s, posix has strtok_r
+// they're pretty much the same thing
+// interestingly strtok_s is optional (from c11) but also microsoft's strtok_s is different
+// because FUCK ME
+#ifdef _WIN32
 	char* context = nullptr;
 	char* token = strtok_s(str, delim, &context);
 	while (token != nullptr) {
@@ -175,7 +177,7 @@ tr::Array<tr::String> tr::String::split(tr::Arena& arena, char delimiter) const
 		strings.add(m);
 		token = strtok_s(nullptr, delim, &context);
 	}
-	#else
+#else
 	char* saveptr;
 	char* token = strtok_r(str, delim, &saveptr);
 	while (token != nullptr) {
@@ -183,7 +185,7 @@ tr::Array<tr::String> tr::String::split(tr::Arena& arena, char delimiter) const
 		strings.add(m);
 		token = strtok_r(nullptr, delim, &saveptr);
 	}
-	#endif
+#endif
 
 	return Array<String>(arena, strings.buf(), strings.len());
 }
@@ -212,13 +214,13 @@ tr::String tr::fmt_args(tr::Arena& arena, const char* fmt, va_list arg)
 	va_list arglen;
 	va_copy(arglen, arg);
 
-	// get size
-	// I LOVE WINDOWS!!!!!!!!!!
-	#ifdef _WIN32
+// get size
+// I LOVE WINDOWS!!!!!!!!!!
+#ifdef _WIN32
 	int size = _vscprintf(fmt, arglen);
-	#else
+#else
 	int size = vsnprintf(nullptr, 0, fmt, arglen);
-	#endif
+#endif
 	va_end(arglen);
 
 	// the string constructor handles the null terminator shut up
@@ -228,11 +230,11 @@ tr::String tr::fmt_args(tr::Arena& arena, const char* fmt, va_list arg)
 	// do the formatting frfrfrfr
 	va_list argfmt;
 	va_copy(argfmt, arg);
-	#ifdef _WIN32
+#ifdef _WIN32
 	vsnprintf_s(str.buf(), size + 1, _TRUNCATE, fmt, argfmt);
-	#else
+#else
 	vsnprintf(str.buf(), static_cast<usize>(size) + 1, fmt, argfmt);
-	#endif
+#endif
 	va_end(argfmt);
 
 	// just in case

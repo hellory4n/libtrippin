@@ -4,7 +4,7 @@ Most biggest most massive library of all time. I'm insane.
 
 ## Featuring
 
-- [libtrippin](./trippin) v2.4.0: Most massive library of all time
+- [libtrippin](./trippin) v2.4.1: Most massive library of all time
     - C++17 with no external dependencies (only libc/stdc++)
     - Cross-platform (Windows and POSIX)
     - Arenas for memory management
@@ -83,7 +83,7 @@ CrapStruct& crap = arena.make<CrapStruct>();
 tr::Array<int64> array(tr::scratchpad(), {1, 2, 3, 4, 5});
 array.add(6);
 for (auto [i, num] : array) {
-    tr::log("array[%zu] = %li", i, num);
+        tr::log("array[%zu] = %li", i, num);
 }
 ```
 
@@ -112,7 +112,7 @@ tr::String str = tr::fmt(arena, "hi %s", "mom");
 tr::Random sorandomxd;
 tr::Vec3<float32> vecma;
 for (auto i : tr::range<usize>(0, 3)) {
-    vecma[i] = sorandomxd.next(0.0f, 999999999.9f);
+        vecma[i] = sorandomxd.next(0.0f, 999999999.9f);
 }
 TR_ASSERT(vecma.x > 0.0f);
 ```
@@ -123,7 +123,7 @@ TR_ASSERT(vecma.x > 0.0f);
 #include <trippin/collection.h>
 
 // hashmaps are hashmaps lmao
-tr::HashMap<tr::String, tr::String> map(arena);
+tr::HashMap<tr::String, tr::String> map(tr::scratchpad());
 map["john"] = "bob";
 map["bob"] = "greg";
 map["greg"] = "craig";
@@ -133,13 +133,13 @@ map.remove("craig");
 // hashmaps aren't sorted
 // so it'll show up in a seemingly random order
 for (auto [key, value] : map) {
-    tr::log("hashmap['%s'] = '%s'", *key, *value);
+        tr::log("hashmap['%s'] = '%s'", *key, *value);
 }
 
 // there's also signals so that's cool
-tr::Signal<int64> signa(arena);
-signa.connect([&](int64 x) -> void {
-    tr::log("SOMETHING HAS HAPPENED???");
+tr::Signal<int64> signa(tr::scratchpad());
+signa.connect([&](int64 _) -> void {
+        tr::log("SOMETHING HAS HAPPENED???");
 });
 signa.emit(759823);
 ```
@@ -152,12 +152,12 @@ signa.emit(759823);
 
 tr::Result<int32, tr::Error&> example_function()
 {
-    // on error
-    // you can use any type that implements tr::Error
-    return tr::scratchpad().make<tr::StringError>("unexpected happening it is happening unexpectedly");
+        // on error
+        // you can use any type that implements tr::Error
+        return tr::scratchpad().make<tr::StringError>("unexpected happening unexpectedly");
 
-    // on success you can just return as usual
-    return 946259;
+        // on success you can just return as usual
+        return 946259;
 }
 
 // usage
@@ -170,7 +170,7 @@ TR_TRY_ASSIGN(int32 x, example_function());
 // which expands to (roughly)
 auto tmp = example_function();
 if (!tmp.is_valid()) {
-    return tmp.unwrap_err();
+        return tmp.unwrap_err();
 }
 int32 x = tmp.unwrap();
 // but you can only use those macros in functions that return tr::Result<T, E>

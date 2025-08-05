@@ -52,25 +52,54 @@ public:
 	// Pretty much just a shorthand for `tr::StringError(tr::fmt(tr::scratchpad(), ...))`
 	StringError(const char* fmt, ...);
 
-	String message() const override { return this->msg; }
+	String message() const override
+	{
+		return this->msg;
+	}
 };
 
 // Error codes based on POSIX errno.h and WinError.h
 enum class FileErrorType
 {
 	UNKNOWN,
-	NOT_FOUND, ACCESS_DENIED, DEVICE_OR_RESOURCE_BUSY, NO_SPACE_LEFT, FILE_EXISTS, BAD_HANDLE,
-	HARDWARE_ERROR_OR_UNKNOWN, IS_DIRECTORY, IS_NOT_DIRECTORY, TOO_MANY_OPEN_FILES, BROKEN_PIPE,
-	FILENAME_TOO_LONG, INVALID_ARGUMENT, READ_ONLY_FILESYSTEM, ILLEGAL_SEEK, DIRECTORY_NOT_EMPTY,
+	NOT_FOUND,
+	ACCESS_DENIED,
+	DEVICE_OR_RESOURCE_BUSY,
+	NO_SPACE_LEFT,
+	FILE_EXISTS,
+	BAD_HANDLE,
+	HARDWARE_ERROR_OR_UNKNOWN,
+	IS_DIRECTORY,
+	IS_NOT_DIRECTORY,
+	TOO_MANY_OPEN_FILES,
+	BROKEN_PIPE,
+	FILENAME_TOO_LONG,
+	INVALID_ARGUMENT,
+	READ_ONLY_FILESYSTEM,
+	ILLEGAL_SEEK,
+	DIRECTORY_NOT_EMPTY,
 };
 
 // This is just for getting the error message lmao.
 enum class FileOperation
 {
 	UNKNOWN,
-	OPEN_FILE, CLOSE_FILE, GET_FILE_POSITION, GET_FILE_LENGTH, IS_EOF, SEEK_FILE, REWIND_FILE,
-	READ_FILE, FLUSH_FILE, WRITE_FILE, REMOVE_FILE, MOVE_FILE, CREATE_DIR, REMOVE_DIR,
-	LIST_DIR, IS_FILE,
+	OPEN_FILE,
+	CLOSE_FILE,
+	GET_FILE_POSITION,
+	GET_FILE_LENGTH,
+	IS_EOF,
+	SEEK_FILE,
+	REWIND_FILE,
+	READ_FILE,
+	FLUSH_FILE,
+	WRITE_FILE,
+	REMOVE_FILE,
+	MOVE_FILE,
+	CREATE_DIR,
+	REMOVE_DIR,
+	LIST_DIR,
+	IS_FILE,
 };
 
 // Error for filesystem craps.
@@ -82,21 +111,24 @@ public:
 	FileErrorType type = FileErrorType::UNKNOWN;
 	FileOperation op = FileOperation::UNKNOWN;
 	int errno_code = 0;
-	#ifdef _WIN32
+#ifdef _WIN32
 	int win32_code = 0;
-	#endif
+#endif
 
 	FileError() {}
-	FileError(String patha, String pathb, FileErrorType errtype, FileOperation operation) :
-		path_a(patha), path_b(pathb), type(errtype), op(operation) {}
+	FileError(String patha, String pathb, FileErrorType errtype, FileOperation operation)
+		: path_a(patha), path_b(pathb), type(errtype), op(operation)
+	// can't be bothered to fix the formatter to not do this here
+	{
+	}
 
 	// Checks errno for errors :)
 	static FileError& from_errno(String patha, String pathb, FileOperation operation);
 
-	#ifdef _WIN32
+#ifdef _WIN32
 	// Checks Windows' `GetLastError` for errors :)
 	static FileError& from_win32(String patha, String pathb, FileOperation operation);
-	#endif
+#endif
 
 	// Why.
 	static void reset_errors();
@@ -105,7 +137,7 @@ public:
 };
 
 // So spicy. E should inherit implement Error
-template<typename T, typename E>
+template <typename T, typename E>
 class Result
 {
 	Either<T, E> value = {};
@@ -115,7 +147,10 @@ public:
 	Result(E err) : value(err) {}
 
 	// If true, the result has a value. Else, it has an error.
-	bool is_valid() const { return value.is_left(); }
+	bool is_valid() const
+	{
+		return value.is_left();
+	}
 
 	T unwrap() const
 	{
@@ -126,11 +161,13 @@ public:
 			String error;
 			if (errormaballs == nullptr) {
 				error = "unknown error";
-				#ifdef DEBUG
-				tr::panic("tr::Result<T, E> is supposed to use tr::Error you distinguished gentleman/lady/everything in between");
-				#else
-				tr::warn("warning: tr::Result<T, E> is supposed to use tr::Error you distinguished gentleman/lady/everything in between");
-				#endif
+#ifdef DEBUG
+				tr::panic("tr::Result<T, E> is supposed to use tr::Error you "
+					  "distinguished gentleman/lady/everything in between");
+#else
+				tr::warn("warning: tr::Result<T, E> is supposed to use tr::Error "
+					 "you distinguished gentleman/lady/everything in between");
+#endif
 			}
 			else {
 				error = errormaballs->message();
@@ -151,7 +188,10 @@ public:
 	}
 
 	// Similar to the `??`/null coalescing operator in modern languages
-	const T value_or(const T other) const { return this->is_valid() ? this->unwrap() : other; }
+	const T value_or(const T other) const
+	{
+		return this->is_valid() ? this->unwrap() : other;
+	}
 
 	// Calls a function (usually a lambda) depending on whether it's valid or not.
 	void match(std::function<void(T val)> valid_func, std::function<void(E err)> error_func)
@@ -161,7 +201,7 @@ public:
 };
 
 // Result for when you don't need the result :D
-template<typename E>
+template <typename E>
 class Result<void, E>
 {
 	Maybe<E> value;
@@ -171,7 +211,10 @@ public:
 	Result(E err) : value(err) {}
 
 	// If false, it has an error.
-	bool is_valid() const { return !this->value.is_valid(); }
+	bool is_valid() const
+	{
+		return !this->value.is_valid();
+	}
 
 	// Pretty much just asserts that it's valid :D
 	void unwrap() const
@@ -183,11 +226,13 @@ public:
 			String error;
 			if (errormaballs == nullptr) {
 				error = "unknown error";
-				#ifdef DEBUG
-				tr::panic("tr::Result<T, E> is supposed to use tr::Error you distinguished gentleman/lady/everything in between");
-				#else
-				tr::warn("warning: tr::Result<T, E> is supposed to use tr::Error you distinguished gentleman/lady/everything in between");
-				#endif
+#ifdef DEBUG
+				tr::panic("tr::Result<T, E> is supposed to use tr::Error you "
+					  "distinguished gentleman/lady/everything in between");
+#else
+				tr::warn("warning: tr::Result<T, E> is supposed to use tr::Error "
+					 "you distinguished gentleman/lady/everything in between");
+#endif
 			}
 			else {
 				error = errormaballs->message();
@@ -220,22 +265,26 @@ public:
 
 // Shorthand for calling a function, unwrapping if valid, and returning an error otherwise
 // example: TR_TRY_ASSIGN(int32 var, some_function());
-#define TR_TRY_ASSIGN(Var, ...) \
-	auto __TR_UNIQUE_NAME(__tr_try_tmp) = (__VA_ARGS__); \
-	if (!__TR_UNIQUE_NAME(__tr_try_tmp).is_valid()) return __TR_UNIQUE_NAME(__tr_try_tmp).unwrap_err(); \
+#define TR_TRY_ASSIGN(Var, ...)                                                                    \
+	const auto __TR_UNIQUE_NAME(__tr_try_tmp) = (__VA_ARGS__);                                 \
+	if (!__TR_UNIQUE_NAME(__tr_try_tmp).is_valid()) {                                          \
+		return __TR_UNIQUE_NAME(__tr_try_tmp).unwrap_err();                                \
+	}                                                                                          \
 	Var = __TR_UNIQUE_NAME(__tr_try_tmp).unwrap()
 
 // `TR_TRY_ASSIGN` but for `tr::Result<void, E>`, or for when you don't care about the result
 // example: TR_TRY(some_function());
-#define TR_TRY(...) \
-	auto __TR_UNIQUE_NAME(__tr_try_tmp) = (__VA_ARGS__); \
-	if (!__TR_UNIQUE_NAME(__tr_try_tmp).is_valid()) return __TR_UNIQUE_NAME(__tr_try_tmp).unwrap_err()
+#define TR_TRY(...)                                                                                \
+	const auto __TR_UNIQUE_NAME(__tr_try_tmp) = (__VA_ARGS__);                                 \
+	if (!__TR_UNIQUE_NAME(__tr_try_tmp).is_valid()) {                                          \
+		return __TR_UNIQUE_NAME(__tr_try_tmp).unwrap_err();                                \
+	}
 
 // Similar to `tr::assert`, but instead of panicking, it returns an error.
 // example: TR_TRY_ASSERT(false, tr::StringError("something went wrong"));
-#define TR_TRY_ASSERT(X, ...) \
+#define TR_TRY_ASSERT(X, ...)                                                                      \
 	if (!(X)) return (__VA_ARGS__)
 
-}
+} // namespace tr
 
 #endif

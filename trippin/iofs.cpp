@@ -38,29 +38,32 @@
 	#define WIN32_ERROR ERROR
 	#undef ERROR
 
-	#include <stdio.h>
+	#include <cstdio>
 #else
-	#include <stdlib.h>
-	#include <stdio.h>
+	#include <cerrno>
+	#include <cstdio>
+	#include <cstdlib>
+
+	#include <dirent.h>
 	#include <sys/stat.h>
 	#include <sys/types.h>
-	#include <dirent.h>
 	#include <unistd.h>
-	#include <errno.h>
 #endif
 
-#include "trippin/log.h"
 #include "trippin/iofs.h"
+#include "trippin/log.h"
 
 namespace tr {
-	extern Arena core_arena;
 
-	String exe_dir;
-	String appdata_dir;
+extern Arena core_arena;
 
-	String app_dir;
-	String user_dir;
-}
+String exe_dir;
+String appdata_dir;
+
+String app_dir;
+String user_dir;
+
+} // namespace tr
 
 // TODO this was written before TR_TRY and all that crap
 // so like, use that?
@@ -71,9 +74,10 @@ tr::Result<tr::String, const tr::Error&> tr::Reader::read_string(tr::Arena& aren
 	TR_TRY_ASSIGN(int64 read, this->read_bytes(str.buf(), sizeof(char), length));
 
 	if (read != int64(length)) {
-		return tr::scratchpad().make<StringError>("expected %zu bytes, got %li (might be EOF)", length, read);
+		return tr::scratchpad().make<StringError>(
+			"expected %zu bytes, got %li (might be EOF)", length, read);
 	}
-	else return str;
+	return str;
 }
 
 tr::Result<tr::String, const tr::Error&> tr::Reader::read_line(Arena& arena)
@@ -104,7 +108,7 @@ tr::Result<tr::String, const tr::Error&> tr::Reader::read_line(Arena& arena)
 	}
 
 	if (linema.len() == 0) return String("");
-	else return String(arena, linema.buf(), linema.len() + 1);
+	return String(arena, linema.buf(), linema.len() + 1);
 }
 
 tr::Result<tr::Array<uint8>, const tr::Error&> tr::Reader::read_all_bytes(tr::Arena& arena)
@@ -155,16 +159,18 @@ tr::Result<void, const tr::Error&> tr::Writer::println(const char* fmt, ...)
 tr::String tr::path(tr::Arena& arena, tr::String path)
 {
 	if (path.starts_with("app://")) {
-		String pathfrfr = path.substr(tr::scratchpad(), sizeof("app://")-1, path.len());
-		return tr::fmt(arena, "%s/%s/%s", tr::exe_dir.buf(), tr::app_dir.buf(), pathfrfr.buf());
+		String pathfrfr = path.substr(tr::scratchpad(), sizeof("app://") - 1, path.len());
+		return tr::fmt(arena, "%s/%s/%s", tr::exe_dir.buf(), tr::app_dir.buf(),
+			       pathfrfr.buf());
 	}
-	else if (path.starts_with("user://")) {
-		String pathfrfr = path.substr(tr::scratchpad(), sizeof("user://")-1, path.len());
-		return tr::fmt(arena, "%s/%s/%s", tr::appdata_dir.buf(), tr::user_dir.buf(), pathfrfr.buf());
+
+	if (path.starts_with("user://")) {
+		String pathfrfr = path.substr(tr::scratchpad(), sizeof("user://") - 1, path.len());
+		return tr::fmt(arena, "%s/%s/%s", tr::appdata_dir.buf(), tr::user_dir.buf(),
+			       pathfrfr.buf());
 	}
-	else {
-		return path.duplicate(arena);
-	}
+
+	return path.duplicate(arena);
 }
 
 void tr::set_paths(tr::String appdir, tr::String userdir)
@@ -180,7 +186,8 @@ void tr::set_paths(tr::String appdir, tr::String userdir)
 
 // TODO use only windows APIs (massive pain in the ass)
 
-// you know how hard it is to remember LPCWSTR???? and visual studio takes a week to show the autocomplete
+// you know how hard it is to remember LPCWSTR???? and visual studio takes a week to show the
+// autocomplete
 using WinStrConst = LPCWSTR;
 using WinStrMut = LPWSTR;
 
@@ -189,12 +196,13 @@ static WinStrConst from_trippin_to_win32_str(tr::String str)
 {
 	// conveniently microsoft knows this is torture and gives a function for this exact purpose
 	int size = MultiByteToWideChar(CP_UTF8, 0, str.buf(), -1, nullptr, 0);
-	// TODO idk if it can go negative but the headers don't have documentation, and the search online button uses bing
-	// let's just say, that this table right here, is bill gates! *smashes table* YEAHHHHHHHHHHHHHH
-	// https://www.youtube.com/watch?v=WGFLPbpdMS8
+	// TODO idk if it can go negative but the headers don't have documentation, and the search
+	// online button uses bing let's just say, that this table right here, is bill gates!
+	// *smashes table* YEAHHHHHHHHHHHHHH https://www.youtube.com/watch?v=WGFLPbpdMS8
 	TR_ASSERT_MSG(size != 0, "blame it on windows");
 
-	WinStrMut new_str = static_cast<WinStrMut>(tr::scratchpad().alloc((size + 1) * sizeof(wchar_t)));
+	WinStrMut new_str =
+		static_cast<WinStrMut>(tr::scratchpad().alloc((size + 1) * sizeof(wchar_t)));
 	int result = MultiByteToWideChar(CP_UTF8, 0, str.buf(), -1, new_str, size);
 	TR_ASSERT_MSG(result != 0, "blame it on windows");
 	return new_str;
@@ -206,33 +214,50 @@ static tr::String from_win32_to_trippin_str(WinStrConst str)
 	TR_ASSERT_MSG(size != 0, "blame it on windows");
 
 	tr::String new_str(tr::scratchpad(), size);
-	int result = WideCharToMultiByte(CP_UTF8, 0, str, -1, new_str.buf(), size, nullptr, nullptr);
+	int result =
+		WideCharToMultiByte(CP_UTF8, 0, str, -1, new_str.buf(), size, nullptr, nullptr);
 	TR_ASSERT_MSG(result != 0, "blame it on windows");
 	return new_str;
 }
 
-tr::Result<tr::File&, tr::FileError> tr::File::open(tr::Arena& arena, tr::String path, FileMode mode)
+tr::Result<tr::File&, tr::FileError> tr::File::open(tr::Arena& arena, tr::String path,
+						    FileMode mode)
 {
 	FileError::reset_errors();
 
 	// get mode
 	WinStrConst modefrfr = L"";
 	switch (mode) {
-		// on text mode windows does evil fuckery that we don't want
-		// we want everything to be unix like
-		// so we have to use binary mode
-		case FileMode::READ_TEXT:         modefrfr = L"rb";  break;
-		case FileMode::READ_BINARY:       modefrfr = L"rb";  break;
-		case FileMode::WRITE_TEXT:        modefrfr = L"wb";  break;
-		case FileMode::WRITE_BINARY:      modefrfr = L"wb";  break;
-		case FileMode::READ_WRITE_TEXT:   modefrfr = L"rb+"; break;
-		case FileMode::READ_WRITE_BINARY: modefrfr = L"rb+"; break;
-		default:                          modefrfr = L"";    break;
+	// on text mode windows does evil fuckery that we don't want
+	// we want everything to be unix like
+	// so we have to use binary mode
+	case FileMode::READ_TEXT:
+		modefrfr = L"rb";
+		break;
+	case FileMode::READ_BINARY:
+		modefrfr = L"rb";
+		break;
+	case FileMode::WRITE_TEXT:
+		modefrfr = L"wb";
+		break;
+	case FileMode::WRITE_BINARY:
+		modefrfr = L"wb";
+		break;
+	case FileMode::READ_WRITE_TEXT:
+		modefrfr = L"rb+";
+		break;
+	case FileMode::READ_WRITE_BINARY:
+		modefrfr = L"rb+";
+		break;
+	default:
+		modefrfr = L"";
+		break;
 	}
 
 	File& file = arena.make<File>();
 	// normal fopen gives an error on visual studio??
-	errno_t ohno = _wfopen_s(reinterpret_cast<FILE**>(&file.fptr), from_trippin_to_win32_str(path), modefrfr);
+	errno_t ohno = _wfopen_s(reinterpret_cast<FILE**>(&file.fptr),
+				 from_trippin_to_win32_str(path), modefrfr);
 	if (ohno != 0) return FileError::from_errno(path, "", FileOperation::OPEN_FILE);
 
 	file.is_std = false;
@@ -269,8 +294,10 @@ tr::Result<int64, const tr::Error&> tr::File::position()
 	FileError::reset_errors();
 
 	int64 pos = _ftelli64(static_cast<FILE*>(this->fptr));
-	if (pos < 0) return FileError::from_errno(this->path, "", FileOperation::GET_FILE_POSITION);
-	else return pos;
+	if (pos < 0)
+		return FileError::from_errno(this->path, "", FileOperation::GET_FILE_POSITION);
+	else
+		return pos;
 }
 
 tr::Result<int64, const tr::Error&> tr::File::len()
@@ -292,14 +319,22 @@ tr::Result<void, const tr::Error&> tr::File::seek(int64 bytes, tr::SeekFrom from
 
 	int whence = SEEK_CUR;
 	switch (from) {
-		case SeekFrom::START:   whence = SEEK_SET; break;
-		case SeekFrom::CURRENT: whence = SEEK_CUR; break;
-		case SeekFrom::END:     whence = SEEK_END; break;
+	case SeekFrom::START:
+		whence = SEEK_SET;
+		break;
+	case SeekFrom::CURRENT:
+		whence = SEEK_CUR;
+		break;
+	case SeekFrom::END:
+		whence = SEEK_END;
+		break;
 	}
 
 	int i = _fseeki64(static_cast<FILE*>(this->fptr), bytes, whence);
-	if (i != 0) return FileError::from_errno(this->path, "", FileOperation::SEEK_FILE);
-	else return {};
+	if (i != 0)
+		return FileError::from_errno(this->path, "", FileOperation::SEEK_FILE);
+	else
+		return {};
 }
 
 tr::Result<void, const tr::Error&> tr::File::rewind()
@@ -307,19 +342,24 @@ tr::Result<void, const tr::Error&> tr::File::rewind()
 	FileError::reset_errors();
 
 	::rewind(static_cast<FILE*>(this->fptr));
-	if (errno != 0) return FileError::from_errno(this->path, "", FileOperation::REWIND_FILE);
-	else return {};
+	if (errno != 0)
+		return FileError::from_errno(this->path, "", FileOperation::REWIND_FILE);
+	else
+		return {};
 }
 
 tr::Result<int64, const tr::Error&> tr::File::read_bytes(void* out, int64 size, int64 items)
 {
 	FileError::reset_errors();
-	TR_ASSERT_MSG(out != nullptr, "you dumbass it's supposed to go somewhere if you don't want to use it use File::seek() dumbass");
+	TR_ASSERT_MSG(out != nullptr, "you dumbass it's supposed to go somewhere if you don't want "
+				      "to use it use File::seek() dumbass");
 	TR_ASSERT_MSG(this->can_read(), "dumbass you can't read this file");
 
 	usize bytes = fread(out, size, items, static_cast<FILE*>(this->fptr));
-	if (errno != 0) return FileError::from_errno(this->path, "", FileOperation::READ_FILE);
-	else return bytes;
+	if (errno != 0)
+		return FileError::from_errno(this->path, "", FileOperation::READ_FILE);
+	else
+		return bytes;
 }
 
 tr::Result<void, const tr::Error&> tr::File::flush()
@@ -327,8 +367,10 @@ tr::Result<void, const tr::Error&> tr::File::flush()
 	FileError::reset_errors();
 
 	int i = fflush(static_cast<FILE*>(this->fptr));
-	if (i == EOF) return FileError::from_errno(this->path, "", FileOperation::FLUSH_FILE);
-	else return {};
+	if (i == EOF)
+		return FileError::from_errno(this->path, "", FileOperation::FLUSH_FILE);
+	else
+		return {};
 }
 
 tr::Result<void, const tr::Error&> tr::File::write_bytes(Array<uint8> bytes)
@@ -337,33 +379,49 @@ tr::Result<void, const tr::Error&> tr::File::write_bytes(Array<uint8> bytes)
 	TR_ASSERT_MSG(this->can_write(), "dumbass you can't write to this file");
 
 	fwrite(bytes.buf(), sizeof(uint8), bytes.len(), static_cast<FILE*>(this->fptr));
-	if (errno != 0) return FileError::from_errno(this->path, "", FileOperation::WRITE_FILE);
-	else return {};
+	if (errno != 0)
+		return FileError::from_errno(this->path, "", FileOperation::WRITE_FILE);
+	else
+		return {};
 }
 
 bool tr::File::can_read()
 {
 	switch (this->mode) {
-		case FileMode::READ_TEXT:          return true;
-		case FileMode::READ_BINARY:        return true;
-		case FileMode::WRITE_TEXT:         return false;
-		case FileMode::WRITE_BINARY:       return false;
-		case FileMode::READ_WRITE_TEXT:    return true;
-		case FileMode::READ_WRITE_BINARY:  return true;
-		default:                           return false;
+	case FileMode::READ_TEXT:
+		return true;
+	case FileMode::READ_BINARY:
+		return true;
+	case FileMode::WRITE_TEXT:
+		return false;
+	case FileMode::WRITE_BINARY:
+		return false;
+	case FileMode::READ_WRITE_TEXT:
+		return true;
+	case FileMode::READ_WRITE_BINARY:
+		return true;
+	default:
+		return false;
 	}
 }
 
 bool tr::File::can_write()
 {
 	switch (this->mode) {
-		case FileMode::READ_TEXT:          return false;
-		case FileMode::READ_BINARY:        return false;
-		case FileMode::WRITE_TEXT:         return true;
-		case FileMode::WRITE_BINARY:       return true;
-		case FileMode::READ_WRITE_TEXT:    return true;
-		case FileMode::READ_WRITE_BINARY:  return true;
-		default:                           return false;
+	case FileMode::READ_TEXT:
+		return false;
+	case FileMode::READ_BINARY:
+		return false;
+	case FileMode::WRITE_TEXT:
+		return true;
+	case FileMode::WRITE_BINARY:
+		return true;
+	case FileMode::READ_WRITE_TEXT:
+		return true;
+	case FileMode::READ_WRITE_BINARY:
+		return true;
+	default:
+		return false;
 	}
 }
 
@@ -372,8 +430,10 @@ tr::Result<void, tr::FileError> tr::remove_file(tr::String path)
 	FileError::reset_errors();
 
 	remove(path);
-	if (errno != 0) return FileError::from_errno(path, "", FileOperation::REMOVE_FILE);
-	else return {};
+	if (errno != 0)
+		return FileError::from_errno(path, "", FileOperation::REMOVE_FILE);
+	else
+		return {};
 }
 
 tr::Result<void, tr::FileError> tr::move_file(tr::String from, tr::String to)
@@ -383,11 +443,14 @@ tr::Result<void, tr::FileError> tr::move_file(tr::String from, tr::String to)
 	// libc rename() is different on windows and posix
 	// on posix it replaces the destination if it already exists
 	// on windows it fails in that case
-	if (tr::file_exists(to)) return FileError(from, to, FileErrorType::FILE_EXISTS, FileOperation::MOVE_FILE);
+	if (tr::file_exists(to))
+		return FileError(from, to, FileErrorType::FILE_EXISTS, FileOperation::MOVE_FILE);
 
 	int i = rename(from, to);
-	if (i == -1) return FileError::from_errno(from, to, FileOperation::MOVE_FILE);
-	else return {};
+	if (i == -1)
+		return FileError::from_errno(from, to, FileOperation::MOVE_FILE);
+	else
+		return {};
 }
 
 bool tr::file_exists(tr::String path)
@@ -425,7 +488,7 @@ tr::Result<void, tr::FileError> tr::remove_dir(tr::String path)
 }
 
 tr::Result<tr::Array<tr::String>, tr::FileError> tr::list_dir(tr::Arena& arena, tr::String path,
-	bool include_hidden)
+							      bool include_hidden)
 {
 	// this looks so horrible what the fuck is wrong with you bill gates
 	WIN32_FIND_DATAW find_file_data;
@@ -449,8 +512,7 @@ tr::Result<tr::Array<tr::String>, tr::FileError> tr::list_dir(tr::Arena& arena, 
 		}
 
 		entries.add(from_win32_to_trippin_str(find_file_data.cFileName));
-	}
-	while (FindNextFileW(hfind, &find_file_data) != 0);
+	} while (FindNextFileW(hfind, &find_file_data) != 0);
 
 	FindClose(hfind);
 	return entries;
@@ -475,7 +537,8 @@ void tr::__init_paths()
 	if (hmodule != nullptr) {
 		DWORD len = GetModuleFileNameW(hmodule, exedir, MAX_PATH);
 		if (len == 0) {
-			tr::warn("couldn't get executable directory, using relative paths for app://");
+			tr::warn("couldn't get executable directory, using relative paths for "
+				 "app://");
 			tr::exe_dir = ".";
 		}
 		else {
@@ -510,20 +573,35 @@ void tr::__init_paths()
  * POSIX IMPLEMENTATION
  */
 
-tr::Result<tr::File&, tr::FileError> tr::File::open(tr::Arena& arena, tr::String path, tr::FileMode mode)
+tr::Result<tr::File&, tr::FileError> tr::File::open(tr::Arena& arena, tr::String path,
+						    tr::FileMode mode)
 {
 	FileError::reset_errors();
 
 	// get mode
 	String modefrfr;
 	switch (mode) {
-		case FileMode::READ_TEXT:         modefrfr = "r";   break;
-		case FileMode::READ_BINARY:       modefrfr = "rb";  break;
-		case FileMode::WRITE_TEXT:        modefrfr = "w";   break;
-		case FileMode::WRITE_BINARY:      modefrfr = "wb";  break;
-		case FileMode::READ_WRITE_TEXT:   modefrfr = "r+";  break;
-		case FileMode::READ_WRITE_BINARY: modefrfr = "rb+"; break;
-		default:                          modefrfr = "";    break;
+	case FileMode::READ_TEXT:
+		modefrfr = "r";
+		break;
+	case FileMode::READ_BINARY:
+		modefrfr = "rb";
+		break;
+	case FileMode::WRITE_TEXT:
+		modefrfr = "w";
+		break;
+	case FileMode::WRITE_BINARY:
+		modefrfr = "wb";
+		break;
+	case FileMode::READ_WRITE_TEXT:
+		modefrfr = "r+";
+		break;
+	case FileMode::READ_WRITE_BINARY:
+		modefrfr = "rb+";
+		break;
+	default:
+		modefrfr = "";
+		break;
 	}
 
 	File& file = arena.make<File>();
@@ -566,8 +644,10 @@ tr::Result<int64, const tr::Error&> tr::File::position()
 	FileError::reset_errors();
 
 	int64 pos = ftell(static_cast<FILE*>(this->fptr));
-	if (pos < 0) return FileError::from_errno(this->path, "", FileOperation::GET_FILE_POSITION);
-	else return pos;
+	if (pos < 0) {
+		return FileError::from_errno(this->path, "", FileOperation::GET_FILE_POSITION);
+	}
+	return pos;
 }
 
 tr::Result<int64, const tr::Error&> tr::File::len()
@@ -589,14 +669,22 @@ tr::Result<void, const tr::Error&> tr::File::seek(int64 bytes, tr::SeekFrom from
 
 	int whence = SEEK_CUR;
 	switch (from) {
-		case SeekFrom::START:   whence = SEEK_SET; break;
-		case SeekFrom::CURRENT: whence = SEEK_CUR; break;
-		case SeekFrom::END:     whence = SEEK_END; break;
+	case SeekFrom::START:
+		whence = SEEK_SET;
+		break;
+	case SeekFrom::CURRENT:
+		whence = SEEK_CUR;
+		break;
+	case SeekFrom::END:
+		whence = SEEK_END;
+		break;
 	}
 
 	int i = fseek(static_cast<FILE*>(this->fptr), bytes, whence);
-	if (i != 0) return FileError::from_errno(this->path, "", FileOperation::SEEK_FILE);
-	else return {};
+	if (i != 0) {
+		return FileError::from_errno(this->path, "", FileOperation::SEEK_FILE);
+	}
+	return {};
 }
 
 tr::Result<void, const tr::Error&> tr::File::rewind()
@@ -604,23 +692,28 @@ tr::Result<void, const tr::Error&> tr::File::rewind()
 	FileError::reset_errors();
 
 	::rewind(static_cast<FILE*>(this->fptr));
-	if (errno != 0) return FileError::from_errno(this->path, "", FileOperation::REWIND_FILE);
-	else return {};
+	if (errno != 0) {
+		return FileError::from_errno(this->path, "", FileOperation::REWIND_FILE);
+	}
+	return {};
 }
 
 tr::Result<int64, const tr::Error&> tr::File::read_bytes(void* out, int64 size, int64 items)
 {
 	FileError::reset_errors();
 	// TODO TR_TRY_ASSERT
-	TR_ASSERT_MSG(out != nullptr, "you dumbass it's supposed to go somewhere if you don't want to use it use File::seek() dumbass");
+	TR_ASSERT_MSG(out != nullptr, "you dumbass it's supposed to go somewhere if you don't want "
+				      "to use it use File::seek() dumbass");
 	TR_ASSERT_MSG(this->can_read(), "dumbass you can't read this file");
 
 	// TODO 32-bit won't be happy about this
 	usize bytes = fread(out, static_cast<usize>(size), static_cast<usize>(items),
-		static_cast<FILE*>(this->fptr));
+			    static_cast<FILE*>(this->fptr));
 
-	if (errno != 0) return FileError::from_errno(this->path, "", FileOperation::READ_FILE);
-	else return static_cast<int64>(bytes);
+	if (errno != 0) {
+		return FileError::from_errno(this->path, "", FileOperation::READ_FILE);
+	}
+	return static_cast<int64>(bytes);
 }
 
 tr::Result<void, const tr::Error&> tr::File::flush()
@@ -628,8 +721,10 @@ tr::Result<void, const tr::Error&> tr::File::flush()
 	FileError::reset_errors();
 
 	int i = fflush(static_cast<FILE*>(this->fptr));
-	if (i == EOF) return FileError::from_errno(this->path, "", FileOperation::FLUSH_FILE);
-	else return {};
+	if (i == EOF) {
+		return FileError::from_errno(this->path, "", FileOperation::FLUSH_FILE);
+	}
+	return {};
 }
 
 tr::Result<void, const tr::Error&> tr::File::write_bytes(Array<uint8> bytes)
@@ -638,33 +733,38 @@ tr::Result<void, const tr::Error&> tr::File::write_bytes(Array<uint8> bytes)
 	TR_ASSERT_MSG(this->can_write(), "dumbass you can't write to this file");
 
 	fwrite(bytes.buf(), sizeof(uint8), bytes.len(), static_cast<FILE*>(this->fptr));
-	if (errno != 0) return FileError::from_errno(this->path, "", FileOperation::WRITE_FILE);
-	else return {};
+	if (errno != 0) {
+		return FileError::from_errno(this->path, "", FileOperation::WRITE_FILE);
+	}
+	return {};
 }
 
 bool tr::File::can_read()
 {
 	switch (this->mode) {
-		case FileMode::READ_TEXT:          return true;
-		case FileMode::READ_BINARY:        return true;
-		case FileMode::WRITE_TEXT:         return false;
-		case FileMode::WRITE_BINARY:       return false;
-		case FileMode::READ_WRITE_TEXT:    return true;
-		case FileMode::READ_WRITE_BINARY:  return true;
-		default:                           return false;
+	case FileMode::READ_TEXT:
+	case FileMode::READ_BINARY:
+	case FileMode::READ_WRITE_TEXT:
+	case FileMode::READ_WRITE_BINARY:
+		return true;
+
+	default:
+		return false;
+		return false;
 	}
 }
 
 bool tr::File::can_write()
 {
 	switch (this->mode) {
-		case FileMode::READ_TEXT:          return false;
-		case FileMode::READ_BINARY:        return false;
-		case FileMode::WRITE_TEXT:         return true;
-		case FileMode::WRITE_BINARY:       return true;
-		case FileMode::READ_WRITE_TEXT:    return true;
-		case FileMode::READ_WRITE_BINARY:  return true;
-		default:                           return false;
+	case FileMode::WRITE_TEXT:
+	case FileMode::WRITE_BINARY:
+	case FileMode::READ_WRITE_TEXT:
+	case FileMode::READ_WRITE_BINARY:
+		return true;
+
+	default:
+		return false;
 	}
 }
 
@@ -673,8 +773,10 @@ tr::Result<void, tr::FileError> tr::remove_file(tr::String path)
 	FileError::reset_errors();
 
 	remove(path);
-	if (errno != 0) return FileError::from_errno(path, "", FileOperation::REMOVE_FILE);
-	else return {};
+	if (errno != 0) {
+		return FileError::from_errno(path, "", FileOperation::REMOVE_FILE);
+	}
+	return {};
 }
 
 tr::Result<void, tr::FileError> tr::move_file(tr::String from, tr::String to)
@@ -684,20 +786,24 @@ tr::Result<void, tr::FileError> tr::move_file(tr::String from, tr::String to)
 	// libc rename() is different on windows and posix
 	// on posix it replaces the destination if it already exists
 	// on windows it fails in that case
-	if (tr::file_exists(to)) return FileError(from, to, FileErrorType::FILE_EXISTS, FileOperation::MOVE_FILE);
+	if (tr::file_exists(to)) {
+		return FileError(from, to, FileErrorType::FILE_EXISTS, FileOperation::MOVE_FILE);
+	}
 
 	int i = rename(from, to);
-	if (i == -1) return FileError::from_errno(from, to, FileOperation::MOVE_FILE);
-	else return {};
+	if (i == -1) {
+		return FileError::from_errno(from, to, FileOperation::MOVE_FILE);
+	}
+	return {};
 }
 
 bool tr::file_exists(tr::String path)
 {
 	FileError::reset_errors();
 
-	// we could just fopen(path, "r") then check if that's null, but then it would return false on permission
-	// errors, even though it does in fact exist
-	struct stat buffer;
+	// we could just fopen(path, "r") then check if that's null, but then it would return false
+	// on permission errors, even though it does in fact exist
+	struct stat buffer = {};
 	return stat(path, &buffer) == 0;
 }
 
@@ -730,7 +836,7 @@ tr::Result<void, tr::FileError> tr::remove_dir(tr::String path)
 }
 
 tr::Result<tr::Array<tr::String>, tr::FileError> tr::list_dir(tr::Arena& arena, tr::String path,
-	bool include_hidden)
+							      bool include_hidden)
 {
 	FileError::reset_errors();
 
@@ -760,21 +866,20 @@ tr::Result<bool, tr::FileError> tr::is_file(tr::String path)
 {
 	FileError::reset_errors();
 
-	struct stat statma;
+	struct stat statma = {};
 	if (stat(path, &statma) != 0) {
 		return FileError::from_errno(path, "", FileOperation::IS_FILE);
 	}
 
-	// TODO there's other types but they're similar to files so i'm counting all of them as files too
+	// TODO there's other types but they're similar to files so i'm counting all of them as
+	// files too
 	if (S_ISDIR(statma.st_mode)) {
 		return false;
 	}
-	else {
-		return true;
-	}
+	return true;
 }
 
-void tr::__init_paths()
+void tr::_init_paths()
 {
 	// TODO macOS exists
 	// TODO bsd exists

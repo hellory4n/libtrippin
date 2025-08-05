@@ -3,12 +3,13 @@
 
 tr::Result<int32, tr::Error&> example_function()
 {
-    // on error
-    // you can use any type that implements tr::Error
-    return tr::scratchpad().make<tr::StringError>("unexpected happening it is happening unexpectedly");
+	// on error
+	// you can use any type that implements tr::Error
+	return tr::scratchpad().make<tr::StringError>(
+		"unexpected happening it is happening unexpectedly");
 
-    // on success you can just return as usual
-    return 946259;
+	// on success you can just return as usual
+	return 946259;
 }
 
 // usage

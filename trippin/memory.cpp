@@ -24,17 +24,20 @@
  */
 
 // clangd are you stupid
+#include "trippin/memory.h"
+
+#include <cstdlib>
 #include <new> // IWYU pragma: keep
-#include <stdlib.h>
 
 #include "trippin/log.h"
 #include "trippin/math.h"
-#include "trippin/memory.h"
 
 namespace tr {
-	extern MemoryInfo memory_info;
-	thread_local Arena __the_real_scratchpad(tr::kb_to_bytes(4));
-}
+
+extern MemoryInfo memory_info;
+thread_local Arena _the_real_scratchpad(tr::kb_to_bytes(4));
+
+} // namespace tr
 
 tr::ArenaPage::ArenaPage(usize size, usize align) : bufsize(size), alignment(align)
 {
@@ -48,9 +51,9 @@ tr::ArenaPage::ArenaPage(usize size, usize align) : bufsize(size), alignment(ali
 
 	// i don't think you can recover from that
 	// so just die
-	TR_ASSERT_MSG(this->buffer != nullptr, "couldn't allocate arena page of %zu B (%zu KB, %zu MB)",
-		size, tr::bytes_to_kb(size), tr::bytes_to_mb(size)
-	);
+	TR_ASSERT_MSG(this->buffer != nullptr,
+		      "couldn't allocate arena page of %zu B (%zu KB, %zu MB)", size,
+		      tr::bytes_to_kb(size), tr::bytes_to_mb(size));
 
 	// i dont want to read garbage man
 	memset(this->buffer, 0, this->bufsize);
@@ -89,7 +92,7 @@ void* tr::ArenaPage::alloc(usize size, usize align)
 
 	// fucking padding aligning fuckery
 	usize misalignment = address & (align - 1);
-	usize padding = misalignment ? (align - misalignment) : 0;
+	usize padding = misalignment != 0 ? (align - misalignment) : 0;
 
 	// consider not segfaulting
 	if (this->available_space() < padding + size) {
@@ -145,7 +148,11 @@ void* tr::Arena::alloc(usize size, usize align)
 	ArenaPage* new_page = new (std::nothrow) ArenaPage(new_pg_size, align);
 	TR_ASSERT_MSG(new_page != nullptr, "couldn't create new arena page");
 
-	// dude... dude... dude... what? GOOD NEWS OGOD NEANEWS OGOOD NEWS NFOGOSJRJIGIRISJTOAEOTGOAGOKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+	// TODO tf was i on when i wrote this
+	// dude... dude... dude... what? GOOD NEWS OGOD NEANEWS OGOOD NEWS
+	// NFOGOSJRJIGIRISJTOAEOTGOAGOKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+	// AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+	// AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 	new_page->prev = this->page;
 	if (this->page != nullptr) this->page->next = new_page;
 	this->page = new_page;
@@ -153,9 +160,8 @@ void* tr::Arena::alloc(usize size, usize align)
 
 	// actually allocate frfrfrfr no cap ong icl
 	void* ptr = this->page->alloc(size, align);
-	TR_ASSERT_MSG(ptr != nullptr, "couldn't allocate %zu B in arena (%zu KB, %zu MB)",
-		size, tr::bytes_to_kb(size), tr::bytes_to_mb(size)
-	);
+	TR_ASSERT_MSG(ptr != nullptr, "couldn't allocate %zu B in arena (%zu KB, %zu MB)", size,
+		      tr::bytes_to_kb(size), tr::bytes_to_mb(size));
 	this->bytes_allocated += size;
 	return ptr;
 }
@@ -194,9 +200,10 @@ void tr::Arena::reset()
 
 	// we keep the first page :)
 	this->page = headfrfr;
-	// apparently memset is fucked, std::fill_n does nothing and memset_s just doesn't exist in c++??
-	// source https://en.cppreference.com/w/cpp/string/byte/memset#Notes
-	// maybe i'm just stupid :)
+	// apparently memset is fucked, std::fill_n does nothing and memset_s just doesn't exist in
+	// c++??
+	// source https://en.cppreference.com/w/cpp/string/byte/memset#Notes maybe i'm just
+	// stupid :)
 	for (usize i = 0; i < headfrfr->bufsize; i++) {
 		static_cast<uint8*>(headfrfr->buffer)[i] = 0;
 	}
@@ -224,5 +231,5 @@ tr::MemoryInfo tr::get_memory_info()
 
 tr::Arena& tr::scratchpad()
 {
-	return tr::__the_real_scratchpad;
+	return tr::_the_real_scratchpad;
 }

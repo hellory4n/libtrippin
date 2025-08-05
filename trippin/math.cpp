@@ -156,8 +156,7 @@ tr::Matrix4x4 tr::Matrix4x4::rotate(float32 x, float32 y, float32 z, float32 rad
 		Matrix4x4 S;
 		S.values[0] = {0, u[2], -u[1], 0};
 		S.values[1] = {-u[2], 0, u[0], 0};
-		S.values[2] = {u[1], -u[0], 0, 0},
-		S.values[3] = {0, 0, 0, 0};
+		S.values[2] = {u[1], -u[0], 0, 0}, S.values[3] = {0, 0, 0, 0};
 		S = S * s;
 
 		Matrix4x4 C = Matrix4x4::identity();
@@ -169,7 +168,8 @@ tr::Matrix4x4 tr::Matrix4x4::rotate(float32 x, float32 y, float32 z, float32 rad
 
 		T[3][3] = 1;
 		R = *this * T;
-	} else {
+	}
+	else {
 		R = *this;
 	}
 	return R;
@@ -216,81 +216,82 @@ tr::Matrix4x4 tr::Matrix4x4::invert()
 	Matrix4x4 m;
 	float32 s[6];
 	float32 c[6];
-	s[0] = (*this)[0][0]*(*this)[1][1] - (*this)[1][0]*(*this)[0][1];
-	s[1] = (*this)[0][0]*(*this)[1][2] - (*this)[1][0]*(*this)[0][2];
-	s[2] = (*this)[0][0]*(*this)[1][3] - (*this)[1][0]*(*this)[0][3];
-	s[3] = (*this)[0][1]*(*this)[1][2] - (*this)[1][1]*(*this)[0][2];
-	s[4] = (*this)[0][1]*(*this)[1][3] - (*this)[1][1]*(*this)[0][3];
-	s[5] = (*this)[0][2]*(*this)[1][3] - (*this)[1][2]*(*this)[0][3];
+	s[0] = (*this)[0][0] * (*this)[1][1] - (*this)[1][0] * (*this)[0][1];
+	s[1] = (*this)[0][0] * (*this)[1][2] - (*this)[1][0] * (*this)[0][2];
+	s[2] = (*this)[0][0] * (*this)[1][3] - (*this)[1][0] * (*this)[0][3];
+	s[3] = (*this)[0][1] * (*this)[1][2] - (*this)[1][1] * (*this)[0][2];
+	s[4] = (*this)[0][1] * (*this)[1][3] - (*this)[1][1] * (*this)[0][3];
+	s[5] = (*this)[0][2] * (*this)[1][3] - (*this)[1][2] * (*this)[0][3];
 
-	c[0] = (*this)[2][0]*(*this)[3][1] - (*this)[3][0]*(*this)[2][1];
-	c[1] = (*this)[2][0]*(*this)[3][2] - (*this)[3][0]*(*this)[2][2];
-	c[2] = (*this)[2][0]*(*this)[3][3] - (*this)[3][0]*(*this)[2][3];
-	c[3] = (*this)[2][1]*(*this)[3][2] - (*this)[3][1]*(*this)[2][2];
-	c[4] = (*this)[2][1]*(*this)[3][3] - (*this)[3][1]*(*this)[2][3];
-	c[5] = (*this)[2][2]*(*this)[3][3] - (*this)[3][2]*(*this)[2][3];
+	c[0] = (*this)[2][0] * (*this)[3][1] - (*this)[3][0] * (*this)[2][1];
+	c[1] = (*this)[2][0] * (*this)[3][2] - (*this)[3][0] * (*this)[2][2];
+	c[2] = (*this)[2][0] * (*this)[3][3] - (*this)[3][0] * (*this)[2][3];
+	c[3] = (*this)[2][1] * (*this)[3][2] - (*this)[3][1] * (*this)[2][2];
+	c[4] = (*this)[2][1] * (*this)[3][3] - (*this)[3][1] * (*this)[2][3];
+	c[5] = (*this)[2][2] * (*this)[3][3] - (*this)[3][2] * (*this)[2][3];
 
-	float idet = 1.0f/( s[0]*c[5]-s[1]*c[4]+s[2]*c[3]+s[3]*c[2]-s[4]*c[1]+s[5]*c[0] );
+	float idet = 1.0f / (s[0] * c[5] - s[1] * c[4] + s[2] * c[3] + s[3] * c[2] - s[4] * c[1] +
+			     s[5] * c[0]);
 
-	m[0][0] = ( (*this)[1][1] * c[5] - (*this)[1][2] * c[4] + (*this)[1][3] * c[3]) * idet;
+	m[0][0] = ((*this)[1][1] * c[5] - (*this)[1][2] * c[4] + (*this)[1][3] * c[3]) * idet;
 	m[0][1] = (-(*this)[0][1] * c[5] + (*this)[0][2] * c[4] - (*this)[0][3] * c[3]) * idet;
-	m[0][2] = ( (*this)[3][1] * s[5] - (*this)[3][2] * s[4] + (*this)[3][3] * s[3]) * idet;
+	m[0][2] = ((*this)[3][1] * s[5] - (*this)[3][2] * s[4] + (*this)[3][3] * s[3]) * idet;
 	m[0][3] = (-(*this)[2][1] * s[5] + (*this)[2][2] * s[4] - (*this)[2][3] * s[3]) * idet;
 
 	m[1][0] = (-(*this)[1][0] * c[5] + (*this)[1][2] * c[2] - (*this)[1][3] * c[1]) * idet;
-	m[1][1] = ( (*this)[0][0] * c[5] - (*this)[0][2] * c[2] + (*this)[0][3] * c[1]) * idet;
+	m[1][1] = ((*this)[0][0] * c[5] - (*this)[0][2] * c[2] + (*this)[0][3] * c[1]) * idet;
 	m[1][2] = (-(*this)[3][0] * s[5] + (*this)[3][2] * s[2] - (*this)[3][3] * s[1]) * idet;
-	m[1][3] = ( (*this)[2][0] * s[5] - (*this)[2][2] * s[2] + (*this)[2][3] * s[1]) * idet;
+	m[1][3] = ((*this)[2][0] * s[5] - (*this)[2][2] * s[2] + (*this)[2][3] * s[1]) * idet;
 
-	m[2][0] = ( (*this)[1][0] * c[4] - (*this)[1][1] * c[2] + (*this)[1][3] * c[0]) * idet;
+	m[2][0] = ((*this)[1][0] * c[4] - (*this)[1][1] * c[2] + (*this)[1][3] * c[0]) * idet;
 	m[2][1] = (-(*this)[0][0] * c[4] + (*this)[0][1] * c[2] - (*this)[0][3] * c[0]) * idet;
-	m[2][2] = ( (*this)[3][0] * s[4] - (*this)[3][1] * s[2] + (*this)[3][3] * s[0]) * idet;
+	m[2][2] = ((*this)[3][0] * s[4] - (*this)[3][1] * s[2] + (*this)[3][3] * s[0]) * idet;
 	m[2][3] = (-(*this)[2][0] * s[4] + (*this)[2][1] * s[2] - (*this)[2][3] * s[0]) * idet;
 
 	m[3][0] = (-(*this)[1][0] * c[3] + (*this)[1][1] * c[1] - (*this)[1][2] * c[0]) * idet;
-	m[3][1] = ( (*this)[0][0] * c[3] - (*this)[0][1] * c[1] + (*this)[0][2] * c[0]) * idet;
+	m[3][1] = ((*this)[0][0] * c[3] - (*this)[0][1] * c[1] + (*this)[0][2] * c[0]) * idet;
 	m[3][2] = (-(*this)[3][0] * s[3] + (*this)[3][1] * s[1] - (*this)[3][2] * s[0]) * idet;
-	m[3][3] = ( (*this)[2][0] * s[3] - (*this)[2][1] * s[1] + (*this)[2][2] * s[0]) * idet;
+	m[3][3] = ((*this)[2][0] * s[3] - (*this)[2][1] * s[1] + (*this)[2][2] * s[0]) * idet;
 
 	return m;
 }
 
-tr::Matrix4x4 tr::Matrix4x4::frustum(float32 left, float32 right, float32 bottom, float32 top, float32 near,
-	float32 far)
+tr::Matrix4x4 tr::Matrix4x4::frustum(float32 left, float32 right, float32 bottom, float32 top,
+				     float32 near, float32 far)
 {
 	Matrix4x4 m;
-	m[0][0] = 2.f*near/(right-left);
+	m[0][0] = 2.f * near / (right - left);
 	m[0][1] = m[0][2] = m[0][3] = 0.f;
 
-	m[1][1] = 2.f*near/(top-bottom);
+	m[1][1] = 2.f * near / (top - bottom);
 	m[1][0] = m[1][2] = m[1][3] = 0.f;
 
-	m[2][0] = (right+left)/(right-left);
-	m[2][1] = (top+bottom)/(top-bottom);
-	m[2][2] = -(far+near)/(far-near);
+	m[2][0] = (right + left) / (right - left);
+	m[2][1] = (top + bottom) / (top - bottom);
+	m[2][2] = -(far + near) / (far - near);
 	m[2][3] = -1.f;
 
-	m[3][2] = -2.f*(far*near)/(far-near);
+	m[3][2] = -2.f * (far * near) / (far - near);
 	m[3][0] = m[3][1] = m[3][3] = 0.f;
 	return m;
 }
 
-tr::Matrix4x4 tr::Matrix4x4::orthographic(float32 left, float32 right, float32 bottom, float32 top, float32 near,
-	float32 far)
+tr::Matrix4x4 tr::Matrix4x4::orthographic(float32 left, float32 right, float32 bottom, float32 top,
+					  float32 near, float32 far)
 {
 	Matrix4x4 m;
-	m[0][0] = 2.f/(right-left);
+	m[0][0] = 2.f / (right - left);
 	m[0][1] = m[0][2] = m[0][3] = 0.f;
 
-	m[1][1] = 2.f/(top-bottom);
+	m[1][1] = 2.f / (top - bottom);
 	m[1][0] = m[1][2] = m[1][3] = 0.f;
 
-	m[2][2] = -2.f/(far-near);
+	m[2][2] = -2.f / (far - near);
 	m[2][0] = m[2][1] = m[2][3] = 0.f;
 
-	m[3][0] = -(right+left)/(right-left);
-	m[3][1] = -(top+bottom)/(top-bottom);
-	m[3][2] = -(far+near)/(far-near);
+	m[3][0] = -(right + left) / (right - left);
+	m[3][1] = -(top + bottom) / (top - bottom);
+	m[3][2] = -(far + near) / (far - near);
 	m[3][3] = 1.f;
 	return m;
 }
@@ -328,13 +329,16 @@ tr::Random::Random(int64 seed)
 	this->state[0] = static_cast<uint64>(seed); // TODO don't?
 	for (size_t i = 1; i < 4; i++) {
 		this->state[i] = (this->state[i - 1] += UINT64_C(0x9E3779B97F4A7C15));
-		this->state[i] = (this->state[i] ^ (this->state[i] >> 30)) * UINT64_C(0xBF58476D1CE4E5B9);
-		this->state[i] = (this->state[i] ^ (this->state[i] >> 27)) * UINT64_C(0x94D049BB133111EB);
+		this->state[i] =
+			(this->state[i] ^ (this->state[i] >> 30)) * UINT64_C(0xBF58476D1CE4E5B9);
+		this->state[i] =
+			(this->state[i] ^ (this->state[i] >> 27)) * UINT64_C(0x94D049BB133111EB);
 		this->state[i] = this->state[i] ^ (this->state[i] >> 31);
 	}
 }
 
-static inline uint64 rotl(const uint64 x, int k) {
+static inline uint64 rotl(const uint64 x, int k)
+{
 	return (x << k) | (x >> (64 - k));
 }
 

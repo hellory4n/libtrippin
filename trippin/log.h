@@ -31,19 +31,21 @@
 namespace tr {
 
 namespace ConsoleColor {
-	// TODO colored output doesn't work on windows and i can't be bothered to fix it
-	#ifndef _WIN32
-		constexpr const char* RESET = "\033[0m";
-		constexpr const char* INFO  = "\033[0;90m";
-		constexpr const char* WARN  = "\033[0;93m";
-		constexpr const char* ERROR = "\033[0;91m";
-	#else
-		constexpr const char* RESET = "";
-		constexpr const char* INFO  = "";
-		constexpr const char* WARN  = "";
-		constexpr const char* ERROR = "";
-	#endif
-}
+
+// TODO colored output doesn't work on windows and i can't be bothered to fix it
+#ifndef _WIN32
+constexpr const char* RESET = "\033[0m";
+constexpr const char* INFO = "\033[0;90m";
+constexpr const char* WARN = "\033[0;93m";
+constexpr const char* ERROR = "\033[0;91m";
+#else
+constexpr const char* RESET = "";
+constexpr const char* INFO = "";
+constexpr const char* WARN = "";
+constexpr const char* ERROR = "";
+#endif
+
+} // namespace ConsoleColor
 
 // Sets the log file to somewhere. There can be multiple log files.
 void use_log_file(const char* path);
@@ -58,7 +60,8 @@ void log(const char* fmt, ...);
 #if defined(TR_GCC_OR_CLANG) && !defined(TR_ONLY_MINGW_GCC)
 [[gnu::format(printf, 1, 2)]]
 #endif
-// Log. (gray edition) (this is for libraries that use libtrippin so you can filter out library logs)
+// Log. (gray edition) (this is for libraries that use libtrippin so you can filter out library
+// logs)
 void info(const char* fmt, ...);
 
 #if defined(TR_GCC_OR_CLANG) && !defined(TR_ONLY_MINGW_GCC)
@@ -81,17 +84,22 @@ void error(const char* fmt, ...);
 void panic(const char* fmt, ...);
 
 #if defined(TR_GCC_OR_CLANG) && !defined(TR_ONLY_MINGW_GCC)
-[[gnu::format(printf, 3, 4)]]
+[[gnu::format(printf, 2, 3)]]
 #endif
+void _impl_assert(const char* expr, const char* fmt, ...);
+
 // Formatted assert?????????
-void __impl_assert(bool x, const char* expr, const char* fmt, ...);
+#define TR_ASSERT_MSG(X, ...)                                                                      \
+	if (!(X)) {                                                                                \
+		tr::_impl_assert(#X, __VA_ARGS__);                                                 \
+	}
 
-#define TR_ASSERT_MSG(X, ...) \
-	tr::__impl_assert((X), #X, __VA_ARGS__)
+#define TR_ASSERT(X)                                                                               \
+	if (!(X)) {                                                                                \
+		/* e.g. "failed assert 'false': aborting"*/                                        \
+		tr::_impl_assert(#X, "aborting");                                                  \
+	}
 
-#define TR_ASSERT(X) \
-	tr::__impl_assert((X), #X, "aborting") // e.g. "failed assert \"false\": aborting"
-
-}
+} // namespace tr
 
 #endif
