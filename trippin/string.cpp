@@ -35,7 +35,11 @@
 
 bool tr::String::operator==(tr::String other) const
 {
-	return strncmp(*this, other, tr::max(this->len(), other.len())) == 0;
+	// strncmp gets mad with null
+	if (this->buf() == nullptr || *other == nullptr) {
+		return this->buf() == *other;
+	}
+	return strncmp(this->buf(), *other, tr::max(this->len(), other.len())) == 0;
 }
 
 tr::String tr::String::substr(tr::Arena& arena, usize start, usize end) const

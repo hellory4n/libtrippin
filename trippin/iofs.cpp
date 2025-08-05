@@ -813,15 +813,31 @@ tr::Result<void, tr::FileError> tr::create_dir(tr::String path)
 
 	// it's recursive :)
 	Array<String> dirs = path.split(tr::scratchpad(), '/');
-
-	for (auto [_, dir] : dirs) {
-		if (tr::file_exists(dir)) continue;
-
-		if (mkdir(dir, 0755) == -1) {
-			return FileError::from_errno(path, "", FileOperation::CREATE_DIR);
-		}
+	if (dirs.len() == 0) {
+		tr::warn("couldn't create directory '%s', path is likely corrupted/invalid", *path);
+		return {};
 	}
 
+	// help
+	String full_dir;
+	if (path.starts_with("/")) {
+		full_dir = tr::fmt(tr::scratchpad(), "/%s", *dirs[0]);
+	}
+	else {
+		full_dir = dirs[0];
+	}
+
+	for (auto [i, dir] : dirs) {
+		if (i > 0) {
+			full_dir = tr::fmt(tr::scratchpad(), "%s/%s", *full_dir, *dir);
+		}
+
+		if (tr::file_exists(full_dir)) continue;
+
+		if (mkdir(full_dir, 0755) == -1) {
+			return FileError::from_errno(full_dir, "", FileOperation::CREATE_DIR);
+		}
+	}
 	return {};
 }
 

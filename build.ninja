@@ -3,8 +3,8 @@
 # TODO a generator would be nice tho
 cxx = clang++
 # overkill i don't care
-cflags = -std=c++17 -O2 -g -DDEBUG -D_DEBUG -I. -I..-Wall -Wextra -Wpedantic -Wuninitialized -Wshadow -Wconversion -Wold-style-cast -Wextra-semi -Wmissing-noreturn -Wimplicit-fallthrough -Wnull-dereference -Wcast-qual
-ldflags = -lm -lstdc++
+cflags = -std=c++17 -O2 -g -DDEBUG -D_DEBUG -I. -I..-Wall -Wextra -Wpedantic -Wuninitialized -Wshadow -Wconversion -Wold-style-cast -Wextra-semi -Wmissing-noreturn -Wimplicit-fallthrough -Wnull-dereference -Wcast-qual -fsanitize=undefined
+ldflags = -lm -lstdc++ -fsanitize=undefined
 
 rule compile
   command = $cxx $cflags -c $in -o $out

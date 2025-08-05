@@ -1,23 +1,24 @@
-#include <stdio.h>
+#include <trippin/collection.h>
 #include <trippin/common.h>
+#include <trippin/iofs.h>
 #include <trippin/log.h>
 #include <trippin/math.h>
 #include <trippin/memory.h>
 #include <trippin/string.h>
-#include <trippin/collection.h>
-#include <trippin/iofs.h>
+
+#include <stdio.h>
 
 // TODO use actual tests you dumbass
 
 namespace test {
-	static void logging();
-	static void memory();
-	static void arrays();
-	static void strings();
-	static void hashmaps();
-	static void filesystem();
-	static void all();
-}
+static void logging();
+static void memory();
+static void arrays();
+static void strings();
+static void hashmaps();
+static void filesystem();
+static void all();
+} // namespace test
 
 static void test::logging()
 {
@@ -46,10 +47,17 @@ static void test::memory()
 	tr::Vec3<float32>& vecma3 = arena.make<tr::Vec3<float32>>(1.0f, 2.0f, 3.0f);
 	tr::log("vecma3 %f, %f, %f", vecma3.x, vecma3.y, vecma3.z);
 
-	struct MaBalls {
+	struct MaBalls
+	{
 		uint8 waste[tr::kb_to_bytes(1)];
-		MaBalls() { tr::log("MaBalls created"); }
-		~MaBalls() { tr::log("MaBalls deleted"); }
+		MaBalls()
+		{
+			tr::log("MaBalls created");
+		}
+		~MaBalls()
+		{
+			tr::log("MaBalls deleted");
+		}
 	};
 
 	auto& sig = arena.make<MaBalls>();
@@ -59,9 +67,8 @@ static void test::memory()
 	TR_ASSERT_MSG(sig.waste[37] == 0, "it didn't reset properly :(");
 	arena.alloc(tr::mb_to_bytes(1));
 
-	tr::log("capacity: %zu KB, allocated: %zu KB",
-		tr::bytes_to_kb(arena.capacity()), tr::bytes_to_kb(arena.allocated())
-	);
+	tr::log("capacity: %zu KB, allocated: %zu KB", tr::bytes_to_kb(arena.capacity()),
+		tr::bytes_to_kb(arena.allocated()));
 }
 
 static void test::arrays()
@@ -129,9 +136,7 @@ static void test::hashmaps()
 	tr::HashMapSettings<tr::String> settings = {};
 	settings.load_factor = 0.1;
 	settings.initial_capacity = 4;
-	settings.hash_func = [](const tr::String&) -> uint64 {
-		return 68;
-	};
+	settings.hash_func = [](const tr::String&) -> uint64 { return 68; };
 
 	tr::HashMap<tr::String, tr::String> hashmaballs(tr::scratchpad(), settings);
 	// this also resizes bcuz the load factor is 0.1 and the capacity is 4 (comically small)
@@ -159,11 +164,13 @@ static void test::filesystem()
 
 	// so much .unwrap() it looks like rust
 	// i want it to crash if something goes wrong tho so that's why
-	tr::File& wf = tr::File::open(tr::scratchpad(), "fucker.txt", tr::FileMode::WRITE_TEXT).unwrap();
+	tr::File& wf =
+		tr::File::open(tr::scratchpad(), "fucker.txt", tr::FileMode::WRITE_TEXT).unwrap();
 	wf.write_string("Crap crappington.\nother line");
 	wf.close();
 
-	tr::File& rf = tr::File::open(tr::scratchpad(), "fucker.txt", tr::FileMode::READ_TEXT).unwrap();
+	tr::File& rf =
+		tr::File::open(tr::scratchpad(), "fucker.txt", tr::FileMode::READ_TEXT).unwrap();
 	tr::String line1 = rf.read_line(tr::scratchpad()).unwrap();
 	tr::String line2 = rf.read_line(tr::scratchpad()).unwrap();
 	tr::log("line 1: %s; line 2: %s", *line1, *line2);
@@ -181,18 +188,9 @@ static void test::filesystem()
 	TR_ASSERT(tr::file_exists("fuckoffman.txt"));
 	tr::remove_file("fuckoffman.txt").unwrap();
 
-	// TODO somewhere it's mysteriously trying to access -1 on a string in visual studio
-	// it doesn't happen anywhere else, how could it possibly become -1
-	// i went through everything
-	// just how
-	// what the fuck
-	// what the fuck
-	// what the fuck.
-	#ifndef TR_ONLY_MSVC
 	tr::create_dir("crap/dir").unwrap();
-	tr::remove_dir("dir").unwrap();
+	tr::remove_dir("crap/dir").unwrap();
 	tr::remove_dir("crap").unwrap();
-	#endif
 
 	tr::Array<tr::String> crap = tr::list_dir(tr::scratchpad(), ".", false).unwrap();
 	tr::log("this directory has: (not including hidden)");
@@ -204,6 +202,7 @@ static void test::filesystem()
 	TR_ASSERT(!tr::is_file("../").unwrap());
 
 	tr::set_paths("assets", "libtrippin");
+	tr::create_dir(tr::path(tr::scratchpad(), "user://")).unwrap();
 	tr::log("app dir: %s", *tr::path(tr::scratchpad(), "app://crap.txt"));
 	tr::log("user dir: %s", *tr::path(tr::scratchpad(), "user://crap.txt"));
 }
