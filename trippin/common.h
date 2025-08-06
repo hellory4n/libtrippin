@@ -92,10 +92,10 @@ static_assert(sizeof(float64) == 8, "float64 must be 64-bits (duh)");
 namespace tr {
 
 // I sure love versions.
-static constexpr const char* VERSION = "v2.4.1";
+static constexpr const char* VERSION = "v2.4.2";
 
 // I sure love versions. Format is XYYZZ
-static constexpr uint32 VERSION_NUM = 2'04'01;
+static constexpr uint32 VERSION_NUM = 2'04'02;
 
 // Initializes the bloody library lmao.
 void init();

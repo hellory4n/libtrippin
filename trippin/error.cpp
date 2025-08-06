@@ -328,14 +328,14 @@ tr::String tr::FileError::message() const
 	// on windows we currently use both errno and win32
 	if (this->op == FileOperation::MOVE_FILE) {
 		return tr::fmt(tr::scratchpad(),
-				"%s (source '%s', destination '%s', errno %i, win32 %i): %s",
-				operation.buf(), this->path_a.buf(), this->path_b.buf(),
-				this->errno_code, this->win32_code, error.buf());
+			       "%s (source '%s', destination '%s', errno %i, win32 %i): %s",
+			       operation.buf(), this->path_a.buf(), this->path_b.buf(),
+			       this->errno_code, this->win32_code, error.buf());
 	}
 	else {
 		return tr::fmt(tr::scratchpad(), "%s (path '%s', errno %i, win32 %i): %s",
-				operation.buf(), this->path_a.buf(), this->errno_code, this->win32_code,
-				error.buf());
+			       operation.buf(), this->path_a.buf(), this->errno_code,
+			       this->win32_code, error.buf());
 	}
 #endif
 }
