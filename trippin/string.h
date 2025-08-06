@@ -146,6 +146,10 @@ public:
 	[[nodiscard]]
 	String substr(Arena& arena, usize start, usize end) const;
 
+	// Returns an array with all of the indexes containing that character (the index is where it
+	// starts)
+	Array<usize> find(Arena& arena, char c, usize start = 0, usize end = 0) const;
+
 	// Returns an array with all of the indexes containing the substring (the index is where it
 	// starts)
 	Array<usize> find(Arena& arena, String str, usize start = 0, usize end = 0) const;

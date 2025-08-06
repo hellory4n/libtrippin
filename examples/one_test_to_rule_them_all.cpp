@@ -202,9 +202,9 @@ static void test::filesystem()
 	TR_ASSERT(!tr::is_file("../").unwrap());
 
 	tr::set_paths("assets", "libtrippin");
-	tr::create_dir(tr::path(tr::scratchpad(), "user://")).unwrap();
 	tr::log("app dir: %s", *tr::path(tr::scratchpad(), "app://crap.txt"));
 	tr::log("user dir: %s", *tr::path(tr::scratchpad(), "user://crap.txt"));
+	tr::create_dir(tr::path(tr::scratchpad(), "user://")).unwrap();
 }
 
 static void test::all()

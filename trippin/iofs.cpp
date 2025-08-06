@@ -35,10 +35,12 @@
 	#include <windows.h>
 
 	// conflicts :D
-	#define WIN32_ERROR ERROR
 	#undef ERROR
 
 	#include <cstdio>
+
+	// windows and its consequences have been a disaster for the human race
+	#include <direct.h>
 #else
 	#include <cerrno>
 	#include <cstdio>
@@ -179,6 +181,8 @@ void tr::set_paths(tr::String appdir, tr::String userdir)
 	tr::user_dir = userdir.duplicate(tr::core_arena);
 }
 
+// TODO maybe at some point just make this be a fancy wrapper for some other library
+
 #ifdef _WIN32
 /*
  * WINDOWS IMPLEMENTATION
@@ -232,23 +236,20 @@ tr::Result<tr::File&, tr::FileError> tr::File::open(tr::Arena& arena, tr::String
 	// we want everything to be unix like
 	// so we have to use binary mode
 	case FileMode::READ_TEXT:
-		modefrfr = L"rb";
-		break;
 	case FileMode::READ_BINARY:
 		modefrfr = L"rb";
 		break;
+
 	case FileMode::WRITE_TEXT:
-		modefrfr = L"wb";
-		break;
 	case FileMode::WRITE_BINARY:
 		modefrfr = L"wb";
 		break;
+
 	case FileMode::READ_WRITE_TEXT:
-		modefrfr = L"rb+";
-		break;
 	case FileMode::READ_WRITE_BINARY:
 		modefrfr = L"rb+";
 		break;
+
 	default:
 		modefrfr = L"";
 		break;
@@ -294,10 +295,10 @@ tr::Result<int64, const tr::Error&> tr::File::position()
 	FileError::reset_errors();
 
 	int64 pos = _ftelli64(static_cast<FILE*>(this->fptr));
-	if (pos < 0)
+	if (pos < 0) {
 		return FileError::from_errno(this->path, "", FileOperation::GET_FILE_POSITION);
-	else
-		return pos;
+	}
+	return pos;
 }
 
 tr::Result<int64, const tr::Error&> tr::File::len()
@@ -331,10 +332,10 @@ tr::Result<void, const tr::Error&> tr::File::seek(int64 bytes, tr::SeekFrom from
 	}
 
 	int i = _fseeki64(static_cast<FILE*>(this->fptr), bytes, whence);
-	if (i != 0)
+	if (i != 0) {
 		return FileError::from_errno(this->path, "", FileOperation::SEEK_FILE);
-	else
-		return {};
+	}
+	return {};
 }
 
 tr::Result<void, const tr::Error&> tr::File::rewind()
@@ -342,10 +343,10 @@ tr::Result<void, const tr::Error&> tr::File::rewind()
 	FileError::reset_errors();
 
 	::rewind(static_cast<FILE*>(this->fptr));
-	if (errno != 0)
+	if (errno != 0) {
 		return FileError::from_errno(this->path, "", FileOperation::REWIND_FILE);
-	else
-		return {};
+	}
+	return {};
 }
 
 tr::Result<int64, const tr::Error&> tr::File::read_bytes(void* out, int64 size, int64 items)
@@ -356,10 +357,10 @@ tr::Result<int64, const tr::Error&> tr::File::read_bytes(void* out, int64 size, 
 	TR_ASSERT_MSG(this->can_read(), "dumbass you can't read this file");
 
 	usize bytes = fread(out, size, items, static_cast<FILE*>(this->fptr));
-	if (errno != 0)
+	if (errno != 0) {
 		return FileError::from_errno(this->path, "", FileOperation::READ_FILE);
-	else
-		return bytes;
+	}
+	return bytes;
 }
 
 tr::Result<void, const tr::Error&> tr::File::flush()
@@ -367,10 +368,10 @@ tr::Result<void, const tr::Error&> tr::File::flush()
 	FileError::reset_errors();
 
 	int i = fflush(static_cast<FILE*>(this->fptr));
-	if (i == EOF)
+	if (i == EOF) {
 		return FileError::from_errno(this->path, "", FileOperation::FLUSH_FILE);
-	else
-		return {};
+	}
+	return {};
 }
 
 tr::Result<void, const tr::Error&> tr::File::write_bytes(Array<uint8> bytes)
@@ -379,27 +380,21 @@ tr::Result<void, const tr::Error&> tr::File::write_bytes(Array<uint8> bytes)
 	TR_ASSERT_MSG(this->can_write(), "dumbass you can't write to this file");
 
 	fwrite(bytes.buf(), sizeof(uint8), bytes.len(), static_cast<FILE*>(this->fptr));
-	if (errno != 0)
+	if (errno != 0) {
 		return FileError::from_errno(this->path, "", FileOperation::WRITE_FILE);
-	else
-		return {};
+	}
+	return {};
 }
 
 bool tr::File::can_read()
 {
 	switch (this->mode) {
 	case FileMode::READ_TEXT:
-		return true;
 	case FileMode::READ_BINARY:
-		return true;
-	case FileMode::WRITE_TEXT:
-		return false;
-	case FileMode::WRITE_BINARY:
-		return false;
 	case FileMode::READ_WRITE_TEXT:
-		return true;
 	case FileMode::READ_WRITE_BINARY:
 		return true;
+
 	default:
 		return false;
 	}
@@ -408,18 +403,12 @@ bool tr::File::can_read()
 bool tr::File::can_write()
 {
 	switch (this->mode) {
-	case FileMode::READ_TEXT:
-		return false;
-	case FileMode::READ_BINARY:
-		return false;
 	case FileMode::WRITE_TEXT:
-		return true;
 	case FileMode::WRITE_BINARY:
-		return true;
 	case FileMode::READ_WRITE_TEXT:
-		return true;
 	case FileMode::READ_WRITE_BINARY:
 		return true;
+
 	default:
 		return false;
 	}
@@ -430,10 +419,10 @@ tr::Result<void, tr::FileError> tr::remove_file(tr::String path)
 	FileError::reset_errors();
 
 	remove(path);
-	if (errno != 0)
+	if (errno != 0) {
 		return FileError::from_errno(path, "", FileOperation::REMOVE_FILE);
-	else
-		return {};
+	}
+	return {};
 }
 
 tr::Result<void, tr::FileError> tr::move_file(tr::String from, tr::String to)
@@ -447,16 +436,18 @@ tr::Result<void, tr::FileError> tr::move_file(tr::String from, tr::String to)
 		return FileError(from, to, FileErrorType::FILE_EXISTS, FileOperation::MOVE_FILE);
 
 	int i = rename(from, to);
-	if (i == -1)
+	if (i == -1) {
 		return FileError::from_errno(from, to, FileOperation::MOVE_FILE);
-	else
-		return {};
+	}
+	return {};
 }
 
 bool tr::file_exists(tr::String path)
 {
 	DWORD attr = GetFileAttributesW(from_trippin_to_win32_str(path));
-	return (attr != INVALID_FILE_ATTRIBUTES && !(attr & FILE_ATTRIBUTE_DIRECTORY));
+	// NOLINTBEGIN(readability-implicit-bool-conversion)
+	return attr != INVALID_FILE_ATTRIBUTES;
+	// NOLINTEND(readability-implicit-bool-conversion)
 }
 
 tr::Result<void, tr::FileError> tr::create_dir(tr::String path)
@@ -464,16 +455,26 @@ tr::Result<void, tr::FileError> tr::create_dir(tr::String path)
 	FileError::reset_errors();
 
 	// it's recursive :)
-	Array<String> dirs = path.replace(tr::scratchpad(), '\\', '/').split(tr::scratchpad(), '/');
-
-	for (auto [_, dir] : dirs) {
-		if (tr::file_exists(dir)) continue;
-
-		if (!CreateDirectoryW(from_trippin_to_win32_str(dir), nullptr)) {
-			return FileError::from_win32(path, "", FileOperation::CREATE_DIR);
-		}
+	path = path.replace(tr::scratchpad(), '\\', '/');
+	Array<String> dirs = path.split(tr::scratchpad(), '/');
+	if (dirs.len() == 0) {
+		tr::warn("couldn't create directory '%s', path is likely corrupted/invalid", *path);
+		return {};
 	}
 
+	String full_dir = dirs[0];
+
+	for (auto [i, dir] : dirs) {
+		if (i > 0) {
+			full_dir = tr::fmt(tr::scratchpad(), "%s/%s", *full_dir, *dir);
+		}
+
+		if (tr::file_exists(full_dir)) continue;
+
+		if (_wmkdir(from_trippin_to_win32_str(full_dir)) == -1) {
+			return FileError::from_win32(full_dir, "", FileOperation::CREATE_DIR);
+		}
+	}
 	return {};
 }
 
@@ -481,9 +482,12 @@ tr::Result<void, tr::FileError> tr::remove_dir(tr::String path)
 {
 	FileError::reset_errors();
 
+	// it's not my fault windows is garbage :(
+	// NOLINTBEGIN(readability-implicit-bool-conversion)
 	if (!RemoveDirectoryW(from_trippin_to_win32_str(path))) {
 		return FileError::from_win32(path, "", FileOperation::REMOVE_DIR);
 	}
+	// NOLINTEND(readability-implicit-bool-conversion)
 	return {};
 }
 
@@ -508,7 +512,9 @@ tr::Result<tr::Array<tr::String>, tr::FileError> tr::list_dir(tr::Arena& arena, 
 		if (wcscmp(find_file_data.cFileName, L"..") == 0) continue;
 
 		if (!include_hidden) {
+			// NOLINTBEGIN(readability-implicit-bool-conversion)
 			if (find_file_data.dwFileAttributes & FILE_ATTRIBUTE_HIDDEN) continue;
+			// NOLINTEND(readability-implicit-bool-conversion)
 		}
 
 		entries.add(from_win32_to_trippin_str(find_file_data.cFileName));
@@ -526,10 +532,12 @@ tr::Result<bool, tr::FileError> tr::is_file(tr::String path)
 		return FileError::from_win32(path, "", FileOperation::IS_FILE);
 	}
 
+	// NOLINTBEGIN(readability-implicit-bool-conversion)
 	return !(attributes & FILE_ATTRIBUTE_DIRECTORY);
+	// NOLINTEND(readability-implicit-bool-conversion)
 }
 
-void tr::__init_paths()
+void tr::_init_paths()
 {
 	// we're first getting it as utf-16 then converting it back to utf-8 just in case lmao
 	WinStrMut exedir = static_cast<WinStrMut>(tr::core_arena.alloc(MAX_PATH * sizeof(wchar_t)));
@@ -558,14 +566,18 @@ void tr::__init_paths()
 
 	// msvc complains about getenv
 	#ifdef TR_ONLY_MSVC
-	char buf[MAX_PATH] = {};
-	// HOW IS char(*)[] INCOMPATIBLE WITH char**
-	_dupenv_s(reinterpret_cast<char**>(&buf), nullptr, "APPDATA");
-	tr::user_dir = String(buf).duplicate(tr::core_arena);
+	auto* buf = static_cast<wchar_t*>(tr::scratchpad().alloc(MAX_PATH * sizeof(wchar_t)));
+	_wdupenv_s(&buf, nullptr, L"APPDATA");
+	tr::user_dir = from_win32_to_trippin_str(buf).duplicate(tr::core_arena);
 	#else
 	char* appdata = getenv("APPDATA");
 	tr::user_dir = String(appdata).duplicate(tr::core_arena);
 	#endif
+
+	// normalize path separators
+	// just in case
+	tr::exe_dir = tr::exe_dir.replace(tr::core_arena, '\\', '/');
+	tr::appdata_dir = tr::user_dir.replace(tr::core_arena, '\\', '/');
 }
 
 #else
@@ -906,7 +918,7 @@ void tr::_init_paths()
 		tr::exe_dir = ".";
 	}
 	else {
-		tr::exe_dir[usize(len)] = '\0';
+		tr::exe_dir[static_cast<usize>(len)] = '\0';
 		tr::exe_dir = tr::exe_dir.directory(tr::core_arena);
 	}
 

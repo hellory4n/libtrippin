@@ -49,9 +49,28 @@ tr::String tr::String::substr(tr::Arena& arena, usize start, usize end) const
 	return str;
 }
 
+tr::Array<usize> tr::String::find(tr::Arena& arena, char c, usize start, usize end) const
+{
+	if (end == 0 || end > this->len()) end = this->len();
+	// you can't find it if it's not there
+	if (this->len() == 0) return {};
+
+	Array<usize> indexes(tr::scratchpad(), 0);
+
+	for (usize i = start; i < end; i++) {
+		if ((*this)[i] == c) {
+			indexes.add(i);
+		}
+	}
+
+	return Array<usize>(arena, indexes.buf(), indexes.len());
+}
+
 tr::Array<usize> tr::String::find(tr::Arena& arena, tr::String str, usize start, usize end) const
 {
 	if (end == 0 || end > this->len()) end = this->len();
+	// you can't find it if it's not there
+	if (str.len() == 0 || this->len() == 0) return {};
 
 	Array<usize> indexes(tr::scratchpad(), 0);
 
@@ -155,8 +174,8 @@ tr::String tr::String::replace(tr::Arena& arena, char from, char to) const
 	Array<usize> indexes = this->find(tr::scratchpad(), from);
 	String str = this->duplicate(tr::scratchpad());
 
-	for (ArrayItem<usize> c : indexes) {
-		str[c.val] = to;
+	for (auto [_, idx] : indexes) {
+		str[idx] = to;
 	}
 
 	return str.duplicate(arena);
