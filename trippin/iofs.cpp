@@ -201,7 +201,8 @@ static WinStrConst from_trippin_to_win32_str(tr::String str)
 	// conveniently microsoft knows this is torture and gives a function for this exact purpose
 	int size = MultiByteToWideChar(CP_UTF8, 0, str.buf(), -1, nullptr, 0);
 	// TODO idk if it can go negative but the headers don't have documentation, and the search
-	// online button uses bing let's just say, that this table right here, is bill gates!
+	// online button uses bing
+	// let's just say, that this table right here, is bill gates!
 	// *smashes table* YEAHHHHHHHHHHHHHH https://www.youtube.com/watch?v=WGFLPbpdMS8
 	TR_ASSERT_MSG(size != 0, "blame it on windows");
 
@@ -568,16 +569,16 @@ void tr::_init_paths()
 	#ifdef TR_ONLY_MSVC
 	auto* buf = static_cast<wchar_t*>(tr::scratchpad().alloc(MAX_PATH * sizeof(wchar_t)));
 	_wdupenv_s(&buf, nullptr, L"APPDATA");
-	tr::user_dir = from_win32_to_trippin_str(buf).duplicate(tr::core_arena);
+	tr::appdata_dir = from_win32_to_trippin_str(buf).duplicate(tr::core_arena);
 	#else
 	char* appdata = getenv("APPDATA");
-	tr::user_dir = String(appdata).duplicate(tr::core_arena);
+	tr::appdata_dir = String(appdata).duplicate(tr::core_arena);
 	#endif
 
 	// normalize path separators
 	// just in case
 	tr::exe_dir = tr::exe_dir.replace(tr::core_arena, '\\', '/');
-	tr::appdata_dir = tr::user_dir.replace(tr::core_arena, '\\', '/');
+	tr::appdata_dir = tr::appdata_dir.replace(tr::core_arena, '\\', '/');
 }
 
 #else
