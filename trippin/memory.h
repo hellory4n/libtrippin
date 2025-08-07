@@ -383,6 +383,23 @@ public:
 		memcpy(result.buf(), this->buf(), this->len() * sizeof(T));
 		return result;
 	}
+
+	// Clears the array duh. The `reset_all_items` sets the existing buffer to 0, which you may
+	// not want if you just want to reuse the buffer for hyper-ultra-blazingly-fast-optimization
+	void clear(bool reset_all_items = true)
+	{
+		if (reset_all_items) {
+			// apparently memset is fucked, std::fill_n does nothing and memset_s just
+			// doesn't exist in c++?? source:
+			// https://en.cppreference.com/w/cpp/string/byte/memset#Notes
+			// maybe i'm just stupid :)
+			// TODO am i stupid?
+			for (usize i = 0; i < this->length * sizeof(T); i++) {
+				static_cast<uint8*>(this->ptr)[i] = 0;
+			}
+		}
+		this->length = 0;
+	}
 };
 
 } // namespace tr

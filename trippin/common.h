@@ -33,6 +33,29 @@
 #include <type_traits>
 #include <utility>
 
+#ifndef __cplusplus
+	#error "You need a C++ compiler to use libtrippin..."
+#endif
+
+// check for C++17 support
+#ifndef _MSC_VER
+	#if __cplusplus < 201703L
+		#error "libtrippin requires C++17 or higher"
+	#endif
+#else
+	// as always msvc is a bitch and doesn't correctly define __cplusplus until newer versions,
+	// but only if you use some extra flag of course
+	// like why
+	// what the fuck is wrong with you
+	#if _MSC_VER >= 1914
+		#if _MSVC_LANG < 201703L
+			#error "libtrippin requires C++17 or higher"
+		#endif
+	#else
+		#error "Your Visual Studio installation is too old, please update to Visual Studio 2017 or higher"
+	#endif
+#endif
+
 // get compiler
 // checking between gcc and clang is useful because some warnings are different
 #if defined(__clang__)
@@ -92,10 +115,10 @@ static_assert(sizeof(float64) == 8, "float64 must be 64-bits (duh)");
 namespace tr {
 
 // I sure love versions.
-static constexpr const char* VERSION = "v2.4.2";
+static constexpr const char* VERSION = "v2.4.3";
 
 // I sure love versions. Format is XYYZZ
-static constexpr uint32 VERSION_NUM = 2'04'02;
+static constexpr uint32 VERSION_NUM = 2'04'03;
 
 // Initializes the bloody library lmao.
 void init();
