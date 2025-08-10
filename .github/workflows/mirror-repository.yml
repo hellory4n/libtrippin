@@ -8,6 +8,6 @@ on: [push]
             fetch-depth: 0
         - uses: yesolutions/mirror-action@master
           with:
-            REMOTE: 'https://gitlab.com/spyoungtech/mirror-action.git'
-            GIT_USERNAME: spyoungtech
+            REMOTE: 'https://codeberg.org/hellory4n/libtrippin.git'
+            GIT_USERNAME: hellory4n
             GIT_PASSWORD: ${{ secrets.GIT_PASSWORD }}
