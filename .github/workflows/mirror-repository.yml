@@ -12,6 +12,6 @@ jobs:
           fetch-depth: 0
       - uses: yesolutions/mirror-action@master
         with:
-          REMOTE: 'not-the-real-url.com/repo.git'
-          GIT_USERNAME: username
+          REMOTE: 'https://codeberg.org/hellory4n/libtrippin.git'
+          GIT_USERNAME: hellory4n
           GIT_PASSWORD: ${{ secrets.GIT_PASSWORD }}
