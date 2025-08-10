@@ -1,7 +1,8 @@
 name: Mirror to Codeberg
-run-name: I am mirroring it...
-on: [push]
-  steps:
+run-name: 'I am mirroring it...'
+on:
+  push:
+    steps:
     - uses: actions/checkout@v3
       with:
         fetch-depth: 0
