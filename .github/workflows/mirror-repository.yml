@@ -1,4 +1,4 @@
-name: Mirror to Codeberg
+name: 'Mirror to Codeberg'
 run-name: 'I am mirroring it...'
 on:
   push:
