@@ -11,6 +11,7 @@
 // TODO use actual tests you dumbass
 
 namespace test {
+
 static void logging();
 static void memory();
 static void arrays();
@@ -18,6 +19,7 @@ static void strings();
 static void hashmaps();
 static void filesystem();
 static void all();
+
 } // namespace test
 
 static void test::logging()

@@ -148,12 +148,10 @@ public:
 
 	// Writes a formatted string into the stream. So pretty much just fprintf.
 	[[gnu::format(printf, 2, 3)]]
-	// `this` is the first argument i guess
 	Result<void, const Error&> printf(const char* fmt, ...);
 
 	// Similar to `Writer.printf()`, but it adds a newline at the end.
 	[[gnu::format(printf, 2, 3)]]
-	// `this` is the first argument i guess
 	Result<void, const Error&> println(const char* fmt, ...);
 
 	// Writes an empty line. Mind-boggling.
@@ -212,7 +210,7 @@ public:
 	~File();
 
 	// Opens a fucking file from fucking somewhere. Returns null on error.
-	static Result<File&, FileError> open(Arena& arena, String path, FileMode mode);
+	static Result<File&, const Error&> open(Arena& arena, String path, FileMode mode);
 
 	// Closes the file :)
 	void close();

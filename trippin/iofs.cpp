@@ -225,8 +225,8 @@ static tr::String from_win32_to_trippin_str(WinStrConst str)
 	return new_str;
 }
 
-tr::Result<tr::File&, tr::FileError> tr::File::open(tr::Arena& arena, tr::String path,
-						    FileMode mode)
+tr::Result<tr::File&, const tr::Error&> tr::File::open(tr::Arena& arena, tr::String path,
+						       FileMode mode)
 {
 	FileError::reset_errors();
 
@@ -586,8 +586,8 @@ void tr::_init_paths()
  * POSIX IMPLEMENTATION
  */
 
-tr::Result<tr::File&, tr::FileError> tr::File::open(tr::Arena& arena, tr::String path,
-						    tr::FileMode mode)
+tr::Result<tr::File&, const tr::Error&> tr::File::open(tr::Arena& arena, tr::String path,
+						       tr::FileMode mode)
 {
 	FileError::reset_errors();
 
