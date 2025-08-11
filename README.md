@@ -191,12 +191,13 @@ TR_TRY_ASSERT(2 + 2 == 5, tr::scratchpad().make<tr::StringError>("i might be wro
 // reading
 tr::File& file = tr::File::open(arena, "file.txt", tr::FileMode::READ_TEXT).unwrap();
 tr::String line = file.read_line(arena).unwrap();
-// it closes automatically!
+file.close();
 
 // writing
 tr::File& file = tr::File::open(arena, "otherfile.bin", tr::FileMode::WRITE_BINARY).unwrap();
-file->write_string("Man...\nso true");
-file->write_struct(2758952);
+file.write_string("Man...\nso true");
+file.write_struct(2758952);
+file.close();
 ```
 
 ## FAQ

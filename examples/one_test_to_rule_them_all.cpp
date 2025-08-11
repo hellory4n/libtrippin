@@ -1,3 +1,5 @@
+#include <cstdio>
+
 #include <trippin/collection.h>
 #include <trippin/common.h>
 #include <trippin/iofs.h>
@@ -5,8 +7,6 @@
 #include <trippin/math.h>
 #include <trippin/memory.h>
 #include <trippin/string.h>
-
-#include <stdio.h>
 
 // TODO use actual tests you dumbass
 

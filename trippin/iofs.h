@@ -207,7 +207,6 @@ class File : public Reader, public Writer
 
 public:
 	File() : path("") {}
-	~File();
 
 	// Opens a fucking file from fucking somewhere. Returns null on error.
 	static Result<File&, const Error&> open(Arena& arena, String path, FileMode mode);

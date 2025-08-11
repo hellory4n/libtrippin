@@ -285,12 +285,6 @@ void tr::File::close()
 	this->fptr = nullptr;
 }
 
-tr::File::~File()
-{
-	FileError::reset_errors();
-	this->close();
-}
-
 tr::Result<int64, const tr::Error&> tr::File::position()
 {
 	FileError::reset_errors();
@@ -644,12 +638,6 @@ void tr::File::close()
 		fclose(static_cast<FILE*>(this->fptr));
 	}
 	this->fptr = nullptr;
-}
-
-tr::File::~File()
-{
-	FileError::reset_errors();
-	this->close();
 }
 
 tr::Result<int64, const tr::Error&> tr::File::position()
