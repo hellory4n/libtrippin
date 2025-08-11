@@ -79,9 +79,21 @@
 #ifdef TR_GCC_OR_CLANG
 	#define TR_GCC_PRAGMA(X) _Pragma(#X)
 
-	#define TR_GCC_IGNORE_WARNING(Warning)                                                     \
-		TR_GCC_PRAGMA(GCC diagnostic push)                                                 \
-		TR_GCC_PRAGMA(GCC diagnostic ignored #Warning)
+	#ifdef TR_ONLY_CLANG
+		#define TR_GCC_IGNORE_WARNING(Warning)                                             \
+			TR_GCC_PRAGMA(GCC diagnostic push)                                         \
+			/* so you don't have to check between GCC and clang, it'll just shut up */ \
+			TR_GCC_PRAGMA(GCC diagnostic ignored "-Wunknown-warning-option")           \
+			TR_GCC_PRAGMA(GCC diagnostic push)                                         \
+			TR_GCC_PRAGMA(GCC diagnostic ignored #Warning)
+	#else
+		#define TR_GCC_IGNORE_WARNING(Warning)                                             \
+			TR_GCC_PRAGMA(GCC diagnostic push)                                         \
+			/* so you don't have to check between GCC and clang, it'll just shut up */ \
+			TR_GCC_PRAGMA(GCC diagnostic ignored "-Wpragmas")                          \
+			TR_GCC_PRAGMA(GCC diagnostic push)                                         \
+			TR_GCC_PRAGMA(GCC diagnostic ignored #Warning)
+	#endif
 
 	#define TR_GCC_RESTORE() TR_GCC_PRAGMA(GCC diagnostic pop)
 #else
@@ -115,10 +127,10 @@ static_assert(sizeof(float64) == 8, "float64 must be 64-bits (duh)");
 namespace tr {
 
 // I sure love versions.
-static constexpr const char* VERSION = "v2.4.3";
+static constexpr const char* VERSION = "v2.4.4";
 
 // I sure love versions. Format is XYYZZ
-static constexpr uint32 VERSION_NUM = 2'04'03;
+static constexpr uint32 VERSION_NUM = 2'04'04;
 
 // Initializes the bloody library lmao.
 void init();
