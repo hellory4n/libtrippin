@@ -287,31 +287,29 @@ public:
 
 // evil macro fuckery for less boilerplate
 
-#define __TR_CONCAT2(A, B) A##B
-#define __TR_CONCAT(A, B) __TR_CONCAT2(A, B)
-#define __TR_UNIQUE_NAME(Base) __TR_CONCAT(Base, __LINE__)
-
 // Shorthand for calling a function, unwrapping if valid, and returning an error otherwise
 // example: TR_TRY_ASSIGN(int32 var, some_function());
-#define TR_TRY_ASSIGN(Var, ...)                                     \
-	const auto __TR_UNIQUE_NAME(__tr_try_tmp) = (__VA_ARGS__);  \
-	if (!__TR_UNIQUE_NAME(__tr_try_tmp).is_valid()) {           \
-		return __TR_UNIQUE_NAME(__tr_try_tmp).unwrap_err(); \
-	}                                                           \
-	Var = __TR_UNIQUE_NAME(__tr_try_tmp).unwrap()
+#define TR_TRY_ASSIGN(Var, ...)                                   \
+	const auto _TR_UNIQUE_NAME(_tr_try_tmp) = (__VA_ARGS__);  \
+	if (!_TR_UNIQUE_NAME(_tr_try_tmp).is_valid()) {           \
+		return _TR_UNIQUE_NAME(_tr_try_tmp).unwrap_err(); \
+	}                                                         \
+	Var = _TR_UNIQUE_NAME(_tr_try_tmp).unwrap()
 
 // `TR_TRY_ASSIGN` but for `tr::Result<void, E>`, or for when you don't care about the result
 // example: TR_TRY(some_function());
-#define TR_TRY(...)                                                 \
-	const auto __TR_UNIQUE_NAME(__tr_try_tmp) = (__VA_ARGS__);  \
-	if (!__TR_UNIQUE_NAME(__tr_try_tmp).is_valid()) {           \
-		return __TR_UNIQUE_NAME(__tr_try_tmp).unwrap_err(); \
+#define TR_TRY(...)                                               \
+	const auto _TR_UNIQUE_NAME(_tr_try_tmp) = (__VA_ARGS__);  \
+	if (!_TR_UNIQUE_NAME(_tr_try_tmp).is_valid()) {           \
+		return _TR_UNIQUE_NAME(_tr_try_tmp).unwrap_err(); \
 	}
 
 // Similar to `tr::assert`, but instead of panicking, it returns an error.
 // example: TR_TRY_ASSERT(false, tr::StringError("something went wrong"));
-#define TR_TRY_ASSERT(X, ...)          \
-	if (!(X)) return (__VA_ARGS__)
+#define TR_TRY_ASSERT(X, ...)        \
+	if (!(X)) {                  \
+		return (__VA_ARGS__) \
+	}
 
 } // namespace tr
 

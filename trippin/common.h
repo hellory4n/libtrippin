@@ -33,10 +33,6 @@
 #include <type_traits>
 #include <utility>
 
-#ifndef __cplusplus
-	#error "You need a C++ compiler to use libtrippin..."
-#endif
-
 // check for C++17 support
 #ifndef _MSC_VER
 	#if __cplusplus < 201703L
@@ -126,10 +122,10 @@ static_assert(sizeof(float64) == 8, "float64 must be 64-bits (duh)");
 namespace tr {
 
 // I sure love versions.
-static constexpr const char* VERSION = "v2.4.5";
+static constexpr const char* VERSION = "v2.5.0";
 
 // I sure love versions. Format is XYYZZ
-static constexpr uint32 VERSION_NUM = 2'04'05;
+static constexpr uint32 VERSION_NUM = 2'05'00;
 
 // Initializes the bloody library lmao.
 void init();
@@ -596,6 +592,38 @@ RangeIterator<T> range(T end)
 {
 	return RangeIterator<T>(0, end, 0, 1);
 }
+
+// evil macro fuckery
+#define _TR_CONCAT2(A, B) A##B
+#define _TR_CONCAT(A, B) _TR_CONCAT2(A, B)
+#define _TR_UNIQUE_NAME(Base) _TR_CONCAT(Base, __LINE__)
+
+// defer
+// usage: e.g. TR_DEFER(free(ptr));
+
+template<typename Fn>
+struct _Defer
+{
+	Fn fn;
+
+	_Defer(Fn fn)
+		: fn(fn)
+	{
+	}
+
+	~_Defer()
+	{
+		fn();
+	}
+};
+
+template<typename Fn>
+_Defer<Fn> _defer_func(Fn fn)
+{
+	return _Defer<Fn>(fn);
+}
+
+#define TR_DEFER(...) auto _TR_UNIQUE_NAME(_tr_defer) = tr::_defer_func([&]() { __VA_ARGS__; })
 
 } // namespace tr
 

@@ -26,6 +26,8 @@ static void test::logging()
 {
 	tr::log("\n==== LOGGING ====");
 
+	TR_DEFER(tr::log("i'm deferring it tbh"));
+
 	tr::log("sir");
 	tr::info("sir");
 	tr::warn("sir");
