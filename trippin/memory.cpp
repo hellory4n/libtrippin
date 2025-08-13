@@ -39,7 +39,9 @@ thread_local Arena _the_real_scratchpad(tr::kb_to_bytes(4));
 
 } // namespace tr
 
-tr::ArenaPage::ArenaPage(usize size, usize align) : bufsize(size), alignment(align)
+tr::ArenaPage::ArenaPage(usize size, usize align)
+	: bufsize(size)
+	, alignment(align)
 {
 	TR_ASSERT(size != 0);
 
@@ -51,9 +53,10 @@ tr::ArenaPage::ArenaPage(usize size, usize align) : bufsize(size), alignment(ali
 
 	// i don't think you can recover from that
 	// so just die
-	TR_ASSERT_MSG(this->buffer != nullptr,
-		      "couldn't allocate arena page of %zu B (%zu KB, %zu MB)", size,
-		      tr::bytes_to_kb(size), tr::bytes_to_mb(size));
+	TR_ASSERT_MSG(
+		this->buffer != nullptr, "couldn't allocate arena page of %zu B (%zu KB, %zu MB)",
+		size, tr::bytes_to_kb(size), tr::bytes_to_mb(size)
+	);
 
 	// i dont want to read garbage man
 	memset(this->buffer, 0, this->bufsize);
@@ -106,7 +109,8 @@ void* tr::ArenaPage::alloc(usize size, usize align)
 	return aligned_ptr;
 }
 
-tr::Arena::Arena(usize pg_size) : page_size(pg_size)
+tr::Arena::Arena(usize pg_size)
+	: page_size(pg_size)
 {
 	// it doesn't make a page until you allocate something
 	TR_ASSERT_MSG(this->page_size != 0, "you doofus why would you make an arena of 0 bytes");
@@ -115,7 +119,9 @@ tr::Arena::Arena(usize pg_size) : page_size(pg_size)
 tr::Arena::~Arena()
 {
 	// it doesn't make a page until you allocate something
-	if (this->page == nullptr) return;
+	if (this->page == nullptr) {
+		return;
+	}
 
 	// :)
 	this->call_destructors();
@@ -154,14 +160,18 @@ void* tr::Arena::alloc(usize size, usize align)
 	// AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 	// AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 	new_page->prev = this->page;
-	if (this->page != nullptr) this->page->next = new_page;
+	if (this->page != nullptr) {
+		this->page->next = new_page;
+	}
 	this->page = new_page;
 	this->bytes_capacity += new_pg_size;
 
 	// actually allocate frfrfrfr no cap ong icl
 	void* ptr = this->page->alloc(size, align);
-	TR_ASSERT_MSG(ptr != nullptr, "couldn't allocate %zu B in arena (%zu KB, %zu MB)", size,
-		      tr::bytes_to_kb(size), tr::bytes_to_mb(size));
+	TR_ASSERT_MSG(
+		ptr != nullptr, "couldn't allocate %zu B in arena (%zu KB, %zu MB)", size,
+		tr::bytes_to_kb(size), tr::bytes_to_mb(size)
+	);
 	this->bytes_allocated += size;
 	return ptr;
 }
@@ -171,7 +181,9 @@ void tr::Arena::call_destructors()
 	// yea
 	while (this->destructors != nullptr) {
 		// idfk why it does that
-		if (this->destructors->object == nullptr) break;
+		if (this->destructors->object == nullptr) {
+			break;
+		}
 
 		this->destructors->func(this->destructors->object);
 		this->destructors = this->destructors->next;
@@ -181,7 +193,9 @@ void tr::Arena::call_destructors()
 void tr::Arena::reset()
 {
 	// it doesn't make a page until you allocate something
-	if (this->page == nullptr) return;
+	if (this->page == nullptr) {
+		return;
+	}
 
 	ArenaPage* head = this->page;
 	while (head->prev != nullptr) {

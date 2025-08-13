@@ -79,19 +79,18 @@
 #ifdef TR_GCC_OR_CLANG
 	#define TR_GCC_PRAGMA(X) _Pragma(#X)
 
+	/* so you don't have to check between GCC and clang, it'll just shut up */
 	#ifdef TR_ONLY_CLANG
-		#define TR_GCC_IGNORE_WARNING(Warning)                                             \
-			TR_GCC_PRAGMA(GCC diagnostic push)                                         \
-			/* so you don't have to check between GCC and clang, it'll just shut up */ \
-			TR_GCC_PRAGMA(GCC diagnostic ignored "-Wunknown-warning-option")           \
-			TR_GCC_PRAGMA(GCC diagnostic push)                                         \
+		#define TR_GCC_IGNORE_WARNING(Warning) \
+			TR_GCC_PRAGMA(GCC diagnostic push)                  \
+			TR_GCC_PRAGMA(GCC diagnostic ignored "-Wunknown-warning-option")                  \
+			TR_GCC_PRAGMA(GCC diagnostic push)                  \
 			TR_GCC_PRAGMA(GCC diagnostic ignored #Warning)
 	#else
-		#define TR_GCC_IGNORE_WARNING(Warning)                                             \
-			TR_GCC_PRAGMA(GCC diagnostic push)                                         \
-			/* so you don't have to check between GCC and clang, it'll just shut up */ \
-			TR_GCC_PRAGMA(GCC diagnostic ignored "-Wpragmas")                          \
-			TR_GCC_PRAGMA(GCC diagnostic push)                                         \
+		#define TR_GCC_IGNORE_WARNING(Warning) \
+			TR_GCC_PRAGMA(GCC diagnostic push)                  \
+			TR_GCC_PRAGMA(GCC diagnostic ignored "-Wpragmas")                  \
+			TR_GCC_PRAGMA(GCC diagnostic push)                  \
 			TR_GCC_PRAGMA(GCC diagnostic ignored #Warning)
 	#endif
 
@@ -161,7 +160,7 @@ void call_on_quit(std::function<void(bool is_panic)> func);
 void panic(const char* fmt, ...);
 
 // Functional propaganda
-template <typename L, typename R>
+template<typename L, typename R>
 class Either
 {
 	enum class Side : uint8
@@ -172,10 +171,10 @@ class Either
 	};
 
 	// c++ is a lot of fun
-	template <typename T>
+	template<typename T>
 	using Storage = std::conditional_t<
 		std::is_reference_v<T>,
-		std::remove_reference_t<T>*,		     // store pointer for references
+		std::remove_reference_t<T>*, // store pointer for references
 		std::remove_cv_t<std::remove_reference_t<T>> // store decayed value for non-refs
 		>;
 
@@ -203,9 +202,13 @@ private:
 	}
 
 public:
-	Either() : side(Side::UNINITIALIZED) {}
+	Either()
+		: side(Side::UNINITIALIZED)
+	{
+	}
 
-	Either(L l) : side(Side::LEFT)
+	Either(L l)
+		: side(Side::LEFT)
 	{
 		// c++ is consuming my brain
 		// it's quite sad i hope they find a cure
@@ -217,7 +220,8 @@ public:
 		}
 	}
 
-	Either(R r) : side(Side::RIGHT)
+	Either(R r)
+		: side(Side::RIGHT)
 	{
 		if constexpr (std::is_reference_v<R>) {
 			this->_right = &r;
@@ -233,7 +237,8 @@ public:
 		this->destroy();
 	}
 
-	Either(const Either& other) : side(other.side)
+	Either(const Either& other)
+		: side(other.side)
 	{
 		if (this->side == Side::LEFT) {
 			if constexpr (std::is_reference_v<L>) {
@@ -276,7 +281,9 @@ public:
 	// Returns the left value, or panics if it's not left
 	L left() const
 	{
-		if (!this->is_left()) tr::panic("tr::Either<L, R> is right, NOT left");
+		if (!this->is_left()) {
+			tr::panic("tr::Either<L, R> is right, NOT left");
+		}
 
 		if constexpr (std::is_reference_v<L>) {
 			return *this->_left;
@@ -289,7 +296,9 @@ public:
 	// Returns the right value, or panics if it's not right
 	R right() const
 	{
-		if (!this->is_right()) tr::panic("tr::Either<L, R> is right, NOT left");
+		if (!this->is_right()) {
+			tr::panic("tr::Either<L, R> is right, NOT left");
+		}
 
 		if constexpr (std::is_reference_v<R>) {
 			return *this->_right;
@@ -302,16 +311,18 @@ public:
 	// Calls a function (usually a lambda) depending on whether it's left, or right.
 	void match(std::function<void(L left)> left_func, std::function<void(R right)> right_func)
 	{
-		if (this->is_left())
+		if (this->is_left()) {
 			left_func(this->left());
-		else
+		}
+		else {
 			right_func(this->right());
+		}
 	}
 };
 
 // Like how the spicy modern languages handle null. Note you have to use `MaybeRef<T>` for
 // references, because C++.
-template <typename T>
+template<typename T>
 class Maybe
 {
 	// TODO implement it yourself you scoundrel
@@ -320,10 +331,17 @@ class Maybe
 
 public:
 	// Initializes a Maybe<T> as null
-	Maybe() : value(0) {}
+	Maybe()
+		: value(0)
+	{
+	}
 
 	// Intializes a Maybe<T> with a value
-	Maybe(T val) : value(val), has_value(true) {}
+	Maybe(T val)
+		: value(val)
+		, has_value(true)
+	{
+	}
 
 	// If true, the maybe is, in fact, a definitely.
 	bool is_valid() const
@@ -334,7 +352,9 @@ public:
 	// Gets the value or panics if it's null
 	T unwrap() const
 	{
-		if (this->has_value) return this->value.left();
+		if (this->has_value) {
+			return this->value.left();
+		}
 		tr::panic("couldn't unwrap Maybe<T>");
 	}
 
@@ -359,20 +379,29 @@ public:
 // Like `Maybe<T>`, but for pointers/references. C++ didn't let me do `Maybe<T&>` lmao. This also
 // doesn't call destructors, as it's assumed you didn't create the value it's pointing to, if you
 // did, you'd use `Maybe<T>`
-template <typename T>
+template<typename T>
 class MaybePtr
 {
 	T* value = nullptr;
 
 public:
 	// Intializes a MaybePtr<T> as null
-	MaybePtr() : value(nullptr) {}
+	MaybePtr()
+		: value(nullptr)
+	{
+	}
 
 	// Initializes a MaybePtr<T> with a value.
-	MaybePtr(T* val) : value(val) {}
+	MaybePtr(T* val)
+		: value(val)
+	{
+	}
 
 	// Initializes a MaybePtr<T> with a value.
-	MaybePtr(T& val) : value(&val) {}
+	MaybePtr(T& val)
+		: value(&val)
+	{
+	}
 
 	// If true, the maybe is, in fact, a definitely.
 	bool is_valid() const
@@ -383,14 +412,18 @@ public:
 	// Gets the value as a reference, or panics if it's null
 	T& unwrap_ref() const
 	{
-		if (this->is_valid()) return *this->value;
+		if (this->is_valid()) {
+			return *this->value;
+		}
 		tr::panic("couldn't unwrap MaybePtr<T>");
 	}
 
 	// Gets the value as a pointer, or panics if it's null
 	T* unwrap_ptr() const
 	{
-		if (this->is_valid()) return this->value;
+		if (this->is_valid()) {
+			return this->value;
+		}
 		tr::panic("couldn't unwrap MaybePtr<T>");
 	}
 
@@ -430,13 +463,17 @@ public:
 };
 
 // It's a pair lmao.
-template <typename L, typename R>
+template<typename L, typename R>
 struct Pair
 {
 	L left;
 	R right;
 
-	Pair(const L& l, const R& r) : left(l), right(r) {}
+	Pair(const L& l, const R& r)
+		: left(l)
+		, right(r)
+	{
+	}
 };
 
 // "Macro argument should be enclosed in parentheses"
@@ -444,45 +481,45 @@ struct Pair
 // NOLINTBEGIN(bugprone-macro-parentheses)
 
 // Defines bit flag fuckery for enum classes :)
-#define TR_BIT_FLAG(T)                                                                             \
-	constexpr T operator|(T lhs, T rhs)                                                        \
-	{                                                                                          \
-		using N = std::underlying_type_t<T>;                                               \
-		return static_cast<T>(static_cast<N>(lhs) | static_cast<N>(rhs));                  \
-	}                                                                                          \
-	constexpr T operator&(T lhs, T rhs)                                                        \
-	{                                                                                          \
-		using N = std::underlying_type_t<T>;                                               \
-		return static_cast<T>(static_cast<N>(lhs) & static_cast<N>(rhs));                  \
-	}                                                                                          \
-	constexpr T operator~(T rhs)                                                               \
-	{                                                                                          \
-		using N = std::underlying_type_t<T>;                                               \
-		return static_cast<T>(~static_cast<N>(rhs));                                       \
-	}                                                                                          \
-	constexpr T& operator|=(T& lhs, T rhs)                                                     \
-	{                                                                                          \
-		lhs = lhs | rhs;                                                                   \
-		return lhs;                                                                        \
-	}                                                                                          \
-	constexpr T& operator&=(T& lhs, T rhs)                                                     \
-	{                                                                                          \
-		lhs = lhs & rhs;                                                                   \
-		return lhs;                                                                        \
-	}                                                                                          \
-	/* getting the namespacing right would be too obnoxious so you're supposed to use this */  \
-	/* like it's a keyword instead of like `tr::hasflag`/`st::hasflag`/whatever which is */    \
-	/* the correct style we use */                                                             \
-	constexpr bool hasflag(T value, T flag)                                                    \
-	{                                                                                          \
-		return (value & flag) == flag;                                                     \
+#define TR_BIT_FLAG(T)                                                                            \
+	constexpr T operator|(T lhs, T rhs)                                                       \
+	{                                                                                         \
+		using N = std::underlying_type_t<T>;                                              \
+		return static_cast<T>(static_cast<N>(lhs) | static_cast<N>(rhs));                 \
+	}                                                                                         \
+	constexpr T operator&(T lhs, T rhs)                                                       \
+	{                                                                                         \
+		using N = std::underlying_type_t<T>;                                              \
+		return static_cast<T>(static_cast<N>(lhs) & static_cast<N>(rhs));                 \
+	}                                                                                         \
+	constexpr T operator~(T rhs)                                                              \
+	{                                                                                         \
+		using N = std::underlying_type_t<T>;                                              \
+		return static_cast<T>(~static_cast<N>(rhs));                                      \
+	}                                                                                         \
+	constexpr T& operator|=(T& lhs, T rhs)                                                    \
+	{                                                                                         \
+		lhs = lhs | rhs;                                                                  \
+		return lhs;                                                                       \
+	}                                                                                         \
+	constexpr T& operator&=(T& lhs, T rhs)                                                    \
+	{                                                                                         \
+		lhs = lhs & rhs;                                                                  \
+		return lhs;                                                                       \
+	}                                                                                         \
+	/* getting the namespacing right would be too obnoxious so you're supposed to use this */ \
+	/* like it's a keyword instead of like `tr::hasflag`/`st::hasflag`/whatever which is */   \
+	/* the correct style we use */                                                            \
+	constexpr bool hasflag(T value, T flag)                                                   \
+	{                                                                                         \
+		return (value & flag) == flag;                                                    \
 	}
 
 // NOLINTEND(bugprone-macro-parentheses)
 
 // I love reinventing the wheel
 // TODO this kinda sucks
-template <typename T>
+template<typename T>
 class RangeIterator
 {
 	T start;
@@ -495,12 +532,15 @@ public:
 	// DIE
 	TR_GCC_IGNORE_WARNING(-Wshadow)
 	explicit RangeIterator(T start, T end, T cur, T step)
-		: start(start), stop(end), current(cur), step(step)
+		: start(start)
+		, stop(end)
+		, current(cur)
+		, step(step)
 	{
 	}
 	TR_GCC_RESTORE()
 
-	T operator*() const
+	T& operator*() const
 	{
 		return this->current;
 	}
@@ -537,21 +577,21 @@ public:
 };
 
 // Shorthand for a C-style loop. Similar to Go's `range()`
-template <typename T>
+template<typename T>
 RangeIterator<T> range(T start, T end, T step)
 {
 	return RangeIterator<T>(start, end, start, step);
 }
 
 // Shorthand for a C-style loop. Similar to Go's `range()`
-template <typename T>
+template<typename T>
 RangeIterator<T> range(T start, T end)
 {
 	return RangeIterator<T>(start, end, start, 1);
 }
 
 // Shorthand for a C-style loop. Similar to Go's `range()`
-template <typename T>
+template<typename T>
 RangeIterator<T> range(T end)
 {
 	return RangeIterator<T>(0, end, 0, 1);

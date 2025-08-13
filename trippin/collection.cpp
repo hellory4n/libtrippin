@@ -23,6 +23,8 @@
  *
  */
 
+// TODO the header thing is longer than the actual code, consider using this file
+
 #include "trippin/collection.h"
 
 constexpr uint64 FNV_OFFSET_BASIS = 0xcbf29ce484222325;

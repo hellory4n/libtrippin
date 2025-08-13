@@ -55,8 +55,8 @@ void tr::FileError::reset_errors()
 #endif
 }
 
-tr::FileError& tr::FileError::from_errno(tr::String patha, tr::String pathb,
-					 tr::FileOperation operation)
+tr::FileError&
+tr::FileError::from_errno(tr::String patha, tr::String pathb, tr::FileOperation operation)
 {
 	FileError& man = tr::scratchpad().make<FileError>();
 	man.path_a = patha;
@@ -123,8 +123,8 @@ tr::FileError& tr::FileError::from_errno(tr::String patha, tr::String pathb,
 
 #ifdef _WIN32
 // Checks Windows' `GetLastError` for errors :)
-tr::FileError& tr::FileError::from_win32(tr::String patha, tr::String pathb,
-					 tr::FileOperation operation)
+tr::FileError&
+tr::FileError::from_win32(tr::String patha, tr::String pathb, tr::FileOperation operation)
 {
 	FileError& man = tr::scratchpad().make<FileError>();
 	man.path_a = patha;
@@ -317,25 +317,32 @@ tr::String tr::FileError::message() const
 // these operations use 2 paths :)
 #ifndef _WIN32
 	if (this->op == FileOperation::MOVE_FILE) {
-		return tr::fmt(tr::scratchpad(), "%s (source '%s', destination '%s', errno %i): %s",
-			       operation.buf(), this->path_a.buf(), this->path_b.buf(),
-			       this->errno_code, error.buf());
+		return tr::fmt(
+			tr::scratchpad(), "%s (source '%s', destination '%s', errno %i): %s",
+			operation.buf(), this->path_a.buf(), this->path_b.buf(), this->errno_code,
+			error.buf()
+		);
 	}
-	return tr::fmt(tr::scratchpad(), "%s (path '%s', errno %i): %s", operation.buf(),
-		       this->path_a.buf(), this->errno_code, error.buf());
+	return tr::fmt(
+		tr::scratchpad(), "%s (path '%s', errno %i): %s", operation.buf(),
+		this->path_a.buf(), this->errno_code, error.buf()
+	);
 
 #else
 	// on windows we currently use both errno and win32
 	if (this->op == FileOperation::MOVE_FILE) {
-		return tr::fmt(tr::scratchpad(),
-			       "%s (source '%s', destination '%s', errno %i, win32 %i): %s",
-			       operation.buf(), this->path_a.buf(), this->path_b.buf(),
-			       this->errno_code, this->win32_code, error.buf());
+		return tr::fmt(
+			tr::scratchpad(),
+			"%s (source '%s', destination '%s', errno %i, win32 %i): %s",
+			operation.buf(), this->path_a.buf(), this->path_b.buf(), this->errno_code,
+			this->win32_code, error.buf()
+		);
 	}
 	else {
-		return tr::fmt(tr::scratchpad(), "%s (path '%s', errno %i, win32 %i): %s",
-			       operation.buf(), this->path_a.buf(), this->errno_code,
-			       this->win32_code, error.buf());
+		return tr::fmt(
+			tr::scratchpad(), "%s (path '%s', errno %i, win32 %i): %s", operation.buf(),
+			this->path_a.buf(), this->errno_code, this->win32_code, error.buf()
+		);
 	}
 #endif
 }

@@ -77,7 +77,8 @@ tr::Result<tr::String, const tr::Error&> tr::Reader::read_string(tr::Arena& aren
 
 	if (read != int64(length)) {
 		return tr::scratchpad().make<StringError>(
-			"expected %zu bytes, got %li (might be EOF)", length, read);
+			"expected %zu bytes, got %li (might be EOF)", length, read
+		);
 	}
 	return str;
 }
@@ -91,10 +92,14 @@ tr::Result<tr::String, const tr::Error&> tr::Reader::read_line(Arena& arena)
 		TR_TRY_ASSIGN(int64 read, this->read_bytes(&byte, sizeof(char), 1));
 
 		// eof? idfk man
-		if (read == 0) break;
+		if (read == 0) {
+			break;
+		}
 
 		// i love unixcxfukc
-		if (byte == '\n') break;
+		if (byte == '\n') {
+			break;
+		}
 
 		// windows :(
 		if (byte == '\r') {
@@ -102,14 +107,18 @@ tr::Result<tr::String, const tr::Error&> tr::Reader::read_line(Arena& arena)
 			TR_TRY_ASSIGN(read, this->read_bytes(&next_byte, sizeof(char), 1));
 
 			// eof still counts
-			if (read == 0 || next_byte == '\n') break;
+			if (read == 0 || next_byte == '\n') {
+				break;
+			}
 		}
 
 		// normal character
 		linema.add(byte);
 	}
 
-	if (linema.len() == 0) return String("");
+	if (linema.len() == 0) {
+		return String("");
+	}
 	return String(arena, linema.buf(), linema.len() + 1);
 }
 
@@ -162,14 +171,16 @@ tr::String tr::path(tr::Arena& arena, tr::String path)
 {
 	if (path.starts_with("app://")) {
 		String pathfrfr = path.substr(tr::scratchpad(), sizeof("app://") - 1, path.len());
-		return tr::fmt(arena, "%s/%s/%s", tr::exe_dir.buf(), tr::app_dir.buf(),
-			       pathfrfr.buf());
+		return tr::fmt(
+			arena, "%s/%s/%s", tr::exe_dir.buf(), tr::app_dir.buf(), pathfrfr.buf()
+		);
 	}
 
 	if (path.starts_with("user://")) {
 		String pathfrfr = path.substr(tr::scratchpad(), sizeof("user://") - 1, path.len());
-		return tr::fmt(arena, "%s/%s/%s", tr::appdata_dir.buf(), tr::user_dir.buf(),
-			       pathfrfr.buf());
+		return tr::fmt(
+			arena, "%s/%s/%s", tr::appdata_dir.buf(), tr::user_dir.buf(), pathfrfr.buf()
+		);
 	}
 
 	return path.duplicate(arena);
@@ -225,8 +236,8 @@ static tr::String from_win32_to_trippin_str(WinStrConst str)
 	return new_str;
 }
 
-tr::Result<tr::File&, const tr::Error&> tr::File::open(tr::Arena& arena, tr::String path,
-						       FileMode mode)
+tr::Result<tr::File&, const tr::Error&>
+tr::File::open(tr::Arena& arena, tr::String path, FileMode mode)
 {
 	FileError::reset_errors();
 
@@ -258,9 +269,12 @@ tr::Result<tr::File&, const tr::Error&> tr::File::open(tr::Arena& arena, tr::Str
 
 	File& file = arena.make<File>();
 	// normal fopen gives an error on visual studio??
-	errno_t ohno = _wfopen_s(reinterpret_cast<FILE**>(&file.fptr),
-				 from_trippin_to_win32_str(path), modefrfr);
-	if (ohno != 0) return FileError::from_errno(path, "", FileOperation::OPEN_FILE);
+	errno_t ohno = _wfopen_s(
+		reinterpret_cast<FILE**>(&file.fptr), from_trippin_to_win32_str(path), modefrfr
+	);
+	if (ohno != 0) {
+		return FileError::from_errno(path, "", FileOperation::OPEN_FILE);
+	}
 
 	file.is_std = false;
 	file.mode = mode;
@@ -347,8 +361,10 @@ tr::Result<void, const tr::Error&> tr::File::rewind()
 tr::Result<int64, const tr::Error&> tr::File::read_bytes(void* out, int64 size, int64 items)
 {
 	FileError::reset_errors();
-	TR_ASSERT_MSG(out != nullptr, "you dumbass it's supposed to go somewhere if you don't want "
-				      "to use it use File::seek() dumbass");
+	TR_ASSERT_MSG(
+		out != nullptr, "you dumbass it's supposed to go somewhere if you don't want "
+				"to use it use File::seek() dumbass"
+	);
 	TR_ASSERT_MSG(this->can_read(), "dumbass you can't read this file");
 
 	usize bytes = fread(out, size, items, static_cast<FILE*>(this->fptr));
@@ -427,8 +443,9 @@ tr::Result<void, tr::FileError> tr::move_file(tr::String from, tr::String to)
 	// libc rename() is different on windows and posix
 	// on posix it replaces the destination if it already exists
 	// on windows it fails in that case
-	if (tr::file_exists(to))
+	if (tr::file_exists(to)) {
 		return FileError(from, to, FileErrorType::FILE_EXISTS, FileOperation::MOVE_FILE);
+	}
 
 	int i = rename(from, to);
 	if (i == -1) {
@@ -464,7 +481,9 @@ tr::Result<void, tr::FileError> tr::create_dir(tr::String path)
 			full_dir = tr::fmt(tr::scratchpad(), "%s/%s", *full_dir, *dir);
 		}
 
-		if (tr::file_exists(full_dir)) continue;
+		if (tr::file_exists(full_dir)) {
+			continue;
+		}
 
 		if (_wmkdir(from_trippin_to_win32_str(full_dir)) == -1) {
 			return FileError::from_win32(full_dir, "", FileOperation::CREATE_DIR);
@@ -486,8 +505,8 @@ tr::Result<void, tr::FileError> tr::remove_dir(tr::String path)
 	return {};
 }
 
-tr::Result<tr::Array<tr::String>, tr::FileError> tr::list_dir(tr::Arena& arena, tr::String path,
-							      bool include_hidden)
+tr::Result<tr::Array<tr::String>, tr::FileError>
+tr::list_dir(tr::Arena& arena, tr::String path, bool include_hidden)
 {
 	// this looks so horrible what the fuck is wrong with you bill gates
 	WIN32_FIND_DATAW find_file_data;
@@ -503,12 +522,18 @@ tr::Result<tr::Array<tr::String>, tr::FileError> tr::list_dir(tr::Arena& arena, 
 
 	// idk why it uses do-while i stole this
 	do {
-		if (wcscmp(find_file_data.cFileName, L".") == 0) continue;
-		if (wcscmp(find_file_data.cFileName, L"..") == 0) continue;
+		if (wcscmp(find_file_data.cFileName, L".") == 0) {
+			continue;
+		}
+		if (wcscmp(find_file_data.cFileName, L"..") == 0) {
+			continue;
+		}
 
 		if (!include_hidden) {
 			// NOLINTBEGIN(readability-implicit-bool-conversion)
-			if (find_file_data.dwFileAttributes & FILE_ATTRIBUTE_HIDDEN) continue;
+			if (find_file_data.dwFileAttributes & FILE_ATTRIBUTE_HIDDEN) {
+				continue;
+			}
 			// NOLINTEND(readability-implicit-bool-conversion)
 		}
 
@@ -540,8 +565,10 @@ void tr::_init_paths()
 	if (hmodule != nullptr) {
 		DWORD len = GetModuleFileNameW(hmodule, exedir, MAX_PATH);
 		if (len == 0) {
-			tr::warn("couldn't get executable directory, using relative paths for "
-				 "app://");
+			tr::warn(
+				"couldn't get executable directory, using relative paths for "
+				"app://"
+			);
 			tr::exe_dir = ".";
 		}
 		else {
@@ -580,8 +607,8 @@ void tr::_init_paths()
  * POSIX IMPLEMENTATION
  */
 
-tr::Result<tr::File&, const tr::Error&> tr::File::open(tr::Arena& arena, tr::String path,
-						       tr::FileMode mode)
+tr::Result<tr::File&, const tr::Error&>
+tr::File::open(tr::Arena& arena, tr::String path, tr::FileMode mode)
 {
 	FileError::reset_errors();
 
@@ -703,13 +730,16 @@ tr::Result<int64, const tr::Error&> tr::File::read_bytes(void* out, int64 size, 
 {
 	FileError::reset_errors();
 	// TODO TR_TRY_ASSERT
-	TR_ASSERT_MSG(out != nullptr, "you dumbass it's supposed to go somewhere if you don't want "
-				      "to use it use File::seek() dumbass");
+	TR_ASSERT_MSG(
+		out != nullptr, "you dumbass it's supposed to go somewhere if you don't want "
+				"to use it use File::seek() dumbass"
+	);
 	TR_ASSERT_MSG(this->can_read(), "dumbass you can't read this file");
 
 	// TODO 32-bit won't be happy about this
-	usize bytes = fread(out, static_cast<usize>(size), static_cast<usize>(items),
-			    static_cast<FILE*>(this->fptr));
+	usize bytes =
+		fread(out, static_cast<usize>(size), static_cast<usize>(items),
+		      static_cast<FILE*>(this->fptr));
 
 	if (errno != 0) {
 		return FileError::from_errno(this->path, "", FileOperation::READ_FILE);
@@ -833,7 +863,9 @@ tr::Result<void, tr::FileError> tr::create_dir(tr::String path)
 			full_dir = tr::fmt(tr::scratchpad(), "%s/%s", *full_dir, *dir);
 		}
 
-		if (tr::file_exists(full_dir)) continue;
+		if (tr::file_exists(full_dir)) {
+			continue;
+		}
 
 		if (mkdir(full_dir, 0755) == -1) {
 			return FileError::from_errno(full_dir, "", FileOperation::CREATE_DIR);
@@ -852,8 +884,8 @@ tr::Result<void, tr::FileError> tr::remove_dir(tr::String path)
 	return {};
 }
 
-tr::Result<tr::Array<tr::String>, tr::FileError> tr::list_dir(tr::Arena& arena, tr::String path,
-							      bool include_hidden)
+tr::Result<tr::Array<tr::String>, tr::FileError>
+tr::list_dir(tr::Arena& arena, tr::String path, bool include_hidden)
 {
 	FileError::reset_errors();
 
@@ -866,11 +898,17 @@ tr::Result<tr::Array<tr::String>, tr::FileError> tr::list_dir(tr::Arena& arena, 
 	struct dirent* entry;
 
 	while ((entry = readdir(dir)) != nullptr) {
-		if (String(entry->d_name) == ".") continue;
-		if (String(entry->d_name) == "..") continue;
+		if (String(entry->d_name) == ".") {
+			continue;
+		}
+		if (String(entry->d_name) == "..") {
+			continue;
+		}
 
 		if (!include_hidden) {
-			if (String(entry->d_name).starts_with(".")) continue;
+			if (String(entry->d_name).starts_with(".")) {
+				continue;
+			}
 		}
 
 		entries.add(String(arena, entry->d_name, strlen(entry->d_name)));

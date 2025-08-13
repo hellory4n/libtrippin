@@ -50,7 +50,7 @@ void _log(const char* color, const char* prefix, bool panic, const char* fmt, va
 
 void tr::use_log_file(const char* path)
 {
-	Result<File&, FileError> f = File::open(core_arena, path, FileMode::WRITE_TEXT);
+	Result<File&, const Error&> f = File::open(core_arena, path, FileMode::WRITE_TEXT);
 	if (!f.is_valid()) {
 		tr::warn("couldn't use log file '%s': %s", path, f.unwrap_err().message().buf());
 	}

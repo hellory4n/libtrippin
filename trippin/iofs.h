@@ -45,7 +45,9 @@ class Reader
 {
 public:
 	// shut up
-	virtual ~Reader() {}
+	virtual ~Reader() { }
+
+	// TODO close()?
 
 	// Returns the current position of the cursor, if available
 	virtual Result<int64, const Error&> position() = 0;
@@ -66,7 +68,7 @@ public:
 	virtual Result<int64, const Error&> read_bytes(void* out, int64 size, int64 items) = 0;
 
 	// Wrapper for `read_bytes`, returns null if it couldn't read the struct
-	template <typename T>
+	template<typename T>
 	Result<T, const Error&> read_struct()
 	{
 		T man = nullptr;
@@ -76,12 +78,13 @@ public:
 			return man;
 		}
 		return tr::scratchpad().make<StringError>(
-			"expected %li bytes, got %li (might be EOF)", sizeof(T), bytes_read);
+			"expected %li bytes, got %li (might be EOF)", sizeof(T), bytes_read
+		);
 	}
 
 	// Wrapper for `read_bytes`, returns an array of N items or null if it isn't able to read
 	// the stream.
-	template <typename T>
+	template<typename T>
 	Result<Array<T>, const Error&> read_array(Arena& arena, int64 items)
 	{
 		T* man = nullptr;
@@ -91,8 +94,8 @@ public:
 			return Array<T>(arena, man, items);
 		}
 		return tr::scratchpad().make<StringError>(
-			"expected %li bytes, got %li (might be EOF)", sizeof(T) * items,
-			bytes_read);
+			"expected %li bytes, got %li (might be EOF)", sizeof(T) * items, bytes_read
+		);
 	}
 
 	// Wrapper for `read_bytes`, returns a string or null if it isn't able to read the stream.
@@ -117,7 +120,9 @@ class Writer
 {
 public:
 	// shut up
-	virtual ~Writer() {}
+	virtual ~Writer() { }
+
+	// TODO close()?
 
 	// It flushes the stream :)
 	virtual Result<void, const Error&> flush() = 0;
@@ -126,7 +131,7 @@ public:
 	virtual Result<void, const Error&> write_bytes(Array<uint8> bytes) = 0;
 
 	// Writes a struct into the stream
-	template <typename T>
+	template<typename T>
 	Result<void, const Error&> write_struct(T data)
 	{
 		Array<uint8> manfuckyou(reinterpret_cast<uint8*>(&data), sizeof(T));
@@ -135,7 +140,7 @@ public:
 
 	// Writes an array into the stream. Note this doesn't include the length or a null
 	// terminator, it just writes pure data into the stream.
-	template <typename T>
+	template<typename T>
 	Result<void, const Error&> write_array(Array<T> array)
 	{
 		Array<uint8> manfuckyou(reinterpret_cast<uint8*>(array.buffer()), array.len());
@@ -202,11 +207,14 @@ class File : public Reader, public Writer
 	// it sets std_in/std_out/std_err lmao
 	friend void init();
 	// it checks for is_std :)
-	friend void _log(const char* color, const char* prefix, bool panic, const char* fmt,
-			 va_list arg);
+	friend void
+	_log(const char* color, const char* prefix, bool panic, const char* fmt, va_list arg);
 
 public:
-	File() : path("") {}
+	File()
+		: path("")
+	{
+	}
 
 	// Opens a fucking file from fucking somewhere. Returns null on error.
 	static Result<File&, const Error&> open(Arena& arena, String path, FileMode mode);

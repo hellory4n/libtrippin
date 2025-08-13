@@ -256,8 +256,9 @@ tr::Matrix4x4 tr::Matrix4x4::invert()
 	return m;
 }
 
-tr::Matrix4x4 tr::Matrix4x4::frustum(float32 left, float32 right, float32 bottom, float32 top,
-				     float32 near, float32 far)
+tr::Matrix4x4 tr::Matrix4x4::frustum(
+	float32 left, float32 right, float32 bottom, float32 top, float32 near, float32 far
+)
 {
 	Matrix4x4 m;
 	m[0][0] = 2.f * near / (right - left);
@@ -276,8 +277,9 @@ tr::Matrix4x4 tr::Matrix4x4::frustum(float32 left, float32 right, float32 bottom
 	return m;
 }
 
-tr::Matrix4x4 tr::Matrix4x4::orthographic(float32 left, float32 right, float32 bottom, float32 top,
-					  float32 near, float32 far)
+tr::Matrix4x4 tr::Matrix4x4::orthographic(
+	float32 left, float32 right, float32 bottom, float32 top, float32 near, float32 far
+)
 {
 	Matrix4x4 m;
 	m[0][0] = 2.f / (right - left);

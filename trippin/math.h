@@ -38,18 +38,30 @@ namespace tr {
 // we need to constexpr all over the place
 
 // Vec2 lmao
-template <typename T>
+template<typename T>
 struct Vec2
 {
 	T x;
 	T y;
 
-	constexpr Vec2() : x(0), y(0) {}
+	constexpr Vec2()
+		: x(0)
+		, y(0)
+	{
+	}
 	// shut up :)
 	TR_GCC_IGNORE_WARNING(-Wshadow)
-	constexpr Vec2(T x, T y) : x(x), y(y) {}
+	constexpr Vec2(T x, T y)
+		: x(x)
+		, y(y)
+	{
+	}
 	TR_GCC_RESTORE()
-	explicit constexpr Vec2(T v) : x(v), y(v) {}
+	explicit constexpr Vec2(T v)
+		: x(v)
+		, y(v)
+	{
+	}
 
 	// TODO these could be implemented with evil macro fuckery but idk if i want to do that
 
@@ -204,41 +216,56 @@ struct Vec2
 };
 
 // c i hate you
-template <>
+template<>
 constexpr Vec2<float64> Vec2<float64>::operator%(Vec2<float64> r)
 {
 	return Vec2<float64>(fmod(this->x, r.x), fmod(this->y, r.y));
 }
-template <>
+template<>
 constexpr Vec2<float64> Vec2<float64>::operator%(float64 r)
 {
 	return Vec2<float64>(fmod(this->x, r), fmod(this->y, r));
 }
-template <>
+template<>
 constexpr Vec2<float32> Vec2<float32>::operator%(Vec2<float32> r)
 {
 	return Vec2<float32>(fmodf(this->x, r.x), fmodf(this->y, r.y));
 }
-template <>
+template<>
 constexpr Vec2<float32> Vec2<float32>::operator%(float32 r)
 {
 	return Vec2<float32>(fmodf(this->x, r), fmodf(this->y, r));
 }
 
 // Vec3 lmao
-template <typename T>
+template<typename T>
 struct Vec3
 {
 	T x;
 	T y;
 	T z;
 
-	constexpr Vec3() : x(0), y(0), z(0) {}
+	constexpr Vec3()
+		: x(0)
+		, y(0)
+		, z(0)
+	{
+	}
 	// shut up
 	TR_GCC_IGNORE_WARNING(-Wshadow)
-	constexpr Vec3(T x, T y, T z) : x(x), y(y), z(z) {}
+	constexpr Vec3(T x, T y, T z)
+		: x(x)
+		, y(y)
+		, z(z)
+	{
+	}
 	TR_GCC_RESTORE()
-	explicit constexpr Vec3(T v) : x(v), y(v), z(v) {}
+	explicit constexpr Vec3(T v)
+		: x(v)
+		, y(v)
+		, z(v)
+	{
+	}
 
 	constexpr Vec3 operator+(Vec3 r)
 	{
@@ -402,8 +429,14 @@ struct Vec3
 	// i know this is insane
 	// i didnt write this myself im not insane
 	TR_GCC_IGNORE_WARNING(-Wshadow)
-	constexpr Vec3(T x, Vec2<T> other) : Vec3(x, other.y, other.z) {}
-	constexpr Vec3(Vec2<T> other, T z) : Vec3(other.x, other.y, z) {}
+	constexpr Vec3(T x, Vec2<T> other)
+		: Vec3(x, other.y, other.z)
+	{
+	}
+	constexpr Vec3(Vec2<T> other, T z)
+		: Vec3(other.x, other.y, z)
+	{
+	}
 	TR_GCC_RESTORE()
 	constexpr Vec2<T> xx() const
 	{
@@ -552,22 +585,22 @@ struct Vec3
 };
 
 // c i hate you
-template <>
+template<>
 constexpr Vec3<float64> Vec3<float64>::operator%(Vec3<float64> r)
 {
 	return Vec3<float64>(fmod(this->x, r.x), fmod(this->y, r.y), fmod(this->z, r.z));
 }
-template <>
+template<>
 constexpr Vec3<float64> Vec3<float64>::operator%(float64 r)
 {
 	return Vec3<float64>(fmod(this->x, r), fmod(this->y, r), fmod(this->z, r));
 }
-template <>
+template<>
 constexpr Vec3<float32> Vec3<float32>::operator%(Vec3<float32> r)
 {
 	return Vec3<float32>(fmodf(this->x, r.x), fmodf(this->y, r.y), fmodf(this->z, r.z));
 }
-template <>
+template<>
 constexpr Vec3<float32> Vec3<float32>::operator%(float32 r)
 {
 	return Vec3<float32>(fmodf(this->x, r), fmodf(this->y, r), fmodf(this->z, r));
@@ -577,7 +610,7 @@ constexpr Vec3<float32> Vec3<float32>::operator%(float32 r)
 struct Color;
 
 // Vec4 lmao
-template <typename T>
+template<typename T>
 struct Vec4
 {
 	T x;
@@ -585,12 +618,30 @@ struct Vec4
 	T z;
 	T w;
 
-	constexpr Vec4() : x(0), y(0), z(0), w(0) {}
+	constexpr Vec4()
+		: x(0)
+		, y(0)
+		, z(0)
+		, w(0)
+	{
+	}
 	// shut up :)
 	TR_GCC_IGNORE_WARNING(-Wshadow)
-	constexpr Vec4(T x, T y, T z, T w) : x(x), y(y), z(z), w(w) {}
+	constexpr Vec4(T x, T y, T z, T w)
+		: x(x)
+		, y(y)
+		, z(z)
+		, w(w)
+	{
+	}
 	TR_GCC_RESTORE()
-	explicit constexpr Vec4(T v) : x(v), y(v), z(v), w(v) {}
+	explicit constexpr Vec4(T v)
+		: x(v)
+		, y(v)
+		, z(v)
+		, w(v)
+	{
+	}
 	constexpr Vec4(Color c);
 
 	constexpr Vec4 operator+(Vec4 r)
@@ -751,11 +802,26 @@ struct Vec4
 	// swizzling operators
 	// i know this is insane
 	TR_GCC_IGNORE_WARNING(-Wshadow)
-	constexpr Vec4(T x, T y, Vec2<T> other) : Vec4(x, y, other.z, other.w) {}
-	constexpr Vec4(Vec2<T> other, T z, T w) : Vec4(other.x, other.y, z, w) {}
-	constexpr Vec4(T x, Vec2<T> other, T w) : Vec4(x, other.y, other.z, w) {}
-	constexpr Vec4(T x, Vec3<T> other) : Vec4(x, other.y, other.z, other.w) {}
-	constexpr Vec4(Vec3<T> other, T w) : Vec4(other.x, other.y, other.z, w) {}
+	constexpr Vec4(T x, T y, Vec2<T> other)
+		: Vec4(x, y, other.z, other.w)
+	{
+	}
+	constexpr Vec4(Vec2<T> other, T z, T w)
+		: Vec4(other.x, other.y, z, w)
+	{
+	}
+	constexpr Vec4(T x, Vec2<T> other, T w)
+		: Vec4(x, other.y, other.z, w)
+	{
+	}
+	constexpr Vec4(T x, Vec3<T> other)
+		: Vec4(x, other.y, other.z, other.w)
+	{
+	}
+	constexpr Vec4(Vec3<T> other, T w)
+		: Vec4(other.x, other.y, other.z, w)
+	{
+	}
 	TR_GCC_RESTORE()
 // i didnt write this myself im not insane
 #pragma region JESUS
@@ -2107,29 +2173,33 @@ struct Vec4
 };
 
 // c i hate you
-template <>
+template<>
 constexpr Vec4<float64> Vec4<float64>::operator%(Vec4<float64> r)
 {
-	return Vec4<float64>(fmod(this->x, r.x), fmod(this->y, r.y), fmod(this->z, r.z),
-			     fmod(this->w, r.w));
+	return Vec4<float64>(
+		fmod(this->x, r.x), fmod(this->y, r.y), fmod(this->z, r.z), fmod(this->w, r.w)
+	);
 }
-template <>
+template<>
 constexpr Vec4<float64> Vec4<float64>::operator%(float64 r)
 {
-	return Vec4<float64>(fmod(this->x, r), fmod(this->y, r), fmod(this->z, r),
-			     fmod(this->w, r));
+	return Vec4<float64>(
+		fmod(this->x, r), fmod(this->y, r), fmod(this->z, r), fmod(this->w, r)
+	);
 }
-template <>
+template<>
 constexpr Vec4<float32> Vec4<float32>::operator%(Vec4<float32> r)
 {
-	return Vec4<float32>(fmodf(this->x, r.x), fmodf(this->y, r.y), fmodf(this->z, r.z),
-			     fmodf(this->w, r.w));
+	return Vec4<float32>(
+		fmodf(this->x, r.x), fmodf(this->y, r.y), fmodf(this->z, r.z), fmodf(this->w, r.w)
+	);
 }
-template <>
+template<>
 constexpr Vec4<float32> Vec4<float32>::operator%(float32 r)
 {
-	return Vec4<float32>(fmodf(this->x, r), fmodf(this->y, r), fmodf(this->z, r),
-			     fmodf(this->w, r));
+	return Vec4<float32>(
+		fmodf(this->x, r), fmodf(this->y, r), fmodf(this->z, r), fmodf(this->w, r)
+	);
 }
 
 // SO RANDOM LMAO HAHA implemented through xoshiro256+
@@ -2142,13 +2212,16 @@ public:
 	explicit Random(int64 seed);
 
 	// Initializes the `tr::Random` with the current time as the seed
-	Random() : Random(time(nullptr)) {}
+	Random()
+		: Random(time(nullptr))
+	{
+	}
 
 	// Returns a value from 0 to 1
 	float64 next();
 
 	// Returns a value in a range
-	template <typename T>
+	template<typename T>
 	T next(T min, T max)
 	{
 		return static_cast<T>((this->next() * max) + min);
@@ -2159,42 +2232,42 @@ public:
 constexpr float64 PI = 3.141592653589793238463;
 
 // Degrees to radians
-template <typename T>
+template<typename T>
 constexpr T deg2rad(T deg)
 {
 	return deg * (static_cast<T>(PI) / static_cast<T>(180.0));
 }
 
 // Radians to degrees
-template <typename T>
+template<typename T>
 constexpr T rad2deg(T rad)
 {
 	return rad * (static_cast<T>(180.0) / static_cast<T>(PI));
 }
 
 // Picks the smaller option
-template <typename T>
+template<typename T>
 constexpr T min(T a, T b)
 {
 	return a < b ? a : b;
 }
 
 // Picks the bigger option
-template <typename T>
+template<typename T>
 constexpr T max(T a, T b)
 {
 	return a > b ? a : b;
 }
 
 // clamp
-template <typename T>
+template<typename T>
 constexpr T clamp(T val, T min, T max)
 {
 	return tr::min(tr::max(min, val), max);
 }
 
 // lerp
-template <typename T>
+template<typename T>
 constexpr T lerp(T a, T b, float64 t)
 {
 	return (1.0 - t) * a + t * b;
@@ -2203,7 +2276,7 @@ constexpr T lerp(T a, T b, float64 t)
 // a couple disasters
 
 // lerp
-template <typename T>
+template<typename T>
 constexpr Vec2<T> lerp(Vec2<T> a, Vec2<T> b, float64 t)
 {
 	auto man = Vec2<float64>(1.0 - t, 1.0 - t) * Vec2<float64>(a.x, a.y) +
@@ -2211,7 +2284,7 @@ constexpr Vec2<T> lerp(Vec2<T> a, Vec2<T> b, float64 t)
 	return Vec2<T>(static_cast<T>(man.x), static_cast<T>(man.y));
 }
 // lerp
-template <typename T>
+template<typename T>
 Vec3<T> lerp(Vec3<T> a, Vec3<T> b, float64 t)
 {
 	auto man = Vec3<float64>(1.0 - t, 1.0 - t, 1.0 - t) * Vec3<float64>(a.x, a.y, a.z) +
@@ -2219,25 +2292,27 @@ Vec3<T> lerp(Vec3<T> a, Vec3<T> b, float64 t)
 	return Vec3<T>(static_cast<T>(man.x), static_cast<T>(man.y), static_cast<T>(man.z));
 }
 // lerp
-template <typename T>
+template<typename T>
 Vec4<T> lerp(Vec4<T> a, Vec4<T> b, float64 t)
 {
 	auto man = Vec4<float64>(1.0 - t, 1.0 - t, 1.0 - t, 1.0 - t) *
 			   Vec4<float64>(a.x, a.y, a.z, a.w) +
 		   Vec4<float64>(t, t, t, t) * Vec4<float64>(b.x, b.y, b.z, b.w);
-	return Vec4<T>(static_cast<T>(man.x), static_cast<T>(man.y), static_cast<T>(man.z),
-		       static_cast<T>(man.w));
+	return Vec4<T>(
+		static_cast<T>(man.x), static_cast<T>(man.y), static_cast<T>(man.z),
+		static_cast<T>(man.w)
+	);
 }
 
 // Similar to `tr::lerp`, but in reverse.
-template <typename T>
+template<typename T>
 constexpr T inverse_lerp(T a, T b, T v)
 {
 	return (v - a) / (b - a);
 }
 
 // Converts a number from one scale to another
-template <typename T>
+template<typename T>
 constexpr T remap(T val, T src_min, T src_max, T dst_min, T dst_max)
 {
 	return tr::lerp(dst_min, dst_max, tr::inverse_lerp(src_min, src_max, val));
@@ -2258,16 +2333,30 @@ struct Color
 	constexpr Color();
 	// shut up :)
 	TR_GCC_IGNORE_WARNING(-Wshadow)
-	constexpr Color(uint8 r, uint8 g, uint8 b) : r(r), g(g), b(b), a(255) {}
-	constexpr Color(uint8 r, uint8 g, uint8 b, uint8 a) : r(r), g(g), b(b), a(a) {}
+	constexpr Color(uint8 r, uint8 g, uint8 b)
+		: r(r)
+		, g(g)
+		, b(b)
+		, a(255)
+	{
+	}
+	constexpr Color(uint8 r, uint8 g, uint8 b, uint8 a)
+		: r(r)
+		, g(g)
+		, b(b)
+		, a(a)
+	{
+	}
 	TR_GCC_RESTORE()
 
 	// warning: implicit conversion turns floating-point number into integer: 'float' to 'uint8'
 	// i know man
 	TR_GCC_IGNORE_WARNING(-Wfloat-conversion)
 	constexpr Color(Vec4<float32> vec)
-		: r(tr::clamp(vec.x, 0.f, 1.f) * 255), g(tr::clamp(vec.y, 0.f, 1.f) * 255),
-		  b(tr::clamp(vec.z, 0.f, 1.f) * 255), a(tr::clamp(vec.w, 0.f, 1.f) * 255)
+		: r(tr::clamp(vec.x, 0.f, 1.f) * 255)
+		, g(tr::clamp(vec.y, 0.f, 1.f) * 255)
+		, b(tr::clamp(vec.z, 0.f, 1.f) * 255)
+		, a(tr::clamp(vec.w, 0.f, 1.f) * 255)
 	{
 	}
 	TR_GCC_RESTORE()
@@ -2401,7 +2490,7 @@ struct Color
 	}
 };
 
-template <typename T>
+template<typename T>
 constexpr Vec4<T>::Vec4(Color c)
 {
 	this->x = static_cast<T>(c.r / 255.0);
@@ -2412,15 +2501,15 @@ constexpr Vec4<T>::Vec4(Color c)
 
 namespace palette {
 
-// White lmao.
-constexpr Color WHITE = Color::rgb(0xffffff);
-// Black lmao.
-static constexpr Color BLACK = Color::rgb(0x000000);
-// Where did it go
-static constexpr Color TRANSPARENT = Color::rgba(0x00000000);
+	// White lmao.
+	constexpr Color WHITE = Color::rgb(0xffffff);
+	// Black lmao.
+	static constexpr Color BLACK = Color::rgb(0x000000);
+	// Where did it go
+	static constexpr Color TRANSPARENT = Color::rgba(0x00000000);
 
-// TODO more palettes, e.g. tr::palette::WebSafe, tr::palette::Material, tr::palette::Starry etc
-// or maybe not
+	// TODO more palettes, e.g. tr::palette::WebSafe, tr::palette::Material, tr::palette::Starry
+	// etc or maybe not
 
 } // namespace palette
 
@@ -2458,10 +2547,12 @@ struct Matrix4x4
 	// TODO document this you twatwaffle
 	static Matrix4x4 translate(float32 x, float32 y, float32 z);
 	static Matrix4x4 from_vec3_mul_outer(Vec3<float32> a, Vec3<float32> b);
-	static Matrix4x4 frustum(float32 left, float32 right, float32 bottom, float32 top,
-				 float32 near, float32 far);
-	static Matrix4x4 orthographic(float32 left, float32 right, float32 bottom, float32 top,
-				      float32 near, float32 far);
+	static Matrix4x4
+	frustum(float32 left, float32 right, float32 bottom, float32 top, float32 near,
+		float32 far);
+	static Matrix4x4 orthographic(
+		float32 left, float32 right, float32 bottom, float32 top, float32 near, float32 far
+	);
 	static Matrix4x4 perspective(float32 fovy, float32 aspect, float32 near, float32 far);
 
 	Vec4<float32> row(usize idx);

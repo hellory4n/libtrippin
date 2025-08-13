@@ -72,9 +72,15 @@ public:
 
 	// Initializes a string from any C string. You really should only use this for temporary
 	// strings.
-	constexpr String(const char* str) : String(str, tr::constexpr_strlen(str)) {}
+	constexpr String(const char* str)
+		: String(str, tr::constexpr_strlen(str))
+	{
+	}
 
-	constexpr String() : String("") {}
+	constexpr String()
+		: String("")
+	{
+	}
 
 	String(char c)
 	{
@@ -116,8 +122,9 @@ public:
 	constexpr Array<char>::Iterator end() const
 	{
 		// this one is different since you don't want to iterate over the null terminator
-		return Array<char>::Iterator(const_cast<char*>(this->buf()) + this->len() - 1,
-					     this->len() - 1);
+		return Array<char>::Iterator(
+			const_cast<char*>(this->buf()) + this->len() - 1, this->len() - 1
+		);
 	}
 
 	String duplicate(Arena& arena) const
@@ -199,7 +206,8 @@ public:
 [[gnu::format(printf, 3, 4),
   deprecated(
 	  "specifying size is no longer necessary (and there's not a good "
-	  "reason to specify it, also the function is tr::fmt now lmao), will be removed in v2.5")]]
+	  "reason to specify it, also the function is tr::fmt now lmao), will be removed in v2.5"
+  )]]
 String sprintf(Arena& arena, usize maxlen, const char* fmt, ...);
 
 String fmt_args(Arena& arena, const char* fmt, va_list arg);

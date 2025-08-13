@@ -34,15 +34,15 @@ namespace ConsoleColor {
 
 // TODO colored output doesn't work on windows and i can't be bothered to fix it
 #ifndef _WIN32
-constexpr const char* RESET = "\033[0m";
-constexpr const char* INFO = "\033[0;90m";
-constexpr const char* WARN = "\033[0;93m";
-constexpr const char* ERROR = "\033[0;91m";
+	constexpr const char* RESET = "\033[0m";
+	constexpr const char* INFO = "\033[0;90m";
+	constexpr const char* WARN = "\033[0;93m";
+	constexpr const char* ERROR = "\033[0;91m";
 #else
-constexpr const char* RESET = "";
-constexpr const char* INFO = "";
-constexpr const char* WARN = "";
-constexpr const char* ERROR = "";
+	constexpr const char* RESET = "";
+	constexpr const char* INFO = "";
+	constexpr const char* WARN = "";
+	constexpr const char* ERROR = "";
 #endif
 
 } // namespace ConsoleColor
@@ -89,16 +89,19 @@ void panic(const char* fmt, ...);
 void _impl_assert(const char* expr, const char* fmt, ...);
 
 // Formatted assert?????????
-#define TR_ASSERT_MSG(X, ...)                                                                      \
-	if (!(X)) {                                                                                \
-		tr::_impl_assert(#X, __VA_ARGS__);                                                 \
+#define TR_ASSERT_MSG(X, ...)                      \
+	if (!(X)) {                                \
+		tr::_impl_assert(#X, __VA_ARGS__); \
 	}
 
-#define TR_ASSERT(X)                                                                               \
-	if (!(X)) {                                                                                \
-		/* e.g. "failed assert 'false': aborting"*/                                        \
-		tr::_impl_assert(#X, "aborting");                                                  \
+#define TR_ASSERT(X)                                        \
+	if (!(X)) {                                         \
+		/* e.g. "failed assert 'false': aborting"*/ \
+		tr::_impl_assert(#X, "aborting");           \
 	}
+
+// yeah
+#define TR_UNREACHABLE() tr::panic("unreachable code at %s:%i", __FILE__, __LINE__)
 
 } // namespace tr
 

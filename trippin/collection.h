@@ -41,20 +41,20 @@ namespace tr {
 uint64 hash(tr::Array<uint8> array);
 
 // internal don't use probably :)
-template <typename K>
+template<typename K>
 uint64 _default_hash_function(const K& key)
 {
 	return tr::hash(Array<uint8>(reinterpret_cast<uint8*>(&key), sizeof(K)));
 }
 // internal don't use probably :)
-template <>
+template<>
 inline uint64 _default_hash_function<String>(const String& key)
 {
 	return tr::hash(Array<uint8>(reinterpret_cast<uint8*>(*key), key.len()));
 }
 
 // Useful for when you need *advanced* hashmaps
-template <typename K>
+template<typename K>
 struct HashMapSettings
 {
 	float64 load_factor;
@@ -64,11 +64,12 @@ struct HashMapSettings
 
 // ahahsmhap :DD if you're interested this works with open addressing and linear probing, i'll
 // probably change it if my brain expands to megamind levels of brain
-template <typename K, typename V>
+template<typename K, typename V>
 class HashMap
 {
-	static constexpr HashMapSettings<K> DEFAULT_SETTINGS = {0.5, 256,
-								tr::_default_hash_function};
+	static constexpr HashMapSettings<K> DEFAULT_SETTINGS = {
+		0.5, 256, tr::_default_hash_function
+	};
 
 	struct Bucket
 	{
@@ -90,17 +91,22 @@ class HashMap
 
 public:
 	explicit HashMap(Arena& arena, HashMapSettings<K> setting)
-		: settings(setting), src_arena(&arena)
+		: settings(setting)
+		, src_arena(&arena)
 	{
 		this->capacity = this->settings.initial_capacity;
 		this->buffer = static_cast<Bucket*>(
-			this->src_arena->alloc(this->settings.initial_capacity * sizeof(Bucket)));
+			this->src_arena->alloc(this->settings.initial_capacity * sizeof(Bucket))
+		);
 	}
 
-	explicit HashMap(Arena& arena) : HashMap(arena, DEFAULT_SETTINGS) {}
+	explicit HashMap(Arena& arena)
+		: HashMap(arena, DEFAULT_SETTINGS)
+	{
+	}
 
 	// man fuck you
-	HashMap() {}
+	HashMap() { }
 
 	// Returns the index based on a key. That's how hash maps work.
 	usize get_index(const K& key)
@@ -113,13 +119,16 @@ public:
 		usize old_cap = this->capacity;
 		this->capacity *= 2;
 		Bucket* new_buffer = static_cast<Bucket*>(
-			this->src_arena->alloc(this->capacity * sizeof(Bucket)));
+			this->src_arena->alloc(this->capacity * sizeof(Bucket))
+		);
 
 		// changing the capacity fucks with the hashing
 		// so we have to copy everything to new indexes
 		for (usize i = 0; i < old_cap; i++) {
 			Bucket& old_bucket = buffer[i];
-			if (!old_bucket.occupied) continue;
+			if (!old_bucket.occupied) {
+				continue;
+			}
 
 			usize idx = this->get_index(old_bucket.key);
 
@@ -167,8 +176,7 @@ public:
 				return {&b, false};
 			}
 		}
-		// should never happen probably hopefully maybe probably :)
-		return {nullptr, false};
+		TR_UNREACHABLE();
 	}
 
 	V& operator[](const K& key)
@@ -228,7 +236,9 @@ public:
 	{
 	public:
 		Iterator(Bucket* buf, usize index, usize capacity)
-			: buffer(buf), idx(index), cap(capacity)
+			: buffer(buf)
+			, idx(index)
+			, cap(capacity)
 		{
 			this->advance_to_valid();
 		}
@@ -279,14 +289,17 @@ public:
 
 // I sure love events signals whatever. The reason you're supposed to use this instead of a function
 // pointer/`std::function` is that this can have multiple listeners, which is probably important.
-template <typename... Args>
+template<typename... Args>
 class Signal
 {
 	using SignalFunc = std::function<void(Args...)>;
 	Array<SignalFunc> listeners;
 
 public:
-	Signal(Arena& arena) : listeners(arena) {}
+	Signal(Arena& arena)
+		: listeners(arena)
+	{
+	}
 
 	// Adds a listener to the signal :)
 	void connect(SignalFunc func)
@@ -307,14 +320,17 @@ public:
 
 // I sure love events signals whatever. The reason you're supposed to use this instead of a function
 // pointer/`std::function` is that this can have multiple listeners, which is probably important.
-template <>
+template<>
 class Signal<void>
 {
 	using SignalFunc = std::function<void(void)>;
 	Array<SignalFunc> listeners;
 
 public:
-	Signal(Arena& arena) : listeners(arena) {}
+	Signal(Arena& arena)
+		: listeners(arena)
+	{
+	}
 
 	// Adds a listener to the signal :)
 	void connect(SignalFunc func)

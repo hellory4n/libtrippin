@@ -51,9 +51,13 @@ tr::String tr::String::substr(tr::Arena& arena, usize start, usize end) const
 
 tr::Array<usize> tr::String::find(tr::Arena& arena, char c, usize start, usize end) const
 {
-	if (end == 0 || end > this->len()) end = this->len();
+	if (end == 0 || end > this->len()) {
+		end = this->len();
+	}
 	// you can't find it if it's not there
-	if (this->len() == 0) return {};
+	if (this->len() == 0) {
+		return {};
+	}
 
 	Array<usize> indexes(tr::scratchpad(), 0);
 
@@ -68,9 +72,13 @@ tr::Array<usize> tr::String::find(tr::Arena& arena, char c, usize start, usize e
 
 tr::Array<usize> tr::String::find(tr::Arena& arena, tr::String str, usize start, usize end) const
 {
-	if (end == 0 || end > this->len()) end = this->len();
+	if (end == 0 || end > this->len()) {
+		end = this->len();
+	}
 	// you can't find it if it's not there
-	if (str.len() == 0 || this->len() == 0) return {};
+	if (str.len() == 0 || this->len() == 0) {
+		return {};
+	}
 
 	Array<usize> indexes(tr::scratchpad(), 0);
 
@@ -133,7 +141,9 @@ tr::String tr::String::extension(Arena& arena) const
 	for (usize i = 0; i < filename.len(); i++) {
 		if (filename[i] == '.') {
 			// a . prefix is a hidden file in unix, not an extension
-			if (i == 0) return "";
+			if (i == 0) {
+				return "";
+			}
 			return filename.substr(arena, i, filename.len() + 1);
 		}
 	}
@@ -142,12 +152,24 @@ tr::String tr::String::extension(Arena& arena) const
 
 bool tr::String::is_absolute() const
 {
-	if (this->starts_with("/")) return true;
-	if (this->starts_with("~/")) return true;
-	if (this->starts_with("./")) return false;
-	if (this->starts_with("../")) return false;
-	if (this->starts_with(".\\")) return false;
-	if (this->starts_with("..\\")) return false;
+	if (this->starts_with("/")) {
+		return true;
+	}
+	if (this->starts_with("~/")) {
+		return true;
+	}
+	if (this->starts_with("./")) {
+		return false;
+	}
+	if (this->starts_with("../")) {
+		return false;
+	}
+	if (this->starts_with(".\\")) {
+		return false;
+	}
+	if (this->starts_with("..\\")) {
+		return false;
+	}
 
 	// handle both windows drives and URI schemes
 	// they're both some letters followed by `:/`

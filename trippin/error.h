@@ -35,7 +35,7 @@ namespace tr {
 class Error
 {
 public:
-	virtual ~Error() {}
+	virtual ~Error() { }
 
 	// Returns the error message
 	virtual String message() const = 0;
@@ -47,8 +47,14 @@ class StringError : public Error
 	String msg;
 
 public:
-	StringError() : msg("") {}
-	StringError(String str) : msg(str) {}
+	StringError()
+		: msg("")
+	{
+	}
+	StringError(String str)
+		: msg(str)
+	{
+	}
 	// Pretty much just a shorthand for `tr::StringError(tr::fmt(tr::scratchpad(), ...))`
 	StringError(const char* fmt, ...);
 
@@ -115,10 +121,12 @@ public:
 	int win32_code = 0;
 #endif
 
-	FileError() {}
+	FileError() { }
 	FileError(String patha, String pathb, FileErrorType errtype, FileOperation operation)
-		: path_a(patha), path_b(pathb), type(errtype), op(operation)
-	// can't be bothered to fix the formatter to not do this here
+		: path_a(patha)
+		, path_b(pathb)
+		, type(errtype)
+		, op(operation)
 	{
 	}
 
@@ -137,14 +145,20 @@ public:
 };
 
 // So spicy. E should inherit implement Error
-template <typename T, typename E>
+template<typename T, typename E>
 class Result
 {
 	Either<T, E> value = {};
 
 public:
-	Result(T val) : value(val) {}
-	Result(E err) : value(err) {}
+	Result(T val)
+		: value(val)
+	{
+	}
+	Result(E err)
+		: value(err)
+	{
+	}
 
 	// If true, the result has a value. Else, it has an error.
 	bool is_valid() const
@@ -162,11 +176,15 @@ public:
 			if (errormaballs == nullptr) {
 				error = "unknown error";
 #ifdef DEBUG
-				tr::panic("tr::Result<T, E> is supposed to use tr::Error you "
-					  "distinguished gentleman/lady/everything in between");
+				tr::panic(
+					"tr::Result<T, E> is supposed to use tr::Error you "
+					"distinguished gentleman/lady/everything in between"
+				);
 #else
-				tr::warn("warning: tr::Result<T, E> is supposed to use tr::Error "
-					 "you distinguished gentleman/lady/everything in between");
+				tr::warn(
+					"warning: tr::Result<T, E> is supposed to use tr::Error "
+					"you distinguished gentleman/lady/everything in between"
+				);
 #endif
 			}
 			else {
@@ -201,14 +219,20 @@ public:
 };
 
 // Result for when you don't need the result :D
-template <typename E>
+template<typename E>
 class Result<void, E>
 {
 	Maybe<E> value;
 
 public:
-	Result() : value() {}
-	Result(E err) : value(err) {}
+	Result()
+		: value()
+	{
+	}
+	Result(E err)
+		: value(err)
+	{
+	}
 
 	// If false, it has an error.
 	bool is_valid() const
@@ -227,11 +251,15 @@ public:
 			if (errormaballs == nullptr) {
 				error = "unknown error";
 #ifdef DEBUG
-				tr::panic("tr::Result<T, E> is supposed to use tr::Error you "
-					  "distinguished gentleman/lady/everything in between");
+				tr::panic(
+					"tr::Result<T, E> is supposed to use tr::Error you "
+					"distinguished gentleman/lady/everything in between"
+				);
 #else
-				tr::warn("warning: tr::Result<T, E> is supposed to use tr::Error "
-					 "you distinguished gentleman/lady/everything in between");
+				tr::warn(
+					"warning: tr::Result<T, E> is supposed to use tr::Error "
+					"you distinguished gentleman/lady/everything in between"
+				);
 #endif
 			}
 			else {
@@ -265,24 +293,24 @@ public:
 
 // Shorthand for calling a function, unwrapping if valid, and returning an error otherwise
 // example: TR_TRY_ASSIGN(int32 var, some_function());
-#define TR_TRY_ASSIGN(Var, ...)                                                                    \
-	const auto __TR_UNIQUE_NAME(__tr_try_tmp) = (__VA_ARGS__);                                 \
-	if (!__TR_UNIQUE_NAME(__tr_try_tmp).is_valid()) {                                          \
-		return __TR_UNIQUE_NAME(__tr_try_tmp).unwrap_err();                                \
-	}                                                                                          \
+#define TR_TRY_ASSIGN(Var, ...)                                     \
+	const auto __TR_UNIQUE_NAME(__tr_try_tmp) = (__VA_ARGS__);  \
+	if (!__TR_UNIQUE_NAME(__tr_try_tmp).is_valid()) {           \
+		return __TR_UNIQUE_NAME(__tr_try_tmp).unwrap_err(); \
+	}                                                           \
 	Var = __TR_UNIQUE_NAME(__tr_try_tmp).unwrap()
 
 // `TR_TRY_ASSIGN` but for `tr::Result<void, E>`, or for when you don't care about the result
 // example: TR_TRY(some_function());
-#define TR_TRY(...)                                                                                \
-	const auto __TR_UNIQUE_NAME(__tr_try_tmp) = (__VA_ARGS__);                                 \
-	if (!__TR_UNIQUE_NAME(__tr_try_tmp).is_valid()) {                                          \
-		return __TR_UNIQUE_NAME(__tr_try_tmp).unwrap_err();                                \
+#define TR_TRY(...)                                                 \
+	const auto __TR_UNIQUE_NAME(__tr_try_tmp) = (__VA_ARGS__);  \
+	if (!__TR_UNIQUE_NAME(__tr_try_tmp).is_valid()) {           \
+		return __TR_UNIQUE_NAME(__tr_try_tmp).unwrap_err(); \
 	}
 
 // Similar to `tr::assert`, but instead of panicking, it returns an error.
 // example: TR_TRY_ASSERT(false, tr::StringError("something went wrong"));
-#define TR_TRY_ASSERT(X, ...)                                                                      \
+#define TR_TRY_ASSERT(X, ...)          \
 	if (!(X)) return (__VA_ARGS__)
 
 } // namespace tr

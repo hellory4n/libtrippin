@@ -72,12 +72,12 @@ static constexpr usize kb_to_bytes(usize x)
 // Converts megabytes to bytes
 static constexpr usize mb_to_bytes(usize x)
 {
-	return kb_to_bytes(x) * 1024;
+	return tr::kb_to_bytes(x) * 1024;
 }
 // Converts gigabytes to bytes
 static constexpr usize gb_to_bytes(usize x)
 {
-	return mb_to_bytes(x) * 1024;
+	return tr::mb_to_bytes(x) * 1024;
 }
 
 // Converts bytes to kilobytes
@@ -88,12 +88,12 @@ static constexpr usize bytes_to_kb(usize x)
 // Converts bytes to megabytes
 static constexpr usize bytes_to_mb(usize x)
 {
-	return bytes_to_kb(x) / 1024;
+	return tr::bytes_to_kb(x) / 1024;
 }
 // Converts bytes to gigabytes
 static constexpr usize bytes_to_gb(usize x)
 {
-	return bytes_to_mb(x) / 1024;
+	return tr::bytes_to_mb(x) / 1024;
 }
 
 // Arenas are made of many buffers.
@@ -139,7 +139,10 @@ class Arena
 
 public:
 	// :)
-	Arena() : Arena(tr::kb_to_bytes(64)) {}
+	Arena()
+		: Arena(tr::kb_to_bytes(64))
+	{
+	}
 
 	// Initializes the arena. `page_size` is the base size for the buffers, you can have more
 	// buffers or bigger buffers.
@@ -158,7 +161,7 @@ public:
 	// Kinda like `new`/`malloc` but for arenas. The funky variadic templates allow you to pass
 	// any arguments here to the actual constructor. Note this supports calling destructors for
 	// when the arena is deleted, but why?
-	template <typename T, typename... Args>
+	template<typename T, typename... Args>
 	T& make(Args&&... args)
 	{
 		void* baseball = this->alloc(sizeof(T), alignof(T));
@@ -185,7 +188,7 @@ public:
 Arena& scratchpad();
 
 // This is just for iterators
-template <typename T>
+template<typename T>
 struct ArrayItem
 {
 	usize i;
@@ -195,7 +198,7 @@ struct ArrayItem
 // A slice of memory, usually from an arena but can point to anywhere. Similar to a Go slice, or
 // other examples. Arrays don't own the value and don't use fancy RAII fuckery, so you can pass them
 // by value.
-template <typename T>
+template<typename T>
 class Array
 {
 	// used for when you don't set the length (which you usually do if you're just gonna use
@@ -209,7 +212,10 @@ class Array
 
 public:
 	// Initializes an empty array at an arena.
-	explicit Array(Arena& arena, usize len) : src_arena(&arena), length(len), capacity(len)
+	explicit Array(Arena& arena, usize len)
+		: src_arena(&arena)
+		, length(len)
+		, capacity(len)
 	{
 		// you may initialize with a length of 0 so you can then add crap later
 		// i'm just keeping this behavior so it doesn't break everything that used
@@ -224,7 +230,9 @@ public:
 
 	// Initializes an array from a buffer. (the data is copied into the arena)
 	explicit Array(Arena& arena, T* data, usize len)
-		: src_arena(&arena), length(len), capacity(len)
+		: src_arena(&arena)
+		, length(len)
+		, capacity(len)
 	{
 		// you may initialize with a length of 0 so you can then add crap later
 		// i'm just keeping this behavior so it doesn't break everything :)
@@ -234,7 +242,9 @@ public:
 		}
 
 		this->ptr = static_cast<T*>(arena.alloc(sizeof(T) * this->capacity));
-		if (len == 0) return;
+		if (len == 0) {
+			return;
+		}
 
 // 'void* memcpy(void*, const void*, size_t)' forming offset [1, 1024] is out of the bounds [0, 1]
 // the warning is wrong :)
@@ -251,7 +261,12 @@ public:
 
 	// Initializes an array that points to any buffer. You really should only use this for
 	// temporary arrays.
-	constexpr explicit Array(T* data, usize len) : ptr(data), length(len), capacity(len) {}
+	constexpr explicit Array(T* data, usize len)
+		: ptr(data)
+		, length(len)
+		, capacity(len)
+	{
+	}
 
 	// why bjarne stroustrup why can't i make this myself why is std::initializer_list<T>
 	// special i know this is from c++11 but i don't care i'm gonna blame bjarne stroustrup
@@ -270,10 +285,16 @@ public:
 	}
 
 	// man fuck you
-	constexpr Array() : ptr(nullptr) {}
+	constexpr Array()
+		: ptr(nullptr)
+	{
+	}
 
 	// Initializes the array with just an arena so you can add crap later :)
-	explicit Array(Arena& arena) : Array(arena, 0) {}
+	explicit Array(Arena& arena)
+		: Array(arena, 0)
+	{
+	}
 
 	constexpr T& operator[](usize idx) const
 	{
@@ -318,7 +339,11 @@ public:
 	class Iterator
 	{
 	public:
-		constexpr Iterator(T* pointer, usize index) : idx(index), ptr(pointer) {}
+		constexpr Iterator(T* pointer, usize index)
+			: idx(index)
+			, ptr(pointer)
+		{
+		}
 		constexpr ArrayItem<T> operator*() const
 		{
 			return {this->idx, *this->ptr};
