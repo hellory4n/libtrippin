@@ -48,6 +48,8 @@ static void test::memory()
 	tr::log("\n==== MEMORY ====");
 
 	tr::Arena arena = {};
+	TR_DEFER(arena.free());
+
 	tr::Vec3<float32>& vecma3 = arena.make<tr::Vec3<float32>>(1.0f, 2.0f, 3.0f);
 	tr::log("vecma3 %f, %f, %f", vecma3.x, vecma3.y, vecma3.z);
 
@@ -189,7 +191,7 @@ static void test::filesystem()
 
 	// help.
 	tr::move_file("fucker.txt", "fuckoffman.txt").unwrap();
-	TR_ASSERT(tr::file_exists("fuckoffman.txt"));
+	TR_ASSERT(tr::path_exists("fuckoffman.txt"));
 	tr::remove_file("fuckoffman.txt").unwrap();
 
 	tr::create_dir("crap/dir").unwrap();

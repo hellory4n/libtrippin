@@ -108,7 +108,7 @@ public:
 	void* buffer = nullptr;
 
 	explicit ArenaPage(usize size, usize align = alignof(max_align_t));
-	~ArenaPage();
+	void free();
 
 	// Returns how much space left the page has
 	usize available_space() const;
@@ -149,7 +149,7 @@ public:
 	explicit Arena(usize pg_size);
 
 	// Frees the arena.
-	~Arena();
+	void free();
 
 	// Allocates some crap on the arena.
 	[[gnu::malloc]]

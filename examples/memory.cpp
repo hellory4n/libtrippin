@@ -1,6 +1,8 @@
 #include <trippin/log.h>
 #include <trippin/memory.h>
 
+#include "trippin/common.h"
+
 struct CrapStruct
 {
 	uint8 man[128];
@@ -9,6 +11,7 @@ struct CrapStruct
 int main()
 {
 	tr::Arena arena;
+	TR_DEFER(arena.free());
 
 	// arenas are infinite
 	// allocate as many as you want!

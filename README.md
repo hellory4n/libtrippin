@@ -4,7 +4,7 @@ Most biggest most massive library of all time. I'm insane.
 
 ## Featuring
 
-- [libtrippin](./trippin) v2.4.5: Most massive library of all time
+- [libtrippin](./trippin) v2.5.0: Most massive library of all time
     - C++17 with no external dependencies (only libc/stdc++)
     - Cross-platform (Windows and POSIX)
     - Arenas for memory management
@@ -70,6 +70,7 @@ tr::free();
 #include <trippin/memory.h>
 
 tr::Arena arena;
+TR_DEFER(arena.free());
 
 // arenas are infinite
 // allocate as much stuff as you want!
@@ -190,14 +191,14 @@ TR_TRY_ASSERT(2 + 2 == 5, tr::scratchpad().make<tr::StringError>("i might be wro
 
 // reading
 tr::File& file = tr::File::open(arena, "file.txt", tr::FileMode::READ_TEXT).unwrap();
+TR_DEFER(file.close());
 tr::String line = file.read_line(arena).unwrap();
-file.close();
 
 // writing
 tr::File& file = tr::File::open(arena, "otherfile.bin", tr::FileMode::WRITE_BINARY).unwrap();
+TR_DEFER(file.close());
 file.write_string("Man...\nso true");
 file.write_struct(2758952);
-file.close();
 ```
 
 ## FAQ

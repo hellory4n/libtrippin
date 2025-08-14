@@ -776,7 +776,7 @@ tr::Result<int64> tr::File::read_bytes(void* out, int64 size, int64 items)
 				)
 	);
 	TR_TRY_ASSERT(
-		this->can_write(),
+		this->can_read(),
 		tr::scratchpad().make<FileError>(
 			this->path, "", FileErrorType::ACCESS_DENIED, FileOperation::READ_FILE
 		)
@@ -810,7 +810,7 @@ tr::Result<void> tr::File::write_bytes(Array<uint8> bytes)
 	TR_TRY_ASSERT(
 		this->can_write(),
 		tr::scratchpad().make<FileError>(
-			this->path, "", FileErrorType::ACCESS_DENIED, FileOperation::READ_FILE
+			this->path, "", FileErrorType::ACCESS_DENIED, FileOperation::WRITE_FILE
 		)
 	);
 
@@ -868,7 +868,7 @@ tr::Result<void> tr::move_file(tr::String from, tr::String to)
 	// libc rename() is different on windows and posix
 	// on posix it replaces the destination if it already exists
 	// on windows it fails in that case
-	if (tr::file_exists(to)) {
+	if (tr::path_exists(to)) {
 		return FileError(from, to, FileErrorType::FILE_EXISTS, FileOperation::MOVE_FILE);
 	}
 
@@ -879,7 +879,18 @@ tr::Result<void> tr::move_file(tr::String from, tr::String to)
 	return {};
 }
 
+[[deprecated("use tr::path_exists instead")]]
 bool tr::file_exists(tr::String path)
+{
+	FileError::reset_errors();
+
+	// we could just fopen(path, "r") then check if that's null, but then it would return false
+	// on permission errors, even though it does in fact exist
+	struct stat buffer = {};
+	return stat(path, &buffer) == 0;
+}
+
+bool tr::path_exists(tr::String path)
 {
 	FileError::reset_errors();
 

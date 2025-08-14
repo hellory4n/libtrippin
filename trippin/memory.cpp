@@ -23,11 +23,10 @@
  *
  */
 
-// clangd are you stupid
 #include "trippin/memory.h"
 
 #include <cstdlib>
-#include <new> // IWYU pragma: keep
+#include <new>
 
 #include "trippin/log.h"
 #include "trippin/math.h"
@@ -68,7 +67,7 @@ tr::ArenaPage::ArenaPage(usize size, usize align)
 	tr::memory_info.allocated += size;
 }
 
-tr::ArenaPage::~ArenaPage()
+void tr::ArenaPage::free()
 {
 	if (this->buffer != nullptr) {
 		::operator delete(this->buffer, std::align_val_t(this->alignment), std::nothrow);
@@ -116,7 +115,7 @@ tr::Arena::Arena(usize pg_size)
 	TR_ASSERT_MSG(this->page_size != 0, "you doofus why would you make an arena of 0 bytes");
 }
 
-tr::Arena::~Arena()
+void tr::Arena::free()
 {
 	// it doesn't make a page until you allocate something
 	if (this->page == nullptr) {
