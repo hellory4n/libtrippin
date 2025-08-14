@@ -96,6 +96,11 @@
 	#define TR_GCC_RESTORE()
 #endif
 
+// evil macro fuckery
+#define _TR_CONCAT2(A, B) A##B
+#define _TR_CONCAT(A, B) _TR_CONCAT2(A, B)
+#define _TR_UNIQUE_NAME(Base) _TR_CONCAT(Base, __LINE__)
+
 // number types
 // i'm not a huge fan of random '_t's everywhere
 using int8 = int8_t;
@@ -115,9 +120,9 @@ using usize = size_t;
 using isize = ptrdiff_t;
 
 // it's usually true, but not guaranteed by the standard
-static_assert(sizeof(usize) == sizeof(isize), "oh no usize and isize aren't the same size");
-static_assert(sizeof(float32) == 4, "float32 must be 32-bits (duh)");
-static_assert(sizeof(float64) == 8, "float64 must be 64-bits (duh)");
+static_assert(sizeof(usize) == sizeof(isize), "size_t and ptrdiff_t must be the same size");
+static_assert(sizeof(float32) == 4, "float must be 32-bits");
+static_assert(sizeof(float64) == 8, "double must be 64-bits");
 
 namespace tr {
 
@@ -592,11 +597,6 @@ RangeIterator<T> range(T end)
 {
 	return RangeIterator<T>(0, end, 0, 1);
 }
-
-// evil macro fuckery
-#define _TR_CONCAT2(A, B) A##B
-#define _TR_CONCAT(A, B) _TR_CONCAT2(A, B)
-#define _TR_UNIQUE_NAME(Base) _TR_CONCAT(Base, __LINE__)
 
 // defer
 // usage: e.g. TR_DEFER(free(ptr));

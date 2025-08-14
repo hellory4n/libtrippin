@@ -145,7 +145,7 @@ public:
 };
 
 // So spicy. E should inherit implement Error
-template<typename T, typename E>
+template<typename T, typename E = const Error&>
 class Result
 {
 	Either<T, E> value = {};
@@ -306,9 +306,9 @@ public:
 
 // Similar to `tr::assert`, but instead of panicking, it returns an error.
 // example: TR_TRY_ASSERT(false, tr::StringError("something went wrong"));
-#define TR_TRY_ASSERT(X, ...)        \
-	if (!(X)) {                  \
-		return (__VA_ARGS__) \
+#define TR_TRY_ASSERT(X, ...)         \
+	if (!(X)) {                   \
+		return (__VA_ARGS__); \
 	}
 
 } // namespace tr

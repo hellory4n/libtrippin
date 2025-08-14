@@ -23,6 +23,9 @@
  *
  */
 
+#include "trippin/common.h"
+#include "trippin/error.h"
+
 // :(
 // TODO macOS exists
 // though macOS should be easier as it supports posix
@@ -31,7 +34,11 @@
 	#define NOSERVICE
 	#define NOMCX
 	#define NOIME
+// 'NOMINMAX' macro redefined
+// no it's not??
+TR_GCC_IGNORE_WARNING(-Wmacro-redefined)
 	#define NOMINMAX
+TR_GCC_RESTORE()
 	#include <windows.h>
 
 	// conflicts :D
@@ -70,7 +77,7 @@ String user_dir;
 // TODO this was written before TR_TRY and all that crap
 // so like, use that?
 
-tr::Result<tr::String, const tr::Error&> tr::Reader::read_string(tr::Arena& arena, int64 length)
+tr::Result<tr::String> tr::Reader::read_string(tr::Arena& arena, int64 length)
 {
 	String str(arena, static_cast<usize>(length));
 	TR_TRY_ASSIGN(int64 read, this->read_bytes(str.buf(), sizeof(char), length));
@@ -83,7 +90,7 @@ tr::Result<tr::String, const tr::Error&> tr::Reader::read_string(tr::Arena& aren
 	return str;
 }
 
-tr::Result<tr::String, const tr::Error&> tr::Reader::read_line(Arena& arena)
+tr::Result<tr::String> tr::Reader::read_line(Arena& arena)
 {
 	Array<char> linema(tr::scratchpad(), 0);
 
@@ -122,7 +129,7 @@ tr::Result<tr::String, const tr::Error&> tr::Reader::read_line(Arena& arena)
 	return String(arena, linema.buf(), linema.len() + 1);
 }
 
-tr::Result<tr::Array<uint8>, const tr::Error&> tr::Reader::read_all_bytes(tr::Arena& arena)
+tr::Result<tr::Array<uint8>> tr::Reader::read_all_bytes(tr::Arena& arena)
 {
 	TR_TRY_ASSIGN(int64 length, this->len());
 
@@ -131,7 +138,7 @@ tr::Result<tr::Array<uint8>, const tr::Error&> tr::Reader::read_all_bytes(tr::Ar
 	return man;
 }
 
-tr::Result<tr::String, const tr::Error&> tr::Reader::read_all_text(tr::Arena& arena)
+tr::Result<tr::String> tr::Reader::read_all_text(tr::Arena& arena)
 {
 	TR_TRY_ASSIGN(int64 length, this->len());
 
@@ -140,13 +147,13 @@ tr::Result<tr::String, const tr::Error&> tr::Reader::read_all_text(tr::Arena& ar
 	return man;
 }
 
-tr::Result<void, const tr::Error&> tr::Writer::write_string(tr::String str)
+tr::Result<void> tr::Writer::write_string(tr::String str)
 {
 	Array<uint8> manfuckyou(reinterpret_cast<uint8*>(str.buf()), str.len());
 	return this->write_bytes(manfuckyou);
 }
 
-tr::Result<void, const tr::Error&> tr::Writer::printf(const char* fmt, ...)
+tr::Result<void> tr::Writer::printf(const char* fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
@@ -156,7 +163,7 @@ tr::Result<void, const tr::Error&> tr::Writer::printf(const char* fmt, ...)
 	return this->write_string(str);
 }
 
-tr::Result<void, const tr::Error&> tr::Writer::println(const char* fmt, ...)
+tr::Result<void> tr::Writer::println(const char* fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
@@ -192,14 +199,14 @@ void tr::set_paths(tr::String appdir, tr::String userdir)
 	tr::user_dir = userdir.duplicate(tr::core_arena);
 }
 
+// TODO use only windows APIs (massive pain in the ass)
 // TODO maybe at some point just make this be a fancy wrapper for some other library
+// TODO seek help
 
 #ifdef _WIN32
 /*
  * WINDOWS IMPLEMENTATION
  */
-
-// TODO use only windows APIs (massive pain in the ass)
 
 // you know how hard it is to remember LPCWSTR???? and visual studio takes a week to show the
 // autocomplete
@@ -217,8 +224,9 @@ static WinStrConst from_trippin_to_win32_str(tr::String str)
 	// *smashes table* YEAHHHHHHHHHHHHHH https://www.youtube.com/watch?v=WGFLPbpdMS8
 	TR_ASSERT_MSG(size != 0, "blame it on windows");
 
-	WinStrMut new_str =
-		static_cast<WinStrMut>(tr::scratchpad().alloc((size + 1) * sizeof(wchar_t)));
+	WinStrMut new_str = static_cast<WinStrMut>(
+		tr::scratchpad().alloc(static_cast<usize>(size + 1) * sizeof(wchar_t))
+	);
 	int result = MultiByteToWideChar(CP_UTF8, 0, str.buf(), -1, new_str, size);
 	TR_ASSERT_MSG(result != 0, "blame it on windows");
 	return new_str;
@@ -229,15 +237,14 @@ static tr::String from_win32_to_trippin_str(WinStrConst str)
 	int size = WideCharToMultiByte(CP_UTF8, 0, str, -1, nullptr, 0, nullptr, nullptr);
 	TR_ASSERT_MSG(size != 0, "blame it on windows");
 
-	tr::String new_str(tr::scratchpad(), size);
+	tr::String new_str(tr::scratchpad(), static_cast<usize>(size));
 	int result =
 		WideCharToMultiByte(CP_UTF8, 0, str, -1, new_str.buf(), size, nullptr, nullptr);
 	TR_ASSERT_MSG(result != 0, "blame it on windows");
 	return new_str;
 }
 
-tr::Result<tr::File&, const tr::Error&>
-tr::File::open(tr::Arena& arena, tr::String path, FileMode mode)
+tr::Result<tr::File&> tr::File::open(tr::Arena& arena, tr::String path, FileMode mode)
 {
 	FileError::reset_errors();
 
@@ -299,7 +306,7 @@ void tr::File::close()
 	this->fptr = nullptr;
 }
 
-tr::Result<int64, const tr::Error&> tr::File::position()
+tr::Result<int64> tr::File::position()
 {
 	FileError::reset_errors();
 
@@ -310,20 +317,20 @@ tr::Result<int64, const tr::Error&> tr::File::position()
 	return pos;
 }
 
-tr::Result<int64, const tr::Error&> tr::File::len()
+tr::Result<int64> tr::File::len()
 {
 	FileError::reset_errors();
 	return this->length;
 }
 
-tr::Result<bool, const tr::Error&> tr::File::eof()
+tr::Result<bool> tr::File::eof()
 {
 	FileError::reset_errors();
 
 	return feof(static_cast<FILE*>(this->fptr)) != 0;
 }
 
-tr::Result<void, const tr::Error&> tr::File::seek(int64 bytes, tr::SeekFrom from)
+tr::Result<void> tr::File::seek(int64 bytes, tr::SeekFrom from)
 {
 	FileError::reset_errors();
 
@@ -347,7 +354,7 @@ tr::Result<void, const tr::Error&> tr::File::seek(int64 bytes, tr::SeekFrom from
 	return {};
 }
 
-tr::Result<void, const tr::Error&> tr::File::rewind()
+tr::Result<void> tr::File::rewind()
 {
 	FileError::reset_errors();
 
@@ -358,23 +365,32 @@ tr::Result<void, const tr::Error&> tr::File::rewind()
 	return {};
 }
 
-tr::Result<int64, const tr::Error&> tr::File::read_bytes(void* out, int64 size, int64 items)
+tr::Result<int64> tr::File::read_bytes(void* out, int64 size, int64 items)
 {
 	FileError::reset_errors();
-	TR_ASSERT_MSG(
-		out != nullptr, "you dumbass it's supposed to go somewhere if you don't want "
-				"to use it use File::seek() dumbass"
+	TR_TRY_ASSERT(
+		out != nullptr, tr::scratchpad().make<StringError>(
+					"you dumbass it's supposed to go somewhere if you don't "
+					"want to use it use File::seek() dumbass"
+				)
 	);
-	TR_ASSERT_MSG(this->can_read(), "dumbass you can't read this file");
+	TR_TRY_ASSERT(
+		this->can_read(),
+		tr::scratchpad().make<FileError>(
+			this->path, "", FileErrorType::ACCESS_DENIED, FileOperation::READ_FILE
+		)
+	);
 
-	usize bytes = fread(out, size, items, static_cast<FILE*>(this->fptr));
+	usize bytes =
+		fread(out, static_cast<usize>(size), static_cast<usize>(items),
+		      static_cast<FILE*>(this->fptr));
 	if (errno != 0) {
 		return FileError::from_errno(this->path, "", FileOperation::READ_FILE);
 	}
-	return bytes;
+	return static_cast<int64>(bytes);
 }
 
-tr::Result<void, const tr::Error&> tr::File::flush()
+tr::Result<void> tr::File::flush()
 {
 	FileError::reset_errors();
 
@@ -385,10 +401,15 @@ tr::Result<void, const tr::Error&> tr::File::flush()
 	return {};
 }
 
-tr::Result<void, const tr::Error&> tr::File::write_bytes(Array<uint8> bytes)
+tr::Result<void> tr::File::write_bytes(Array<uint8> bytes)
 {
 	FileError::reset_errors();
-	TR_ASSERT_MSG(this->can_write(), "dumbass you can't write to this file");
+	TR_TRY_ASSERT(
+		this->can_write(),
+		tr::scratchpad().make<FileError>(
+			this->path, "", FileErrorType::ACCESS_DENIED, FileOperation::WRITE_FILE
+		)
+	);
 
 	fwrite(bytes.buf(), sizeof(uint8), bytes.len(), static_cast<FILE*>(this->fptr));
 	if (errno != 0) {
@@ -425,7 +446,7 @@ bool tr::File::can_write()
 	}
 }
 
-tr::Result<void, tr::FileError> tr::remove_file(tr::String path)
+tr::Result<void> tr::remove_file(tr::String path)
 {
 	FileError::reset_errors();
 
@@ -436,14 +457,14 @@ tr::Result<void, tr::FileError> tr::remove_file(tr::String path)
 	return {};
 }
 
-tr::Result<void, tr::FileError> tr::move_file(tr::String from, tr::String to)
+tr::Result<void> tr::move_file(tr::String from, tr::String to)
 {
 	FileError::reset_errors();
 
 	// libc rename() is different on windows and posix
 	// on posix it replaces the destination if it already exists
 	// on windows it fails in that case
-	if (tr::file_exists(to)) {
+	if (tr::path_exists(to)) {
 		return FileError(from, to, FileErrorType::FILE_EXISTS, FileOperation::MOVE_FILE);
 	}
 
@@ -454,6 +475,7 @@ tr::Result<void, tr::FileError> tr::move_file(tr::String from, tr::String to)
 	return {};
 }
 
+[[deprecated("use tr::path_exists instead")]]
 bool tr::file_exists(tr::String path)
 {
 	DWORD attr = GetFileAttributesW(from_trippin_to_win32_str(path));
@@ -462,7 +484,15 @@ bool tr::file_exists(tr::String path)
 	// NOLINTEND(readability-implicit-bool-conversion)
 }
 
-tr::Result<void, tr::FileError> tr::create_dir(tr::String path)
+bool tr::path_exists(tr::String path)
+{
+	DWORD attr = GetFileAttributesW(from_trippin_to_win32_str(path));
+	// NOLINTBEGIN(readability-implicit-bool-conversion)
+	return attr != INVALID_FILE_ATTRIBUTES;
+	// NOLINTEND(readability-implicit-bool-conversion)
+}
+
+tr::Result<void> tr::create_dir(tr::String path)
 {
 	FileError::reset_errors();
 
@@ -481,7 +511,18 @@ tr::Result<void, tr::FileError> tr::create_dir(tr::String path)
 			full_dir = tr::fmt(tr::scratchpad(), "%s/%s", *full_dir, *dir);
 		}
 
-		if (tr::file_exists(full_dir)) {
+		if (tr::path_exists(full_dir)) {
+			// clang-format are you stupid
+			TR_TRY_ASSIGN(
+			bool is_file, tr::is_file(full_dir)
+			);
+
+			TR_TRY_ASSERT(
+				!is_file, tr::scratchpad().make<FileError>(
+						  full_dir, "", FileErrorType::IS_NOT_DIRECTORY,
+						  FileOperation::CREATE_DIR
+					  )
+			);
 			continue;
 		}
 
@@ -492,7 +533,7 @@ tr::Result<void, tr::FileError> tr::create_dir(tr::String path)
 	return {};
 }
 
-tr::Result<void, tr::FileError> tr::remove_dir(tr::String path)
+tr::Result<void> tr::remove_dir(tr::String path)
 {
 	FileError::reset_errors();
 
@@ -505,7 +546,7 @@ tr::Result<void, tr::FileError> tr::remove_dir(tr::String path)
 	return {};
 }
 
-tr::Result<tr::Array<tr::String>, tr::FileError>
+tr::Result<tr::Array<tr::String>>
 tr::list_dir(tr::Arena& arena, tr::String path, bool include_hidden)
 {
 	// this looks so horrible what the fuck is wrong with you bill gates
@@ -544,7 +585,7 @@ tr::list_dir(tr::Arena& arena, tr::String path, bool include_hidden)
 	return entries;
 }
 
-tr::Result<bool, tr::FileError> tr::is_file(tr::String path)
+tr::Result<bool> tr::is_file(tr::String path)
 {
 	DWORD attributes = GetFileAttributesW(from_trippin_to_win32_str(path));
 
@@ -607,8 +648,7 @@ void tr::_init_paths()
  * POSIX IMPLEMENTATION
  */
 
-tr::Result<tr::File&, const tr::Error&>
-tr::File::open(tr::Arena& arena, tr::String path, tr::FileMode mode)
+tr::Result<tr::File&> tr::File::open(tr::Arena& arena, tr::String path, tr::FileMode mode)
 {
 	FileError::reset_errors();
 
@@ -667,7 +707,7 @@ void tr::File::close()
 	this->fptr = nullptr;
 }
 
-tr::Result<int64, const tr::Error&> tr::File::position()
+tr::Result<int64> tr::File::position()
 {
 	FileError::reset_errors();
 
@@ -678,20 +718,20 @@ tr::Result<int64, const tr::Error&> tr::File::position()
 	return pos;
 }
 
-tr::Result<int64, const tr::Error&> tr::File::len()
+tr::Result<int64> tr::File::len()
 {
 	FileError::reset_errors();
 	return this->length;
 }
 
-tr::Result<bool, const tr::Error&> tr::File::eof()
+tr::Result<bool> tr::File::eof()
 {
 	FileError::reset_errors();
 
 	return feof(static_cast<FILE*>(this->fptr)) != 0;
 }
 
-tr::Result<void, const tr::Error&> tr::File::seek(int64 bytes, tr::SeekFrom from)
+tr::Result<void> tr::File::seek(int64 bytes, tr::SeekFrom from)
 {
 	FileError::reset_errors();
 
@@ -715,7 +755,7 @@ tr::Result<void, const tr::Error&> tr::File::seek(int64 bytes, tr::SeekFrom from
 	return {};
 }
 
-tr::Result<void, const tr::Error&> tr::File::rewind()
+tr::Result<void> tr::File::rewind()
 {
 	FileError::reset_errors();
 
@@ -726,15 +766,21 @@ tr::Result<void, const tr::Error&> tr::File::rewind()
 	return {};
 }
 
-tr::Result<int64, const tr::Error&> tr::File::read_bytes(void* out, int64 size, int64 items)
+tr::Result<int64> tr::File::read_bytes(void* out, int64 size, int64 items)
 {
 	FileError::reset_errors();
-	// TODO TR_TRY_ASSERT
-	TR_ASSERT_MSG(
-		out != nullptr, "you dumbass it's supposed to go somewhere if you don't want "
-				"to use it use File::seek() dumbass"
+	TR_TRY_ASSERT(
+		out != nullptr, tr::scratchpad().make<StringError>(
+					"you dumbass it's supposed to go somewhere if you don't "
+					"want to use it use File::seek() dumbass"
+				)
 	);
-	TR_ASSERT_MSG(this->can_read(), "dumbass you can't read this file");
+	TR_TRY_ASSERT(
+		this->can_write(),
+		tr::scratchpad().make<FileError>(
+			this->path, "", FileErrorType::ACCESS_DENIED, FileOperation::READ_FILE
+		)
+	);
 
 	// TODO 32-bit won't be happy about this
 	usize bytes =
@@ -747,7 +793,7 @@ tr::Result<int64, const tr::Error&> tr::File::read_bytes(void* out, int64 size, 
 	return static_cast<int64>(bytes);
 }
 
-tr::Result<void, const tr::Error&> tr::File::flush()
+tr::Result<void> tr::File::flush()
 {
 	FileError::reset_errors();
 
@@ -758,10 +804,15 @@ tr::Result<void, const tr::Error&> tr::File::flush()
 	return {};
 }
 
-tr::Result<void, const tr::Error&> tr::File::write_bytes(Array<uint8> bytes)
+tr::Result<void> tr::File::write_bytes(Array<uint8> bytes)
 {
 	FileError::reset_errors();
-	TR_ASSERT_MSG(this->can_write(), "dumbass you can't write to this file");
+	TR_TRY_ASSERT(
+		this->can_write(),
+		tr::scratchpad().make<FileError>(
+			this->path, "", FileErrorType::ACCESS_DENIED, FileOperation::READ_FILE
+		)
+	);
 
 	fwrite(bytes.buf(), sizeof(uint8), bytes.len(), static_cast<FILE*>(this->fptr));
 	if (errno != 0) {
@@ -799,7 +850,7 @@ bool tr::File::can_write()
 	}
 }
 
-tr::Result<void, tr::FileError> tr::remove_file(tr::String path)
+tr::Result<void> tr::remove_file(tr::String path)
 {
 	FileError::reset_errors();
 
@@ -810,7 +861,7 @@ tr::Result<void, tr::FileError> tr::remove_file(tr::String path)
 	return {};
 }
 
-tr::Result<void, tr::FileError> tr::move_file(tr::String from, tr::String to)
+tr::Result<void> tr::move_file(tr::String from, tr::String to)
 {
 	FileError::reset_errors();
 
@@ -838,7 +889,7 @@ bool tr::file_exists(tr::String path)
 	return stat(path, &buffer) == 0;
 }
 
-tr::Result<void, tr::FileError> tr::create_dir(tr::String path)
+tr::Result<void> tr::create_dir(tr::String path)
 {
 	FileError::reset_errors();
 
@@ -863,7 +914,14 @@ tr::Result<void, tr::FileError> tr::create_dir(tr::String path)
 			full_dir = tr::fmt(tr::scratchpad(), "%s/%s", *full_dir, *dir);
 		}
 
-		if (tr::file_exists(full_dir)) {
+		if (tr::path_exists(full_dir)) {
+			TR_TRY_ASSIGN(bool is_file, tr::is_file(full_dir));
+			TR_TRY_ASSERT(
+				!is_file, tr::scratchpad().make<FileError>(
+						  full_dir, "", FileErrorType::IS_NOT_DIRECTORY,
+						  FileOperation::CREATE_DIR
+					  )
+			);
 			continue;
 		}
 
@@ -874,7 +932,7 @@ tr::Result<void, tr::FileError> tr::create_dir(tr::String path)
 	return {};
 }
 
-tr::Result<void, tr::FileError> tr::remove_dir(tr::String path)
+tr::Result<void> tr::remove_dir(tr::String path)
 {
 	FileError::reset_errors();
 
@@ -884,7 +942,7 @@ tr::Result<void, tr::FileError> tr::remove_dir(tr::String path)
 	return {};
 }
 
-tr::Result<tr::Array<tr::String>, tr::FileError>
+tr::Result<tr::Array<tr::String>>
 tr::list_dir(tr::Arena& arena, tr::String path, bool include_hidden)
 {
 	FileError::reset_errors();
@@ -917,7 +975,7 @@ tr::list_dir(tr::Arena& arena, tr::String path, bool include_hidden)
 	return entries;
 }
 
-tr::Result<bool, tr::FileError> tr::is_file(tr::String path)
+tr::Result<bool> tr::is_file(tr::String path)
 {
 	FileError::reset_errors();
 
