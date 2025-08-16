@@ -103,6 +103,8 @@ void _impl_assert(const char* expr, const char* fmt, ...);
 // yeah
 #define TR_UNREACHABLE() tr::panic("unreachable code at %s:%i", __FILE__, __LINE__)
 
-} // namespace tr
+#define TR_TODO() tr::panic("unimplemented functionality at %s:%i", __FILE__, __LINE__)
+
+}
 
 #endif

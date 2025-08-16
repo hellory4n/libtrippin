@@ -218,6 +218,6 @@ String fmt(Arena& arena, const char* fmt, ...);
 
 // TODO StringBuilder
 
-} // namespace tr
+}
 
 #endif

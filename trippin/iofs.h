@@ -309,6 +309,6 @@ void set_paths(String appdir, String userdir);
 // internal :)
 void _init_paths();
 
-} // namespace tr
+}
 
 #endif

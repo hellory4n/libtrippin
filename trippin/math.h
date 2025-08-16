@@ -2571,6 +2571,6 @@ struct Matrix4x4
 	Matrix4x4 invert();
 };
 
-} // namespace tr
+}
 
 #endif

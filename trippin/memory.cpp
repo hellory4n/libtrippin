@@ -33,10 +33,9 @@
 
 namespace tr {
 
-extern MemoryInfo memory_info;
 thread_local Arena _the_real_scratchpad(tr::kb_to_bytes(4));
 
-} // namespace tr
+}
 
 tr::ArenaPage::ArenaPage(usize size, usize align)
 	: bufsize(size)
@@ -59,12 +58,6 @@ tr::ArenaPage::ArenaPage(usize size, usize align)
 
 	// i dont want to read garbage man
 	memset(this->buffer, 0, this->bufsize);
-
-	// man
-	tr::memory_info.alive_pages++;
-	tr::memory_info.cumulative_pages++;
-	tr::memory_info.cumulative_allocated += size;
-	tr::memory_info.allocated += size;
 }
 
 void tr::ArenaPage::free()
@@ -72,12 +65,6 @@ void tr::ArenaPage::free()
 	if (this->buffer != nullptr) {
 		::operator delete(this->buffer, std::align_val_t(this->alignment), std::nothrow);
 		this->buffer = nullptr;
-
-		// man
-		tr::memory_info.alive_pages--;
-		tr::memory_info.freed_pages++;
-		tr::memory_info.allocated -= this->bufsize;
-		tr::memory_info.freed_by_arenas += this->bufsize;
 	}
 }
 
@@ -234,12 +221,6 @@ usize tr::Arena::allocated() const
 usize tr::Arena::capacity() const
 {
 	return this->bytes_capacity;
-}
-
-[[deprecated("this api is just kinda crap, will be removed in v2.5")]]
-tr::MemoryInfo tr::get_memory_info()
-{
-	return tr::memory_info;
 }
 
 tr::Arena& tr::scratchpad()

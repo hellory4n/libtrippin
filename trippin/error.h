@@ -311,6 +311,6 @@ public:
 		return (__VA_ARGS__); \
 	}
 
-} // namespace tr
+}
 
 #endif

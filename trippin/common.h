@@ -127,10 +127,10 @@ static_assert(sizeof(float64) == 8, "double must be 64-bits");
 namespace tr {
 
 // I sure love versions.
-static constexpr const char* VERSION = "v2.5.0";
+static constexpr const char* VERSION = "v2.5.1";
 
 // I sure love versions. Format is XYYZZ
-static constexpr uint32 VERSION_NUM = 2'05'00;
+static constexpr uint32 VERSION_NUM = 2'05'01;
 
 // Initializes the bloody library lmao.
 void init();
@@ -142,10 +142,6 @@ void free();
 // deinitializes crap such as libtrippin (you can add your own functions to run here)
 [[noreturn]]
 void quit(int32 error_code);
-
-// Adds a function to run when the program quits/panics.
-[[deprecated("use the other overload, this will be removed in v2.5")]]
-void call_on_quit(std::function<void(void)> func);
 
 // Adds a function to run when the program quits/panics.
 void call_on_quit(std::function<void(bool is_panic)> func);
@@ -326,7 +322,6 @@ public:
 template<typename T>
 class Maybe
 {
-	// TODO implement it yourself you scoundrel
 	Either<T, uint8> value = {};
 	bool has_value = false;
 
@@ -625,6 +620,6 @@ _Defer<Fn> _defer_func(Fn fn)
 
 #define TR_DEFER(...) auto _TR_UNIQUE_NAME(_tr_defer) = tr::_defer_func([&]() { __VA_ARGS__; })
 
-} // namespace tr
+}
 
 #endif

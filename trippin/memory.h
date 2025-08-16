@@ -37,33 +37,6 @@
 
 namespace tr {
 
-// Why the fuck not.
-struct MemoryInfo
-{
-	// Currently allocated by arenas, in bytes
-	isize allocated = 0;
-	// Like `allocated`, but cumulative
-	isize cumulative_allocated = 0;
-	// Amount of alive reference counted objects
-	isize ref_counted_objs = 0;
-	// Like `ref_counted_objs`, but cumulative
-	isize cumulative_ref_counted_objs = 0;
-	// Total amount of memory freed from arenas, in bytes
-	isize freed_by_arenas = 0;
-	// Amount of freed reference counted objects
-	isize freed_ref_counted_objs = 0;
-	// Total amount of alive arena pages
-	isize alive_pages = 0;
-	// All arena pages that have ever existed
-	isize cumulative_pages = 0;
-	// Total amount of freed arena pages
-	isize freed_pages = 0;
-};
-
-// As the name implies, it gets the memory info. Idk why.
-[[deprecated("this api is just kinda crap, will be removed in v2.5")]]
-MemoryInfo get_memory_info();
-
 // Converts kilobytes to bytes
 static constexpr usize kb_to_bytes(usize x)
 {
@@ -427,6 +400,6 @@ public:
 	}
 };
 
-} // namespace tr
+}
 
 #endif

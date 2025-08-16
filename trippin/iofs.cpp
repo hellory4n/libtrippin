@@ -72,7 +72,7 @@ String appdata_dir;
 String app_dir;
 String user_dir;
 
-} // namespace tr
+}
 
 // TODO this was written before TR_TRY and all that crap
 // so like, use that?

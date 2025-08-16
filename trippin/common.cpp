@@ -38,23 +38,19 @@ namespace tr {
 
 Arena core_arena(tr::kb_to_bytes(128));
 
-// TODO remove in v2.5
-MemoryInfo memory_info;
 Array<File*> logfiles(core_arena);
 
 File std_in;
 File std_out;
 File std_err;
 
-// TODO remove the old call_on_quit on v2.5
-Signal<void> on_quit(core_arena);
 // yes it's spelled that on purpose
 Signal<bool> the_new_all_on_quit(core_arena);
 bool panicking = false;
 // so it doesn't keep emitting the signal forever
 bool panicked_on_quit = false;
 
-} // namespace tr
+}
 
 void tr::init()
 {
@@ -92,7 +88,6 @@ void tr::free()
 		return;
 	}
 
-	tr::on_quit.emit();
 	// c++ is fucking with the template va args
 	// idk why i can't just pass the variable
 	// but it works by negating it twice (which makes it the same)
@@ -106,11 +101,6 @@ void tr::quit(int32 error_code)
 {
 	tr::free();
 	exit(error_code);
-}
-
-void tr::call_on_quit(std::function<void(void)> func)
-{
-	tr::on_quit.connect(func);
 }
 
 void tr::call_on_quit(std::function<void(bool is_panic)> func)

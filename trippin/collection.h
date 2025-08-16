@@ -351,6 +351,6 @@ public:
 
 // TODO HashSet<T>, Stack<T>, Queue<T>, LinkedList<T>
 
-} // namespace tr
+}
 
 #endif

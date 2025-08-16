@@ -46,7 +46,7 @@ extern bool panicked_on_quit;
 
 void _log(const char* color, const char* prefix, bool panic, const char* fmt, va_list arg);
 
-} // namespace tr
+}
 
 void tr::use_log_file(const char* path)
 {
