@@ -151,6 +151,9 @@ class Result
 	Either<T, E> value = {};
 
 public:
+	using Type = T;
+	using ErrorType = E;
+
 	Result(T val)
 		: value(val)
 	{
@@ -225,6 +228,9 @@ class Result<void, E>
 	Maybe<E> value;
 
 public:
+	using Type = void;
+	using ErrorType = E;
+
 	Result()
 		: value()
 	{

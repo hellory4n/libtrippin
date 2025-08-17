@@ -93,6 +93,9 @@ class HashMap
 	usize capacity = 0;
 
 public:
+	using KeyType = K;
+	using ValueType = V;
+
 	explicit HashMap(Arena& arena, HashMapSettings<K> setting)
 		: settings(setting)
 		, src_arena(&arena)

@@ -44,6 +44,8 @@ struct Vec2
 	T x;
 	T y;
 
+	using Type = T;
+
 	constexpr Vec2()
 		: x(0)
 		, y(0)
@@ -244,6 +246,8 @@ struct Vec3
 	T x;
 	T y;
 	T z;
+
+	using Type = T;
 
 	constexpr Vec3()
 		: x(0)
@@ -617,6 +621,8 @@ struct Vec4
 	T y;
 	T z;
 	T w;
+
+	using Type = T;
 
 	constexpr Vec4()
 		: x(0)
@@ -2330,6 +2336,8 @@ struct Color
 	// Alpha/transparency
 	uint8 a = 255;
 
+	using Type = uint8;
+
 	constexpr Color();
 	// shut up :)
 	TR_GCC_IGNORE_WARNING(-Wshadow)
@@ -2337,7 +2345,6 @@ struct Color
 		: r(r)
 		, g(g)
 		, b(b)
-		, a(255)
 	{
 	}
 	constexpr Color(uint8 r, uint8 g, uint8 b, uint8 a)
@@ -2500,23 +2507,23 @@ constexpr Vec4<T>::Vec4(Color c)
 }
 
 namespace palette {
-
 	// White lmao.
 	constexpr Color WHITE = Color::rgb(0xffffff);
 	// Black lmao.
-	static constexpr Color BLACK = Color::rgb(0x000000);
+	constexpr Color BLACK = Color::rgb(0x000000);
 	// Where did it go
-	static constexpr Color TRANSPARENT = Color::rgba(0x00000000);
+	constexpr Color TRANSPARENT = Color::rgba(0x00000000);
 
 	// TODO more palettes, e.g. tr::palette::WebSafe, tr::palette::Material, tr::palette::Starry
 	// etc or maybe not
-
-} // namespace palette
+}
 
 // Matrix intended for use with OpenGL. This entire struct is stolen from linmath.h btw lmao
 struct Matrix4x4
 {
 	Vec4<float32> values[4];
+
+	using Type = float32;
 
 	Vec4<float32>& operator[](usize idx);
 
@@ -2578,6 +2585,8 @@ struct Rect
 {
 	Vec2<T> position;
 	Vec2<T> size;
+
+	using Type = T;
 
 	Rect<T>()
 		: position(0, 0)

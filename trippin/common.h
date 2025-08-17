@@ -127,10 +127,10 @@ static_assert(sizeof(float64) == 8, "double must be 64-bits");
 namespace tr {
 
 // I sure love versions.
-static constexpr const char* VERSION = "v2.5.1";
+static constexpr const char* VERSION = "v2.5.2";
 
 // I sure love versions. Format is XYYZZ
-static constexpr uint32 VERSION_NUM = 2'05'01;
+static constexpr uint32 VERSION_NUM = 2'05'02;
 
 // Initializes the bloody library lmao.
 void init();
@@ -199,6 +199,9 @@ private:
 	}
 
 public:
+	using LeftType = L;
+	using RightType = R;
+
 	Either()
 		: side(Side::UNINITIALIZED)
 	{
@@ -326,6 +329,8 @@ class Maybe
 	bool has_value = false;
 
 public:
+	using Type = T;
+
 	// Initializes a Maybe<T> as null
 	Maybe()
 		: value(0)
@@ -381,6 +386,8 @@ class MaybePtr
 	T* value = nullptr;
 
 public:
+	using Type = T;
+
 	// Intializes a MaybePtr<T> as null
 	MaybePtr()
 		: value(nullptr)
@@ -464,6 +471,9 @@ struct Pair
 {
 	L left;
 	R right;
+
+	using LeftType = L;
+	using RightType = R;
 
 	Pair(const L& l, const R& r)
 		: left(l)

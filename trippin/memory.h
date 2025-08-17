@@ -184,6 +184,8 @@ class Array
 	usize capacity = 0;
 
 public:
+	using Type = T;
+
 	// Initializes an empty array at an arena.
 	explicit Array(Arena& arena, usize len)
 		: src_arena(&arena)

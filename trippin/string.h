@@ -51,6 +51,8 @@ class String
 	Array<char> array = {};
 
 public:
+	using Type = char;
+
 	// Initializes a string from an arena and C string.
 	explicit String(Arena& arena, const char* str, usize len)
 	{
@@ -201,14 +203,6 @@ public:
 	[[nodiscard]]
 	Array<String> split(Arena& arena, char delimiter) const;
 };
-
-// It's just `sprintf` for `tr::String` lmao.
-[[gnu::format(printf, 3, 4),
-  deprecated(
-	  "specifying size is no longer necessary (and there's not a good "
-	  "reason to specify it, also the function is tr::fmt now lmao), will be removed in v2.5"
-  )]]
-String sprintf(Arena& arena, usize maxlen, const char* fmt, ...);
 
 String fmt_args(Arena& arena, const char* fmt, va_list arg);
 

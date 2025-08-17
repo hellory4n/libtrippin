@@ -176,6 +176,7 @@ void tr::panic(const char* fmt, ...)
 #if defined(TR_GCC_OR_CLANG) && !defined(TR_ONLY_MINGW_GCC)
 [[gnu::format(printf, 2, 3)]]
 #endif
+[[noreturn]]
 void tr::_impl_assert(const char* expr, const char* fmt, ...)
 {
 	va_list args;
@@ -185,4 +186,6 @@ void tr::_impl_assert(const char* expr, const char* fmt, ...)
 
 	_log(tr::ConsoleColor::ERROR, prefix, true, fmt, args);
 	va_end(args);
+	// straight up [[noreturn]]ing it
+	exit(1);
 }

@@ -4,7 +4,7 @@ Most biggest most massive library of all time. I'm insane.
 
 ## Featuring
 
-- [libtrippin](./trippin) v2.5.1: Most massive library of all time
+- [libtrippin](./trippin) v2.5.2: Most massive library of all time
     - C++17 with no external dependencies (only libc/stdc++)
     - Cross-platform (Windows and POSIX)
     - Arenas for memory management
