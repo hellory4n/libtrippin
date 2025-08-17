@@ -44,7 +44,10 @@ uint64 hash(tr::Array<uint8> array);
 template<typename K>
 uint64 _default_hash_function(const K& key)
 {
-	return tr::hash(Array<uint8>(reinterpret_cast<uint8*>(&key), sizeof(K)));
+	// clang i will touch you
+	return tr::hash(
+		Array<uint8>(const_cast<uint8*>(reinterpret_cast<const uint8*>(&key)), sizeof(K))
+	);
 }
 // internal don't use probably :)
 template<>

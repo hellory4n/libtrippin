@@ -59,12 +59,10 @@ IncludeBlocks: Regroup
 IncludeCategories:
   - Regex: '^<[A-Za-z0-9_]+>$' # stdlib, e.g. `<functional>`, `<cstdio>`
     Priority: 1
-  - Regex: '^<trippin/.*\.h>$' # that's our stdlib so it goes after that
-    Priority: 2
   - Regex: '^<.*\.h>$'         # other third-party headers
-    Priority: 3
+    Priority: 2
   - Regex: '^".*"$'            # headers from the project itself
-    Priority: 4
+    Priority: 3
 
 # misc
 PointerAlignment: Left

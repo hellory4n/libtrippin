@@ -2202,8 +2202,6 @@ constexpr Vec4<float32> Vec4<float32>::operator%(float32 r)
 	);
 }
 
-// TODO tr::Aabb or some shit
-
 // SO RANDOM LMAO HAHA implemented through xoshiro256+
 class Random
 {
@@ -2740,6 +2738,8 @@ struct Rect
 		}
 	}
 };
+
+// TODO tr::Aabb or some shit
 
 }
 
