@@ -2202,6 +2202,8 @@ constexpr Vec4<float32> Vec4<float32>::operator%(float32 r)
 	);
 }
 
+// TODO tr::Aabb or some shit
+
 // SO RANDOM LMAO HAHA implemented through xoshiro256+
 class Random
 {
@@ -2569,6 +2571,174 @@ struct Matrix4x4
 	Matrix4x4 rotate_y(float32 radians);
 	Matrix4x4 rotate_z(float32 radians);
 	Matrix4x4 invert();
+};
+
+// rectnagle :) most of this is stolen from godot btw
+// https://github.com/godotengine/godot/blob/master/core/math/rect2.h
+template<typename T>
+struct Rect
+{
+	Vec2<T> position;
+	Vec2<T> size;
+
+	Rect<T>()
+		: position(0, 0)
+		, size(0, 0)
+	{
+	}
+
+	TR_GCC_IGNORE_WARNING(-Wshadow) // gcc is stupid :)
+	Rect<T>(Vec2<T> position, Vec2<T> size)
+		: position(position)
+		, size(size)
+	{
+	}
+	TR_GCC_RESTORE()
+
+	Rect<T>(T x, T y, T width, T height)
+		: position(x, y)
+		, size(width, height)
+	{
+	}
+
+	[[nodiscard]]
+	constexpr T area() const
+	{
+		return size.x * size.y;
+	}
+
+	[[nodiscard]]
+	constexpr Vec2<T> center() const
+	{
+		return position + (size * 0.5f);
+	}
+
+	[[nodiscard]]
+	constexpr bool intersects(Rect<T> rect, bool include_borders = false) const
+	{
+		// TODO i already know gcc is gonna complain about this too
+		// gcc pls make your compiler smarter
+		TR_ASSERT(size >= Vec2<T>(0, 0));
+		TR_ASSERT(rect.size >= Vec2<T>(0, 0));
+
+		if (include_borders) {
+			if (position.x > (rect.position.x + rect.size.width)) {
+				return false;
+			}
+			if ((position.x + size.width) < rect.position.x) {
+				return false;
+			}
+			if (position.y > (rect.position.y + rect.size.height)) {
+				return false;
+			}
+			if ((position.y + size.height) < rect.position.y) {
+				return false;
+			}
+		}
+		else {
+			if (position.x >= (rect.position.x + rect.size.width)) {
+				return false;
+			}
+			if ((position.x + size.width) <= rect.position.x) {
+				return false;
+			}
+			if (position.y >= (rect.position.y + rect.size.height)) {
+				return false;
+			}
+			if ((position.y + size.height) <= rect.position.y) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	[[nodiscard]]
+	constexpr Rect<T> intersection(Rect<T> rect) const
+	{
+		Rect<T> new_rect = rect;
+
+		if (!intersects(new_rect)) {
+			return {};
+		}
+
+		new_rect.position = tr::max(rect.position, position);
+
+		Vec2<T> rect_end = rect.position + rect.size;
+		Vec2<T> end = position + size;
+
+		new_rect.size = rect_end.min(end) - new_rect.position;
+
+		return new_rect;
+	}
+
+	[[nodiscard]]
+	constexpr bool has_point(Vec2<T> point) const
+	{
+		TR_ASSERT(size >= Vec2<T>(0, 0));
+
+		if (point.x < position.x) {
+			return false;
+		}
+		if (point.y < position.y) {
+			return false;
+		}
+
+		if (point.x >= (position.x + size.x)) {
+			return false;
+		}
+		if (point.y >= (position.y + size.y)) {
+			return false;
+		}
+
+		return true;
+	}
+
+	[[nodiscard]]
+	constexpr Rect<T> grow(T left, T right, T top, T bottom) const
+	{
+		Rect<T> g = *this;
+		g.position.x -= left;
+		g.position.y -= top;
+		g.size.x += left + right;
+		g.size.y += top + bottom;
+		return g;
+	}
+
+	// TODO USE AN EPSILON
+	constexpr bool operator==(Rect<T> rhs) const
+	{
+		return position == rhs && size == rhs.size;
+	}
+
+	constexpr bool operator!=(Rect<T> rhs) const
+	{
+		return !(*this == rhs);
+	}
+
+	static constexpr usize ITEMS = 4;
+	constexpr T& operator[](usize idx)
+	{
+		switch (idx) {
+		case 0:
+			return position.x;
+			break;
+		case 1:
+			return position.y;
+			break;
+		case 2:
+			return size.x;
+			break;
+		case 3:
+			return size.y;
+			break;
+		default:
+			tr::panic(
+				"sir a rect has 4 items not %zu items you distinguished gentleman",
+				idx + 1
+			);
+		}
+	}
 };
 
 }

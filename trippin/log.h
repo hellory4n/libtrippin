@@ -94,10 +94,10 @@ void _impl_assert(const char* expr, const char* fmt, ...);
 		tr::_impl_assert(#X, __VA_ARGS__); \
 	}
 
-#define TR_ASSERT(X)                                        \
-	if (!(X)) {                                         \
+#define TR_ASSERT(...)                                      \
+	if (!(__VA_ARGS__)) {                               \
 		/* e.g. "failed assert 'false': aborting"*/ \
-		tr::_impl_assert(#X, "aborting");           \
+		tr::_impl_assert(#__VA_ARGS__, "aborting"); \
 	}
 
 // yeah
