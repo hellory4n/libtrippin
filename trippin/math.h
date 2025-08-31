@@ -419,21 +419,19 @@ struct Vec3
 		return r;
 	}
 
-	constexpr Vec3<T> mul_cross(Vec3<T> b)
+	constexpr Vec3<T> cross_product(Vec3<T> b)
 	{
 		Vec3<T> r;
-		r[0] = (*this)[1] * b[2] - (*this)[2] * b[1];
-		r[1] = (*this)[2] * b[0] - (*this)[0] * b[2];
-		r[2] = (*this)[0] * b[1] - (*this)[1] * b[0];
-		r[3] = 1.f;
+		r.x = y * b.z - z * y;
+		r.y = z * b.x - x * z;
+		r.z = x * b.y - y * x;
 		return r;
 	}
 
 	// swizzling operators
 	// i know this is insane
 	// i didnt write this myself im not insane
-	TR_GCC_IGNORE_WARNING(-Wshadow)
-	constexpr Vec3(T x, Vec2<T> other)
+	TR_GCC_IGNORE_WARNING(-Wshadow) constexpr Vec3(T x, Vec2<T> other)
 		: Vec3(x, other.y, other.z)
 	{
 	}
@@ -785,13 +783,13 @@ struct Vec4
 		return *this * (1 / this->length());
 	}
 
-	constexpr Vec4<T> mul_cross(Vec4<T> b)
+	constexpr Vec4<T> cross_product(Vec4<T> b)
 	{
 		Vec4<T> r;
-		r[0] = (*this)[1] * b[2] - (*this)[2] * b[1];
-		r[1] = (*this)[2] * b[0] - (*this)[0] * b[2];
-		r[2] = (*this)[0] * b[1] - (*this)[1] * b[0];
-		r[3] = 1.f;
+		r.x = y * b.z - z * y;
+		r.y = z * b.x - x * z;
+		r.z = x * b.y - y * x;
+		r.w = 1.f;
 		return r;
 	}
 
