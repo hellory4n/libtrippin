@@ -36,6 +36,10 @@ namespace tr {
 // why won't you let me use strlen in constexpr :(
 constexpr usize constexpr_strlen(const char* str)
 {
+	if (str == nullptr) {
+		return 0;
+	}
+
 	usize i = 0;
 	while (str[i] != '\0') {
 		i++;
