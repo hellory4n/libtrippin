@@ -3,8 +3,7 @@ Language: Cpp
 Standard: c++17
 Cpp11BracedListStyle: true
 
-# very controversial for unemployed people
-UseTab: Always
+UseTab: ForContinuationAndIndentation
 IndentWidth: 8
 TabWidth: 8
 ContinuationIndentWidth: 8
@@ -24,13 +23,14 @@ BreakAfterAttributes: Always
 AlignOperands: Align
 BreakTemplateDeclarations: Yes
 AlignAfterOpenBracket: BlockIndent
-AlignArrayOfStructures: Right
+AlignArrayOfStructures: Left
 AlignEscapedNewlines: LeftWithLastLine
 EmptyLineBeforeAccessModifier: Always
 PackConstructorInitializers: BinPack
 QualifierAlignment: Left
 SpaceAfterTemplateKeyword: false
 BreakBeforeBinaryOperators: None
+SpaceBeforeCpp11BracedList: false
 
 # slightly modified K&R style
 BreakBeforeBraces: Custom
@@ -57,11 +57,11 @@ IndentCaseLabels: false
 SortIncludes: true
 IncludeBlocks: Regroup
 IncludeCategories:
-  - Regex: '^<[A-Za-z0-9_]+>$' # stdlib, e.g. `<functional>`, `<cstdio>`
+  - Regex: "^<[A-Za-z0-9_]+>$" # stdlib, e.g. `<functional>`, `<cstdio>`
     Priority: 1
-  - Regex: '^<.*\.h>$'         # other third-party headers
+  - Regex: '^<.*\.h>$' # other third-party headers
     Priority: 2
-  - Regex: '^".*"$'            # headers from the project itself
+  - Regex: '^".*"$' # headers from the project itself
     Priority: 3
 
 # misc

@@ -135,6 +135,7 @@ public:
 	// any arguments here to the actual constructor. Note this supports calling destructors for
 	// when the arena is deleted, but why?
 	template<typename T, typename... Args>
+	[[deprecated("use make_ref or make_ptr instead")]]
 	T& make(Args&&... args)
 	{
 		void* baseball = this->alloc(sizeof(T), alignof(T));
@@ -148,6 +149,44 @@ public:
 		this->destructors = call;
 
 		return *huh;
+	}
+
+	// Kinda like `new`/`malloc` but for arenas. The funky variadic templates allow you to pass
+	// any arguments here to the actual constructor. Note this supports calling destructors for
+	// when the arena is deleted, but why?
+	template<typename T, typename... Args>
+	T& make_ref(Args&&... args)
+	{
+		void* ptr = this->alloc(sizeof(T), alignof(T));
+		T* obj = new (ptr) T(std::forward<Args>(args)...);
+
+		// fancy fuckery to get destructors to be called :)
+		auto* call = static_cast<DestructorCall*>(this->alloc(sizeof(DestructorCall)));
+		call->func = [](void* obj) -> void { static_cast<T*>(obj)->~T(); };
+		call->object = obj;
+		call->next = this->destructors;
+		this->destructors = call;
+
+		return *obj;
+	}
+
+	// Kinda like `new`/`malloc` but for arenas. The funky variadic templates allow you to pass
+	// any arguments here to the actual constructor. Note this supports calling destructors for
+	// when the arena is deleted, but why?
+	template<typename T, typename... Args>
+	T* make_ptr(Args&&... args)
+	{
+		void* ptr = this->alloc(sizeof(T), alignof(T));
+		T* obj = new (ptr) T(std::forward<Args>(args)...);
+
+		// fancy fuckery to get destructors to be called :)
+		auto* call = static_cast<DestructorCall*>(this->alloc(sizeof(DestructorCall)));
+		call->func = [](void* obj) -> void { static_cast<T*>(obj)->~T(); };
+		call->object = obj;
+		call->next = this->destructors;
+		this->destructors = call;
+
+		return obj;
 	}
 
 	// Returns how much has already been allocated in the arena, in bytes.
@@ -178,7 +217,7 @@ class Array
 	// .add())
 	static constexpr usize INITIAL_CAPACITY = 16;
 
-	T* ptr = nullptr;
+	RefWrapper<T>* ptr = nullptr;
 	Arena* src_arena = nullptr;
 	usize length = 0;
 	usize capacity = 0;
@@ -200,11 +239,11 @@ public:
 			this->capacity = INITIAL_CAPACITY;
 		}
 
-		this->ptr = static_cast<T*>(arena.alloc(sizeof(T) * this->capacity));
+		this->ptr = static_cast<RefWrapper<T>*>(arena.alloc(sizeof(T) * this->capacity));
 	}
 
 	// Initializes an array from a buffer. (the data is copied into the arena)
-	explicit Array(Arena& arena, T* data, usize len)
+	explicit Array(Arena& arena, RefWrapper<T>* data, usize len)
 		: src_arena(&arena)
 		, length(len)
 		, capacity(len)
@@ -216,7 +255,7 @@ public:
 			this->capacity = INITIAL_CAPACITY;
 		}
 
-		this->ptr = static_cast<T*>(arena.alloc(sizeof(T) * this->capacity));
+		this->ptr = static_cast<RefWrapper<T>*>(arena.alloc(sizeof(T) * this->capacity));
 		if (len == 0) {
 			return;
 		}
@@ -236,7 +275,7 @@ public:
 
 	// Initializes an array that points to any buffer. You really should only use this for
 	// temporary arrays.
-	constexpr explicit Array(T* data, usize len)
+	constexpr explicit Array(RefWrapper<T>* data, usize len)
 		: ptr(data)
 		, length(len)
 		, capacity(len)
@@ -281,7 +320,7 @@ public:
 
 	// Similar to `operator[]`, but when getting an index out of bounds, instead of panicking,
 	// it returns null, which is probably useful sometimes.
-	constexpr MaybePtr<T> try_get(usize idx) const
+	constexpr Maybe<T&> try_get(usize idx) const
 	{
 		if (idx >= this->length) {
 			return {};
@@ -290,7 +329,7 @@ public:
 	}
 
 	// Returns the buffer.
-	constexpr T* buf() const
+	constexpr RefWrapper<T>* buf() const
 	{
 		return this->ptr;
 	}
@@ -305,7 +344,7 @@ public:
 		return this->capacity;
 	}
 	// Shorthand for `.buf()`
-	constexpr T* operator*() const
+	constexpr RefWrapper<T>* operator*() const
 	{
 		return this->buf();
 	}
@@ -314,7 +353,7 @@ public:
 	class Iterator
 	{
 	public:
-		constexpr Iterator(T* pointer, usize index)
+		constexpr Iterator(RefWrapper<T>* pointer, usize index)
 			: idx(index)
 			, ptr(pointer)
 		{
@@ -336,7 +375,7 @@ public:
 
 	private:
 		usize idx;
-		T* ptr;
+		RefWrapper<T>* ptr;
 	};
 
 	constexpr Iterator begin() const
@@ -351,7 +390,7 @@ public:
 	// Adds a new item to the array, and resizes it if necessary. This only works on
 	// arena-allocated arrays, if you try to use this on an array without an arena, it will
 	// panic.
-	void add(const T& val)
+	void add(T val)
 	{
 		if (this->src_arena == nullptr) {
 			tr::panic("resizing arena-less tr::Array<T> is not allowed");

@@ -28,6 +28,7 @@
 #include <cstdlib>
 #include <new>
 
+#include "common.h"
 #include "trippin/log.h"
 #include "trippin/math.h"
 
@@ -57,7 +58,11 @@ tr::ArenaPage::ArenaPage(usize size, usize align)
 	);
 
 	// i dont want to read garbage man
+	// TODO this pragma fuckery probably isn't necessary but i'm paranoid
+	// see https://en.cppreference.com/w/cpp/string/byte/memset#Notes
+	TR_GCC_PRAGMA(optimize("-no-dead-core-removal"))
 	memset(this->buffer, 0, this->bufsize);
+	TR_GCC_PRAGMA(optimize("-dead-core-removal"))
 }
 
 void tr::ArenaPage::free()
@@ -189,7 +194,7 @@ void tr::Arena::reset()
 	}
 
 	// TODO we should reuse all the other pages
-	// i just can't be bothered to fix Arena.alloc() to support that
+	// i just can't be bothered to fix Arena::alloc() to support that
 	ArenaPage* headfrfr = head;
 	while (head != nullptr && head != headfrfr) {
 		this->bytes_capacity -= head->bufsize;
@@ -200,13 +205,11 @@ void tr::Arena::reset()
 
 	// we keep the first page :)
 	this->page = headfrfr;
-	// apparently memset is fucked, std::fill_n does nothing and memset_s just doesn't exist in
-	// c++??
-	// source https://en.cppreference.com/w/cpp/string/byte/memset#Notes maybe i'm just
-	// stupid :)
-	for (usize i = 0; i < headfrfr->bufsize; i++) {
-		static_cast<uint8*>(headfrfr->buffer)[i] = 0;
-	}
+	// TODO this pragma fuckery probably isn't necessary but i'm paranoid
+	// see https://en.cppreference.com/w/cpp/string/byte/memset#Notes
+	TR_GCC_PRAGMA(optimize("-no-dead-core-removal"))
+	memset(headfrfr->buffer, 0, headfrfr->bufsize);
+	TR_GCC_PRAGMA(optimize("-dead-core-removal"))
 	headfrfr->alloc_pos = 0;
 	headfrfr->prev = nullptr;
 	headfrfr->next = nullptr;

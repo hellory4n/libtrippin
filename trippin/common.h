@@ -90,8 +90,11 @@
 			TR_GCC_PRAGMA(GCC diagnostic ignored #Warning)
 	#endif
 
-	#define TR_GCC_RESTORE() TR_GCC_PRAGMA(GCC diagnostic pop)
+	#define TR_GCC_RESTORE() \
+		TR_GCC_PRAGMA(GCC diagnostic pop)    \
+		TR_GCC_PRAGMA(GCC diagnostic pop)
 #else
+	#define TR_GCC_PRAGMA(X)
 	#define TR_GCC_IGNORE_WARNING(Warning)
 	#define TR_GCC_RESTORE()
 #endif
@@ -127,10 +130,13 @@ static_assert(sizeof(float64) == 8, "double must be 64-bits");
 namespace tr {
 
 // I sure love versions.
-static constexpr const char* VERSION = "v2.5.2";
+static constexpr const char* VERSION = "v2.6.0";
 
 // I sure love versions. Format is XYYZZ
-static constexpr uint32 VERSION_NUM = 2'05'02;
+static constexpr uint32 VERSION_NUM = 2'06'00;
+static constexpr uint32 VERSION_MAJOR = 2;
+static constexpr uint32 VERSION_MINOR = 6;
+static constexpr uint32 VERSION_PATCH = 0;
 
 // Initializes the bloody library lmao.
 void init();
@@ -156,6 +162,14 @@ void call_on_quit(std::function<void(bool is_panic)> func);
 [[noreturn]]
 void panic(const char* fmt, ...);
 
+// c++ is a lot of fun
+template<typename T>
+using RefWrapper = std::conditional_t<
+	std::is_reference_v<T>,
+	std::remove_reference_t<T>*, // store pointer for references
+	std::remove_cv_t<std::remove_reference_t<T>> // store decayed value for non-refs
+	>;
+
 // Functional propaganda
 template<typename L, typename R>
 class Either
@@ -167,36 +181,11 @@ class Either
 		RIGHT
 	};
 
-	// c++ is a lot of fun
-	template<typename T>
-	using Storage = std::conditional_t<
-		std::is_reference_v<T>,
-		std::remove_reference_t<T>*, // store pointer for references
-		std::remove_cv_t<std::remove_reference_t<T>> // store decayed value for non-refs
-		>;
-
 	union {
-		Storage<L> _left;
-		Storage<R> _right;
+		RefWrapper<L> _left;
+		RefWrapper<R> _right;
 	};
 	Side side = Side::UNINITIALIZED;
-
-private:
-	void destroy()
-	{
-		if (this->side == Side::LEFT) {
-			if constexpr (!std::is_reference_v<L>) {
-				using U = std::remove_cv_t<L>;
-				reinterpret_cast<U*>(&this->_left)->~U();
-			}
-		}
-		else {
-			if constexpr (!std::is_reference_v<R>) {
-				using U = std::remove_cv_t<R>;
-				reinterpret_cast<U*>(&this->_right)->~U();
-			}
-		}
-	}
 
 public:
 	using LeftType = L;
@@ -228,6 +217,23 @@ public:
 		}
 		else {
 			new (&this->_left) R(std::forward<R>(r));
+		}
+	}
+
+	void destroy()
+	{
+		if (this->side == Side::LEFT) {
+			// reference/pointer implies you don't own it :)
+			if constexpr (!std::is_reference_v<L> && !std::is_pointer_v<L>) {
+				using U = std::remove_cv_t<L>;
+				reinterpret_cast<U*>(&this->_left)->~U();
+			}
+		}
+		else {
+			if constexpr (!std::is_reference_v<L> && !std::is_pointer_v<L>) {
+				using U = std::remove_cv_t<R>;
+				reinterpret_cast<U*>(&this->_right)->~U();
+			}
 		}
 	}
 
@@ -320,8 +326,7 @@ public:
 	}
 };
 
-// Like how the spicy modern languages handle null. Note you have to use `MaybeRef<T>` for
-// references, because C++.
+// Like how the spicy modern languages handle null.
 template<typename T>
 class Maybe
 {
@@ -381,7 +386,8 @@ public:
 // doesn't call destructors, as it's assumed you didn't create the value it's pointing to, if you
 // did, you'd use `Maybe<T>`
 template<typename T>
-class MaybePtr
+// WHY BJANRE STROUSPTRUP WHY
+class [[deprecated("you can do tr::Maybe<T&> now lmao")]] MaybePtr
 {
 	T* value = nullptr;
 
@@ -469,22 +475,21 @@ public:
 template<typename L, typename R>
 struct Pair
 {
-	L left;
-	R right;
+	RefWrapper<L> left;
+	RefWrapper<R> right;
 
 	using LeftType = L;
 	using RightType = R;
 
-	Pair(const L& l, const R& r)
+	Pair(L l, R r)
 		: left(l)
 		, right(r)
 	{
 	}
-};
 
-// "Macro argument should be enclosed in parentheses"
-// sir you can't do that with types
-// NOLINTBEGIN(bugprone-macro-parentheses)
+	// TODO do destructors work?
+	// destructors suck
+};
 
 // Defines bit flag fuckery for enum classes :)
 #define TR_BIT_FLAG(T)                                                                            \
@@ -520,8 +525,6 @@ struct Pair
 	{                                                                                         \
 		return (value & flag) == flag;                                                    \
 	}
-
-// NOLINTEND(bugprone-macro-parentheses)
 
 // I love reinventing the wheel
 // TODO this kinda sucks
@@ -605,7 +608,6 @@ RangeIterator<T> range(T end)
 
 // defer
 // usage: e.g. TR_DEFER(free(ptr));
-
 template<typename Fn>
 struct _Defer
 {

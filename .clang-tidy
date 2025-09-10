@@ -1,10 +1,7 @@
 # i am paranoid
-# TODO more checks?
 Checks:
   - -*
   - cppcoreguidelines-pro-type-member-init
-  - modernize-deprecated-headers
-  - modernize-redundant-void-arg
   - modernize-use-bool-literals
   - modernize-use-default-member-init
   - modernize-use-nullptr
@@ -23,7 +20,6 @@ Checks:
   - bugprone-argument-comment
   - bugprone-branch-clone
   - bugprone-integer-division
-  - bugprone-macro-parentheses
   - bugprone-misplaced-pointer-arithmetic-in-alloc
   - bugprone-sizeof-expression
   - bugprone-suspicious-missing-comma
@@ -36,15 +32,29 @@ Checks:
   - portability-simd-intrinsics
   - portability-restrict-system-includes
 
-  - llvm-else-after-return
+  - clang-analyzer-core.CallAndMessage
+  - clang-analyzer-core.DivideZero
+  - clang-analyzer-core.UndefinedBinaryOperatorResult
+  - clang-analyzer-core.uninitialized.Assign
+  - clang-analyzer-core.uninitialized.Branch
+  - clang-analyzer-core.uninitialized.UndefReturn
+  - clang-analyzer-cplusplus.NewDelete
+  - clang-analyzer-cplusplus.NewDeleteLeaks
+  - clang-analyzer-cplusplus.Move
+  - clang-analyzer-unix.Malloc
+  - clang-analyzer-unix.MismatchedDeallocator
+  - clang-analyzer-security.insecureAPI.UncheckedReturn
+  - clang-analyzer-security.insecureAPI.getpw
+  - clang-analyzer-security.insecureAPI.gets
+  - bugprone-use-after-move
+  - bugprone-dangling-handle
 
-HeaderFileExtensions: ["", h, hh, hpp, hxx, inc, glsl]
-ImplementationFileExtensions: [c, cc, cpp, cxx, m, mm, java]
+HeaderFileExtensions: ["", h, hh, hpp, hxx, inc]
+ImplementationFileExtensions: [c, cc, cpp, cxx]
 HeaderFilterRegex: (sandbox|starry)/
 FormatStyle: file
 
 CheckOptions:
-  cppcoreguidelines-pro-type-member-init.IgnoreArrays: true
   cppcoreguidelines-pro-type-member-init.UseAssignment: true
   modernize-deprecated-headers.CheckHeaderFile: true
   modernize-use-bool-literals.IgnoreMacros: false

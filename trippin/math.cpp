@@ -326,16 +326,15 @@ tr::Matrix4x4 tr::Matrix4x4::perspective(float32 fovy, float32 aspect, float32 n
 }
 
 tr::Random::Random(int64 seed)
+	: state{0, 0, 0, 0} // just so clang-tidy is happy
 {
 	// i think this is how you implement splitmix64?
-	this->state[0] = static_cast<uint64>(seed); // TODO don't?
+	state[0] = static_cast<uint64>(seed); // TODO don't?
 	for (size_t i = 1; i < 4; i++) {
-		this->state[i] = (this->state[i - 1] += UINT64_C(0x9E3779B97F4A7C15));
-		this->state[i] =
-			(this->state[i] ^ (this->state[i] >> 30)) * UINT64_C(0xBF58476D1CE4E5B9);
-		this->state[i] =
-			(this->state[i] ^ (this->state[i] >> 27)) * UINT64_C(0x94D049BB133111EB);
-		this->state[i] = this->state[i] ^ (this->state[i] >> 31);
+		state[i] = (state[i - 1] += UINT64_C(0x9E3779B97F4A7C15));
+		state[i] = (state[i] ^ (state[i] >> 30)) * UINT64_C(0xBF58476D1CE4E5B9);
+		state[i] = (state[i] ^ (state[i] >> 27)) * UINT64_C(0x94D049BB133111EB);
+		state[i] = state[i] ^ (state[i] >> 31);
 	}
 }
 
@@ -361,7 +360,6 @@ float64 tr::Random::next()
 	this->state[3] = rotl(this->state[3], 45);
 
 	// not theft
-	// man is 0 to 1
 	// 18446744073709551616.0 is UINT64_MAX but with the last digit changed because
 	// clang was complaining
 	return static_cast<float64>(result) / 18446744073709551616.0;
