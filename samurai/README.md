@@ -2,6 +2,18 @@
 
 Simple [Ninja](https://ninja-build.org) build script generator for Lua, because CMake and Make suck.
 
+## Features
+
+- No esoteric language
+- Pretty simple
+- Uhhhhhhhhhhh
+
+## Limitations
+
+- It's in alpha (experimental, will probabaly break, lacking features)
+- No support for compilers other than GCC/Clang
+- Probably doesn't work on Windows
+
 usage:
 ```
 > ./samurai.lua
@@ -18,11 +30,6 @@ oughhhh im cleaning it
 build script:
 ```lua
 local sam = require("samurai")
-
-sam.project_name("oughhh")
-sam.author("oughhh team")
-sam.license("0BSD")
-sam.url("oughhhh.com")
 
 sam.option("name", "description", function(val)
         -- do something with it
