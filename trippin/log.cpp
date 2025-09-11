@@ -39,7 +39,7 @@
 namespace tr {
 
 extern Arena core_arena;
-extern Array<File*> logfiles;
+extern Array<File&> logfiles;
 extern Signal<bool> the_new_all_on_quit;
 extern bool panicking;
 extern bool panicked_on_quit;
@@ -55,7 +55,7 @@ void tr::use_log_file(const char* path)
 		tr::warn("couldn't use log file '%s': %s", path, f.unwrap_err().message().buf());
 	}
 	File& file = f.unwrap();
-	logfiles.add(&file);
+	logfiles.add(file);
 
 	tr::info("using log file \"%s\"", path);
 }
@@ -82,16 +82,16 @@ void tr::_log(const char* color, const char* prefix, bool panic, const char* fmt
 	va_end(argmaballs);
 
 	for (auto [_, file] : tr::logfiles) {
-		if (file->is_std) {
-			file->write_string(color);
+		if (file.is_std) {
+			file.write_string(color);
 		}
-		file->printf("[%s] %s%s", timestr, prefix, buf.buf());
-		if (file->is_std) {
-			file->write_string(ConsoleColor::RESET);
+		file.printf("[%s] %s%s", timestr, prefix, buf.buf());
+		if (file.is_std) {
+			file.write_string(ConsoleColor::RESET);
 		}
-		file->write_string("\n");
+		file.write_string("\n");
 
-		file->flush();
+		file.flush();
 	}
 
 	if (panic) {

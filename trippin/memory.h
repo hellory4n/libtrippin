@@ -285,16 +285,16 @@ public:
 	// why bjarne stroustrup why can't i make this myself why is std::initializer_list<T>
 	// special i know this is from c++11 but i don't care i'm gonna blame bjarne stroustrup
 	// inventor of C incremented
-	constexpr Array(std::initializer_list<T> initlist)
+	constexpr Array(std::initializer_list<RefWrapper<T>> initlist)
 	{
 		this->capacity = initlist.size();
 		this->length = initlist.size();
 		// may you please shut the fuck up fucking hell man no one loves you🥰🥰🥰🥰
-		this->ptr = const_cast<T*>(initlist.begin());
+		this->ptr = const_cast<RefWrapper<T>*>(initlist.begin());
 	}
 
 	explicit Array(Arena& arena, std::initializer_list<T> initlist)
-		: Array(arena, const_cast<T*>(initlist.begin()), initlist.size())
+		: Array(arena, const_cast<RefWrapper<T>*>(initlist.begin()), initlist.size())
 	{
 	}
 
@@ -403,9 +403,10 @@ public:
 		}
 
 		// reallocate array
-		T* old_buffer = this->ptr;
+		RefWrapper<T>* old_buffer = this->ptr;
 		this->capacity *= 2;
-		this->ptr = static_cast<T*>(src_arena->alloc(this->capacity * sizeof(T)));
+		this->ptr =
+			static_cast<RefWrapper<T>*>(src_arena->alloc(this->capacity * sizeof(T)));
 		// you may initialize with a length of 0 so you can then add crap later
 		if (this->length > 0) {
 			memcpy(static_cast<void*>(this->ptr), static_cast<const void*>(old_buffer),

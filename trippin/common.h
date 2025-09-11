@@ -162,7 +162,8 @@ void call_on_quit(std::function<void(bool is_panic)> func);
 [[noreturn]]
 void panic(const char* fmt, ...);
 
-// c++ is a lot of fun
+// someone at C++ hq decided for some fucking reason that actually, a reference is not just a fancy
+// pointer...stupid i know
 template<typename T>
 using RefWrapper = std::conditional_t<
 	std::is_reference_v<T>,

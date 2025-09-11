@@ -37,8 +37,7 @@
 namespace tr {
 
 Arena core_arena(tr::kb_to_bytes(128));
-
-Array<File*> logfiles(core_arena);
+Array<File&> logfiles(core_arena);
 
 File std_in;
 File std_out;
@@ -73,7 +72,7 @@ void tr::init()
 	tr::std_err.is_std = true;
 	tr::std_err.mode = FileMode::WRITE_TEXT;
 
-	logfiles.add(&tr::std_out);
+	logfiles.add(tr::std_out);
 
 	tr::_init_paths();
 
@@ -90,7 +89,7 @@ void tr::free()
 
 	// c++ is fucking with the template va args
 	// idk why i can't just pass the variable
-	// but it works by negating it twice (which makes it the same)
+	// but it works by negating it twice (which makes it the same value)
 	// TODO rewrite in rust
 	tr::the_new_all_on_quit.emit(!!tr::panicking);
 	tr::info("deinitialized libtrippin");
