@@ -83,7 +83,7 @@ tr::Result<tr::String> tr::Reader::read_string(tr::Arena& arena, int64 length)
 	TR_TRY_ASSIGN(int64 read, this->read_bytes(str.buf(), sizeof(char), length));
 
 	if (read != int64(length)) {
-		return tr::scratchpad().make<StringError>(
+		return tr::scratchpad().make_ref<StringError>(
 			"expected %zu bytes, got %li (might be EOF)", length, read
 		);
 	}
@@ -274,7 +274,7 @@ tr::Result<tr::File&> tr::File::open(tr::Arena& arena, tr::String path, FileMode
 		break;
 	}
 
-	File& file = arena.make<File>();
+	File& file = arena.make_ref<File>();
 	// normal fopen gives an error on visual studio??
 	errno_t ohno = _wfopen_s(
 		reinterpret_cast<FILE**>(&file.fptr), from_trippin_to_win32_str(path), modefrfr
@@ -369,14 +369,14 @@ tr::Result<int64> tr::File::read_bytes(void* out, int64 size, int64 items)
 {
 	FileError::reset_errors();
 	TR_TRY_ASSERT(
-		out != nullptr, tr::scratchpad().make<StringError>(
+		out != nullptr, tr::scratchpad().make_ref<StringError>(
 					"you dumbass it's supposed to go somewhere if you don't "
 					"want to use it use File::seek() dumbass"
 				)
 	);
 	TR_TRY_ASSERT(
 		this->can_read(),
-		tr::scratchpad().make<FileError>(
+		tr::scratchpad().make_ref<FileError>(
 			this->path, "", FileErrorType::ACCESS_DENIED, FileOperation::READ_FILE
 		)
 	);
@@ -406,7 +406,7 @@ tr::Result<void> tr::File::write_bytes(Array<uint8> bytes)
 	FileError::reset_errors();
 	TR_TRY_ASSERT(
 		this->can_write(),
-		tr::scratchpad().make<FileError>(
+		tr::scratchpad().make_ref<FileError>(
 			this->path, "", FileErrorType::ACCESS_DENIED, FileOperation::WRITE_FILE
 		)
 	);
@@ -518,7 +518,7 @@ tr::Result<void> tr::create_dir(tr::String path)
 			);
 
 			TR_TRY_ASSERT(
-				!is_file, tr::scratchpad().make<FileError>(
+				!is_file, tr::scratchpad().make_ref<FileError>(
 						  full_dir, "", FileErrorType::IS_NOT_DIRECTORY,
 						  FileOperation::CREATE_DIR
 					  )
@@ -678,7 +678,7 @@ tr::Result<tr::File&> tr::File::open(tr::Arena& arena, tr::String path, tr::File
 		break;
 	}
 
-	File& file = arena.make<File>();
+	File& file = arena.make_ref<File>();
 	file.fptr = fopen(path, modefrfr);
 	if (file.fptr == nullptr) {
 		return FileError::from_errno(path, "", FileOperation::OPEN_FILE);
@@ -770,14 +770,14 @@ tr::Result<int64> tr::File::read_bytes(void* out, int64 size, int64 items)
 {
 	FileError::reset_errors();
 	TR_TRY_ASSERT(
-		out != nullptr, tr::scratchpad().make<StringError>(
+		out != nullptr, tr::scratchpad().make_ref<StringError>(
 					"you dumbass it's supposed to go somewhere if you don't "
 					"want to use it use File::seek() dumbass"
 				)
 	);
 	TR_TRY_ASSERT(
 		this->can_read(),
-		tr::scratchpad().make<FileError>(
+		tr::scratchpad().make_ref<FileError>(
 			this->path, "", FileErrorType::ACCESS_DENIED, FileOperation::READ_FILE
 		)
 	);
@@ -809,7 +809,7 @@ tr::Result<void> tr::File::write_bytes(Array<uint8> bytes)
 	FileError::reset_errors();
 	TR_TRY_ASSERT(
 		this->can_write(),
-		tr::scratchpad().make<FileError>(
+		tr::scratchpad().make_ref<FileError>(
 			this->path, "", FileErrorType::ACCESS_DENIED, FileOperation::WRITE_FILE
 		)
 	);
@@ -928,7 +928,7 @@ tr::Result<void> tr::create_dir(tr::String path)
 		if (tr::path_exists(full_dir)) {
 			TR_TRY_ASSIGN(bool is_file, tr::is_file(full_dir));
 			TR_TRY_ASSERT(
-				!is_file, tr::scratchpad().make<FileError>(
+				!is_file, tr::scratchpad().make_ref<FileError>(
 						  full_dir, "", FileErrorType::IS_NOT_DIRECTORY,
 						  FileOperation::CREATE_DIR
 					  )

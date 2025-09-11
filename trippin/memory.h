@@ -325,7 +325,7 @@ public:
 		if (idx >= this->length) {
 			return {};
 		}
-		return &this->ptr[idx];
+		return this->ptr[idx];
 	}
 
 	// Returns the buffer.

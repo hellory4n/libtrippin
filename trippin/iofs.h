@@ -78,7 +78,7 @@ public:
 		if (bytes_read == sizeof(T) && man != nullptr) {
 			return man;
 		}
-		return tr::scratchpad().make<StringError>(
+		return tr::scratchpad().make_ref<StringError>(
 			"expected %li bytes, got %li (might be EOF)", sizeof(T), bytes_read
 		);
 	}
@@ -94,7 +94,7 @@ public:
 		if (bytes_read == sizeof(T) * items && man != nullptr) {
 			return Array<T>(arena, man, items);
 		}
-		return tr::scratchpad().make<StringError>(
+		return tr::scratchpad().make_ref<StringError>(
 			"expected %li bytes, got %li (might be EOF)", sizeof(T) * items, bytes_read
 		);
 	}

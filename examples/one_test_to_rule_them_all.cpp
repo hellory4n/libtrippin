@@ -50,12 +50,12 @@ static void test::memory()
 	tr::Arena arena = {};
 	TR_DEFER(arena.free());
 
-	tr::Vec3<float32>& vecma3 = arena.make<tr::Vec3<float32>>(1.0f, 2.0f, 3.0f);
+	tr::Vec3<float32>& vecma3 = arena.make_ref<tr::Vec3<float32>>(1.0f, 2.0f, 3.0f);
 	tr::log("vecma3 %f, %f, %f", vecma3.x, vecma3.y, vecma3.z);
 
 	struct MaBalls
 	{
-		uint8 waste[tr::kb_to_bytes(1)];
+		uint8 waste[tr::kb_to_bytes(1)] = {};
 		MaBalls()
 		{
 			tr::log("MaBalls created");
@@ -66,7 +66,7 @@ static void test::memory()
 		}
 	};
 
-	auto& sig = arena.make<MaBalls>();
+	auto& sig = arena.make_ref<MaBalls>();
 	sig.waste[37] = 'm';
 
 	arena.reset();
@@ -172,7 +172,7 @@ static void test::filesystem()
 	// i want it to crash if something goes wrong tho so that's why
 	tr::File& wf =
 		tr::File::open(tr::scratchpad(), "fucker.txt", tr::FileMode::WRITE_TEXT).unwrap();
-	wf.write_string("Crap crappington.\nother line");
+	wf.write_string("Crap crappington.\nother line").unwrap();
 	wf.close();
 
 	tr::File& rf =

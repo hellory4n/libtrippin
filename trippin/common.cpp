@@ -55,19 +55,19 @@ bool panicked_on_quit = false;
 void tr::init()
 {
 	// man.
-	tr::std_in = tr::core_arena.make<File>();
+	tr::std_in = tr::core_arena.make_ref<File>();
 	tr::std_in.fptr = stdin;
 	tr::std_in.length = -1;
 	tr::std_in.is_std = true;
 	tr::std_in.mode = FileMode::READ_TEXT;
 
-	tr::std_out = tr::core_arena.make<File>();
+	tr::std_out = tr::core_arena.make_ref<File>();
 	tr::std_out.fptr = stdout;
 	tr::std_out.length = -1;
 	tr::std_out.is_std = true;
 	tr::std_out.mode = FileMode::WRITE_TEXT;
 
-	tr::std_err = tr::core_arena.make<File>();
+	tr::std_err = tr::core_arena.make_ref<File>();
 	tr::std_err.fptr = stderr;
 	tr::std_err.length = -1;
 	tr::std_err.is_std = true;

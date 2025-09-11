@@ -76,8 +76,8 @@ class HashMap
 
 	struct Bucket
 	{
-		K key;
-		V value;
+		RefWrapper<K> key;
+		RefWrapper<V> value;
 		bool occupied;
 		bool dead;
 	};
@@ -115,7 +115,7 @@ public:
 	HashMap() { }
 
 	// Returns the index based on a key. That's how hash maps work.
-	usize get_index(const K& key)
+	usize get_index(K key)
 	{
 		return this->settings.hash_func(key) % this->capacity;
 	}
@@ -157,6 +157,7 @@ public:
 	// Checks how full the hashmap is and resizes if necessary
 	void check_grow()
 	{
+		// TODO you don't need a float here
 		float64 used =
 			static_cast<float64>(this->occupied) / static_cast<float64>(this->capacity);
 
@@ -167,7 +168,7 @@ public:
 	}
 
 	// Returns the bucket and whether it's occupied (true for occupied, false for empty)
-	Pair<Bucket*, bool> find(const K& key)
+	Pair<Bucket*, bool> find(K key)
 	{
 		usize idx = this->get_index(key);
 		for (usize probe = idx;; probe = (probe + 1) % capacity) {
@@ -185,43 +186,44 @@ public:
 		TR_UNREACHABLE();
 	}
 
-	V& operator[](const K& key)
+	V& operator[](K key)
 	{
 		// operator[] is also used for putting crap :)
 		this->check_grow();
 
-		Pair<Bucket*, bool> bucket = this->find(key);
+		// TODO put a _ before private members ffs
+		auto [bucket, b_occupied] = this->find(key);
 		// if it's empty, operator[] places some crap
-		if (!bucket.right) {
-			bucket.left->occupied = true;
-			bucket.left->key = key;
+		if (!b_occupied) {
+			bucket->occupied = true;
+			bucket->key = key;
 			this->occupied++;
 			this->length++;
 		}
 
-		return bucket.left->value;
+		return bucket->value;
 	}
 
 	// If true, the hashmap has that key. Useful because the `[]` operator automatically inserts
 	// an item if it's not there.
-	bool contains(const K& key)
+	bool contains(K key)
 	{
 		return this->find(key).right;
 	}
 
 	// Removes the key from the hashmap. Returns true if the key is was found, returns false
 	// otherwise.
-	bool remove(const K& key)
+	bool remove(K key)
 	{
-		Pair<Bucket*, bool> bucket = this->find(key);
-		// you can't kill someone that hasn't been born
+		auto [bucket, b_occupied] = this->find(key);
+		// you can't kill someone that doesn't exist
 		// don't quote me on this
-		if (bucket.right) {
-			bucket.left->dead = true;
+		if (b_occupied) {
+			bucket->dead = true;
 			this->length--;
 		}
 
-		return bucket.right;
+		return b_occupied;
 	}
 
 	// Returns how many items the hashmap currently has
@@ -246,7 +248,7 @@ public:
 			, idx(index)
 			, cap(capacity)
 		{
-			this->advance_to_valid();
+			this->find_valid();
 		}
 
 		Pair<K&, V&> operator*() const
@@ -258,7 +260,7 @@ public:
 		Iterator& operator++()
 		{
 			this->idx++;
-			this->advance_to_valid();
+			this->find_valid();
 			return *this;
 		}
 
@@ -272,7 +274,7 @@ public:
 		usize idx;
 		usize cap;
 
-		void advance_to_valid()
+		void find_valid()
 		{
 			// god
 			while (this->idx < this->cap && (!this->buffer[this->idx].occupied ||

@@ -220,17 +220,21 @@ public:
 		}
 	}
 
-	void destroy()
+	void free()
 	{
+		// TODO this WILL break
+		if constexpr (std::is_pointer_v<L> || std::is_pointer_v<R>) {
+			return;
+		}
+
 		if (this->side == Side::LEFT) {
-			// reference/pointer implies you don't own it :)
-			if constexpr (!std::is_reference_v<L> && !std::is_pointer_v<L>) {
+			if constexpr (!std::is_reference_v<L>) {
 				using U = std::remove_cv_t<L>;
 				reinterpret_cast<U*>(&this->_left)->~U();
 			}
 		}
 		else {
-			if constexpr (!std::is_reference_v<L> && !std::is_pointer_v<L>) {
+			if constexpr (!std::is_reference_v<R>) {
 				using U = std::remove_cv_t<R>;
 				reinterpret_cast<U*>(&this->_right)->~U();
 			}
@@ -240,7 +244,7 @@ public:
 	// evil rule of 3 fuckery
 	~Either()
 	{
-		this->destroy();
+		this->free();
 	}
 
 	Either(const Either& other)
@@ -267,7 +271,7 @@ public:
 	Either& operator=(const Either& other)
 	{
 		if (this != &other) {
-			this->destroy();
+			this->free();
 			new (this) Either(other);
 		}
 		return *this;
@@ -314,7 +318,7 @@ public:
 		}
 	}
 
-	// Calls a function (usually a lambda) depending on whether it's left, or right.
+	// Calls a function (usually a lambda) depending on wheth1er it's left, or right.
 	void match(std::function<void(L left)> left_func, std::function<void(R right)> right_func)
 	{
 		if (this->is_left()) {
@@ -475,8 +479,8 @@ public:
 template<typename L, typename R>
 struct Pair
 {
-	RefWrapper<L> left;
-	RefWrapper<R> right;
+	L left;
+	R right;
 
 	using LeftType = L;
 	using RightType = R;
