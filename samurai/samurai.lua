@@ -26,12 +26,12 @@
 ---@class (exact) Project
 ---@field name string
 ---@field compiler string
----@field cflags string
----@field ldflags string
----@field sources string[]
----@field target string
----@field pre_build fun()
----@field post_build fun()
+---@field cflags string? - flags used during compilation
+---@field ldflags string? - flags used during linking
+---@field sources string[] - list of source files
+---@field target string? - the final name of the executable
+---@field pre_build fun()? - a function to run before building the project
+---@field post_build fun()? - a function to run after building the project
 local Project = {}
 
 local sam = {
@@ -46,14 +46,9 @@ local sam = {
 	_options = {},
 	---@type table<string, string>
 	_option_descriptions = {},
-	---@type Project[]
-	_projects = {},
+	---@type Project?
+	_project = nil,
 }
-
---- Initializes the library
-function sam.init()
-	-- TODO
-end
 
 --- Adds a command-line option, and calls the callback function if it's used.
 ---@param name string
@@ -62,6 +57,55 @@ end
 function sam.option(name, description, callback)
 	sam._options[name] = callback
 	sam._option_descriptions[name] = description
+end
+
+--- Makes sure nothing tragically fails trying to access a nil field
+---@param project Project
+function sam._project_defaults(project)
+	if project == nil then
+		error("Please set a project with 'sam.project()'")
+	end
+
+	-- required fields
+	if project.name == nil or project.name == "" then
+		error("Please give your project a name with the '.name' field.")
+	end
+	if project.compiler == nil or project.compiler == "" then
+		error("Please give your project a compiler with the '.compiler' field.")
+	end
+	if project.sources == nil or #project.sources == 0 then
+		error("Your project needs at least 1 source file. (see the '.sources' option)")
+	end
+
+	-- optional fields
+	if project.target == nil or project.target == "" then
+		project.target = project.name
+	end
+	if project.cflags == nil then
+		project.cflags = ""
+	end
+	if project.ldflags == nil then
+		project.ldflags = ""
+	end
+	if project.pre_build == nil then
+		project.pre_build = function() end
+	end
+	if project.post_build == nil then
+		project.post_build = function() end
+	end
+end
+
+--- Makes a new project. Note that there can only be one project. See [Project](lua://Project) for
+--- available options.
+---@param project Project
+function sam.project(project)
+	sam._project_defaults(project)
+	sam._project = project
+end
+
+--- Initializes the library
+function sam.init()
+	-- TODO
 end
 
 function sam._help()
@@ -78,6 +122,10 @@ end
 
 --- Put this at the end of your build script to actually do anything
 function sam.run()
+	if sam._project == nil then
+		error("Please set a project with 'sam.project()'")
+	end
+
 	local opts = {}
 
 	for i, argma in ipairs(arg) do
