@@ -30,8 +30,8 @@
 ---@field ldflags string? - flags used during linking
 ---@field sources string[] - list of source files
 ---@field target string? - the final name of the executable
----@field pre_build fun()? - a function to run before building the project
----@field post_build fun()? - a function to run after building the project
+---@field pre_build fun(proj: Project)? - a function to run before building the project
+---@field post_build fun(proj: Project)? - a function to run after building the project
 local Project = {}
 
 local sam = {
@@ -88,10 +88,10 @@ function sam._project_defaults(project)
 		project.ldflags = ""
 	end
 	if project.pre_build == nil then
-		project.pre_build = function() end
+		project.pre_build = function(_) end
 	end
 	if project.post_build == nil then
-		project.post_build = function() end
+		project.post_build = function(_) end
 	end
 end
 
@@ -168,14 +168,37 @@ function sam._cmd_configure(proj)
 	f:write("\n\ndefault build/bin/" .. proj.target .. "\n")
 
 	f:close()
+
+	-- get the compile_commands.json
+	assert(os.execute("ninja -t compdb > compile_commands.json"),
+		"couldn't get compile_commands.json (likely a samurai bug)"
+	)
 end
 
-function sam._cmd_build()
-	print("oughhh im building it")
+---@param proj Project
+function sam._cmd_build(proj)
+	if io.open("build.ninja", "r") == nil then
+		error("no build.ninja file found, please create one with the 'configure' command")
+	end
+
+	-- make sure the build dirs exist
+	assert(os.execute("mkdir build/obj -p"))
+	assert(os.execute("mkdir build/bin -p"))
+
+	proj.pre_build(proj)
+
+	assert(os.execute("ninja"), "build failed :(")
+
+	proj.post_build(proj)
+
+	io.write("build succeeded!")
 end
 
 function sam._cmd_clean()
-	print("oughhh im cleaning it")
+	-- scary!
+	assert(os.execute("rm -rf build/**"))
+	assert(os.execute("rm -f build.ninja"))
+	assert(os.execute("rm -f .ninja_log"))
 end
 
 function sam._cmd_version()
@@ -225,7 +248,7 @@ function sam.run()
 	elseif arg[1] == "configure" then
 		sam._cmd_configure(sam._project)
 	elseif arg[1] == "build" then
-		sam._cmd_build()
+		sam._cmd_build(sam._project)
 	elseif arg[1] == "clean" then
 		sam._cmd_clean()
 	elseif arg[1] == "version" or arg[1] == "--version" or arg[1] == "-v" then
