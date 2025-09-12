@@ -108,16 +108,48 @@ function sam.init()
 	-- TODO
 end
 
-function sam._help()
-	print("hehe")
+function sam._cmd_help()
+	io.write("The samurai build system\n")
+	io.write("usage: ./samurai.lua [command] [options...]\n")
+	io.write("\n")
+	-- you can't make custom commands, at least not yet
+	io.write([[Commands:
+    help: shows this
+    configure: creates the ninja build script
+    build: builds the project
+    clean: removes all build files
+    version: prints the samurai + lua version
+]]
+	)
+	io.write("\n")
+
+	-- mmm yes i love sorting oh yeah oughhh im sorting its all over hte screen
+	local sorted_options = {}
+	for option, _ in pairs(sam._option_descriptions) do
+		table.insert(sorted_options, option)
+	end
+	table.sort(sorted_options)
+
+	io.write("Options: (usage: name=value)\n")
+	for _, option in pairs(sorted_options) do
+		io.write("    " .. option .. ": " .. sam._option_descriptions[option] .. "\n")
+	end
 end
 
-function sam._configure()
+function sam._cmd_configure()
 	print("oughhh im configuring it")
 end
 
-function sam._build()
+function sam._cmd_build()
 	print("oughhh im building it")
+end
+
+function sam._cmd_clean()
+	print("oughhh im cleaning it")
+end
+
+function sam._cmd_version()
+	io.write("samurai " .. sam.version .. ", using " .. _VERSION .. "\n")
 end
 
 --- Put this at the end of your build script to actually do anything
@@ -159,11 +191,15 @@ function sam.run()
 
 	-- arg[1] should be the command
 	if arg[1] == "help" or arg[1] == "--help" or arg[1] == "-h" or arg[1] == nil then
-		sam._help()
+		sam._cmd_help()
 	elseif arg[1] == "configure" then
-		sam._configure()
+		sam._cmd_configure()
 	elseif arg[1] == "build" then
-		sam._build()
+		sam._cmd_build()
+	elseif arg[1] == "clean" then
+		sam._cmd_clean()
+	elseif arg[1] == "version" or arg[1] == "--version" or arg[1] == "-v" then
+		sam._cmd_version()
 	else
 		error("invalid command '" .. arg[1] .. "' (try 'help' to see available commands)")
 	end
