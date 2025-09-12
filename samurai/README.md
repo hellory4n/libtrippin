@@ -1,4 +1,4 @@
-# samurai
+# samurai: barely a build system®
 
 Simple [Ninja](https://ninja-build.org) build script generator for Lua, because CMake and Make suck.
 
@@ -14,39 +14,96 @@ Simple [Ninja](https://ninja-build.org) build script generator for Lua, because 
 - No support for compilers other than GCC/Clang
 - Probably doesn't work on Windows
 
-usage:
-```
-> ./samurai.lua
-running from build.lua
-options: ...
-> ./samurai.lua option1=yeah option2=fuck
-configured :)
-> ./samurai.lua build
-oughhhh im building it
-> ./samurai.lua clean
-oughhhh im cleaning it
-```
+## Usage
 
-build script:
+First you need Lua and Ninja installed (obviously).
+
+Now copy `samurai.lua` and make a build script:
+
 ```lua
+#!/bin/lua
 local sam = require("samurai")
-
-sam.option("name", "description", function(val)
-        -- do something with it
-end)
-
--- do your usual build fuckery here
+sam.init()
 
 sam.project({
-        name = "cocky",
-        cflags = cflags,
-        ldflags = ldflags,
-        sources = srcs,
-        target = "cocky",
-        pre_build = function() --[[ ... ]] end
-        post_build = function() --[[ ... ]] end
+	name = "malware",
+	compiler = "gcc",
+	cflags = "-std=c99 -Wall -Wextra -Wpedantic",
+	ldflags = "-lm",
+
+	sources = {
+		"src/main.c",
+	},
 })
+
+sam.run()
 ```
+
+This should be pretty simple to understand if you've done any C/C++ development ever.
+
+A more advanced example would be:
+
+```lua
+local sam = require("samurai")
+sam.init()
+
+local cflags = "-std=c99 -Wall -Wextra -Wpedantic"
+local ldflags = "-lm"
+
+-- you can use cli options
+sam.option("--mode", "debug or release", function(val)
+	if val == "debug" then
+		cflags = cflags.." -O0 -g"
+	elseif val == "release" then
+		cflags = cflags.." -O2"
+	else
+		error("rtfm you dastardly scoundrel")
+	end
+end)
+
+-- search for source files
+local srcs = {}
+local p = io.popen('find src/ -type f')
+for file in p:lines() do
+	table.insert(srcs, file)
+end
+
+sam.project({
+	name = "malware",
+	compiler = "gcc",
+	cflags = cflags,
+	ldflags = ldflags,
+	sources = srcs
+})
+
+sam.run()
+```
+
+Make sure your build script is executable:
+
+```sh
+# you can name your build script anything idc
+$ chmod +x build.lua
+```
+
+Now if you run it, you should see the help text:
+
+```plaintext
+$ ./build.lua
+The samurai build system
+usage: ./samurai.lua [command] [options...]
+
+Commands:
+    help: shows this
+    configure: creates the ninja build script
+    build: builds the project
+    clean: removes all build files
+    version: prints the samurai + lua version
+```
+
+If you can't read, you have to `configure` once and then every time you edit your build script. `build` is literally just a tiny wrapper around running ninja.
+
+It's that shrimple.
 
 ## FAQ
 

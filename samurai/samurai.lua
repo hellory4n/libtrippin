@@ -37,11 +37,6 @@ local Project = {}
 local sam = {
 	version = "v0.1.0",
 
-	_cli_project_name = "",
-	_cli_author = "",
-	_cli_license = "",
-	_cli_url = "",
-
 	---@type table<string, fun(val: string)>
 	_options = {},
 	---@type table<string, string>
@@ -49,6 +44,15 @@ local sam = {
 	---@type Project?
 	_project = nil,
 }
+
+-- the length operator doesn't work with tables due to some reason unbeknownst to man
+local function table_len(table)
+	local i = 0
+	for _, _ in pairs(table) do
+		i = i + 1
+	end
+	return i
+end
 
 --- Adds a command-line option, and calls the callback function if it's used.
 ---@param name string
@@ -118,21 +122,22 @@ function sam._cmd_help()
     configure: creates the ninja build script
     build: builds the project
     clean: removes all build files
-    version: prints the samurai + lua version
-]]
+    version: prints the samurai + lua version]]
 	)
 	io.write("\n")
 
-	-- mmm yes i love sorting oh yeah oughhh im sorting its all over hte screen
-	local sorted_options = {}
-	for option, _ in pairs(sam._option_descriptions) do
-		table.insert(sorted_options, option)
-	end
-	table.sort(sorted_options)
+	if table_len(sam._options) > 0 then
+		-- mmm yes i love sorting oh yeah oughhh im sorting its all over hte screen
+		local sorted_options = {}
+		for option, _ in pairs(sam._option_descriptions) do
+			table.insert(sorted_options, option)
+		end
+		table.sort(sorted_options)
 
-	io.write("Options: (usage: name=value)\n")
-	for _, option in pairs(sorted_options) do
-		io.write("    " .. option .. ": " .. sam._option_descriptions[option] .. "\n")
+		io.write("\nOptions: (usage: name=value)\n")
+		for _, option in pairs(sorted_options) do
+			io.write("    " .. option .. ": " .. sam._option_descriptions[option] .. "\n")
+		end
 	end
 end
 

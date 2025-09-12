@@ -12,7 +12,7 @@ sam.project({
 	-- insanity
 	cflags =
 	"-std=c++17 -O3 -g -DDEBUG -D_DEBUG -I. -I.. -Wall -Wextra -Wpedantic -Wuninitialized -Wshadow -Wconversion -Wold-style-cast -Wextra-semi -Wmissing-noreturn -Wimplicit-fallthrough -Wnull-dereference -Wcast-qual",
-	ldflags = "-lm -stdc++",
+	ldflags = "-lm -lstdc++",
 
 	sources = {
 		"trippin/collection.cpp",
@@ -23,8 +23,8 @@ sam.project({
 		"trippin/math.cpp",
 		"trippin/memory.cpp",
 		"trippin/string.cpp",
-		""
-	}
+		"examples/test_all.cpp"
+	},
 })
 
 sam.run()
