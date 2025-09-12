@@ -1,6 +1,7 @@
+#pragma once
 #include <trippin/string.h>
 
-int main()
+void test_strings()
 {
 	// temporary string
 	tr::String str = "hi mom";

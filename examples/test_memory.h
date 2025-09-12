@@ -1,3 +1,4 @@
+#pragma once
 #include <trippin/log.h>
 #include <trippin/memory.h>
 
@@ -8,7 +9,7 @@ struct CrapStruct
 	uint8 man[128];
 };
 
-int main()
+void test_memory()
 {
 	tr::Arena arena;
 	TR_DEFER(arena.free());
@@ -17,7 +18,7 @@ int main()
 	// allocate as many as you want!
 	auto* crap = static_cast<CrapStruct*>(arena.alloc(sizeof(CrapStruct)));
 	// nicer wrapper, it even supports passing arguments to the constructor
-	CrapStruct& crap2 = arena.make<CrapStruct>();
+	CrapStruct& crap2 = arena.make_ref<CrapStruct>();
 
 	// you can also allocate arrays
 	// tr::scratchpad() is a temporary arena (like a sane alloca)

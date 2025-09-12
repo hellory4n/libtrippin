@@ -18,6 +18,7 @@ sam.project({
 		"trippin/math.cpp",
 		"trippin/memory.cpp",
 		"trippin/string.cpp",
+		""
 	}
 })
 

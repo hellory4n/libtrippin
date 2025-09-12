@@ -272,3 +272,13 @@ int main(int argc, char* argv[])
 	tr::free();
 	return 0;
 }
+
+// just making sure it compiles
+// TODO this sucks
+#include "test_collection.h" // IWYU pragma: keep
+#include "test_error.h" // IWYU pragma: keep
+#include "test_logging.h" // IWYU pragma: keep
+#include "test_math.h" // IWYU pragma: keep
+#include "test_memory.h" // IWYU pragma: keep
+#include "test_strings.h" // IWYU pragma: keep
+#include "test_utils.h" // IWYU pragma: keep

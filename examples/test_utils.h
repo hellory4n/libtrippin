@@ -1,10 +1,11 @@
+#pragma once
 #include <trippin/common.h>
 #include <trippin/error.h>
 #include <trippin/log.h>
 #include <trippin/math.h>
 #include <trippin/string.h>
 
-int main()
+void test_utils()
 {
 	// maybe
 	// for references/pointers use tr::MaybePtr<T>

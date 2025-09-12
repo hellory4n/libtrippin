@@ -1,7 +1,8 @@
+#pragma once
 #include <trippin/log.h>
 #include <trippin/math.h>
 
-int main()
+void test_math()
 {
 	tr::Random sorandomxd;
 	tr::Vec3<float32> vecma;

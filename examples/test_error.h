@@ -1,3 +1,4 @@
+#pragma once
 #include <trippin/error.h>
 #include <trippin/memory.h>
 
@@ -5,7 +6,7 @@ tr::Result<int32, tr::Error&> example_function()
 {
 	// on error
 	// you can use any type that implements tr::Error
-	return tr::scratchpad().make<tr::StringError>(
+	return tr::scratchpad().make_ref<tr::StringError>(
 		"unexpected happening it is happening unexpectedly"
 	);
 
@@ -21,13 +22,13 @@ tr::Result<void, tr::Error&> trippin_main()
 	int32 x = example_function().unwrap();
 
 	// usually you should use the TR_TRY* macros instead
-	TR_TRY_ASSIGN(int32 x, example_function());
+	TR_TRY_ASSIGN(int32 y, example_function());
 	// which expands to (roughly)
 	auto tmp = example_function();
 	if (!tmp.is_valid()) {
 		return tmp.unwrap_err();
 	}
-	int32 x = tmp.unwrap();
+	int32 z = tmp.unwrap();
 	// but you can only use those macros in functions that return tr::Result<T, E>
 
 	// additional macros:
@@ -35,10 +36,10 @@ tr::Result<void, tr::Error&> trippin_main()
 	TR_TRY(example_function());
 
 	// TR_TRY_ASSERT returns an error instead of panicking on fail
-	TR_TRY_ASSERT(2 + 2 == 5, tr::scratchpad().make<tr::StringError>("i might be wrong"));
+	TR_TRY_ASSERT(2 + 2 == 5, tr::scratchpad().make_ref<tr::StringError>("i might be wrong"));
 }
 
-int main()
+void test_error()
 {
 	trippin_main().unwrap();
 }
