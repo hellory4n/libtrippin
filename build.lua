@@ -2,18 +2,22 @@
 local sam = require("samurai/samurai")
 sam.init()
 
-local cxx = "clang++"
-local cflags = "-std=c++17 -I. -I.. -Wall -Wextra -Wpedantic"
-local ldflags = "-lm -lstdc++"
+cxx = "clang++"
+cflags = "-std=c++17 -I. -I.. -Wall -Wextra -Wpedantic"
+ldflags = "-lm -lstdc++"
 
 sam.option("--mode", "debug or release", function(val)
 	if val == "debug" then
 		cflags = cflags .. " -O0 -g -DDEBUG -D_DEBUG"
+		ldflags = ldflags .. " -MYCOCK"
 	elseif val == "release" then
 		cflags = cflags .. " -O3 -g -fno-omit-frame-pointer"
 	else
 		error("rtfm you dastardly scoundrel")
 	end
+	assert(_G["cflags"] == nil)
+	sam.print_table(_G)
+	print(cflags)
 end)
 
 sam.option("--crosscompile", "only 'windows' works for now", function(val)
