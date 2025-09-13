@@ -1,5 +1,5 @@
 --[[
--- samurai: Simple Ninja build script generator
+-- samurai: barely a build system
 -- https://github.com/hellory4n/libtrippin
 --
 -- Copyright (C) 2025 by hellory4n <hellory4n@gmail.com>
@@ -196,7 +196,7 @@ function sam._cmd_build(proj)
 
 	proj.post_build(proj)
 
-	io.write("build succeeded!")
+	io.write("build succeeded!\n")
 end
 
 function sam._cmd_clean()

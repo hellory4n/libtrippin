@@ -1,7 +1,7 @@
 # Engineer™
 
 > [!WARNING]
-> Engineer is deprecated. Just use ninja + a generator in lua.
+> Engineer is deprecated. Use [samurai](../README.md).
 
 Got so annoyed at Make that I made my own build system.
 

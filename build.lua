@@ -2,17 +2,38 @@
 local sam = require("samurai/samurai")
 sam.init()
 
-sam.option("--mycock", "MY COCK NOTATION!", function(val)
-	print("MYCOCK " .. val)
+local cxx = "clang++"
+local cflags = "-std=c++17 -I. -I.. -Wall -Wextra -Wpedantic"
+local ldflags = "-lm -lstdc++"
+
+sam.option("--mode", "debug or release", function(val)
+	if val == "debug" then
+		cflags = cflags .. " -O0 -g -DDEBUG -D_DEBUG"
+	elseif val == "release" then
+		cflags = cflags .. " -O3 -g -fno-omit-frame-pointer"
+	else
+		error("rtfm you dastardly scoundrel")
+	end
+end)
+
+sam.option("--crosscompile", "only 'windows' works for now", function(val)
+	if val == "windows" then
+		cxx = "x86_64-w64-mingw32-g+"
+	else
+		error("rtfm you dastardly scoundrel")
+	end
+end)
+
+sam.option("--sanitize", "maps directly to a -fsanitize flag", function(val)
+	cflags = cflags .. " -fsanitize=" .. val
+	ldflags = ldflags .. " -fsanitize=" .. val
 end)
 
 sam.project({
-	name = "cock",
-	compiler = "clang",
-	-- insanity
-	cflags =
-	"-std=c++17 -O3 -g -DDEBUG -D_DEBUG -I. -I.. -Wall -Wextra -Wpedantic -Wuninitialized -Wshadow -Wconversion -Wold-style-cast -Wextra-semi -Wmissing-noreturn -Wimplicit-fallthrough -Wnull-dereference -Wcast-qual",
-	ldflags = "-lm -lstdc++",
+	name = "libtrippin",
+	compiler = cxx,
+	cflags = cflags,
+	ldflags = ldflags,
 
 	sources = {
 		"trippin/collection.cpp",

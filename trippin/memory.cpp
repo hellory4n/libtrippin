@@ -25,7 +25,6 @@
 
 #include "trippin/memory.h"
 
-#include <cstdlib>
 #include <new>
 
 #include "common.h"
@@ -58,11 +57,8 @@ tr::ArenaPage::ArenaPage(usize size, usize align)
 	);
 
 	// i dont want to read garbage man
-	// TODO this pragma fuckery probably isn't necessary but i'm paranoid
-	// see https://en.cppreference.com/w/cpp/string/byte/memset#Notes
-	TR_GCC_PRAGMA(optimize("-no-dead-core-removal"))
+	// TODO https://en.cppreference.com/w/cpp/string/byte/memset#Notes
 	memset(this->buffer, 0, this->bufsize);
-	TR_GCC_PRAGMA(optimize("-dead-core-removal"))
 }
 
 void tr::ArenaPage::free()
@@ -205,11 +201,8 @@ void tr::Arena::reset()
 
 	// we keep the first page :)
 	this->page = headfrfr;
-	// TODO this pragma fuckery probably isn't necessary but i'm paranoid
-	// see https://en.cppreference.com/w/cpp/string/byte/memset#Notes
-	TR_GCC_PRAGMA(optimize("-no-dead-core-removal"))
+	// TODO see https://en.cppreference.com/w/cpp/string/byte/memset#Notes
 	memset(headfrfr->buffer, 0, headfrfr->bufsize);
-	TR_GCC_PRAGMA(optimize("-dead-core-removal"))
 	headfrfr->alloc_pos = 0;
 	headfrfr->prev = nullptr;
 	headfrfr->next = nullptr;

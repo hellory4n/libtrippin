@@ -41,6 +41,13 @@ static void test::logging()
 		tr::log("CUSTOM FUNCTION THAT RUNS ON QUIT/PANIC??? SCRUMPTIOUS");
 		// tr::panic("skill");
 	});
+
+	for (auto i : tr::range(1, 4)) {
+		if (i == 1) {
+			i = 3;
+		}
+		tr::log("current iter %i", i++);
+	}
 }
 
 static void test::memory()
@@ -275,6 +282,8 @@ int main(int argc, char* argv[])
 
 // just making sure it compiles
 // TODO this sucks
+// please shut up
+TR_GCC_IGNORE_WARNING(-Wunused-variable)
 #include "test_collection.h" // IWYU pragma: keep
 #include "test_error.h" // IWYU pragma: keep
 #include "test_logging.h" // IWYU pragma: keep

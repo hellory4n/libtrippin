@@ -554,7 +554,7 @@ public:
 	}
 	TR_GCC_RESTORE()
 
-	T& operator*() const
+	const T& operator*() const
 	{
 		return this->current;
 	}

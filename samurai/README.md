@@ -26,14 +26,14 @@ local sam = require("samurai")
 sam.init()
 
 sam.project({
-	name = "malware",
-	compiler = "gcc",
-	cflags = "-std=c99 -Wall -Wextra -Wpedantic",
-	ldflags = "-lm",
+        name = "malware",
+       	compiler = "gcc",
+       	cflags = "-std=c99 -Wall -Wextra -Wpedantic",
+       	ldflags = "-lm",
 
-	sources = {
-		"src/main.c",
-	},
+       	sources = {
+               	"src/main.c",
+       	},
 })
 
 sam.run()
@@ -52,28 +52,28 @@ local ldflags = "-lm"
 
 -- you can use cli options
 sam.option("--mode", "debug or release", function(val)
-	if val == "debug" then
-		cflags = cflags.." -O0 -g"
-	elseif val == "release" then
-		cflags = cflags.." -O2"
-	else
-		error("rtfm you dastardly scoundrel")
-	end
+       	if val == "debug" then
+               	cflags = cflags.." -O0 -g"
+       	elseif val == "release" then
+                cflags = cflags.." -O2"
+       	else
+                error("rtfm you dastardly scoundrel")
+       	end
 end)
 
 -- search for source files
 local srcs = {}
 local p = io.popen('find src/ -type f')
 for file in p:lines() do
-	table.insert(srcs, file)
+       	table.insert(srcs, file)
 end
 
 sam.project({
-	name = "malware",
-	compiler = "gcc",
-	cflags = cflags,
-	ldflags = ldflags,
-	sources = srcs
+       	name = "malware",
+       	compiler = "gcc",
+       	cflags = cflags,
+       	ldflags = ldflags,
+       	sources = srcs
 })
 
 sam.run()
@@ -94,11 +94,11 @@ The samurai build system
 usage: ./samurai.lua [command] [options...]
 
 Commands:
-    help: shows this
-    configure: creates the ninja build script
-    build: builds the project
-    clean: removes all build files
-    version: prints the samurai + lua version
+help: shows this
+configure: creates the ninja build script
+build: builds the project
+clean: removes all build files
+version: prints the samurai + lua version
 ```
 
 If you can't read, you have to `configure` once and then every time you edit your build script. `build` is literally just a tiny wrapper around running ninja.

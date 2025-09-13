@@ -293,7 +293,7 @@ public:
 		this->ptr = const_cast<RefWrapper<T>*>(initlist.begin());
 	}
 
-	explicit Array(Arena& arena, std::initializer_list<T> initlist)
+	explicit Array(Arena& arena, std::initializer_list<RefWrapper<T>> initlist)
 		: Array(arena, const_cast<RefWrapper<T>*>(initlist.begin()), initlist.size())
 	{
 	}
@@ -315,7 +315,13 @@ public:
 		if (idx >= this->length) {
 			tr::panic("index out of range: %zu in an array of %zu", idx, this->length);
 		}
-		return this->ptr[idx];
+
+		if constexpr (std::is_reference_v<T>) {
+			return *this->ptr[idx];
+		}
+		else {
+			return this->ptr[idx];
+		}
 	}
 
 	// Similar to `operator[]`, but when getting an index out of bounds, instead of panicking,
@@ -360,7 +366,12 @@ public:
 		}
 		constexpr ArrayItem<T> operator*() const
 		{
-			return {this->idx, *this->ptr};
+			if constexpr (std::is_reference_v<T>) {
+				return {this->idx, **this->ptr};
+			}
+			else {
+				return {this->idx, *this->ptr};
+			}
 		}
 		constexpr Iterator& operator++()
 		{
