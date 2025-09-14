@@ -23,7 +23,6 @@ import os
 import sys
 from dataclasses import dataclass
 from collections.abc import Callable
-from warnings import warn
 
 @dataclass
 class Project:
@@ -99,11 +98,11 @@ f"""The samurai build system
 Usage: {sys.argv[0]} [command] [options...]
 
 Commands:
-   help: shows this
-   configure: creates the ninja build script
-   build: builds the project
-   clean: removes all build files
-   version: prints the samurai + lua version
+    help: shows this
+    configure: creates the ninja build script
+    build: builds the project
+    clean: removes all build files
+    version: prints the samurai + python version
 """)
 
 	if len(_option_descriptions) > 0:
@@ -111,7 +110,7 @@ Commands:
 
 		# mmm yes i love sorting oh yeah oughhh im sorting its all over hte screen
 		for option, description in sorted(_option_descriptions.items()):
-			sys.stdout.write(f"    {option}: {description}\n")
+			sys.stdout.write(f"{' ' * 4}{option}: {description}\n")
 
 def _cmd_configure(proj: Project) -> None:
 	with open("build.ninja", "w") as f:
@@ -144,9 +143,9 @@ def _cmd_build(proj: Project) -> None:
 	if not os.path.isfile("build.ninja"):
 		raise Exception("no build.ninja file found, please create one with the 'configure' command")
 
-	# make sure the build dirs exist
-	assert os.system("mkdir build/obj -p") == 0
-	assert os.system("mkdir build/bin -p") == 0
+	# just in case
+	os.makedirs("build/obj", exist_ok=True)
+	os.makedirs("build/bin", exist_ok=True)
 
 	if proj.prebuild != None: proj.prebuild()
 	if os.system("ninja") != 0:
@@ -155,6 +154,7 @@ def _cmd_build(proj: Project) -> None:
 
 def _cmd_clean() -> None:
 	# scary!
+	# TODO theres probably a python function for this
 	assert os.system("rm -rf build/**") == 0
 	assert os.system("rm -f build.ninja") == 0
 	assert os.system("rm -f .ninja_log") == 0
