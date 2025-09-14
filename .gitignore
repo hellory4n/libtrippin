@@ -23,6 +23,9 @@ vgcore*
 .ninja_log
 .ninja_lock
 
+# i hate python
+__pycache__
+
 # visual studio is silly
 windows/*
 !windows/libtrippin.sln

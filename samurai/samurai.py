@@ -38,28 +38,38 @@ class Project:
 	sources: list[str]
 	"list of source files"
 
-	target: str | None
+	target: str | None = None
 	"name of the final executable, defaults to the project name"
 
-	prebuild: Callable[[]] | None
+	prebuild: Callable[[], None] | None = None
 	"function to run before building"
 
-	postbuild: Callable[[]] | None
+	postbuild: Callable[[], None] | None = None
 	"function to run after building"
 
-_options: dict[str, Callable[[str]]]
-_option_descriptions: dict[str, str]
-_project: Project | None
+_option_descriptions: dict[str, str] = {}
+_project: Project | None = None
 
 # Returns the version. No shit.
 def version() -> str:
 	return "v0.2.0"
 
-# Adds a CLI option. The callback is called if the option is used.
-def option(name: str, description: str, callback: Callable[[str]]) -> None:
-	global _options, _option_descriptions
-	_options[name] = callback
+# Adds a CLI option, and returns the value if it's used
+def option(name: str, description: str) -> str | None:
+	global _option_descriptions
 	_option_descriptions[name] = description
+
+	# TODO this sucks
+	# argv[0] is the filename, argv[1] is the command
+	for arg in sys.argv[2:]:
+		strs = arg.split('=', maxsplit=2)
+		if len(strs) == 1:
+			raise Exception("cli arguments seem to be busted (rtfm dumbass)")
+
+		if strs[0] == name:
+			return strs[1]
+
+	return None
 
 def project(proj: Project) -> None:
 	global _project
@@ -86,7 +96,7 @@ def _cmd_help() -> None:
 	global _option_descriptions
 	sys.stdout.write(
 f"""The samurai build system
-Usage: ./{__file__} [command] [options...]
+Usage: {sys.argv[0]} [command] [options...]
 
 Commands:
    help: shows this
@@ -100,7 +110,7 @@ Commands:
 		sys.stdout.write("\nOptions: (usage: name=value)\n")
 
 		# mmm yes i love sorting oh yeah oughhh im sorting its all over hte screen
-		for option, description in sorted(_options.items()):
+		for option, description in sorted(_option_descriptions.items()):
 			sys.stdout.write(f"    {option}: {description}\n")
 
 def _cmd_configure(proj: Project) -> None:
@@ -131,7 +141,7 @@ def _cmd_configure(proj: Project) -> None:
 	assert os.system("ninja -t compdb > compile_commands.json") == 0
 
 def _cmd_build(proj: Project) -> None:
-	if os.path.isfile("build.ninja"):
+	if not os.path.isfile("build.ninja"):
 		raise Exception("no build.ninja file found, please create one with the 'configure' command")
 
 	# make sure the build dirs exist
@@ -143,8 +153,6 @@ def _cmd_build(proj: Project) -> None:
 		raise Exception("build failed :(")
 	if proj.postbuild != None: proj.postbuild()
 
-	sys.stdout.write("build succeeded!\n")
-
 def _cmd_clean() -> None:
 	# scary!
 	assert os.system("rm -rf build/**") == 0
@@ -152,32 +160,16 @@ def _cmd_clean() -> None:
 	assert os.system("rm -f .ninja_log") == 0
 
 def _cmd_version() -> None:
-	sys.stdout.write(f"samurai {version()}, using Python v{sys.version}")
-
-def init() -> None:
-	pass # TODO
+	sys.stdout.write(f"samurai {version()}, using Python v{sys.version}\n")
 
 def run() -> None:
 	global _options
 	if _project == None:
 		raise Exception("please set a project with 'samurai.project()'")
 
-	options: dict[str, str] = {}
-
-	# argv[0] is the filename, argv[1] is the command
-	for arg in sys.argv[2:]:
-		strs = arg.split('=', 2)
-		if len(strs) == 1:
-			raise Exception("expected value (rtfm dumbass)")
-
-		options[strs[0]] = strs[1]
-
-	# im having an aneurysm:)
-	for option, value in options.items():
-		if option in _options.keys():
-			_options[option](value)
-		else:
-			warn(f"unknown option '{option}'")
+	if len(sys.argv) == 1:
+		_cmd_help()
+		return
 
 	# argv[1] is the command
 	match sys.argv[1]:
