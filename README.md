@@ -4,17 +4,19 @@ Most biggest most massive library of all time. I'm insane.
 
 ## Featuring
 
-- [libtrippin](./trippin) v2.6.0: Most massive library of all time
-    - C++17 with no external dependencies (only libc/stdc++)
-    - Cross-platform (Windows and POSIX)
-    - Arenas for memory management
-    - Arrays, strings, hashmaps
-    - Simple math for games
-    - Logging
-    - Files/IO
-    - Functional errors
-    - And more
-- i'll add more eventually
+- [libtrippin](./trippin): Most massive library of all time
+        - C++17 with no external dependencies (only libc/stdc++)
+        - Cross-platform (Windows and POSIX)
+        - Arenas for memory management
+        - Arrays, strings, hashmaps
+        - Simple math for games
+        - Logging
+        - Files/IO
+        - Functional errors
+        - And more
+- [samurai](./samurai): Barely a build system
+        - Literally just a [ninja](https://ninja-build.org/) script generator for Python
+        - 200-ish lines of code you could easily write yourself
 
 ## Usage
 
