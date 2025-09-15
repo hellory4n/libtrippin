@@ -51,10 +51,6 @@
 	#endif
 #endif
 
-#ifdef __clang_analyzer__
-	#warning "bold me up daddy"
-#endif
-
 // get compiler
 // checking between gcc and clang is useful because some warnings are different
 #if defined(__clang__)
