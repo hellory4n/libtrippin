@@ -5,7 +5,7 @@ Most biggest most massive library of all time. I'm insane.
 ## Featuring
 
 - [libtrippin](./trippin): Most massive library of all time
-        - C++17 with no external dependencies (only libc/stdc++)
+        - C++20 with no external dependencies (only libc/stdc++)
         - Cross-platform (Windows and POSIX)
         - Arenas for memory management
         - Arrays, strings, hashmaps
@@ -20,7 +20,7 @@ Most biggest most massive library of all time. I'm insane.
 
 ## Usage
 
-Make sure you're using C++17, it won't compile with anything older.
+Make sure you're using C++20, it won't compile with anything older.
 
 Now add all the `.h`/`.cpp` files from `trippin/` to your project
 

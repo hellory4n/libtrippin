@@ -1,6 +1,6 @@
 BasedOnStyle: WebKit
 Language: Cpp
-Standard: c++17
+Standard: c++20
 Cpp11BracedListStyle: true
 
 UseTab: ForContinuationAndIndentation

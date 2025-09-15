@@ -3,7 +3,7 @@ import os
 import samurai.samurai as samurai # ???
 
 cxx = "clang++"
-cflags = "-std=c++17 -I. -I.. -Wall -Wextra -Wpedantic"
+cflags = "-std=c++20 -I. -I.. -Wall -Wextra -Wpedantic"
 ldflags = "-lm -lstdc++"
 analyzerflags = "-o build/"
 

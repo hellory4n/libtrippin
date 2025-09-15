@@ -35,19 +35,19 @@
 
 // check for C++17 support
 #ifndef _MSC_VER
-	#if __cplusplus < 201703L
-		#error "libtrippin requires C++17 or higher"
+	#if __cplusplus < 202002L
+		#error "libtrippin requires C++20 or higher"
 	#endif
 #else
 	// as always msvc is a bitch and doesn't correctly define __cplusplus until newer
 	// versions, but only if you use some extra flag of course like why what the fuck is
 	// wrong with you
 	#if _MSC_VER >= 1914
-		#if _MSVC_LANG < 201703L
-			#error "libtrippin requires C++17 or higher"
+		#if _MSVC_LANG < 202002L
+			#error "libtrippin requires C++20 or higher"
 		#endif
 	#else
-		#error "Your Visual Studio installation is too old, please update to Visual Studio 2017 or higher"
+		#error "Your Visual Studio installation is too old, please update to Visual Studio 2022 or higher"
 	#endif
 #endif
 
