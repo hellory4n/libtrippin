@@ -89,9 +89,9 @@ public:
 	}
 
 	String(char c)
+		// c++ can't do (char[]){c, '\0'} like c99 can :)))))
+		: String(Array<char>{c, '\0'}.buf())
 	{
-		char man[2] = {c, '\0'};
-		String(man, 2);
 	}
 
 	// man

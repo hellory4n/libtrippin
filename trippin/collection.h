@@ -26,7 +26,6 @@
 #ifndef _TRIPPIN_COLLECTION_H
 #define _TRIPPIN_COLLECTION_H
 
-#include <cstdlib>
 #include <functional>
 #include <utility>
 

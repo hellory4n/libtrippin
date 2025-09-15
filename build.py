@@ -33,7 +33,7 @@ def prebuild():
 	if analyze == "true":
 		# i love hacking my own build system that's not a build system jesus christ
 		# TODO reconsider your life choices
-		os.system("CodeChecker analyze compile_commands.json -o ./build/reports")
+		os.system("CodeChecker analyze compile_commands.json --enable sensitive --enable profile:security --enable profile:portability -o ./build/reports")
 		os.system("CodeChecker parse ./build/reports -e html -o ./build/reports_html")
 		# xdg-open is browser-independent
 		assert os.system("xdg-open ./build/reports_html/index.html") == 0

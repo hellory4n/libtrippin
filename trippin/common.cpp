@@ -25,7 +25,8 @@
 
 #include "trippin/common.h"
 
-#include <cstdio>
+// i'm using it dumbass
+#include <cstdio> // IWYU pragma: keep
 #include <cstdlib>
 
 #include "trippin/collection.h"
@@ -102,7 +103,7 @@ void tr::quit(int32 error_code)
 	exit(error_code);
 }
 
-void tr::call_on_quit(std::function<void(bool is_panic)> func)
+void tr::call_on_quit(const std::function<void(bool is_panic)>& func)
 {
 	tr::the_new_all_on_quit.connect(func);
 }

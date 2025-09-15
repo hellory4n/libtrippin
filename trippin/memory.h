@@ -30,6 +30,7 @@
 #include <cstring>
 #include <initializer_list>
 #include <new> // IWYU pragma: keep
+#include <type_traits>
 #include <utility>
 
 #include "trippin/common.h"
@@ -401,7 +402,7 @@ public:
 	// Adds a new item to the array, and resizes it if necessary. This only works on
 	// arena-allocated arrays, if you try to use this on an array without an arena, it will
 	// panic.
-	void add(T val)
+	void add(const T& val)
 	{
 		if (this->src_arena == nullptr) {
 			tr::panic("resizing arena-less tr::Array<T> is not allowed");
@@ -409,7 +410,12 @@ public:
 
 		// does it already fit?
 		if (this->length < this->capacity) {
-			(*this)[this->length++] = val;
+			if constexpr (std::is_reference_v<T>) {
+				ptr[length++] = &val;
+			}
+			else {
+				ptr[length++] = val;
+			};
 			return;
 		}
 
@@ -418,13 +424,19 @@ public:
 		this->capacity *= 2;
 		this->ptr =
 			static_cast<RefWrapper<T>*>(src_arena->alloc(this->capacity * sizeof(T)));
+
 		// you may initialize with a length of 0 so you can then add crap later
 		if (this->length > 0) {
 			memcpy(static_cast<void*>(this->ptr), static_cast<const void*>(old_buffer),
 			       this->length * sizeof(T));
 		}
 
-		(*this)[this->length++] = val;
+		if constexpr (std::is_reference_v<T>) {
+			ptr[length++] = &val;
+		}
+		else {
+			ptr[length++] = val;
+		};
 	}
 
 	// As the name implies, it copies the array and its items to somewhere else.

@@ -411,8 +411,9 @@ tr::Result<void> tr::File::write_bytes(Array<uint8> bytes)
 		)
 	);
 
-	fwrite(bytes.buf(), sizeof(uint8), bytes.len(), static_cast<FILE*>(this->fptr));
-	if (errno != 0) {
+	usize bytes_written =
+		fwrite(bytes.buf(), sizeof(uint8), bytes.len(), static_cast<FILE*>(this->fptr));
+	if (bytes_written < bytes.len()) {
 		return FileError::from_errno(this->path, "", FileOperation::WRITE_FILE);
 	}
 	return {};
@@ -450,8 +451,8 @@ tr::Result<void> tr::remove_file(tr::String path)
 {
 	FileError::reset_errors();
 
-	remove(path);
-	if (errno != 0) {
+	int i = remove(path);
+	if (i == -1) {
 		return FileError::from_errno(path, "", FileOperation::REMOVE_FILE);
 	}
 	return {};
@@ -814,8 +815,9 @@ tr::Result<void> tr::File::write_bytes(Array<uint8> bytes)
 		)
 	);
 
-	fwrite(bytes.buf(), sizeof(uint8), bytes.len(), static_cast<FILE*>(this->fptr));
-	if (errno != 0) {
+	usize bytes_written =
+		fwrite(bytes.buf(), sizeof(uint8), bytes.len(), static_cast<FILE*>(this->fptr));
+	if (bytes_written < bytes.len()) {
 		return FileError::from_errno(this->path, "", FileOperation::WRITE_FILE);
 	}
 	return {};
@@ -854,8 +856,8 @@ tr::Result<void> tr::remove_file(tr::String path)
 {
 	FileError::reset_errors();
 
-	remove(path);
-	if (errno != 0) {
+	int i = remove(path);
+	if (i == -1) {
 		return FileError::from_errno(path, "", FileOperation::REMOVE_FILE);
 	}
 	return {};

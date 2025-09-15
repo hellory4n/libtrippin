@@ -149,7 +149,7 @@ void free();
 void quit(int32 error_code);
 
 // Adds a function to run when the program quits/panics.
-void call_on_quit(std::function<void(bool is_panic)> func);
+void call_on_quit(const std::function<void(bool is_panic)>& func);
 
 // mingw gcc complains about %zu and %li even tho it works fine
 // TODO this WILL break
@@ -165,10 +165,7 @@ void panic(const char* fmt, ...);
 // pointer...stupid i know
 template<typename T>
 using RefWrapper = std::conditional_t<
-	std::is_reference_v<T>,
-	std::remove_reference_t<T>*, // store pointer for references
-	std::remove_cv_t<std::remove_reference_t<T>> // store decayed value for non-refs
-	>;
+	std::is_reference_v<T>, std::remove_reference_t<T>*, std::remove_reference_t<T>>;
 
 // Functional propaganda
 template<typename L, typename R>
@@ -319,13 +316,15 @@ public:
 	}
 
 	// Calls a function (usually a lambda) depending on wheth1er it's left, or right.
-	void match(std::function<void(L left)> left_func, std::function<void(R right)> right_func)
+	void
+	match(const std::function<void(L left)>& on_left,
+	      const std::function<void(R right)>& on_right)
 	{
 		if (this->is_left()) {
-			left_func(this->left());
+			on_left(this->left());
 		}
 		else {
-			right_func(this->right());
+			on_right(this->right());
 		}
 	}
 };
@@ -375,13 +374,14 @@ public:
 	}
 
 	// Calls a function (usually a lambda) depending on whether it's valid or not.
-	void match(std::function<void(T val)> valid_func, std::function<void()> invalid_func)
+	void
+	match(const std::function<void(T val)>& on_valid, const std::function<void()>& on_invalid)
 	{
 		if (this->is_valid()) {
-			valid_func(this->unwrap());
+			on_valid(this->unwrap());
 		}
 		else {
-			invalid_func();
+			on_invalid();
 		}
 	}
 };
@@ -615,25 +615,25 @@ RangeIterator<T> range(T end)
 // defer
 // usage: e.g. TR_DEFER(free(ptr));
 template<typename Fn>
-struct _Defer
+struct Defer
 {
 	Fn fn;
 
-	_Defer(Fn fn)
+	Defer(Fn fn)
 		: fn(fn)
 	{
 	}
 
-	~_Defer()
+	~Defer()
 	{
 		fn();
 	}
 };
 
 template<typename Fn>
-_Defer<Fn> _defer_func(Fn fn)
+Defer<Fn> _defer_func(Fn fn)
 {
-	return _Defer<Fn>(fn);
+	return Defer<Fn>(fn);
 }
 
 #define TR_DEFER(...) auto _TR_UNIQUE_NAME(_tr_defer) = tr::_defer_func([&]() { __VA_ARGS__; })
