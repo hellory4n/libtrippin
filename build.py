@@ -5,6 +5,7 @@ import samurai.samurai as samurai # ???
 cxx = "clang++"
 cflags = "-std=c++17 -I. -I.. -Wall -Wextra -Wpedantic"
 ldflags = "-lm -lstdc++"
+analyzerflags = "-o build/"
 
 mode = samurai.option("--mode", "debug or release")
 if mode == "debug":
@@ -26,6 +27,18 @@ if sanitize != None:
 	ldflags += f" -fsanitize={sanitize}"
 
 run = samurai.option("--run", "'true' to run executable, 'gdb' to run under gdb")
+analyze = samurai.option("--analyze", "if 'true', uses CodeChecker to analyze the project. must be used with the 'build' command.")
+
+def prebuild():
+	if analyze == "true":
+		# i love hacking my own build system that's not a build system jesus christ
+		# TODO reconsider your life choices
+		os.system("CodeChecker analyze compile_commands.json -o ./build/reports")
+		os.system("CodeChecker parse ./build/reports -e html -o ./build/reports_html")
+		# xdg-open is browser-independent
+		assert os.system("xdg-open ./build/reports_html/index.html") == 0
+		exit(0)
+
 def postbuild():
 	if run == "true":
 		os.system("./build/bin/libtrippin")
@@ -37,6 +50,7 @@ samurai.project(samurai.Project(
 	compiler = cxx,
 	cflags = cflags,
 	ldflags = ldflags,
+	prebuild = prebuild,
 	postbuild = postbuild,
 	sources = [
 		"trippin/collection.cpp",

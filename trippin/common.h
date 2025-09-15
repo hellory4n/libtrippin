@@ -39,10 +39,9 @@
 		#error "libtrippin requires C++17 or higher"
 	#endif
 #else
-	// as always msvc is a bitch and doesn't correctly define __cplusplus until newer versions,
-	// but only if you use some extra flag of course
-	// like why
-	// what the fuck is wrong with you
+	// as always msvc is a bitch and doesn't correctly define __cplusplus until newer
+	// versions, but only if you use some extra flag of course like why what the fuck is
+	// wrong with you
 	#if _MSC_VER >= 1914
 		#if _MSVC_LANG < 201703L
 			#error "libtrippin requires C++17 or higher"
@@ -50,6 +49,10 @@
 	#else
 		#error "Your Visual Studio installation is too old, please update to Visual Studio 2017 or higher"
 	#endif
+#endif
+
+#ifdef __clang_analyzer__
+	#warning "bold me up daddy"
 #endif
 
 // get compiler
@@ -497,38 +500,40 @@ struct Pair
 };
 
 // Defines bit flag fuckery for enum classes :)
-#define TR_BIT_FLAG(T)                                                                            \
-	constexpr T operator|(T lhs, T rhs)                                                       \
-	{                                                                                         \
-		using N = std::underlying_type_t<T>;                                              \
-		return static_cast<T>(static_cast<N>(lhs) | static_cast<N>(rhs));                 \
-	}                                                                                         \
-	constexpr T operator&(T lhs, T rhs)                                                       \
-	{                                                                                         \
-		using N = std::underlying_type_t<T>;                                              \
-		return static_cast<T>(static_cast<N>(lhs) & static_cast<N>(rhs));                 \
-	}                                                                                         \
-	constexpr T operator~(T rhs)                                                              \
-	{                                                                                         \
-		using N = std::underlying_type_t<T>;                                              \
-		return static_cast<T>(~static_cast<N>(rhs));                                      \
-	}                                                                                         \
-	constexpr T& operator|=(T& lhs, T rhs)                                                    \
-	{                                                                                         \
-		lhs = lhs | rhs;                                                                  \
-		return lhs;                                                                       \
-	}                                                                                         \
-	constexpr T& operator&=(T& lhs, T rhs)                                                    \
-	{                                                                                         \
-		lhs = lhs & rhs;                                                                  \
-		return lhs;                                                                       \
-	}                                                                                         \
-	/* getting the namespacing right would be too obnoxious so you're supposed to use this */ \
-	/* like it's a keyword instead of like `tr::hasflag`/`st::hasflag`/whatever which is */   \
-	/* the correct style we use */                                                            \
-	constexpr bool hasflag(T value, T flag)                                                   \
-	{                                                                                         \
-		return (value & flag) == flag;                                                    \
+#define TR_BIT_FLAG(T)                                                             \
+	constexpr T operator|(T lhs, T rhs)                                        \
+	{                                                                          \
+		using N = std::underlying_type_t<T>;                               \
+		return static_cast<T>(static_cast<N>(lhs) | static_cast<N>(rhs));  \
+	}                                                                          \
+	constexpr T operator&(T lhs, T rhs)                                        \
+	{                                                                          \
+		using N = std::underlying_type_t<T>;                               \
+		return static_cast<T>(static_cast<N>(lhs) & static_cast<N>(rhs));  \
+	}                                                                          \
+	constexpr T operator~(T rhs)                                               \
+	{                                                                          \
+		using N = std::underlying_type_t<T>;                               \
+		return static_cast<T>(~static_cast<N>(rhs));                       \
+	}                                                                          \
+	constexpr T& operator|=(T& lhs, T rhs)                                     \
+	{                                                                          \
+		lhs = lhs | rhs;                                                   \
+		return lhs;                                                        \
+	}                                                                          \
+	constexpr T& operator&=(T& lhs, T rhs)                                     \
+	{                                                                          \
+		lhs = lhs & rhs;                                                   \
+		return lhs;                                                        \
+	}                                                                          \
+	/* getting the namespacing right would be too obnoxious so you're supposed \
+	 * to use this */                                                          \
+	/* like it's a keyword instead of like                                     \
+	 * `tr::hasflag`/`st::hasflag`/whatever which is */                        \
+	/* the correct style we use */                                             \
+	constexpr bool hasflag(T value, T flag)                                    \
+	{                                                                          \
+		return (value & flag) == flag;                                     \
 	}
 
 // I love reinventing the wheel

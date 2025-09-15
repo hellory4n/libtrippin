@@ -24,6 +24,8 @@ Checks:
   - bugprone-sizeof-expression
   - bugprone-suspicious-missing-comma
   - bugprone-too-small-loop-variable
+  - bugprone-use-after-move
+  - bugprone-dangling-handle
 
   - performance-for-range-copy
   - performance-inefficient-string-concatenation
@@ -46,8 +48,6 @@ Checks:
   - clang-analyzer-security.insecureAPI.UncheckedReturn
   - clang-analyzer-security.insecureAPI.getpw
   - clang-analyzer-security.insecureAPI.gets
-  - bugprone-use-after-move
-  - bugprone-dangling-handle
 
 HeaderFileExtensions: ["", h, hh, hpp, hxx, inc]
 ImplementationFileExtensions: [c, cc, cpp, cxx]

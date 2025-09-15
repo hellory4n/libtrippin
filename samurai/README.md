@@ -53,19 +53,19 @@ ldflags = "-lm"
 # you can use cli options
 mode = samurai.option("--mode", "debug or release")
 if mode == "debug":
-	cflags += " -O0 -g -DDEBUG -D_DEBUG"
+        cflags += " -O0 -g -DDEBUG -D_DEBUG"
 elif mode == "release":
-	cflags += " -O3"
+        cflags += " -O2"
 elif mode != None:
-	raise ValueError("rtfm dumbass")
+        raise ValueError("rtfm dumbass")
 
 # a run command (spicy)
 run = samurai.option("--run", "'true' to run executable, 'gdb' to run under gdb")
 def postbuild():
-	if run == "true":
-		os.system("./build/bin/malware")
-	elif run == "gdb":
-		os.system('gdb -q -ex run -ex "quit" --args ./build/bin/malware')
+        if run == "true":
+                os.system("./build/bin/malware")
+        elif run == "gdb":
+                os.system('gdb -q -ex run -ex "quit" --args ./build/bin/malware')
 
 # get srcs
 srcs = glob.glob("src/**.c", recursive=True)
