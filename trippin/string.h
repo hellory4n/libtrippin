@@ -90,7 +90,7 @@ public:
 
 	String(char c)
 		// c++ can't do (char[]){c, '\0'} like c99 can :)))))
-		: String(Array<char>{c, '\0'}.buf())
+		: String(Array<const char>{c, '\0'}.buf())
 	{
 	}
 

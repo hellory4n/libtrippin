@@ -235,6 +235,9 @@ struct ArrayItem
 	T& val;
 };
 
+// used for initializers/string literals BUT can change later (hence the name)
+extern Arena _consty_arena;
+
 // A slice of memory, usually from an arena but can point to anywhere. Similar to a Go slice, or
 // other examples. Arrays don't own the value and don't use fancy RAII fuckery, so you can pass them
 // by value.
@@ -245,45 +248,48 @@ class Array
 	// .add())
 	static constexpr usize INITIAL_CAPACITY = 16;
 
-	RefWrapper<T>* ptr = nullptr;
-	Arena* src_arena = nullptr;
-	usize length = 0;
-	usize capacity = 0;
+	RefWrapper<T>* _ptr = nullptr;
+	Arena* _src_arena = nullptr;
+	usize _len = 0;
+	usize _cap = 0;
+	bool _can_grow;
 
 public:
 	using Type = T;
 
 	// Initializes an empty array at an arena.
 	explicit Array(Arena& arena, usize len)
-		: src_arena(&arena)
-		, length(len)
-		, capacity(len)
+		: _src_arena(&arena)
+		, _len(len)
+		, _cap(len)
+		, _can_grow(true)
 	{
 		// you may initialize with a length of 0 so you can then add crap later
 		// i'm just keeping this behavior so it doesn't break everything that used
 		// Array(arena, 0)
 		if (len == 0) {
-			this->length = 0;
-			this->capacity = INITIAL_CAPACITY;
+			this->_len = 0;
+			this->_cap = INITIAL_CAPACITY;
 		}
 
-		this->ptr = static_cast<RefWrapper<T>*>(arena.alloc(sizeof(T) * this->capacity));
+		this->_ptr = static_cast<RefWrapper<T>*>(arena.alloc(sizeof(T) * this->_cap));
 	}
 
 	// Initializes an array from a buffer. (the data is copied into the arena)
-	explicit Array(Arena& arena, RefWrapper<T>* data, usize len)
-		: src_arena(&arena)
-		, length(len)
-		, capacity(len)
+	explicit Array(Arena& arena, RefWrapper<const T>* data, usize len)
+		: _src_arena(&arena)
+		, _len(len)
+		, _cap(len)
+		, _can_grow(true)
 	{
 		// you may initialize with a length of 0 so you can then add crap later
 		// i'm just keeping this behavior so it doesn't break everything :)
 		if (len == 0) {
-			this->length = 0;
-			this->capacity = INITIAL_CAPACITY;
+			this->_len = 0;
+			this->_cap = INITIAL_CAPACITY;
 		}
 
-		this->ptr = static_cast<RefWrapper<T>*>(arena.alloc(sizeof(T) * this->capacity));
+		this->_ptr = static_cast<RefWrapper<T>*>(arena.alloc(sizeof(T) * this->_cap));
 		if (len == 0) {
 			return;
 		}
@@ -294,7 +300,7 @@ public:
 		TR_GCC_IGNORE_WARNING(-Warray-bounds);
 		TR_GCC_IGNORE_WARNING(-Wstringop-overread);
 #endif
-		memcpy(static_cast<void*>(this->ptr), data, len * sizeof(T));
+		memcpy(static_cast<void*>(this->_ptr), data, len * sizeof(T));
 #ifdef TR_ONLY_GCC
 		TR_GCC_RESTORE();
 		TR_GCC_RESTORE();
@@ -304,31 +310,33 @@ public:
 	// Initializes an array that points to any buffer. You really should only use this for
 	// temporary arrays.
 	constexpr explicit Array(RefWrapper<T>* data, usize len)
-		: ptr(data)
-		, length(len)
-		, capacity(len)
+		: _ptr(data)
+		, _len(len)
+		, _cap(len)
+		, _can_grow(false)
 	{
 	}
 
 	// why bjarne stroustrup why can't i make this myself why is std::initializer_list<T>
 	// special i know this is from c++11 but i don't care i'm gonna blame bjarne stroustrup
 	// inventor of C incremented
-	constexpr Array(std::initializer_list<RefWrapper<T>> initlist)
+	constexpr Array(std::initializer_list<RefWrapper<const T>> initlist)
+		: _can_grow(false)
 	{
-		this->capacity = initlist.size();
-		this->length = initlist.size();
-		// may you please shut the fuck up fucking hell man no one loves you🥰🥰🥰🥰
-		this->ptr = const_cast<RefWrapper<T>*>(initlist.begin());
+		this->_cap = initlist.size();
+		this->_len = initlist.size();
+		this->_ptr = initlist.begin();
 	}
 
-	explicit Array(Arena& arena, std::initializer_list<RefWrapper<T>> initlist)
-		: Array(arena, const_cast<RefWrapper<T>*>(initlist.begin()), initlist.size())
+	explicit Array(Arena& arena, std::initializer_list<RefWrapper<const T>> initlist)
+		: Array(arena, initlist.begin(), initlist.size())
 	{
 	}
 
 	// man fuck you
 	constexpr Array()
-		: ptr(nullptr)
+		: _ptr(nullptr)
+		, _can_grow(false)
 	{
 	}
 
@@ -340,15 +348,15 @@ public:
 
 	constexpr T& operator[](usize idx) const
 	{
-		if (idx >= this->length) {
-			tr::panic("index out of range: %zu in an array of %zu", idx, this->length);
+		if (idx >= _len) {
+			tr::panic("index out of range: %zu in an array of %zu", idx, this->_len);
 		}
 
 		if constexpr (std::is_reference_v<T>) {
-			return *this->ptr[idx];
+			return *this->_ptr[idx];
 		}
 		else {
-			return this->ptr[idx];
+			return this->_ptr[idx];
 		}
 	}
 
@@ -356,26 +364,26 @@ public:
 	// it returns null, which is probably useful sometimes.
 	constexpr Maybe<T&> try_get(usize idx) const
 	{
-		if (idx >= this->length) {
+		if (idx >= this->_len) {
 			return {};
 		}
-		return this->ptr[idx];
+		return this->_ptr[idx];
 	}
 
 	// Returns the buffer.
 	constexpr RefWrapper<T>* buf() const
 	{
-		return this->ptr;
+		return this->_ptr;
 	}
 	// Returns the length of the array.
 	constexpr usize len() const
 	{
-		return this->length;
+		return this->_len;
 	}
 	// Returns how many items the array can hold before having to resize.
 	constexpr usize cap() const
 	{
-		return this->capacity;
+		return this->_cap;
 	}
 	// Shorthand for `.buf()`
 	constexpr RefWrapper<T>* operator*() const
@@ -431,38 +439,37 @@ public:
 	// panic.
 	void add(const T& val)
 	{
-		if (this->src_arena == nullptr) {
-			tr::panic("resizing arena-less tr::Array<T> is not allowed");
+		if (!_can_grow) {
+			tr::panic("array can't grow (likely not allocated from arena)");
 		}
 
 		// does it already fit?
-		if (this->length < this->capacity) {
+		if (_len < _cap) {
 			if constexpr (std::is_reference_v<T>) {
-				ptr[length++] = &val;
+				_ptr[_len++] = &val;
 			}
 			else {
-				ptr[length++] = val;
+				_ptr[_len++] = val;
 			};
 			return;
 		}
 
 		// reallocate array
-		RefWrapper<T>* old_buffer = this->ptr;
-		this->capacity *= 2;
-		this->ptr =
-			static_cast<RefWrapper<T>*>(src_arena->alloc(this->capacity * sizeof(T)));
+		RefWrapper<T>* old_buffer = this->_ptr;
+		this->_cap *= 2;
+		this->_ptr = static_cast<RefWrapper<T>*>(_src_arena->alloc(this->_cap * sizeof(T)));
 
 		// you may initialize with a length of 0 so you can then add crap later
-		if (this->length > 0) {
-			memcpy(static_cast<void*>(this->ptr), static_cast<const void*>(old_buffer),
-			       this->length * sizeof(T));
+		if (this->_len > 0) {
+			memcpy(static_cast<void*>(this->_ptr), static_cast<const void*>(old_buffer),
+			       this->_len * sizeof(T));
 		}
 
 		if constexpr (std::is_reference_v<T>) {
-			ptr[length++] = &val;
+			_ptr[_len++] = &val;
 		}
 		else {
-			ptr[length++] = val;
+			_ptr[_len++] = val;
 		};
 	}
 
@@ -484,11 +491,11 @@ public:
 			// https://en.cppreference.com/w/cpp/string/byte/memset#Notes
 			// maybe i'm just stupid :)
 			// TODO am i stupid?
-			for (usize i = 0; i < this->length * sizeof(T); i++) {
-				static_cast<uint8*>(this->ptr)[i] = 0;
+			for (usize i = 0; i < this->_len * sizeof(T); i++) {
+				static_cast<uint8*>(this->_ptr)[i] = 0;
 			}
 		}
-		this->length = 0;
+		this->_len = 0;
 	}
 };
 
