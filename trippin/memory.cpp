@@ -33,11 +33,11 @@
 
 namespace tr {
 
-thread_local Arena _the_real_scratchpad(tr::kb_to_bytes(4));
+thread_local Arena _the_real_scratchpad({.page_size = tr::kb_to_bytes(4)});
 
 }
 
-tr::ArenaPage::ArenaPage(usize size, usize align)
+tr::ArenaPage::ArenaPage(tr::ArenaSettings settings, usize size, usize align)
 	: bufsize(size)
 	, alignment(align)
 {
@@ -49,16 +49,18 @@ tr::ArenaPage::ArenaPage(usize size, usize align)
 	this->next = nullptr;
 	this->prev = nullptr;
 
-	// i don't think you can recover from that
-	// so just die
-	TR_ASSERT_MSG(
-		this->buffer != nullptr, "couldn't allocate arena page of %zu B (%zu KB, %zu MB)",
-		size, tr::bytes_to_kb(size), tr::bytes_to_mb(size)
-	);
+	if (buffer == nullptr) {
+		if (settings.error_behavior == ArenaSettings::ErrorBehavior::PANIC) {
+			tr::panic(
+				"couldn't allocate arena page of %zu B (%zu KB, %zu MB)", size,
+				tr::bytes_to_kb(size), tr::bytes_to_mb(size)
+			);
+		}
+	}
 
-	// i dont want to read garbage man
-	// TODO https://en.cppreference.com/w/cpp/string/byte/memset#Notes
-	memset(this->buffer, 0, this->bufsize);
+	if (settings.zero_initialize) {
+		memset(this->buffer, 0, this->bufsize);
+	}
 }
 
 void tr::ArenaPage::free()
@@ -96,24 +98,32 @@ void* tr::ArenaPage::alloc(usize size, usize align)
 	return aligned_ptr;
 }
 
-tr::Arena::Arena(usize pg_size)
-	: page_size(pg_size)
+tr::Arena::Arena(ArenaSettings settings)
+	: _settings(settings)
 {
 	// it doesn't make a page until you allocate something
-	TR_ASSERT_MSG(this->page_size != 0, "you doofus why would you make an arena of 0 bytes");
+	if (_settings.error_behavior == ArenaSettings::ErrorBehavior::PANIC) {
+		TR_ASSERT_MSG(
+			_settings.page_size != 0,
+			"you doofus why would you make an arena of 0 bytes"
+		);
+	}
+	else {
+		tr::warn("using arena with a page size of 0 bytes, will likely fail");
+	}
 }
 
 void tr::Arena::free()
 {
 	// it doesn't make a page until you allocate something
-	if (this->page == nullptr) {
+	if (this->_page == nullptr) {
 		return;
 	}
 
 	// :)
-	this->call_destructors();
+	this->_call_destructors();
 
-	ArenaPage* head = this->page;
+	ArenaPage* head = this->_page;
 	while (head->prev != nullptr) {
 		head = head->prev;
 	}
@@ -125,20 +135,42 @@ void tr::Arena::free()
 	}
 }
 
+bool tr::Arena::_initialized()
+{
+	return _page != nullptr;
+}
+
 void* tr::Arena::alloc(usize size, usize align)
 {
 	// does it fit in the current page?
-	if (this->page != nullptr) {
-		void* ptr = this->page->alloc(size, align);
+	if (this->_page != nullptr) {
+		void* ptr = this->_page->alloc(size, align);
 		if (ptr != nullptr) {
-			this->bytes_allocated += size;
+			this->_allocated += size;
 			return ptr;
 		}
 	}
 
+	// can we make a new page?
+	if (_settings.max_pages.is_valid()) {
+		usize max_pages = _settings.max_pages.unwrap();
+		if (_pages == max_pages) {
+			if (_settings.error_behavior == ArenaSettings::ErrorBehavior::PANIC) {
+				tr::panic(
+					"arena out of pages! (%zu pages * %zu size = %zu "
+					"available)",
+					_pages, _settings.page_size, _pages * _settings.page_size
+				);
+			}
+			else {
+				return nullptr;
+			}
+		}
+	}
+
 	// it doesn't fit, make a new page
-	usize new_pg_size = tr::max(this->page_size, size + align);
-	ArenaPage* new_page = new (std::nothrow) ArenaPage(new_pg_size, align);
+	usize new_page_size = tr::max(_settings.page_size, size + align);
+	ArenaPage* new_page = new (std::nothrow) ArenaPage(_settings, new_page_size, align);
 	TR_ASSERT_MSG(new_page != nullptr, "couldn't create new arena page");
 
 	// TODO tf was i on when i wrote this
@@ -146,45 +178,53 @@ void* tr::Arena::alloc(usize size, usize align)
 	// NFOGOSJRJIGIRISJTOAEOTGOAGOKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 	// AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 	// AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-	new_page->prev = this->page;
-	if (this->page != nullptr) {
-		this->page->next = new_page;
+	new_page->prev = _page;
+	if (_page != nullptr) {
+		_page->next = new_page;
 	}
-	this->page = new_page;
-	this->bytes_capacity += new_pg_size;
+	_page = new_page;
+	_capacity += new_page_size;
+	_pages++;
 
 	// actually allocate frfrfrfr no cap ong icl
-	void* ptr = this->page->alloc(size, align);
-	TR_ASSERT_MSG(
-		ptr != nullptr, "couldn't allocate %zu B in arena (%zu KB, %zu MB)", size,
-		tr::bytes_to_kb(size), tr::bytes_to_mb(size)
-	);
-	this->bytes_allocated += size;
+	void* ptr = this->_page->alloc(size, align);
+	if (ptr == nullptr) {
+		if (_settings.error_behavior == ArenaSettings::ErrorBehavior::PANIC) {
+			tr::panic(
+				"couldn't allocate %zu B in arena (%zu KB, %zu MB)", size,
+				tr ::bytes_to_kb(size), tr ::bytes_to_mb(size)
+			);
+		}
+		else {
+			return nullptr;
+		}
+	};
+	this->_allocated += size;
 	return ptr;
 }
 
-void tr::Arena::call_destructors()
+void tr::Arena::_call_destructors()
 {
 	// yea
-	while (this->destructors != nullptr) {
+	while (this->_destructors != nullptr) {
 		// idfk why it does that
-		if (this->destructors->object == nullptr) {
+		if (this->_destructors->object == nullptr) {
 			break;
 		}
 
-		this->destructors->func(this->destructors->object);
-		this->destructors = this->destructors->next;
+		this->_destructors->func(this->_destructors->object);
+		this->_destructors = this->_destructors->next;
 	}
 }
 
 void tr::Arena::reset()
 {
 	// it doesn't make a page until you allocate something
-	if (this->page == nullptr) {
+	if (this->_page == nullptr) {
 		return;
 	}
 
-	ArenaPage* head = this->page;
+	ArenaPage* head = this->_page;
 	while (head->prev != nullptr) {
 		head = head->prev;
 	}
@@ -193,30 +233,32 @@ void tr::Arena::reset()
 	// i just can't be bothered to fix Arena::alloc() to support that
 	ArenaPage* headfrfr = head;
 	while (head != nullptr && head != headfrfr) {
-		this->bytes_capacity -= head->bufsize;
+		this->_capacity -= head->bufsize;
 		ArenaPage* next = head->next;
 		delete head;
 		head = next;
 	}
 
 	// we keep the first page :)
-	this->page = headfrfr;
+	this->_page = headfrfr;
 	// TODO see https://en.cppreference.com/w/cpp/string/byte/memset#Notes
-	memset(headfrfr->buffer, 0, headfrfr->bufsize);
+	if (_settings.zero_initialize) {
+		memset(headfrfr->buffer, 0, headfrfr->bufsize);
+	}
 	headfrfr->alloc_pos = 0;
 	headfrfr->prev = nullptr;
 	headfrfr->next = nullptr;
-	this->bytes_allocated = 0;
+	this->_allocated = 0;
 }
 
 usize tr::Arena::allocated() const
 {
-	return this->bytes_allocated;
+	return this->_allocated;
 }
 
 usize tr::Arena::capacity() const
 {
-	return this->bytes_capacity;
+	return this->_capacity;
 }
 
 tr::Arena& tr::scratchpad()

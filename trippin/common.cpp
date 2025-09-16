@@ -37,15 +37,15 @@
 // they have to live somewhere
 namespace tr {
 
-Arena core_arena(tr::kb_to_bytes(128));
-Array<File&> logfiles(core_arena);
+Arena core_arena;
+Array<File&> logfiles{core_arena};
 
 File std_in;
 File std_out;
 File std_err;
 
 // yes it's spelled that on purpose
-Signal<bool> the_new_all_on_quit(core_arena);
+Signal<bool> the_new_all_on_quit{core_arena};
 bool panicking = false;
 // so it doesn't keep emitting the signal forever
 bool panicked_on_quit = false;
@@ -88,7 +88,7 @@ void tr::free()
 		return;
 	}
 
-	// c++ is fucking with the template va args
+	// c++ is fucking with the template varargs
 	// idk why i can't just pass the variable
 	// but it works by negating it twice (which makes it the same value)
 	// TODO rewrite in rust

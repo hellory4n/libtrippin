@@ -333,7 +333,12 @@ public:
 template<typename T>
 class Maybe
 {
-	Either<T, uint8> value = {};
+	// just so you don't get "shit is ambiguous" errors
+	struct StructThatIsMostDefinitelyNothing
+	{
+	};
+
+	Either<T, StructThatIsMostDefinitelyNothing> value = {};
 	bool has_value = false;
 
 public:
@@ -341,13 +346,13 @@ public:
 
 	// Initializes a Maybe<T> as null
 	Maybe()
-		: value(0)
+		: value(StructThatIsMostDefinitelyNothing{})
 	{
 	}
 
 	// Intializes a Maybe<T> with a value
 	Maybe(T val)
-		: value(val)
+		: value(T{val})
 		, has_value(true)
 	{
 	}
@@ -637,6 +642,16 @@ Defer<Fn> _defer_func(Fn fn)
 }
 
 #define TR_DEFER(...) auto _TR_UNIQUE_NAME(_tr_defer) = tr::_defer_func([&]() { __VA_ARGS__; })
+
+// So you can check for debug without having to do ugly preprocessing fuckery :)
+constexpr bool is_debug()
+{
+#ifdef DEBUG
+	return true;
+#else
+	return false;
+#endif
+}
 
 }
 

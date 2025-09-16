@@ -15,13 +15,13 @@ void test_utils()
 	}
 
 	// either
-	tr::Either<int32, tr::String> depends(5);
+	tr::Either<int32, tr::String> depends = 5;
 	if (depends.is_left()) {
 		tr::log("%i", depends.left());
 	}
 
 	// pair
-	tr::Pair<int32, tr::String> both(27652465, "the of when of who why how");
+	tr::Pair<int32, tr::String> both = {27652465, "the of when of who why how"};
 	tr::log("%i", both.left);
 	tr::log("%s", *both.right);
 	auto [num, str] = both;

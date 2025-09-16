@@ -11,7 +11,7 @@ struct CrapStruct
 
 void test_memory()
 {
-	tr::Arena arena;
+	tr::Arena arena{};
 	TR_DEFER(arena.free());
 
 	// arenas are infinite

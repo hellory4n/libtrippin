@@ -70,6 +70,26 @@ static constexpr usize bytes_to_gb(usize x)
 	return tr::bytes_to_mb(x) / 1024;
 }
 
+// Settings for an arena. How incredible.
+struct ArenaSettings
+{
+	enum class ErrorBehavior : uint8
+	{
+		PANIC,
+		RETURN_NULL
+	};
+
+	// Base size for the buffers, you can have more buffers or bigger buffers.
+	usize page_size = tr::kb_to_bytes(4);
+	// null = no limit (grows infinitely)
+	Maybe<usize> max_pages = {};
+	// If false, the pages will be left with random garbage (like malloc/operator new). Maybe
+	// you want that, idk
+	bool zero_initialize = true;
+	// What should happen on allocation errors
+	ErrorBehavior error_behavior = ArenaSettings::ErrorBehavior::PANIC;
+};
+
 // Arenas are made of many buffers.
 class ArenaPage
 {
@@ -81,7 +101,7 @@ public:
 	ArenaPage* next = nullptr;
 	void* buffer = nullptr;
 
-	explicit ArenaPage(usize size, usize align = alignof(max_align_t));
+	explicit ArenaPage(ArenaSettings settings, usize size, usize align = alignof(max_align_t));
 	void free();
 
 	// Returns how much space left the page has
@@ -102,25 +122,32 @@ struct DestructorCall
 // Life changing allocator.
 class Arena
 {
-	usize page_size = 0;
-	// stupid names bcuz the functions are `capacity` and `allocated`
-	usize bytes_capacity = 0;
-	usize bytes_allocated = 0;
-	ArenaPage* page = nullptr;
-	DestructorCall* destructors = nullptr;
+	ArenaSettings _settings = {};
+	usize _capacity = 0;
+	usize _allocated = 0;
+	usize _pages = 0;
+	ArenaPage* _page = nullptr;
+	DestructorCall* _destructors = nullptr;
 
-	void call_destructors();
+	bool _initialized();
+	void _call_destructors();
 
 public:
 	// :)
 	Arena()
-		: Arena(tr::kb_to_bytes(64))
+		: Arena(ArenaSettings{})
 	{
 	}
 
+	explicit Arena(ArenaSettings settings);
+
 	// Initializes the arena. `page_size` is the base size for the buffers, you can have more
 	// buffers or bigger buffers.
-	explicit Arena(usize pg_size);
+	[[deprecated("use the ArenaSettings overload")]]
+	explicit Arena(usize page_size)
+		: Arena({.page_size = page_size})
+	{
+	}
 
 	// Frees the arena.
 	void free();
@@ -146,8 +173,8 @@ public:
 		auto* call = static_cast<DestructorCall*>(this->alloc(sizeof(DestructorCall)));
 		call->func = [](void* obj) -> void { static_cast<T*>(obj)->~T(); };
 		call->object = huh;
-		call->next = this->destructors;
-		this->destructors = call;
+		call->next = this->_destructors;
+		this->_destructors = call;
 
 		return *huh;
 	}
@@ -165,8 +192,8 @@ public:
 		auto* call = static_cast<DestructorCall*>(this->alloc(sizeof(DestructorCall)));
 		call->func = [](void* obj) -> void { static_cast<T*>(obj)->~T(); };
 		call->object = obj;
-		call->next = this->destructors;
-		this->destructors = call;
+		call->next = this->_destructors;
+		this->_destructors = call;
 
 		return *obj;
 	}
@@ -184,8 +211,8 @@ public:
 		auto* call = static_cast<DestructorCall*>(this->alloc(sizeof(DestructorCall)));
 		call->func = [](void* obj) -> void { static_cast<T*>(obj)->~T(); };
 		call->object = obj;
-		call->next = this->destructors;
-		this->destructors = call;
+		call->next = this->_destructors;
+		this->_destructors = call;
 
 		return obj;
 	}
