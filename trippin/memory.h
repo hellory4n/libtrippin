@@ -275,7 +275,9 @@ public:
 			this->_cap = INITIAL_CAPACITY;
 		}
 
-		this->_ptr = static_cast<RefWrapper<T>*>(arena.alloc(sizeof(T) * this->_cap));
+		this->_ptr = static_cast<RefWrapper<std::remove_const_t<T>>*>(
+			arena.alloc(sizeof(T) * this->_cap)
+		);
 	}
 
 	// Initializes an array from a buffer. (the data is copied into the arena)
@@ -292,7 +294,9 @@ public:
 			this->_cap = INITIAL_CAPACITY;
 		}
 
-		this->_ptr = static_cast<RefWrapper<T>*>(arena.alloc(sizeof(T) * this->_cap));
+		this->_ptr = static_cast<RefWrapper<std::remove_const_t<T>>*>(
+			arena.alloc(sizeof(T) * this->_cap)
+		);
 		if (len == 0) {
 			return;
 		}

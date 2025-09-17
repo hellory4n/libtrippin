@@ -96,6 +96,12 @@ static void test::arrays()
 
 	TR_ASSERT(!array.try_get(893463).is_valid());
 	TR_ASSERT(array.try_get(1).is_valid());
+
+	// just making sure const arrays compile
+	tr::Array<const tr::String> fuckyu = {"s"};
+	for (auto [_, str] : fuckyu) {
+		tr::log("%s", *str);
+	}
 }
 
 static void test::strings()
