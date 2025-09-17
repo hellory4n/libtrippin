@@ -37,19 +37,19 @@ namespace tr {
 
 // Hashes an array of bytes, which is useful if you need to hash an array of bytes. Implemented with
 // 64-bit FNV-1a
-uint64 hash(tr::Array<const uint8> array);
+uint64 hash(const uint8* bytes, usize len);
 
 // internal don't use probably :)
 template<typename K>
 uint64 _default_hash_function(const K& key)
 {
-	return tr::hash(Array<const uint8>(reinterpret_cast<const uint8*>(&key), sizeof(K)));
+	return tr::hash(&key, sizeof(K));
 }
 // internal don't use probably :)
 template<>
 inline uint64 _default_hash_function<String>(const String& key)
 {
-	return tr::hash(Array<const uint8>(reinterpret_cast<const uint8*>(*key), key.len()));
+	return tr::hash(reinterpret_cast<const uint8*>(*key), key.len());
 }
 
 // Useful for when you need *advanced* hashmaps

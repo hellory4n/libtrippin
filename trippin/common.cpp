@@ -37,12 +37,13 @@
 // they have to live somewhere
 namespace tr {
 
-Arena core_arena;
+Arena core_arena{};
+Arena _consty_arena{};
 Array<File&> logfiles{core_arena};
 
-File std_in;
-File std_out;
-File std_err;
+File std_in{};
+File std_out{};
+File std_err{};
 
 // yes it's spelled that on purpose
 Signal<bool> the_new_all_on_quit{core_arena};

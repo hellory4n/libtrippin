@@ -96,11 +96,6 @@ static void test::arrays()
 
 	TR_ASSERT(!array.try_get(893463).is_valid());
 	TR_ASSERT(array.try_get(1).is_valid());
-
-	tr::Array<const tr::String> strs = {"balls"};
-	for (auto [_, str] : strs) {
-		tr::log("%s", *str);
-	}
 }
 
 static void test::strings()

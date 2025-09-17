@@ -27,16 +27,18 @@
 
 #include "trippin/collection.h"
 
+#include "trippin/common.h"
+
 constexpr uint64 FNV_OFFSET_BASIS = 0xcbf29ce484222325;
 // IM IN MY PRIME™ AND THIS AINT EVEN FINAL FORM
 constexpr uint64 FNV_PRIME = 0x100000001b3;
 
-uint64 tr::hash(tr::Array<const uint8> array)
+uint64 tr::hash(const uint8* bytes, usize len)
 {
 	uint64 hash = FNV_OFFSET_BASIS;
 
-	for (auto [_, byte] : array) {
-		hash ^= byte;
+	for (auto i : tr::range<usize>(0, len)) {
+		hash ^= bytes[i];
 		hash *= FNV_PRIME;
 	}
 

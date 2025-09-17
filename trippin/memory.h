@@ -235,7 +235,9 @@ struct ArrayItem
 	T& val;
 };
 
-// used for initializers/string literals BUT can change later (hence the name)
+// std::initializer_list<T> doesn't live very long. to prevent fucking (dangling ptrs), we have to
+// copy the data somewhere that lasts longer, and trap them in purgatory for as long as the program
+// is open.
 extern Arena _consty_arena;
 
 // A slice of memory, usually from an arena but can point to anywhere. Similar to a Go slice, or
@@ -248,7 +250,8 @@ class Array
 	// .add())
 	static constexpr usize INITIAL_CAPACITY = 16;
 
-	RefWrapper<T>* _ptr = nullptr;
+	// the internal ptr isn't const (probably)
+	RefWrapper<std::remove_const_t<T>>* _ptr = nullptr;
 	Arena* _src_arena = nullptr;
 	usize _len = 0;
 	usize _cap = 0;
@@ -317,20 +320,19 @@ public:
 	{
 	}
 
-	// why bjarne stroustrup why can't i make this myself why is std::initializer_list<T>
-	// special i know this is from c++11 but i don't care i'm gonna blame bjarne stroustrup
-	// inventor of C incremented
-	constexpr Array(std::initializer_list<RefWrapper<const T>> initlist)
-		: _can_grow(false)
-	{
-		this->_cap = initlist.size();
-		this->_len = initlist.size();
-		this->_ptr = initlist.begin();
-	}
-
 	explicit Array(Arena& arena, std::initializer_list<RefWrapper<const T>> initlist)
 		: Array(arena, initlist.begin(), initlist.size())
 	{
+	}
+
+	// std::initializer_list<T> doesn't live very long so we have to copy it
+	Array(std::initializer_list<RefWrapper<const T>> initlist)
+		: Array(tr::_consty_arena, initlist)
+	{
+		// using an arena for this would make the rest of the class assume you can grow it
+		// later
+		// but nuh uh you can't
+		_can_grow = false;
 	}
 
 	// man fuck you
@@ -344,6 +346,14 @@ public:
 	explicit Array(Arena& arena)
 		: Array(arena, 0)
 	{
+	}
+
+	// mutable array to const array
+	// there's no version for the other way around because, much like const_cast, that'd be EVIL
+	operator Array<const T>() const
+		requires(!std::is_const_v<T>)
+	{
+		return Array<const T>(_ptr, _len);
 	}
 
 	constexpr T& operator[](usize idx) const

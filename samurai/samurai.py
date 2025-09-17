@@ -149,14 +149,15 @@ def _cmd_build(proj: Project) -> None:
 
 	if proj.prebuild != None: proj.prebuild()
 	if os.system("ninja") != 0:
-		raise Exception("build failed :(")
+		sys.stdout.write("build failed :(\n")
+		exit(1)
 	if proj.postbuild != None: proj.postbuild()
 
 def _cmd_clean() -> None:
 	# scary!
 	# TODO theres probably a python function for this
 	assert os.system("rm -rf build/**") == 0
-	assert os.system("rm -f build.ninja") == 0
+	# assert os.system("rm -f build.ninja") == 0
 	assert os.system("rm -f .ninja_log") == 0
 
 def _cmd_version() -> None:
