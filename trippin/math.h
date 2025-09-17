@@ -2586,21 +2586,21 @@ struct Rect
 
 	using Type = T;
 
-	Rect<T>()
+	Rect()
 		: position(0, 0)
 		, size(0, 0)
 	{
 	}
 
 	TR_GCC_IGNORE_WARNING(-Wshadow) // gcc is stupid :)
-	Rect<T>(Vec2<T> position, Vec2<T> size)
+	Rect(Vec2<T> position, Vec2<T> size)
 		: position(position)
 		, size(size)
 	{
 	}
 	TR_GCC_RESTORE()
 
-	Rect<T>(T x, T y, T width, T height)
+	Rect(T x, T y, T width, T height)
 		: position(x, y)
 		, size(width, height)
 	{

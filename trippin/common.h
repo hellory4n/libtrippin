@@ -352,7 +352,7 @@ public:
 
 	// Intializes a Maybe<T> with a value
 	Maybe(T val)
-		: value(T{val})
+		: value(val)
 		, has_value(true)
 	{
 	}

@@ -19,6 +19,6 @@ void test_collection()
 
 	// there's also signals so that's cool
 	tr::Signal<int64> signa(tr::scratchpad());
-	signa.connect([&](int64 _) { tr::log("SOMETHING HAS HAPPENED???"); });
+	signa.connect([&](int64) { tr::log("SOMETHING HAS HAPPENED???"); });
 	signa.emit(759823);
 }

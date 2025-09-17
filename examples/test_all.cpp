@@ -37,7 +37,7 @@ static void test::logging()
 
 	tr::log("S%sa (formatted arguments)", "igm");
 
-	tr::call_on_quit([&](bool _) -> void {
+	tr::call_on_quit([&](bool) -> void {
 		tr::log("CUSTOM FUNCTION THAT RUNS ON QUIT/PANIC??? SCRUMPTIOUS");
 		// tr::panic("skill");
 	});
@@ -287,9 +287,10 @@ int main(int argc, char* argv[])
 }
 
 // just making sure it compiles
-// TODO this sucks
 // please shut up
+// TODO this sucks
 TR_GCC_IGNORE_WARNING(-Wunused-variable)
+TR_GCC_IGNORE_WARNING(-Wunused-but-set-variable)
 #include "test_collection.h" // IWYU pragma: keep
 #include "test_error.h" // IWYU pragma: keep
 #include "test_logging.h" // IWYU pragma: keep
@@ -297,3 +298,5 @@ TR_GCC_IGNORE_WARNING(-Wunused-variable)
 #include "test_memory.h" // IWYU pragma: keep
 #include "test_strings.h" // IWYU pragma: keep
 #include "test_utils.h" // IWYU pragma: keep
+TR_GCC_RESTORE()
+TR_GCC_RESTORE()

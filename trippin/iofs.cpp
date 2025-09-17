@@ -34,11 +34,10 @@
 	#define NOSERVICE
 	#define NOMCX
 	#define NOIME
-// 'NOMINMAX' macro redefined
-// no it's not??
-TR_GCC_IGNORE_WARNING(-Wmacro-redefined)
-	#define NOMINMAX
-TR_GCC_RESTORE()
+	// mingw gcc already defines that by default??
+	#ifndef TR_ONLY_MINGW_GCC
+		#define NOMINMAX
+	#endif
 	#include <windows.h>
 
 	// conflicts :D
