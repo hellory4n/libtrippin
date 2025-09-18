@@ -1,35 +1,29 @@
 # libtrippin
 
-Most biggest most massive library of all time. I'm insane.
+The most biggest most massive library of all time. I'm insane.
 
 ## Featuring
 
-- [libtrippin](./trippin): Most massive library of all time
-    - C++20 with no external dependencies (only libc/stdc++)
-    - Cross-platform (Windows and POSIX)
-    - Arenas for memory management
-    - Arrays, strings, hashmaps
-    - Simple math for games
-    - Logging
-    - Files/IO
-    - Functional errors
-    - And more
-- [samurai](./samurai): Barely a build system
-    - Literally just a [ninja](https://ninja-build.org/) script generator for Python
-    - 200-ish lines of code you could easily write yourself
+- C++20 with no external dependencies (only libc/stdc++)
+- Cross-platform (Windows and POSIX)
+- Arenas for memory management
+- Arrays, strings, hashmaps
+- Simple math for games
+- Simple logging
+- Files/IO (no need to include windows.h)
+- Spicy functional errors
+- And more
 
 ## Usage
 
-Make sure you're using C++20, it won't compile with anything older.
+First make sure you're using C++20, it won't compile with anything older. On Linux you have to link with the math library (`-lm`).
 
-Now add all the `.h`/`.cpp` files from `trippin/` to your project
+Now add all the `.h`/`.cpp` files from `trippin/` to your project.
 
-On Linux you also have to link with the math library `-lm`
-
-Also make sure to add this at the start of your program:
+Then add this at the start of your program:
 
 ```cpp
-tr::use_log_file("log.txt");
+tr::use_log_file("log.txt"); // optional
 tr::init();
 ```
 
@@ -40,8 +34,6 @@ tr::free();
 ```
 
 ## Examples
-
-See the docs folder for more crap.
 
 ### Logging
 
@@ -202,6 +194,30 @@ tr::File& file = tr::File::open(arena, "otherfile.bin", tr::FileMode::WRITE_BINA
 TR_DEFER(file.close());
 file.write_string("Man...\nso true");
 file.write_struct(2758952);
+```
+
+## Building
+
+libtrippin uses [Xmake](https://xmake.io) for building, so you obviously need that installed. Then you can run `xmake --help` like any normal person would.
+
+If you just want commands to copy and paste then:
+
+```sh
+# setup project
+$ xmake config -m debug --cxx=clang++
+
+# get ide files, e.g.
+$ xmake project -k vsxmake -m "debug,release" # for visual studio
+$ xmake project -k compile_commands # for everyone else
+
+# build
+$ xmake
+
+# run
+$ xmake run -d testing_it
+
+# clean
+$ xmake clean
 ```
 
 ## FAQ
