@@ -246,16 +246,32 @@ extern Arena _consty_arena;
 template<typename T>
 class Array
 {
+	// used for the ptr types
+	using MutT = RefWrapper<std::remove_const_t<T>>;
+	// could be const but if it's mutable then it doesn't matter anyway so we just call it const
+	using ConstT = const RefWrapper<T>;
+
 	// used for when you don't set the length (which you usually do if you're just gonna use
 	// .add())
 	static constexpr usize INITIAL_CAPACITY = 16;
 
-	// the internal ptr isn't const (probably)
-	RefWrapper<std::remove_const_t<T>>* _ptr = nullptr;
+	// if it's from an arena the internal ptr just can't be const, as you're copying the
+	// original const data to the arena
+	// BUT if it's not and is just pointing somewhere, then having it not be const can be very
+	// questionable
+	union {
+		MutT* _arena_ptr = nullptr;
+		ConstT* _ptr;
+	};
 	Arena* _src_arena = nullptr;
 	usize _len = 0;
 	usize _cap = 0;
 	bool _can_grow;
+
+	bool _is_from_arena() const
+	{
+		return _src_arena != nullptr;
+	}
 
 public:
 	using Type = T;
@@ -271,17 +287,15 @@ public:
 		// i'm just keeping this behavior so it doesn't break everything that used
 		// Array(arena, 0)
 		if (len == 0) {
-			this->_len = 0;
-			this->_cap = INITIAL_CAPACITY;
+			_len = 0;
+			_cap = INITIAL_CAPACITY;
 		}
 
-		this->_ptr = static_cast<RefWrapper<std::remove_const_t<T>>*>(
-			arena.alloc(sizeof(T) * this->_cap)
-		);
+		_arena_ptr = static_cast<MutT*>(arena.alloc(sizeof(T) * _cap));
 	}
 
 	// Initializes an array from a buffer. (the data is copied into the arena)
-	explicit Array(Arena& arena, RefWrapper<const T>* data, usize len)
+	explicit Array(Arena& arena, ConstT* data, usize len)
 		: _src_arena(&arena)
 		, _len(len)
 		, _cap(len)
@@ -290,33 +304,27 @@ public:
 		// you may initialize with a length of 0 so you can then add crap later
 		// i'm just keeping this behavior so it doesn't break everything :)
 		if (len == 0) {
-			this->_len = 0;
-			this->_cap = INITIAL_CAPACITY;
+			_len = 0;
+			_cap = INITIAL_CAPACITY;
 		}
 
-		this->_ptr = static_cast<RefWrapper<std::remove_const_t<T>>*>(
-			arena.alloc(sizeof(T) * this->_cap)
-		);
+		_arena_ptr = static_cast<MutT*>(arena.alloc(sizeof(T) * this->_cap));
 		if (len == 0) {
 			return;
 		}
 
-// 'void* memcpy(void*, const void*, size_t)' forming offset [1, 1024] is out of the bounds [0, 1]
-// the warning is wrong :)
-#ifdef TR_ONLY_GCC
+		// 'void* memcpy(void*, const void*, size_t)' forming offset [1, 1024] is out of the
+		// bounds [0, 1] the warning is wrong :)
 		TR_GCC_IGNORE_WARNING(-Warray-bounds);
 		TR_GCC_IGNORE_WARNING(-Wstringop-overread);
-#endif
-		memcpy(static_cast<void*>(this->_ptr), data, len * sizeof(T));
-#ifdef TR_ONLY_GCC
+		memcpy(static_cast<void*>(_arena_ptr), data, len * sizeof(T));
 		TR_GCC_RESTORE();
 		TR_GCC_RESTORE();
-#endif
 	}
 
 	// Initializes an array that points to any buffer. You really should only use this for
 	// temporary arrays.
-	constexpr explicit Array(RefWrapper<T>* data, usize len)
+	constexpr explicit Array(ConstT* data, usize len)
 		: _ptr(data)
 		, _len(len)
 		, _cap(len)
@@ -341,8 +349,7 @@ public:
 
 	// man fuck you
 	constexpr Array()
-		: _ptr(nullptr)
-		, _can_grow(false)
+		: _can_grow(false)
 	{
 	}
 
@@ -355,61 +362,84 @@ public:
 	// mutable array to const array
 	// there's no version for the other way around because, much like const_cast, that'd be EVIL
 	operator Array<const T>() const
-		requires(!std::is_const_v<T>)
+	requires(!std::is_const_v<T>)
 	{
 		return Array<const T>(_ptr, _len);
 	}
 
-	constexpr T& operator[](usize idx) const
-	{
-		if (idx >= _len) {
-			tr::panic("index out of range: %zu in an array of %zu", idx, this->_len);
-		}
-
-		if constexpr (std::is_reference_v<T>) {
-			return *this->_ptr[idx];
-		}
-		else {
-			return this->_ptr[idx];
-		}
-	}
-
 	// Similar to `operator[]`, but when getting an index out of bounds, instead of panicking,
 	// it returns null, which is probably useful sometimes.
-	constexpr Maybe<T&> try_get(usize idx) const
+	Maybe<T&> try_get(usize idx) const
 	{
 		if (idx >= this->_len) {
 			return {};
 		}
-		return this->_ptr[idx];
+
+		// oh dear
+		if constexpr (std::is_const_v<T>) {
+			if constexpr (std::is_reference_v<T>) {
+				return *this->_ptr[idx];
+			}
+			else {
+				return this->_ptr[idx];
+			}
+		}
+		else {
+			if constexpr (std::is_reference_v<T>) {
+				return *this->_arena_ptr[idx];
+			}
+			else {
+				return this->_arena_ptr[idx];
+			}
+		}
+	}
+
+	T& operator[](usize idx) const
+	{
+		Maybe<T&> item = try_get(idx);
+		if (!item.is_valid()) {
+			tr::panic(
+				"index out of range: array[%zu] when the length is %zu", idx, _len
+			);
+		}
+		return item.unwrap();
 	}
 
 	// Returns the buffer.
 	constexpr RefWrapper<T>* buf() const
 	{
-		return this->_ptr;
+		if constexpr (std::is_const_v<T>) {
+			return _ptr;
+		}
+		else {
+			return _arena_ptr;
+		}
 	}
 	// Returns the length of the array.
 	constexpr usize len() const
 	{
-		return this->_len;
+		return _len;
 	}
 	// Returns how many items the array can hold before having to resize.
 	constexpr usize cap() const
 	{
-		return this->_cap;
+		return _cap;
 	}
 	// Shorthand for `.buf()`
-	constexpr RefWrapper<T>* operator*() const
+	constexpr ConstT* operator*() const
 	{
-		return this->buf();
+		return buf();
 	}
 
 	// fucking iterator
 	class Iterator
 	{
 	public:
-		constexpr Iterator(RefWrapper<T>* pointer, usize index)
+		// :(
+		using Type =
+			std::conditional_t<std::is_const_v<T>, const RefWrapper<T>, RefWrapper<T>>;
+
+		constexpr Iterator(Type* pointer, usize index)
 			: idx(index)
 			, ptr(pointer)
 		{
@@ -436,7 +466,7 @@ public:
 
 	private:
 		usize idx;
-		RefWrapper<T>* ptr;
+		Type* ptr;
 	};
 
 	constexpr Iterator begin() const
@@ -452,6 +482,7 @@ public:
 	// arena-allocated arrays, if you try to use this on an array without an arena, it will
 	// panic.
 	void add(const T& val)
+	requires(!std::is_const_v<T>)
 	{
 		if (!_can_grow) {
 			tr::panic("array can't grow (likely not allocated from arena)");
@@ -460,53 +491,52 @@ public:
 		// does it already fit?
 		if (_len < _cap) {
 			if constexpr (std::is_reference_v<T>) {
-				_ptr[_len++] = &val;
+				_arena_ptr[_len++] = &val;
 			}
 			else {
-				_ptr[_len++] = val;
+				_arena_ptr[_len++] = val;
 			};
 			return;
 		}
 
 		// reallocate array
-		RefWrapper<T>* old_buffer = this->_ptr;
-		this->_cap *= 2;
-		this->_ptr = static_cast<RefWrapper<T>*>(_src_arena->alloc(this->_cap * sizeof(T)));
+		RefWrapper<T>* old_buffer = _arena_ptr;
+		_cap *= 2;
+		_arena_ptr = static_cast<MutT*>(_src_arena->alloc(_cap * sizeof(T)));
 
 		// you may initialize with a length of 0 so you can then add crap later
-		if (this->_len > 0) {
-			memcpy(static_cast<void*>(this->_ptr), static_cast<const void*>(old_buffer),
-			       this->_len * sizeof(T));
+		if (_len > 0) {
+			memcpy(static_cast<void*>(_arena_ptr), static_cast<const void*>(old_buffer),
+			       _len * sizeof(T));
 		}
 
 		if constexpr (std::is_reference_v<T>) {
-			_ptr[_len++] = &val;
+			_arena_ptr[_len++] = &val;
 		}
 		else {
-			_ptr[_len++] = val;
+			_arena_ptr[_len++] = val;
 		};
 	}
 
 	// As the name implies, it copies the array and its items to somewhere else.
 	Array<T> duplicate(Arena& arena) const
 	{
-		Array<T> result(arena, this->len());
-		memcpy(result.buf(), this->buf(), this->len() * sizeof(T));
-		return result;
+		return Array<T>{arena, buf(), len()};
 	}
 
 	// Clears the array duh. The `reset_all_items` sets the existing buffer to 0, which you may
 	// not want if you just want to reuse the buffer for hyper-ultra-blazingly-fast-optimization
 	void clear(bool reset_all_items = true)
+	requires(!std::is_const_v<T>)
 	{
 		if (reset_all_items) {
 			// apparently memset is fucked, std::fill_n does nothing and memset_s just
 			// doesn't exist in c++?? source:
 			// https://en.cppreference.com/w/cpp/string/byte/memset#Notes
 			// maybe i'm just stupid :)
-			// TODO am i stupid?
-			for (usize i = 0; i < this->_len * sizeof(T); i++) {
-				static_cast<uint8*>(this->_ptr)[i] = 0;
+			// TODO am i stupid? (the answer is yes)
+			for (usize i = 0; i < _len * sizeof(T); i++) {
+				static_cast<uint8*>(_arena_ptr)[i] = 0;
 			}
 		}
 		this->_len = 0;

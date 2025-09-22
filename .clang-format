@@ -31,6 +31,8 @@ QualifierAlignment: Left
 SpaceAfterTemplateKeyword: false
 BreakBeforeBinaryOperators: None
 SpaceBeforeCpp11BracedList: false
+IndentRequiresClause: false
+RequiresClausePosition: OwnLine
 
 # slightly modified K&R style
 BreakBeforeBraces: Custom

@@ -129,13 +129,13 @@ static_assert(sizeof(float64) == 8, "double must be 64-bits");
 namespace tr {
 
 // I sure love versions.
-static constexpr const char* VERSION = "v2.6.0";
+constexpr const char* VERSION = "v2.6.1";
 
 // I sure love versions. Format is XYYZZ
-static constexpr uint32 VERSION_NUM = 2'06'00;
-static constexpr uint32 VERSION_MAJOR = 2;
-static constexpr uint32 VERSION_MINOR = 6;
-static constexpr uint32 VERSION_PATCH = 0;
+constexpr uint32 VERSION_NUM = 2'06'01;
+constexpr uint32 VERSION_MAJOR = 2;
+constexpr uint32 VERSION_MINOR = 6;
+constexpr uint32 VERSION_PATCH = 1;
 
 // Initializes the bloody library lmao.
 void init();
@@ -164,8 +164,7 @@ void panic(const char* fmt, ...);
 // someone at C++ hq decided for some fucking reason that actually, a reference is not just a fancy
 // pointer...stupid i know
 template<typename T>
-using RefWrapper = std::conditional_t<
-	std::is_reference_v<T>, std::remove_reference_t<T>*, std::remove_reference_t<T>>;
+using RefWrapper = std::conditional_t<std::is_reference_v<T>, std::remove_reference_t<T>*, T>;
 
 // Functional propaganda
 template<typename L, typename R>
@@ -345,26 +344,26 @@ public:
 	using Type = T;
 
 	// Initializes a Maybe<T> as null
-	Maybe()
+	constexpr Maybe()
 		: value(StructThatIsMostDefinitelyNothing{})
 	{
 	}
 
 	// Intializes a Maybe<T> with a value
-	Maybe(T val)
+	constexpr Maybe(T val)
 		: value(val)
 		, has_value(true)
 	{
 	}
 
 	// If true, the maybe is, in fact, a definitely.
-	bool is_valid() const
+	constexpr bool is_valid() const
 	{
 		return this->has_value;
 	}
 
 	// Gets the value or panics if it's null
-	T unwrap() const
+	constexpr T unwrap() const
 	{
 		if (this->has_value) {
 			return this->value.left();
@@ -373,13 +372,13 @@ public:
 	}
 
 	// Similar to the `??`/null coalescing operator in modern languages
-	const T value_or(const T other) const
+	constexpr const T value_or(const T other) const
 	{
 		return this->is_valid() ? this->unwrap() : other;
 	}
 
 	// Calls a function (usually a lambda) depending on whether it's valid or not.
-	void
+	constexpr void
 	match(const std::function<void(T val)>& on_valid, const std::function<void()>& on_invalid)
 	{
 		if (this->is_valid()) {

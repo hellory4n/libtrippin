@@ -102,6 +102,10 @@ static void test::arrays()
 	for (auto [_, str] : fuckyu) {
 		tr::log("%s", *str);
 	}
+
+	// converting from mutable to const
+	tr::Array<uint8> mut_array = {1, 2, 3};
+	tr::Array<const uint8> _ = mut_array;
 }
 
 static void test::strings()

@@ -60,6 +60,8 @@ public:
 	// Initializes a string from an arena and C string.
 	explicit String(Arena& arena, const char* str, usize len)
 	{
+		// TODO pls get rid of the const casts im begging you
+		// maybe do it the same way Array<T> did? (which is a mess but it works)
 		this->array = Array<char>(arena, const_cast<char*>(str), len + 1);
 	}
 
