@@ -43,13 +43,13 @@ uint64 hash(const uint8* bytes, usize len);
 template<typename K>
 uint64 _default_hash_function(const K& key)
 {
-	return tr::hash(&key, sizeof(K));
+	return tr::hash(reinterpret_cast<const uint8*>(&key), sizeof(K));
 }
 // internal don't use probably :)
 template<>
-inline uint64 _default_hash_function<String>(const String& key)
+uint64 _default_hash_function<String>(const String& key)
 {
-	return tr::hash(reinterpret_cast<const uint8*>(*key), key.len());
+	return tr::hash(reinterpret_cast<const uint8*>(key.buf()), key.len());
 }
 
 // Useful for when you need *advanced* hashmaps
