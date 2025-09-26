@@ -47,7 +47,7 @@ uint64 _default_hash_function(const K& key)
 }
 // internal don't use probably :)
 template<>
-uint64 _default_hash_function<String>(const String& key)
+inline uint64 _default_hash_function<String>(const String& key)
 {
 	return tr::hash(reinterpret_cast<const uint8*>(key.buf()), key.len());
 }
