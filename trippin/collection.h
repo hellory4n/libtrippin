@@ -220,7 +220,7 @@ public:
 	}
 
 	// Like `operator[]` but it doesn't add shit, returns null if the key wasn't found
-	Maybe<K&> try_get(K key) const
+	Maybe<V&> try_get(K key) const
 	{
 		auto [bucket, b_occupied] = this->find(key);
 		if (b_occupied) {
