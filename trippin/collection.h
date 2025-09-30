@@ -66,6 +66,8 @@ struct HashMapSettings
 template<typename K, typename V>
 class HashMap
 {
+	// TODO references probably (definitely) don't work
+
 	static constexpr HashMapSettings<K> DEFAULT_SETTINGS = {
 		0.5, 256, tr::_default_hash_function
 	};
@@ -111,7 +113,7 @@ public:
 	HashMap() {}
 
 	// Returns the index based on a key. That's how hash maps work.
-	usize get_index(K key)
+	usize get_index(K key) const
 	{
 		return this->settings.hash_func(key) % this->capacity;
 	}
@@ -164,7 +166,7 @@ public:
 	}
 
 	// Returns the bucket and whether it's occupied (true for occupied, false for empty)
-	Pair<Bucket*, bool> find(K key)
+	Pair<Bucket*, bool> find(K key) const
 	{
 		usize idx = this->get_index(key);
 		for (usize probe = idx;; probe = (probe + 1) % capacity) {
@@ -179,6 +181,8 @@ public:
 				return {&b, false};
 			}
 		}
+		// if it's at the end, it wraps back to the beginning
+		// and there'll always be an empty spot since it resizes automatically
 		TR_UNREACHABLE();
 	}
 
@@ -193,18 +197,43 @@ public:
 		if (!b_occupied) {
 			bucket->occupied = true;
 			bucket->key = key;
+			if constexpr (!std::is_reference_v<V>) {
+				bucket->value = V{};
+			}
 			this->occupied++;
 			this->length++;
 		}
 
-		return bucket->value;
+		if constexpr (std::is_reference_v<V>) {
+			return *bucket->value;
+		}
+		else {
+			return bucket->value;
+		};
 	}
 
 	// If true, the hashmap has that key. Useful because the `[]` operator automatically inserts
 	// an item if it's not there.
-	bool contains(K key)
+	bool contains(K key) const
 	{
 		return this->find(key).right;
+	}
+
+	// Like `operator[]` but it doesn't add shit, returns null if the key wasn't found
+	Maybe<K&> try_get(K key) const
+	{
+		auto [bucket, b_occupied] = this->find(key);
+		if (b_occupied) {
+			if constexpr (std::is_reference_v<V>) {
+				return *bucket->value;
+			}
+			else {
+				return bucket->value;
+			};
+		}
+		else {
+			return {};
+		}
 	}
 
 	// Removes the key from the hashmap. Returns true if the key is was found, returns false
@@ -223,14 +252,14 @@ public:
 	}
 
 	// Returns how many items the hashmap currently has
-	usize len()
+	usize len() const
 	{
 		return this->length;
 	}
 
 	// Returns the total amount of items the hashmap can currently hold (it'll grow when it's
 	// 50% full)
-	usize cap()
+	usize cap() const
 	{
 		return this->capacity;
 	}

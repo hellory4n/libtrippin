@@ -168,6 +168,9 @@ static void test::hashmaps()
 	hashmaballs["oh no it go it gone bye bye (bye)"] = "ball. one";
 	hashmaballs["oSgmggg"] = "ball. one ball.";
 	hashmaballs.remove("oh no it go it gone bye bye (bye)");
+	TR_ASSERT(hashmaballs.contains("oSgmggg"));
+	TR_ASSERT(!hashmaballs.contains("oh no it go it gone bye bye (bye)"));
+	TR_ASSERT(hashmaballs.try_get("Balls").is_valid());
 
 	// iterator
 	for (auto item : hashmaballs) {
@@ -182,8 +185,8 @@ static void test::filesystem()
 
 	// we don't care about these ones failing :)
 	// it'll only succeed if it failed last time
-	tr::remove_file("fucker.txt");
-	tr::remove_file("fuckoffman.txt");
+	(void)tr::remove_file("fucker.txt");
+	(void)tr::remove_file("fuckoffman.txt");
 
 	// so much .unwrap() it looks like rust
 	// i want it to crash if something goes wrong tho so that's why
