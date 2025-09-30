@@ -499,6 +499,10 @@ struct Pair
 	// destructors suck
 };
 
+// 'Macro argument should be enclosed in parentheses'
+// it's a fucking type
+// NOLINTBEGIN(bugprone-macro-parentheses)
+
 // Defines bit flag fuckery for enum classes :)
 #define TR_BIT_FLAG(T)                                                             \
 	constexpr T operator|(T lhs, T rhs)                                        \
@@ -535,6 +539,8 @@ struct Pair
 	{                                                                          \
 		return (value & flag) == flag;                                     \
 	}
+
+// NOLINTEND(bugprone-macro-parentheses)
 
 // I love reinventing the wheel
 // TODO this kinda sucks

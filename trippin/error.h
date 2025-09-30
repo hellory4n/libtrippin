@@ -35,7 +35,7 @@ namespace tr {
 class Error
 {
 public:
-	virtual ~Error() { }
+	virtual ~Error() {}
 
 	// Returns the error message
 	virtual String message() const = 0;
@@ -121,7 +121,7 @@ public:
 	int win32_code = 0;
 #endif
 
-	FileError() { }
+	FileError() {}
 	FileError(String patha, String pathb, FileErrorType errtype, FileOperation operation)
 		: path_a(patha)
 		, path_b(pathb)

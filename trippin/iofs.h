@@ -45,7 +45,7 @@ class Reader
 {
 public:
 	// shut up
-	virtual ~Reader() { }
+	virtual ~Reader() {}
 
 	// Closes the stream
 	virtual void close() = 0;
@@ -121,7 +121,7 @@ class Writer
 {
 public:
 	// shut up
-	virtual ~Writer() { }
+	virtual ~Writer() {}
 
 	// Closes the stream
 	virtual void close() = 0;

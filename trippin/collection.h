@@ -108,7 +108,7 @@ public:
 	}
 
 	// man fuck you
-	HashMap() { }
+	HashMap() {}
 
 	// Returns the index based on a key. That's how hash maps work.
 	usize get_index(K key)
