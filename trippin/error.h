@@ -146,7 +146,7 @@ public:
 
 // So spicy. E should inherit implement Error
 template<typename T, typename E = const Error&>
-class Result
+class [[nodiscard]] Result
 {
 	Either<T, E> value = {};
 
@@ -223,7 +223,7 @@ public:
 
 // Result for when you don't need the result :D
 template<typename E>
-class Result<void, E>
+class [[nodiscard]] Result<void, E>
 {
 	Maybe<E> value;
 

@@ -82,16 +82,17 @@ void tr::_log(const char* color, const char* prefix, bool panic, const char* fmt
 	va_end(argmaballs);
 
 	for (auto [_, file] : tr::logfiles) {
+		// idk if we care enough about logs to crash if it fails?
 		if (file.is_std) {
-			file.write_string(color);
+			(void)file.write_string(color);
 		}
-		file.printf("[%s] %s%s", timestr, prefix, buf.buf());
+		(void)file.printf("[%s] %s%s", timestr, prefix, buf.buf());
 		if (file.is_std) {
-			file.write_string(ConsoleColor::RESET);
+			(void)file.write_string(ConsoleColor::RESET);
 		}
-		file.write_string("\n");
+		(void)file.write_string("\n");
 
-		file.flush();
+		(void)file.flush();
 	}
 
 	if (panic) {
