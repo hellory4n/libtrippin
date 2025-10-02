@@ -129,13 +129,13 @@ static_assert(sizeof(float64) == 8, "double must be 64-bits");
 namespace tr {
 
 // I sure love versions.
-constexpr const char* VERSION = "v2.6.1";
+constexpr const char* VERSION = "v2.6.2";
 
 // I sure love versions. Format is XYYZZ
-constexpr uint32 VERSION_NUM = 2'06'01;
+constexpr uint32 VERSION_NUM = 2'06'02;
 constexpr uint32 VERSION_MAJOR = 2;
 constexpr uint32 VERSION_MINOR = 6;
-constexpr uint32 VERSION_PATCH = 1;
+constexpr uint32 VERSION_PATCH = 2;
 
 // Initializes the bloody library lmao.
 void init();
@@ -504,47 +504,46 @@ struct Pair
 // NOLINTBEGIN(bugprone-macro-parentheses)
 
 // Defines bit flag fuckery for enum classes :)
-#define TR_BIT_FLAG(T)                                                             \
-	constexpr T operator|(T lhs, T rhs)                                        \
-	{                                                                          \
-		using N = std::underlying_type_t<T>;                               \
-		return static_cast<T>(static_cast<N>(lhs) | static_cast<N>(rhs));  \
-	}                                                                          \
-	constexpr T operator&(T lhs, T rhs)                                        \
-	{                                                                          \
-		using N = std::underlying_type_t<T>;                               \
-		return static_cast<T>(static_cast<N>(lhs) & static_cast<N>(rhs));  \
-	}                                                                          \
-	constexpr T operator~(T rhs)                                               \
-	{                                                                          \
-		using N = std::underlying_type_t<T>;                               \
-		return static_cast<T>(~static_cast<N>(rhs));                       \
-	}                                                                          \
-	constexpr T& operator|=(T& lhs, T rhs)                                     \
-	{                                                                          \
-		lhs = lhs | rhs;                                                   \
-		return lhs;                                                        \
-	}                                                                          \
-	constexpr T& operator&=(T& lhs, T rhs)                                     \
-	{                                                                          \
-		lhs = lhs & rhs;                                                   \
-		return lhs;                                                        \
-	}                                                                          \
-	/* getting the namespacing right would be too obnoxious so you're supposed \
-	 * to use this */                                                          \
-	/* like it's a keyword instead of like                                     \
-	 * `tr::hasflag`/`st::hasflag`/whatever which is */                        \
-	/* the correct style we use */                                             \
-	constexpr bool hasflag(T value, T flag)                                    \
-	{                                                                          \
-		return (value & flag) == flag;                                     \
+#define TR_BIT_FLAG(T)                                                            \
+	constexpr T operator|(T lhs, T rhs)                                       \
+	{                                                                         \
+		using N = std::underlying_type_t<T>;                              \
+		return static_cast<T>(static_cast<N>(lhs) | static_cast<N>(rhs)); \
+	}                                                                         \
+	constexpr T operator&(T lhs, T rhs)                                       \
+	{                                                                         \
+		using N = std::underlying_type_t<T>;                              \
+		return static_cast<T>(static_cast<N>(lhs) & static_cast<N>(rhs)); \
+	}                                                                         \
+	constexpr T operator~(T rhs)                                              \
+	{                                                                         \
+		using N = std::underlying_type_t<T>;                              \
+		return static_cast<T>(~static_cast<N>(rhs));                      \
+	}                                                                         \
+	constexpr T& operator|=(T& lhs, T rhs)                                    \
+	{                                                                         \
+		lhs = lhs | rhs;                                                  \
+		return lhs;                                                       \
+	}                                                                         \
+	constexpr T& operator&=(T& lhs, T rhs)                                    \
+	{                                                                         \
+		lhs = lhs & rhs;                                                  \
+		return lhs;                                                       \
+	}                                                                         \
+	constexpr bool hasflag(T value, T flag)                                   \
+	{                                                                         \
+		return (value & flag) == flag;                                    \
 	}
 
 // NOLINTEND(bugprone-macro-parentheses)
 
+// nubmerb :D
+template<typename T>
+concept Number = std::is_integral_v<T> || std::is_floating_point_v<T>;
+
 // I love reinventing the wheel
 // TODO this kinda sucks
-template<typename T>
+template<Number T>
 class RangeIterator
 {
 	T start;
@@ -602,21 +601,21 @@ public:
 };
 
 // Shorthand for a C-style loop. Similar to Go's `range()`
-template<typename T>
+template<Number T>
 RangeIterator<T> range(T start, T end, T step)
 {
 	return RangeIterator<T>(start, end, start, step);
 }
 
 // Shorthand for a C-style loop. Similar to Go's `range()`
-template<typename T>
+template<Number T>
 RangeIterator<T> range(T start, T end)
 {
 	return RangeIterator<T>(start, end, start, 1);
 }
 
 // Shorthand for a C-style loop. Similar to Go's `range()`
-template<typename T>
+template<Number T>
 RangeIterator<T> range(T end)
 {
 	return RangeIterator<T>(0, end, 0, 1);

@@ -28,6 +28,7 @@
 
 #include <cmath>
 #include <ctime>
+#include <type_traits>
 
 #include "trippin/common.h"
 #include "trippin/log.h"
@@ -38,7 +39,7 @@ namespace tr {
 // we need to constexpr all over the place
 
 // Vec2 lmao
-template<typename T>
+template<Number T>
 struct Vec2
 {
 	T x;
@@ -240,7 +241,7 @@ constexpr Vec2<float32> Vec2<float32>::operator%(float32 r)
 }
 
 // Vec3 lmao
-template<typename T>
+template<Number T>
 struct Vec3
 {
 	T x;
@@ -612,7 +613,7 @@ constexpr Vec3<float32> Vec3<float32>::operator%(float32 r)
 struct Color;
 
 // Vec4 lmao
-template<typename T>
+template<Number T>
 struct Vec4
 {
 	T x;
@@ -2225,7 +2226,7 @@ public:
 	float64 next();
 
 	// Returns a value in a range
-	template<typename T>
+	template<Number T>
 	T next(T min, T max)
 	{
 		return static_cast<T>((this->next() * max) + min);
@@ -2237,6 +2238,7 @@ constexpr float64 PI = 3.141592653589793238463;
 
 // Degrees to radians
 template<typename T>
+requires std::is_floating_point_v<T>
 constexpr T deg2rad(T deg)
 {
 	return deg * (static_cast<T>(PI) / static_cast<T>(180.0));
@@ -2244,6 +2246,7 @@ constexpr T deg2rad(T deg)
 
 // Radians to degrees
 template<typename T>
+requires std::is_floating_point_v<T>
 constexpr T rad2deg(T rad)
 {
 	return rad * (static_cast<T>(180.0) / static_cast<T>(PI));
@@ -2336,7 +2339,7 @@ struct Color
 
 	using Type = uint8;
 
-	constexpr Color();
+	constexpr Color() {}
 	// shut up :)
 	TR_GCC_IGNORE_WARNING(-Wshadow)
 	constexpr Color(uint8 r, uint8 g, uint8 b)
@@ -2495,7 +2498,7 @@ struct Color
 	}
 };
 
-template<typename T>
+template<Number T>
 constexpr Vec4<T>::Vec4(Color c)
 {
 	this->x = static_cast<T>(c.r / 255.0);
@@ -2506,15 +2509,19 @@ constexpr Vec4<T>::Vec4(Color c)
 
 namespace palette {
 	// White lmao.
+	[[deprecated("now it's just tr::COLOR_WHITE")]]
 	constexpr Color WHITE = Color::rgb(0xffffff);
 	// Black lmao.
+	[[deprecated("now it's just tr::COLOR_BLACK")]]
 	constexpr Color BLACK = Color::rgb(0x000000);
 	// Where did it go
+	[[deprecated("now it's just tr::COLOR_TRANSPARENT")]]
 	constexpr Color TRANSPARENT = Color::rgba(0x00000000);
-
-	// TODO more palettes, e.g. tr::palette::WebSafe, tr::palette::Material, tr::palette::Starry
-	// etc or maybe not
 }
+
+static constexpr Color COLOR_WHITE = Color::rgb(0xffffff);
+static constexpr Color COLOR_BLACK = Color::rgb(0x000000);
+static constexpr Color COLOR_TRANSPARENT = Color::rgba(0x00000000);
 
 // Matrix intended for use with OpenGL. This entire struct is stolen from linmath.h btw lmao
 struct Matrix4x4
@@ -2578,7 +2585,7 @@ struct Matrix4x4
 
 // rectnagle :) most of this is stolen from godot btw
 // https://github.com/godotengine/godot/blob/master/core/math/rect2.h
-template<typename T>
+template<Number T>
 struct Rect
 {
 	Vec2<T> position;

@@ -69,7 +69,9 @@ class HashMap
 	// TODO references probably (definitely) don't work
 
 	static constexpr HashMapSettings<K> DEFAULT_SETTINGS = {
-		0.5, 256, tr::_default_hash_function
+		.load_factor = 0.5,
+		.initial_capacity = 256,
+		.hash_func = tr::_default_hash_function,
 	};
 
 	struct Bucket
@@ -89,6 +91,13 @@ class HashMap
 	usize occupied = 0;
 	usize length = 0;
 	usize capacity = 0;
+
+	void _validate() const
+	{
+		if (buffer == nullptr) {
+			tr::panic("uninitialized tr::HashMap<K, V>!");
+		}
+	}
 
 public:
 	using KeyType = K;
@@ -120,6 +129,8 @@ public:
 
 	void grow()
 	{
+		_validate();
+
 		usize old_cap = this->capacity;
 		this->capacity *= 2;
 		Bucket* new_buffer = static_cast<Bucket*>(
@@ -155,6 +166,8 @@ public:
 	// Checks how full the hashmap is and resizes if necessary
 	void check_grow()
 	{
+		_validate();
+
 		// TODO you don't need a float here
 		float64 used =
 			static_cast<float64>(this->occupied) / static_cast<float64>(this->capacity);
@@ -168,6 +181,7 @@ public:
 	// Returns the bucket and whether it's occupied (true for occupied, false for empty)
 	Pair<Bucket*, bool> find(K key) const
 	{
+		_validate();
 		usize idx = this->get_index(key);
 		for (usize probe = idx;; probe = (probe + 1) % capacity) {
 			Bucket& b = this->buffer[probe];
@@ -188,6 +202,7 @@ public:
 
 	V& operator[](K key)
 	{
+		_validate();
 		// operator[] is also used for putting crap :)
 		this->check_grow();
 
@@ -216,12 +231,14 @@ public:
 	// an item if it's not there.
 	bool contains(K key) const
 	{
+		_validate();
 		return this->find(key).right;
 	}
 
 	// Like `operator[]` but it doesn't add shit, returns null if the key wasn't found
 	Maybe<V&> try_get(K key) const
 	{
+		_validate();
 		auto [bucket, b_occupied] = this->find(key);
 		if (b_occupied) {
 			if constexpr (std::is_reference_v<V>) {
@@ -240,6 +257,7 @@ public:
 	// otherwise.
 	bool remove(K key)
 	{
+		_validate();
 		auto [bucket, b_occupied] = this->find(key);
 		// you can't kill someone that doesn't exist
 		// don't quote me on this
@@ -254,6 +272,7 @@ public:
 	// Returns how many items the hashmap currently has
 	usize len() const
 	{
+		_validate();
 		return this->length;
 	}
 
@@ -261,6 +280,7 @@ public:
 	// 50% full)
 	usize cap() const
 	{
+		_validate();
 		return this->capacity;
 	}
 
@@ -311,11 +331,13 @@ public:
 
 	Iterator begin() const
 	{
+		_validate();
 		return Iterator(this->buffer, 0, this->capacity);
 	}
 
 	Iterator end() const
 	{
+		_validate();
 		return Iterator(this->buffer + this->capacity, this->capacity, this->capacity);
 	}
 };

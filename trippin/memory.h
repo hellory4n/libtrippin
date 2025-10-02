@@ -26,7 +26,6 @@
 #ifndef _TRIPPIN_MEMORY_H
 #define _TRIPPIN_MEMORY_H
 
-// clangd are you stupid
 #include <cstring>
 #include <initializer_list>
 #include <new> // IWYU pragma: keep
@@ -248,7 +247,6 @@ class Array
 {
 	// used for the ptr types
 	using MutT = RefWrapper<std::remove_const_t<T>>;
-	// could be const but if it's mutable then it doesn't matter anyway so we just call it const
 	using ConstT = const RefWrapper<T>;
 
 	// used for when you don't set the length (which you usually do if you're just gonna use
@@ -271,6 +269,13 @@ class Array
 	bool _is_from_arena() const
 	{
 		return _src_arena != nullptr;
+	}
+
+	void _validate() const
+	{
+		if (_ptr == nullptr) {
+			tr::panic("uninitialized tr::Array<T>!");
+		}
 	}
 
 public:
@@ -308,6 +313,13 @@ public:
 			_cap = INITIAL_CAPACITY;
 		}
 
+		if (data == nullptr) {
+			tr::panic(
+				"tr::Array<T> can't be null (use tr::Maybe<T> if this is "
+				"intentional)"
+			);
+		}
+
 		_arena_ptr = static_cast<MutT*>(arena.alloc(sizeof(T) * this->_cap));
 		if (len == 0) {
 			return;
@@ -330,6 +342,12 @@ public:
 		, _cap(len)
 		, _can_grow(false)
 	{
+		if (data == nullptr) {
+			tr::panic(
+				"tr::Array<T> can't be null (use tr::Maybe<T> if this is "
+				"intentional)"
+			);
+		}
 	}
 
 	explicit Array(Arena& arena, std::initializer_list<RefWrapper<const T>> initlist)
@@ -371,6 +389,8 @@ public:
 	// it returns null, which is probably useful sometimes.
 	Maybe<T&> try_get(usize idx) const
 	{
+		_validate();
+
 		if (idx >= this->_len) {
 			return {};
 		}
@@ -396,6 +416,8 @@ public:
 
 	T& operator[](usize idx) const
 	{
+		_validate();
+
 		Maybe<T&> item = try_get(idx);
 		if (!item.is_valid()) {
 			tr::panic(
@@ -408,6 +430,8 @@ public:
 	// Returns the buffer.
 	constexpr RefWrapper<T>* buf() const
 	{
+		_validate();
+
 		if constexpr (std::is_const_v<T>) {
 			return _ptr;
 		}
@@ -418,11 +442,13 @@ public:
 	// Returns the length of the array.
 	constexpr usize len() const
 	{
+		_validate();
 		return _len;
 	}
 	// Returns how many items the array can hold before having to resize.
 	constexpr usize cap() const
 	{
+		_validate();
 		return _cap;
 	}
 	// Shorthand for `.buf()`
@@ -471,10 +497,12 @@ public:
 
 	constexpr Iterator begin() const
 	{
+		_validate();
 		return Iterator(this->buf(), 0);
 	}
 	constexpr Iterator end() const
 	{
+		_validate();
 		return Iterator(this->buf() + this->len(), this->len());
 	}
 
@@ -484,6 +512,7 @@ public:
 	void add(const T& val)
 	requires(!std::is_const_v<T>)
 	{
+		_validate();
 		if (!_can_grow) {
 			tr::panic("array can't grow (likely not allocated from arena)");
 		}
@@ -521,6 +550,7 @@ public:
 	// As the name implies, it copies the array and its items to somewhere else.
 	Array<T> duplicate(Arena& arena) const
 	{
+		_validate();
 		return Array<T>{arena, buf(), len()};
 	}
 
@@ -529,6 +559,7 @@ public:
 	void clear(bool reset_all_items = true)
 	requires(!std::is_const_v<T>)
 	{
+		_validate();
 		if (reset_all_items) {
 			// apparently memset is fucked, std::fill_n does nothing and memset_s just
 			// doesn't exist in c++?? source:
