@@ -68,60 +68,60 @@ struct Vec2
 
 	// TODO these could be implemented with evil macro fuckery but idk if i want to do that
 
-	constexpr Vec2 operator+(Vec2 r)
+	constexpr Vec2 operator+(Vec2 r) const
 	{
 		return Vec2(this->x + r.x, this->y + r.y);
 	}
-	constexpr Vec2 operator-(Vec2 r)
+	constexpr Vec2 operator-(Vec2 r) const
 	{
 		return Vec2(this->x - r.x, this->y - r.y);
 	}
-	constexpr Vec2 operator*(Vec2 r)
+	constexpr Vec2 operator*(Vec2 r) const
 	{
 		return Vec2(this->x * r.x, this->y * r.y);
 	}
-	constexpr Vec2 operator*(T r)
+	constexpr Vec2 operator*(T r) const
 	{
 		return Vec2(this->x * r, this->y * r);
 	}
-	constexpr Vec2 operator/(Vec2 r)
+	constexpr Vec2 operator/(Vec2 r) const
 	{
 		return Vec2(this->x / r.x, this->y / r.y);
 	}
-	constexpr Vec2 operator/(T r)
+	constexpr Vec2 operator/(T r) const
 	{
 		return Vec2(this->x / r, this->y / r);
 	}
-	constexpr Vec2 operator%(Vec2 r)
+	constexpr Vec2 operator%(Vec2 r) const
 	{
 		return Vec2(this->x % r.x, this->y % r.y);
 	}
-	constexpr Vec2 operator%(T r)
+	constexpr Vec2 operator%(T r) const
 	{
 		return Vec2(this->x % r, this->y % r);
 	}
 
-	constexpr bool operator==(Vec2 r)
+	constexpr bool operator==(Vec2 r) const
 	{
 		return this->x == r.x && this->y == r.y;
 	}
-	constexpr bool operator!=(Vec2 r)
+	constexpr bool operator!=(Vec2 r) const
 	{
 		return this->x != r.x && this->y != r.y;
 	}
-	constexpr bool operator>(Vec2 r)
+	constexpr bool operator>(Vec2 r) const
 	{
 		return this->x > r.x && this->y > r.y;
 	}
-	constexpr bool operator>=(Vec2 r)
+	constexpr bool operator>=(Vec2 r) const
 	{
 		return this->x >= r.x && this->y >= r.y;
 	}
-	constexpr bool operator<(Vec2 r)
+	constexpr bool operator<(Vec2 r) const
 	{
 		return this->x < r.x && this->y < r.y;
 	}
-	constexpr bool operator<=(Vec2 r)
+	constexpr bool operator<=(Vec2 r) const
 	{
 		return this->x <= r.x && this->y <= r.y;
 	}
@@ -158,7 +158,7 @@ struct Vec2
 	{
 		return *this = *this % other;
 	}
-	constexpr Vec2 operator-()
+	constexpr Vec2 operator-() const
 	{
 		return {-this->x, -this->y};
 	}
@@ -178,8 +178,22 @@ struct Vec2
 			break;
 		}
 	}
+	constexpr const T& operator[](usize idx) const
+	{
+		switch (idx) {
+		case 0:
+			return this->x;
+			break;
+		case 1:
+			return this->y;
+			break;
+		default:
+			tr::panic("sir this is a vec2<T> not a vec%zu<T>", idx + 1);
+			break;
+		}
+	}
 
-	constexpr T mul_inner(Vec2<T> b)
+	constexpr T mul_inner(Vec2<T> b) const
 	{
 		T p = 0;
 		for (usize i = 0; i < ITEMS; i++) {
@@ -188,13 +202,13 @@ struct Vec2
 		return p;
 	}
 
-	constexpr float64 length()
+	constexpr float64 length() const
 	{
 		return sqrt(this->mul_inner(*this));
 	}
-	constexpr Vec2 normalize()
+	constexpr Vec2 normalize() const
 	{
-		return *this * (1 / this->length());
+		return *this * (1.0 / this->length());
 	}
 
 	// swizzling operators
@@ -220,22 +234,22 @@ struct Vec2
 
 // c i hate you
 template<>
-constexpr Vec2<float64> Vec2<float64>::operator%(Vec2<float64> r)
+constexpr Vec2<float64> Vec2<float64>::operator%(Vec2<float64> r) const
 {
 	return Vec2<float64>(fmod(this->x, r.x), fmod(this->y, r.y));
 }
 template<>
-constexpr Vec2<float64> Vec2<float64>::operator%(float64 r)
+constexpr Vec2<float64> Vec2<float64>::operator%(float64 r) const
 {
 	return Vec2<float64>(fmod(this->x, r), fmod(this->y, r));
 }
 template<>
-constexpr Vec2<float32> Vec2<float32>::operator%(Vec2<float32> r)
+constexpr Vec2<float32> Vec2<float32>::operator%(Vec2<float32> r) const
 {
 	return Vec2<float32>(fmodf(this->x, r.x), fmodf(this->y, r.y));
 }
 template<>
-constexpr Vec2<float32> Vec2<float32>::operator%(float32 r)
+constexpr Vec2<float32> Vec2<float32>::operator%(float32 r) const
 {
 	return Vec2<float32>(fmodf(this->x, r), fmodf(this->y, r));
 }
@@ -272,60 +286,60 @@ struct Vec3
 	{
 	}
 
-	constexpr Vec3 operator+(Vec3 r)
+	constexpr Vec3 operator+(Vec3 r) const
 	{
 		return Vec3(this->x + r.x, this->y + r.y, this->z + r.z);
 	}
-	constexpr Vec3 operator-(Vec3 r)
+	constexpr Vec3 operator-(Vec3 r) const
 	{
 		return Vec3(this->x - r.x, this->y - r.y, this->z - r.z);
 	}
-	constexpr Vec3 operator*(Vec3 r)
+	constexpr Vec3 operator*(Vec3 r) const
 	{
 		return Vec3(this->x * r.x, this->y * r.y, this->z * r.z);
 	}
-	constexpr Vec3 operator*(T r)
+	constexpr Vec3 operator*(T r) const
 	{
 		return Vec3(this->x * r, this->y * r, this->z * r);
 	}
-	constexpr Vec3 operator/(Vec3 r)
+	constexpr Vec3 operator/(Vec3 r) const
 	{
 		return Vec3(this->x / r.x, this->y / r.y, this->z / r.z);
 	}
-	constexpr Vec3 operator/(T r)
+	constexpr Vec3 operator/(T r) const
 	{
 		return Vec3(this->x / r, this->y / r, this->z / r);
 	}
-	constexpr Vec3 operator%(Vec3 r)
+	constexpr Vec3 operator%(Vec3 r) const
 	{
 		return Vec3(this->x % r.x, this->y % r.y, this->z % r.z);
 	}
-	constexpr Vec3 operator%(T r)
+	constexpr Vec3 operator%(T r) const
 	{
 		return Vec3(this->x % r, this->y % r, this->z % r);
 	}
 
-	constexpr bool operator==(Vec3 r)
+	constexpr bool operator==(Vec3 r) const
 	{
 		return this->x == r.x && this->y == r.y && this->z == r.z;
 	}
-	constexpr bool operator!=(Vec3 r)
+	constexpr bool operator!=(Vec3 r) const
 	{
 		return this->x != r.x && this->y != r.y && this->z != r.z;
 	}
-	constexpr bool operator>(Vec3 r)
+	constexpr bool operator>(Vec3 r) const
 	{
 		return this->x > r.x && this->y > r.y && this->z > r.z;
 	}
-	constexpr bool operator>=(Vec3 r)
+	constexpr bool operator>=(Vec3 r) const
 	{
 		return this->x >= r.x && this->y >= r.y && this->z >= r.z;
 	}
-	constexpr bool operator<(Vec3 r)
+	constexpr bool operator<(Vec3 r) const
 	{
 		return this->x < r.x && this->y < r.y && this->z < r.z;
 	}
-	constexpr bool operator<=(Vec3 r)
+	constexpr bool operator<=(Vec3 r) const
 	{
 		return this->x <= r.x && this->y <= r.y && this->z <= r.z;
 	}
@@ -362,12 +376,29 @@ struct Vec3
 	{
 		return *this = *this % other;
 	}
-	constexpr Vec3 operator-()
+	constexpr Vec3 operator-() const
 	{
 		return {-this->x, -this->y, -this->z};
 	}
 
 	static constexpr usize ITEMS = 3;
+	constexpr const T& operator[](usize idx) const
+	{
+		switch (idx) {
+		case 0:
+			return this->x;
+			break;
+		case 1:
+			return this->y;
+			break;
+		case 2:
+			return this->z;
+			break;
+		default:
+			tr::panic("sir this is a vec3<T> not a vec%zu<T>", idx + 1);
+			break;
+		}
+	}
 	constexpr T& operator[](usize idx)
 	{
 		switch (idx) {
@@ -386,7 +417,7 @@ struct Vec3
 		}
 	}
 
-	constexpr T mul_inner(Vec3<T> b)
+	constexpr T mul_inner(Vec3<T> b) const
 	{
 		T p = 0;
 		for (usize i = 0; i < ITEMS; i++) {
@@ -395,7 +426,7 @@ struct Vec3
 		return p;
 	}
 
-	constexpr float64 length()
+	constexpr float64 length() const
 	{
 		return sqrt(this->mul_inner(*this));
 	}
@@ -404,13 +435,13 @@ struct Vec3
 	// 'float'
 	// TODO there should be a better way but idk man
 	TR_GCC_IGNORE_WARNING(-Wimplicit-float-conversion)
-	constexpr Vec3<T> normalize()
+	constexpr Vec3<T> normalize() const
 	{
 		return *this * (1.0 / this->length());
 	}
 	TR_GCC_RESTORE()
 
-	constexpr Vec3<T> reflect(Vec3<T> b)
+	constexpr Vec3<T> reflect(Vec3<T> b) const
 	{
 		Vec3<T> r;
 		T p = 2 * this->mul_inner(b);
@@ -420,7 +451,7 @@ struct Vec3
 		return r;
 	}
 
-	constexpr Vec3<T> cross_product(Vec3<T> b)
+	constexpr Vec3<T> cross_product(Vec3<T> b) const
 	{
 		Vec3<T> r;
 		r.x = y * b.z - z * y;
@@ -589,22 +620,22 @@ struct Vec3
 
 // c i hate you
 template<>
-constexpr Vec3<float64> Vec3<float64>::operator%(Vec3<float64> r)
+constexpr Vec3<float64> Vec3<float64>::operator%(Vec3<float64> r) const
 {
 	return Vec3<float64>(fmod(this->x, r.x), fmod(this->y, r.y), fmod(this->z, r.z));
 }
 template<>
-constexpr Vec3<float64> Vec3<float64>::operator%(float64 r)
+constexpr Vec3<float64> Vec3<float64>::operator%(float64 r) const
 {
 	return Vec3<float64>(fmod(this->x, r), fmod(this->y, r), fmod(this->z, r));
 }
 template<>
-constexpr Vec3<float32> Vec3<float32>::operator%(Vec3<float32> r)
+constexpr Vec3<float32> Vec3<float32>::operator%(Vec3<float32> r) const
 {
 	return Vec3<float32>(fmodf(this->x, r.x), fmodf(this->y, r.y), fmodf(this->z, r.z));
 }
 template<>
-constexpr Vec3<float32> Vec3<float32>::operator%(float32 r)
+constexpr Vec3<float32> Vec3<float32>::operator%(float32 r) const
 {
 	return Vec3<float32>(fmodf(this->x, r), fmodf(this->y, r), fmodf(this->z, r));
 }
@@ -649,60 +680,60 @@ struct Vec4
 	}
 	constexpr Vec4(Color c);
 
-	constexpr Vec4 operator+(Vec4 r)
+	constexpr Vec4 operator+(Vec4 r) const
 	{
 		return Vec4(this->x + r.x, this->y + r.y, this->z + r.z, this->w + r.w);
 	}
-	constexpr Vec4 operator-(Vec4 r)
+	constexpr Vec4 operator-(Vec4 r) const
 	{
 		return Vec4(this->x - r.x, this->y - r.y, this->z - r.z, this->w - r.w);
 	}
-	constexpr Vec4 operator*(Vec4 r)
+	constexpr Vec4 operator*(Vec4 r) const
 	{
 		return Vec4(this->x * r.x, this->y * r.y, this->z * r.z, this->w * r.w);
 	}
-	constexpr Vec4 operator*(T r)
+	constexpr Vec4 operator*(T r) const
 	{
 		return Vec4(this->x * r, this->y * r, this->z * r, this->w * r);
 	}
-	constexpr Vec4 operator/(Vec4 r)
+	constexpr Vec4 operator/(Vec4 r) const
 	{
 		return Vec4(this->x / r.x, this->y / r.y, this->z / r.z, this->w / r.z);
 	}
-	constexpr Vec4 operator/(T r)
+	constexpr Vec4 operator/(T r) const
 	{
 		return Vec4(this->x / r, this->y / r, this->z / r, this->w / r);
 	}
-	constexpr Vec4 operator%(Vec4 r)
+	constexpr Vec4 operator%(Vec4 r) const
 	{
 		return Vec4(this->x % r.x, this->y % r.y, this->z % r.z, this->w % r.z);
 	}
-	constexpr Vec4 operator%(T r)
+	constexpr Vec4 operator%(T r) const
 	{
 		return Vec4(this->x % r, this->y % r, this->z % r, this->w % r);
 	}
 
-	constexpr bool operator==(Vec4 r)
+	constexpr bool operator==(Vec4 r) const
 	{
 		return this->x == r.x && this->y == r.y && this->z == r.z && this->w == r.w;
 	}
-	constexpr bool operator!=(Vec4 r)
+	constexpr bool operator!=(Vec4 r) const
 	{
 		return this->x != r.x && this->y != r.y && this->z != r.z && this->w != r.w;
 	}
-	constexpr bool operator>(Vec4 r)
+	constexpr bool operator>(Vec4 r) const
 	{
 		return this->x > r.x && this->y > r.y && this->z > r.z && this->w > r.w;
 	}
-	constexpr bool operator>=(Vec4 r)
+	constexpr bool operator>=(Vec4 r) const
 	{
 		return this->x >= r.x && this->y >= r.y && this->z >= r.z && this->w >= r.w;
 	}
-	constexpr bool operator<(Vec4 r)
+	constexpr bool operator<(Vec4 r) const
 	{
 		return this->x < r.x && this->y < r.y && this->z < r.z && this->w < r.w;
 	}
-	constexpr bool operator<=(Vec4 r)
+	constexpr bool operator<=(Vec4 r) const
 	{
 		return this->x <= r.x && this->y <= r.y && this->z <= r.z && this->w <= r.w;
 	}
@@ -739,12 +770,33 @@ struct Vec4
 	{
 		return *this = *this % other;
 	}
-	constexpr Vec4 operator-()
+	constexpr Vec4 operator-() const
 	{
 		return {-this->x, -this->y, -this->z, -this->w};
 	}
 
 	static constexpr usize ITEMS = 4;
+	constexpr const T& operator[](usize idx) const
+	{
+		switch (idx) {
+		case 0:
+			return this->x;
+			break;
+		case 1:
+			return this->y;
+			break;
+		case 2:
+			return this->z;
+			break;
+		case 3:
+			return this->w;
+			break;
+		default:
+			tr::panic("sir this is a vec4<T> not a vec%zu<T>", idx + 1);
+			break;
+		}
+	}
+
 	constexpr T& operator[](usize idx)
 	{
 		switch (idx) {
@@ -766,7 +818,7 @@ struct Vec4
 		}
 	}
 
-	constexpr T mul_inner(Vec4<T> b)
+	constexpr T mul_inner(Vec4<T> b) const
 	{
 		T p = 0;
 		for (usize i = 0; i < ITEMS; i++) {
@@ -775,16 +827,16 @@ struct Vec4
 		return p;
 	}
 
-	constexpr float64 length()
+	constexpr float64 length() const
 	{
 		return sqrt(this->mul_inner(*this));
 	}
-	constexpr Vec4<T> normalize()
+	constexpr Vec4<T> normalize() const
 	{
 		return *this * (1 / this->length());
 	}
 
-	constexpr Vec4<T> cross_product(Vec4<T> b)
+	constexpr Vec4<T> cross_product(Vec4<T> b) const
 	{
 		Vec4<T> r;
 		r.x = y * b.z - z * y;
@@ -794,7 +846,7 @@ struct Vec4
 		return r;
 	}
 
-	constexpr Vec4<T> reflect(Vec4<T> b)
+	constexpr Vec4<T> reflect(Vec4<T> b) const
 	{
 		Vec4<T> r;
 		T p = 2 * this->mul_inner(b);
@@ -2179,28 +2231,28 @@ struct Vec4
 
 // c i hate you
 template<>
-constexpr Vec4<float64> Vec4<float64>::operator%(Vec4<float64> r)
+constexpr Vec4<float64> Vec4<float64>::operator%(Vec4<float64> r) const
 {
 	return Vec4<float64>(
 		fmod(this->x, r.x), fmod(this->y, r.y), fmod(this->z, r.z), fmod(this->w, r.w)
 	);
 }
 template<>
-constexpr Vec4<float64> Vec4<float64>::operator%(float64 r)
+constexpr Vec4<float64> Vec4<float64>::operator%(float64 r) const
 {
 	return Vec4<float64>(
 		fmod(this->x, r), fmod(this->y, r), fmod(this->z, r), fmod(this->w, r)
 	);
 }
 template<>
-constexpr Vec4<float32> Vec4<float32>::operator%(Vec4<float32> r)
+constexpr Vec4<float32> Vec4<float32>::operator%(Vec4<float32> r) const
 {
 	return Vec4<float32>(
 		fmodf(this->x, r.x), fmodf(this->y, r.y), fmodf(this->z, r.z), fmodf(this->w, r.w)
 	);
 }
 template<>
-constexpr Vec4<float32> Vec4<float32>::operator%(float32 r)
+constexpr Vec4<float32> Vec4<float32>::operator%(float32 r) const
 {
 	return Vec4<float32>(
 		fmodf(this->x, r), fmodf(this->y, r), fmodf(this->z, r), fmodf(this->w, r)
