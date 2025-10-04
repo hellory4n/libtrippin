@@ -30,11 +30,11 @@
 	#include <intrin.h>
 #endif
 
-#include "trippin/collection.h"
 #include "trippin/common.h"
 #include "trippin/iofs.h"
 #include "trippin/log.h"
 #include "trippin/memory.h"
+#include "trippin/util.h"
 
 namespace tr {
 

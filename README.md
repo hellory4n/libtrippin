@@ -116,7 +116,7 @@ TR_ASSERT(vecma.x > 0.0f);
 ### Collections
 
 ```cpp
-#include <trippin/collection.h>
+#include <trippin/util.h>
 
 // hashmaps are hashmaps lmao
 tr::HashMap<tr::String, tr::String> map(tr::scratchpad());

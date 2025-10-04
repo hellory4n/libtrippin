@@ -129,13 +129,13 @@ static_assert(sizeof(float64) == 8, "double must be 64-bits");
 namespace tr {
 
 // I sure love versions.
-constexpr const char* VERSION = "v2.6.2";
+constexpr const char* VERSION = "v2.7.0";
 
 // I sure love versions. Format is XYYZZ
-constexpr uint32 VERSION_NUM = 2'06'02;
+constexpr uint32 VERSION_NUM = 2'07'00;
 constexpr uint32 VERSION_MAJOR = 2;
-constexpr uint32 VERSION_MINOR = 6;
-constexpr uint32 VERSION_PATCH = 2;
+constexpr uint32 VERSION_MINOR = 7;
+constexpr uint32 VERSION_PATCH = 0;
 
 // Initializes the bloody library lmao.
 void init();

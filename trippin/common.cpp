@@ -29,10 +29,10 @@
 #include <cstdio> // IWYU pragma: keep
 #include <cstdlib>
 
-#include "trippin/collection.h"
 #include "trippin/iofs.h"
 #include "trippin/log.h"
 #include "trippin/memory.h"
+#include "trippin/util.h"
 
 // they have to live somewhere
 namespace tr {

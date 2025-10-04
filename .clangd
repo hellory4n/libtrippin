@@ -1,0 +1,13 @@
+CompileFlags:
+  Add:
+    # more warnings
+    - -Wpedantic
+    - -Wuninitialized
+    - -Wshadow
+    - -Wconversion
+    - -Wold-style-cast
+    - -Wextra-semi
+    - -Wmissing-noreturn
+    - -Wimplicit-fallthrough
+    - -Wnull-dereference
+    - -Wcast-qual

@@ -35,7 +35,7 @@
 	#define NOMCX
 	#define NOIME
 	// mingw gcc already defines that by default??
-	#ifndef TR_ONLY_MINGW_GCC
+	#ifndef NOMINMAX
 		#define NOMINMAX
 	#endif
 	#include <windows.h>

@@ -1,46 +1,5 @@
-/*
- * libtrippin: Most massive library of all time
- * https://github.com/hellory4n/libtrippin
- *
- * trippin/collection.cpp
- * Additional collection types
- *
- * Copyright (C) 2025 by hellory4n <hellory4n@gmail.com>
- *
- * Permission to use, copy, modify, and/or distribute this
- * software for any purpose with or without fee is hereby
- * granted.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS
- * ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO
- * EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
- * INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,
- * WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE
- * USE OR PERFORMANCE OF THIS SOFTWARE.
- *
- */
-
-// TODO the header thing is longer than the actual code, consider using this file
-
-#include "trippin/collection.h"
-
-#include "trippin/common.h"
-
-constexpr uint64 FNV_OFFSET_BASIS = 0xcbf29ce484222325;
-// IM IN MY PRIME™ AND THIS AINT EVEN FINAL FORM
-constexpr uint64 FNV_PRIME = 0x100000001b3;
-
-uint64 tr::hash(const uint8* bytes, usize len)
-{
-	uint64 hash = FNV_OFFSET_BASIS;
-
-	for (auto i : tr::range<usize>(0, len)) {
-		hash ^= bytes[i];
-		hash *= FNV_PRIME;
-	}
-
-	return hash;
-}
+#include "util.cpp" // IWYU pragma: keep
+#ifdef TR_GCC_OR_CLANG
+// TODO this will break everything if you use wildcards for building
+	#warning "collection.cpp has been renamed to util.cpp"
+#endif

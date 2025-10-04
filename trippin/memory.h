@@ -286,7 +286,7 @@ public:
 	using Type = T;
 
 	// Initializes an empty array at an arena.
-	explicit Array(Arena& arena, usize len)
+	Array(Arena& arena, usize len)
 		: _src_arena(&arena)
 		, _len(len)
 		, _cap(len)
@@ -304,7 +304,7 @@ public:
 	}
 
 	// Initializes an array from a buffer. (the data is copied into the arena)
-	explicit Array(Arena& arena, ConstT* data, usize len)
+	Array(Arena& arena, ConstT* data, usize len)
 		: _src_arena(&arena)
 		, _len(len)
 		, _cap(len)
@@ -340,7 +340,7 @@ public:
 
 	// Initializes an array that points to any buffer. You really should only use this for
 	// temporary arrays.
-	constexpr explicit Array(ConstT* data, usize len)
+	constexpr Array(ConstT* data, usize len)
 		: _ptr(data)
 		, _len(len)
 		, _cap(len)
@@ -354,7 +354,7 @@ public:
 		}
 	}
 
-	explicit Array(Arena& arena, std::initializer_list<RefWrapper<const T>> initlist)
+	Array(Arena& arena, std::initializer_list<RefWrapper<const T>> initlist)
 		: Array(arena, initlist.begin(), initlist.size())
 	{
 	}

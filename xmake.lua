@@ -15,20 +15,20 @@ target("trippin")
 	end
 
 	add_files(
-		"trippin/collection.cpp",
 		"trippin/common.cpp",
 		"trippin/error.cpp",
 		"trippin/iofs.cpp",
 		"trippin/log.cpp",
 		"trippin/math.cpp",
 		"trippin/memory.cpp",
-		"trippin/string.cpp"
+		"trippin/string.cpp",
+		"trippin/util.cpp"
 	)
 target_end()
 
 -- TODO xmake has a test system
 -- ...so use that
-target("testing_it")
+target("testingit")
 	set_kind("binary")
 	set_warnings("allextra") -- -Wall -Wextra
 	set_languages("cxx20")

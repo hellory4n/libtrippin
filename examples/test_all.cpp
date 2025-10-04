@@ -1,18 +1,21 @@
 #include <cstdio>
 
-#include <trippin/collection.h>
 #include <trippin/common.h>
 #include <trippin/iofs.h>
 #include <trippin/log.h>
 #include <trippin/math.h>
 #include <trippin/memory.h>
 #include <trippin/string.h>
+#include <trippin/util.h>
+
+#include "trippin/util.h"
 
 // TODO use actual tests you dumbass
 
 namespace test {
 
 static void logging();
+static void util();
 static void memory();
 static void arrays();
 static void strings();
@@ -26,8 +29,6 @@ static void test::logging()
 {
 	tr::log("\n==== LOGGING ====");
 
-	TR_DEFER(tr::log("i'm deferring it tbh"));
-
 	tr::log("sir");
 	tr::info("sir");
 	tr::warn("sir");
@@ -36,6 +37,13 @@ static void test::logging()
 	// tr::panic("AHHHHHHH");
 
 	tr::log("S%sa (formatted arguments)", "igm");
+}
+
+static void test::util()
+{
+	tr::log("\n==== UTILITY ====");
+
+	TR_DEFER(tr::log("i'm deferring it tbh"));
 
 	tr::call_on_quit([&](bool) -> void {
 		tr::log("CUSTOM FUNCTION THAT RUNS ON QUIT/PANIC??? SCRUMPTIOUS");
@@ -48,6 +56,17 @@ static void test::logging()
 		}
 		tr::log("current iter %i", i++);
 	}
+
+	tr::Stopwatch stopwatch{};
+	tr::log("doing nothing...");
+	stopwatch.start();
+	[[maybe_unused]]
+	int compiler_pls_dont_optimize_this = 0;
+	for (int i = 0; i < 1'000'000; i++) {
+		compiler_pls_dont_optimize_this++;
+	}
+	stopwatch.stop();
+	stopwatch.print_time_us("doing nothing");
 }
 
 static void test::memory()
@@ -236,6 +255,7 @@ static void test::filesystem()
 static void test::all()
 {
 	test::logging();
+	test::util();
 	test::memory();
 	test::arrays();
 	test::strings();
@@ -253,6 +273,9 @@ int main(int argc, char* argv[])
 		tr::String arg = argv[1];
 		if (arg == "--logging") {
 			test::logging();
+		}
+		if (arg == "--util") {
+			test::util();
 		}
 		else if (arg == "-- memory") {
 			test::memory();
@@ -275,13 +298,14 @@ int main(int argc, char* argv[])
 		else {
 			printf("The libtrippin tester 5000™\n");
 			printf("Options:\n");
-			printf("- --logging: Test logging\n");
-			printf("- --memory: Test memory\n");
-			printf("- --array: Test arrays\n");
-			printf("- --string: Test strings\n");
-			printf("- --hashmap: Test hashmaps\n");
-			printf("- --filesystem: Test filesystem\n");
-			printf("- --all: Test everything\n");
+			printf("- --logging:     Test logging\n");
+			printf("- --util:        Test utils\n");
+			printf("- --memory:      Test memory\n");
+			printf("- --array:       Test arrays\n");
+			printf("- --string:      Test strings\n");
+			printf("- --hashmap:     Test hashmaps\n");
+			printf("- --filesystem:  Test filesystem\n");
+			printf("- --all:         Test everything\n");
 		}
 	}
 	else {
