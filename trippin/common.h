@@ -33,7 +33,7 @@
 #include <type_traits>
 #include <utility>
 
-// check for C++17 support
+// check for C++20 support
 #ifndef _MSC_VER
 	#if __cplusplus < 202002L
 		#error "libtrippin requires C++20 or higher"
@@ -122,6 +122,7 @@ using usize = size_t;
 using isize = ptrdiff_t;
 
 // it's usually true, but not guaranteed by the standard
+// TODO c++23 has float32_t, float64_t, and even float16_t
 static_assert(sizeof(usize) == sizeof(isize), "size_t and ptrdiff_t must be the same size");
 static_assert(sizeof(float32) == 4, "float must be 32-bits");
 static_assert(sizeof(float64) == 8, "double must be 64-bits");
@@ -602,6 +603,7 @@ public:
 
 // Shorthand for a C-style loop. Similar to Go's `range()`
 template<Number T>
+[[deprecated("this sucks just use a for loop")]]
 RangeIterator<T> range(T start, T end, T step)
 {
 	return RangeIterator<T>(start, end, start, step);
@@ -609,6 +611,7 @@ RangeIterator<T> range(T start, T end, T step)
 
 // Shorthand for a C-style loop. Similar to Go's `range()`
 template<Number T>
+[[deprecated("this sucks just use a for loop")]]
 RangeIterator<T> range(T start, T end)
 {
 	return RangeIterator<T>(start, end, start, 1);
@@ -616,6 +619,7 @@ RangeIterator<T> range(T start, T end)
 
 // Shorthand for a C-style loop. Similar to Go's `range()`
 template<Number T>
+[[deprecated("this sucks just use a for loop")]]
 RangeIterator<T> range(T end)
 {
 	return RangeIterator<T>(0, end, 0, 1);
@@ -645,7 +649,9 @@ Defer<Fn> _defer_func(Fn fn)
 	return Defer<Fn>(fn);
 }
 
-#define TR_DEFER(...) auto _TR_UNIQUE_NAME(_tr_defer) = tr::_defer_func([&]() { __VA_ARGS__; })
+#define TR_DEFER(...)                                                             \
+	[[maybe_unused]]                                                          \
+	auto _TR_UNIQUE_NAME(_tr_defer) = tr::_defer_func([&]() { __VA_ARGS__; })
 
 // So you can check for debug without having to do ugly preprocessing fuckery :)
 constexpr bool is_debug()

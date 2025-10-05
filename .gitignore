@@ -27,15 +27,5 @@ __pycache__
 .idea
 # this is the only place zed reads the luarc file
 # it doesn't read from .zed/.luarc.json or whatever the fuck
+# TODO 3rd custom build system so that you dont have to use xmake which requires this fuckery
 .luarc.json
-
-# are we keeping this?
-.ninja_log
-.ninja_lock
-build.ninja
-
-# visual studio is silly
-windows/*
-!windows/libtrippin.sln
-!windows/libtrippin.vcxproj
-!windows/libtrippin.vcxproj.filters

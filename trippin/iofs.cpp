@@ -73,9 +73,6 @@ String user_dir;
 
 }
 
-// TODO this was written before TR_TRY and all that crap
-// so like, use that?
-
 tr::Result<tr::String> tr::Reader::read_string(tr::Arena& arena, int64 length)
 {
 	String str(arena, static_cast<usize>(length));
@@ -479,17 +476,13 @@ tr::Result<void> tr::move_file(tr::String from, tr::String to)
 bool tr::file_exists(tr::String path)
 {
 	DWORD attr = GetFileAttributesW(from_trippin_to_win32_str(path));
-	// NOLINTBEGIN(readability-implicit-bool-conversion)
 	return attr != INVALID_FILE_ATTRIBUTES;
-	// NOLINTEND(readability-implicit-bool-conversion)
 }
 
 bool tr::path_exists(tr::String path)
 {
 	DWORD attr = GetFileAttributesW(from_trippin_to_win32_str(path));
-	// NOLINTBEGIN(readability-implicit-bool-conversion)
 	return attr != INVALID_FILE_ATTRIBUTES;
-	// NOLINTEND(readability-implicit-bool-conversion)
 }
 
 tr::Result<void> tr::create_dir(tr::String path)
@@ -512,7 +505,6 @@ tr::Result<void> tr::create_dir(tr::String path)
 		}
 
 		if (tr::path_exists(full_dir)) {
-			// clang-format are you stupid
 			TR_TRY_ASSIGN(
 			bool is_file, tr::is_file(full_dir)
 			);
@@ -537,12 +529,9 @@ tr::Result<void> tr::remove_dir(tr::String path)
 {
 	FileError::reset_errors();
 
-	// it's not my fault windows is garbage :(
-	// NOLINTBEGIN(readability-implicit-bool-conversion)
 	if (!RemoveDirectoryW(from_trippin_to_win32_str(path))) {
 		return FileError::from_win32(path, "", FileOperation::REMOVE_DIR);
 	}
-	// NOLINTEND(readability-implicit-bool-conversion)
 	return {};
 }
 
@@ -571,11 +560,9 @@ tr::list_dir(tr::Arena& arena, tr::String path, bool include_hidden)
 		}
 
 		if (!include_hidden) {
-			// NOLINTBEGIN(readability-implicit-bool-conversion)
 			if (find_file_data.dwFileAttributes & FILE_ATTRIBUTE_HIDDEN) {
 				continue;
 			}
-			// NOLINTEND(readability-implicit-bool-conversion)
 		}
 
 		entries.add(from_win32_to_trippin_str(find_file_data.cFileName));
@@ -593,9 +580,7 @@ tr::Result<bool> tr::is_file(tr::String path)
 		return FileError::from_win32(path, "", FileOperation::IS_FILE);
 	}
 
-	// NOLINTBEGIN(readability-implicit-bool-conversion)
 	return !(attributes & FILE_ATTRIBUTE_DIRECTORY);
-	// NOLINTEND(readability-implicit-bool-conversion)
 }
 
 void tr::_init_paths()

@@ -330,7 +330,7 @@ tr::Random::Random(int64 seed)
 {
 	// i think this is how you implement splitmix64?
 	state[0] = static_cast<uint64>(seed); // TODO don't?
-	for (size_t i = 1; i < 4; i++) {
+	for (usize i = 1; i < 4; i++) {
 		state[i] = (state[i - 1] += UINT64_C(0x9E3779B97F4A7C15));
 		state[i] = (state[i] ^ (state[i] >> 30)) * UINT64_C(0xBF58476D1CE4E5B9);
 		state[i] = (state[i] ^ (state[i] >> 27)) * UINT64_C(0x94D049BB133111EB);
