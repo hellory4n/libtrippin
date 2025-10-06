@@ -50,13 +50,6 @@ static void test::util()
 		// tr::panic("skill");
 	});
 
-	for (auto i : tr::range(1, 4)) {
-		if (i == 1) {
-			i = 3;
-		}
-		tr::log("current iter %i", i++);
-	}
-
 	tr::Stopwatch stopwatch{};
 	tr::log("doing nothing...");
 	stopwatch.start();
