@@ -1,3 +1,5 @@
+!["it's massive..." - john carmack](./logo.png)
+
 # libtrippin
 
 The most biggest most massive library of all time. I'm insane.
