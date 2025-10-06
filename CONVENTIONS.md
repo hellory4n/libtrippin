@@ -239,7 +239,7 @@ It's more explicit but that's the point.
 
 ## Exceptions
 
-Exceptions also have a similar issue of being overly explicit. Instead, use `tr::Result<T, E>`. I already made documentation for that.
+Exceptions also have a similar issue of being overly implicit. Instead, use `tr::Result<T, E>`. I already made documentation for that.
 
 ## STL
 
