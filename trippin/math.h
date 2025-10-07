@@ -211,6 +211,17 @@ struct Vec2
 		return *this * (1.0 / this->length());
 	}
 
+	constexpr float64 distance(Vec2<T> other) const
+	{
+		float64 sum = 0;
+		for (usize i = 0; i < ITEMS; i++) {
+			float64 diff =
+				static_cast<float64>((*this)[i]) - static_cast<float64>(other[i]);
+			sum += diff * diff;
+		}
+		return sqrt(sum);
+	}
+
 	// swizzling operators
 	// i know this is insane
 	// i didnt write this myself im not insane
