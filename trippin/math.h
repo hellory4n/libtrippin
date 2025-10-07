@@ -471,6 +471,17 @@ struct Vec3
 		return r;
 	}
 
+	constexpr float64 distance(Vec3<T> other) const
+	{
+		float64 sum = 0;
+		for (usize i = 0; i < ITEMS; i++) {
+			float64 diff =
+				static_cast<float64>((*this)[i]) - static_cast<float64>(other[i]);
+			sum += diff * diff;
+		}
+		return sqrt(sum);
+	}
+
 	// swizzling operators
 	// i know this is insane
 	// i didnt write this myself im not insane
@@ -865,6 +876,17 @@ struct Vec4
 			r[i] = (*this)[i] - p * b[i];
 		}
 		return r;
+	}
+
+	constexpr float64 distance(Vec4<T> other) const
+	{
+		float64 sum = 0;
+		for (usize i = 0; i < ITEMS; i++) {
+			float64 diff =
+				static_cast<float64>((*this)[i]) - static_cast<float64>(other[i]);
+			sum += diff * diff;
+		}
+		return sqrt(sum);
 	}
 
 	// swizzling operators
