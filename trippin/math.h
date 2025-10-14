@@ -216,7 +216,7 @@ struct Vec2
 	constexpr Vec2 normalize() const
 	{
 		float64 len = this->length();
-		return len == 0 ? Vec2{0, 0} : *this * (1.0 / len);
+		return len == 0 ? Vec2{} : *this * (1.0 / len);
 	}
 
 	constexpr float64 distance(Vec2<T> other) const
@@ -461,7 +461,7 @@ struct Vec3
 	constexpr Vec3<T> normalize() const
 	{
 		float64 len = this->length();
-		return len == 0 ? Vec3{0, 0} : *this * (1.0 / len);
+		return len == 0 ? Vec3{} : *this * (1.0 / len);
 	}
 	TR_GCC_RESTORE()
 
@@ -890,7 +890,7 @@ struct Vec4
 	constexpr Vec4<T> normalize() const
 	{
 		float64 len = this->length();
-		return len == 0 ? Vec4{0, 0} : *this * (1.0 / len);
+		return len == 0 ? Vec4{} : *this * (1.0 / len);
 	}
 
 	constexpr Vec4<T> cross_product(Vec4<T> b) const

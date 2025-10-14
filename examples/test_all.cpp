@@ -90,7 +90,7 @@ static void test::memory()
 
 	arena.reset();
 	TR_ASSERT_MSG(sig.waste[37] == 0, "it didn't reset properly :(");
-	arena.alloc(tr::mb_to_bytes(1));
+	(void)arena.alloc(tr::mb_to_bytes(1));
 
 	tr::log("capacity: %zu KB, allocated: %zu KB", tr::bytes_to_kb(arena.capacity()),
 		tr::bytes_to_kb(arena.allocated()));
