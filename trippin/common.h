@@ -64,6 +64,9 @@
 #if defined(__GNUC__) && defined(_WIN32)
 	#define TR_ONLY_MINGW_GCC
 #endif
+#if defined(_MSC_VER) && defined(__clang__)
+	#define TR_ONLY_CLANG_CL
+#endif
 
 // but they're similar enough that we can usually check for both
 #ifdef __GNUC__
@@ -130,13 +133,13 @@ static_assert(sizeof(float64) == 8, "double must be 64-bits");
 namespace tr {
 
 // I sure love versions.
-constexpr const char* VERSION = "v2.7.0";
+constexpr const char* VERSION = "v2.7.1";
 
 // I sure love versions. Format is XYYZZ
-constexpr uint32 VERSION_NUM = 2'07'00;
+constexpr uint32 VERSION_NUM = 2'07'01;
 constexpr uint32 VERSION_MAJOR = 2;
 constexpr uint32 VERSION_MINOR = 7;
-constexpr uint32 VERSION_PATCH = 0;
+constexpr uint32 VERSION_PATCH = 1;
 
 // Initializes the bloody library lmao.
 void init();
@@ -656,8 +659,11 @@ Defer<Fn> _defer_func(Fn fn)
 // So you can check for debug without having to do ugly preprocessing fuckery :)
 constexpr bool is_debug()
 {
-#ifdef DEBUG
+#if defined(_DEBUG) || defined(DEBUG)
 	return true;
+#elif defined(NDEBUG)
+	return false;
+// no debug macros defined, assume release
 #else
 	return false;
 #endif

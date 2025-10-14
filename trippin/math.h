@@ -38,6 +38,9 @@ namespace tr {
 // TODO more constexpr
 // we need to constexpr all over the place
 
+// TODO simd
+// simdeez xdxdxdxdxdxdxd
+
 // Vec2 lmao
 template<Number T>
 struct Vec2
@@ -68,62 +71,62 @@ struct Vec2
 
 	// TODO these could be implemented with evil macro fuckery but idk if i want to do that
 
-	constexpr Vec2 operator+(Vec2 r) const
+	constexpr Vec2 operator+(Vec2 other) const
 	{
-		return Vec2(this->x + r.x, this->y + r.y);
+		return Vec2(this->x + other.x, this->y + other.y);
 	}
-	constexpr Vec2 operator-(Vec2 r) const
+	constexpr Vec2 operator-(Vec2 other) const
 	{
-		return Vec2(this->x - r.x, this->y - r.y);
+		return Vec2(this->x - other.x, this->y - other.y);
 	}
-	constexpr Vec2 operator*(Vec2 r) const
+	constexpr Vec2 operator*(Vec2 other) const
 	{
-		return Vec2(this->x * r.x, this->y * r.y);
+		return Vec2(this->x * other.x, this->y * other.y);
 	}
-	constexpr Vec2 operator*(T r) const
+	constexpr Vec2 operator*(T other) const
 	{
-		return Vec2(this->x * r, this->y * r);
+		return Vec2(this->x * other, this->y * other);
 	}
-	constexpr Vec2 operator/(Vec2 r) const
+	constexpr Vec2 operator/(Vec2 other) const
 	{
-		return Vec2(this->x / r.x, this->y / r.y);
+		return Vec2(this->x / other.x, this->y / other.y);
 	}
-	constexpr Vec2 operator/(T r) const
+	constexpr Vec2 operator/(T other) const
 	{
-		return Vec2(this->x / r, this->y / r);
+		return Vec2(this->x / other, this->y / other);
 	}
-	constexpr Vec2 operator%(Vec2 r) const
+	constexpr Vec2 operator%(Vec2 other) const
 	{
-		return Vec2(this->x % r.x, this->y % r.y);
+		return Vec2(this->x % other.x, this->y % other.y);
 	}
-	constexpr Vec2 operator%(T r) const
+	constexpr Vec2 operator%(T other) const
 	{
-		return Vec2(this->x % r, this->y % r);
+		return Vec2(this->x % other, this->y % other);
 	}
 
-	constexpr bool operator==(Vec2 r) const
+	constexpr bool operator==(Vec2 other) const
 	{
-		return this->x == r.x && this->y == r.y;
+		return this->x == other.x && this->y == other.y;
 	}
-	constexpr bool operator!=(Vec2 r) const
+	constexpr bool operator!=(Vec2 other) const
 	{
-		return this->x != r.x && this->y != r.y;
+		return this->x != other.x || this->y != other.y;
 	}
-	constexpr bool operator>(Vec2 r) const
+	constexpr bool operator>(Vec2 other) const
 	{
-		return this->x > r.x && this->y > r.y;
+		return this->x > other.x && this->y > other.y;
 	}
-	constexpr bool operator>=(Vec2 r) const
+	constexpr bool operator>=(Vec2 other) const
 	{
-		return this->x >= r.x && this->y >= r.y;
+		return this->x >= other.x && this->y >= other.y;
 	}
-	constexpr bool operator<(Vec2 r) const
+	constexpr bool operator<(Vec2 other) const
 	{
-		return this->x < r.x && this->y < r.y;
+		return this->x < other.x && this->y < other.y;
 	}
-	constexpr bool operator<=(Vec2 r) const
+	constexpr bool operator<=(Vec2 other) const
 	{
-		return this->x <= r.x && this->y <= r.y;
+		return this->x <= other.x && this->y <= other.y;
 	}
 
 	constexpr Vec2& operator+=(Vec2 other)
@@ -175,7 +178,6 @@ struct Vec2
 			break;
 		default:
 			tr::panic("sir this is a vec2<T> not a vec%zu<T>", idx + 1);
-			break;
 		}
 	}
 	constexpr const T& operator[](usize idx) const
@@ -188,8 +190,7 @@ struct Vec2
 			return this->y;
 			break;
 		default:
-			tr::panic("sir this is a vec2<T> not a vec%zu<T>", idx + 1);
-			break;
+			tr::panic("index out of range: vec2[%zu], must be <= 1", idx);
 		}
 	}
 
@@ -202,13 +203,20 @@ struct Vec2
 		return p;
 	}
 
+	template<typename T2>
+	constexpr Vec2<T2> cast() const
+	{
+		return {static_cast<T2>(x), static_cast<T2>(y)};
+	}
+
 	constexpr float64 length() const
 	{
 		return sqrt(this->mul_inner(*this));
 	}
 	constexpr Vec2 normalize() const
 	{
-		return *this * (1.0 / this->length());
+		float64 len = this->length();
+		return len == 0 ? Vec2{0, 0} : *this * (1.0 / len);
 	}
 
 	constexpr float64 distance(Vec2<T> other) const
@@ -297,62 +305,62 @@ struct Vec3
 	{
 	}
 
-	constexpr Vec3 operator+(Vec3 r) const
+	constexpr Vec3 operator+(Vec3 other) const
 	{
-		return Vec3(this->x + r.x, this->y + r.y, this->z + r.z);
+		return Vec3(this->x + other.x, this->y + other.y, this->z + other.z);
 	}
-	constexpr Vec3 operator-(Vec3 r) const
+	constexpr Vec3 operator-(Vec3 other) const
 	{
-		return Vec3(this->x - r.x, this->y - r.y, this->z - r.z);
+		return Vec3(this->x - other.x, this->y - other.y, this->z - other.z);
 	}
-	constexpr Vec3 operator*(Vec3 r) const
+	constexpr Vec3 operator*(Vec3 other) const
 	{
-		return Vec3(this->x * r.x, this->y * r.y, this->z * r.z);
+		return Vec3(this->x * other.x, this->y * other.y, this->z * other.z);
 	}
-	constexpr Vec3 operator*(T r) const
+	constexpr Vec3 operator*(T other) const
 	{
-		return Vec3(this->x * r, this->y * r, this->z * r);
+		return Vec3(this->x * other, this->y * other, this->z * other);
 	}
-	constexpr Vec3 operator/(Vec3 r) const
+	constexpr Vec3 operator/(Vec3 other) const
 	{
-		return Vec3(this->x / r.x, this->y / r.y, this->z / r.z);
+		return Vec3(this->x / other.x, this->y / other.y, this->z / other.z);
 	}
-	constexpr Vec3 operator/(T r) const
+	constexpr Vec3 operator/(T other) const
 	{
-		return Vec3(this->x / r, this->y / r, this->z / r);
+		return Vec3(this->x / other, this->y / other, this->z / other);
 	}
-	constexpr Vec3 operator%(Vec3 r) const
+	constexpr Vec3 operator%(Vec3 other) const
 	{
-		return Vec3(this->x % r.x, this->y % r.y, this->z % r.z);
+		return Vec3(this->x % other.x, this->y % other.y, this->z % other.z);
 	}
-	constexpr Vec3 operator%(T r) const
+	constexpr Vec3 operator%(T other) const
 	{
-		return Vec3(this->x % r, this->y % r, this->z % r);
+		return Vec3(this->x % other, this->y % other, this->z % other);
 	}
 
-	constexpr bool operator==(Vec3 r) const
+	constexpr bool operator==(Vec3 other) const
 	{
-		return this->x == r.x && this->y == r.y && this->z == r.z;
+		return this->x == other.x && this->y == other.y && this->z == other.z;
 	}
-	constexpr bool operator!=(Vec3 r) const
+	constexpr bool operator!=(Vec3 other) const
 	{
-		return this->x != r.x && this->y != r.y && this->z != r.z;
+		return this->x != other.x || this->y != other.y || this->z != other.z;
 	}
-	constexpr bool operator>(Vec3 r) const
+	constexpr bool operator>(Vec3 other) const
 	{
-		return this->x > r.x && this->y > r.y && this->z > r.z;
+		return this->x > other.x && this->y > other.y && this->z > other.z;
 	}
-	constexpr bool operator>=(Vec3 r) const
+	constexpr bool operator>=(Vec3 other) const
 	{
-		return this->x >= r.x && this->y >= r.y && this->z >= r.z;
+		return this->x >= other.x && this->y >= other.y && this->z >= other.z;
 	}
-	constexpr bool operator<(Vec3 r) const
+	constexpr bool operator<(Vec3 other) const
 	{
-		return this->x < r.x && this->y < r.y && this->z < r.z;
+		return this->x < other.x && this->y < other.y && this->z < other.z;
 	}
-	constexpr bool operator<=(Vec3 r) const
+	constexpr bool operator<=(Vec3 other) const
 	{
-		return this->x <= r.x && this->y <= r.y && this->z <= r.z;
+		return this->x <= other.x && this->y <= other.y && this->z <= other.z;
 	}
 
 	constexpr Vec3& operator+=(Vec3 other)
@@ -406,8 +414,7 @@ struct Vec3
 			return this->z;
 			break;
 		default:
-			tr::panic("sir this is a vec3<T> not a vec%zu<T>", idx + 1);
-			break;
+			tr::panic("index out of range: vec3[%zu], must be <= 2", idx);
 		}
 	}
 	constexpr T& operator[](usize idx)
@@ -423,9 +430,14 @@ struct Vec3
 			return this->z;
 			break;
 		default:
-			tr::panic("sir this is a vec3<T> not a vec%zu<T>", idx + 1);
-			break;
+			tr::panic("index out of range: vec3[%zu], must be <= 2", idx);
 		}
+	}
+
+	template<typename T2>
+	constexpr Vec3<T2> cast() const
+	{
+		return {static_cast<T2>(x), static_cast<T2>(y), static_cast<T2>(z)};
 	}
 
 	constexpr T mul_inner(Vec3<T> b) const
@@ -448,7 +460,8 @@ struct Vec3
 	TR_GCC_IGNORE_WARNING(-Wimplicit-float-conversion)
 	constexpr Vec3<T> normalize() const
 	{
-		return *this * (1.0 / this->length());
+		float64 len = this->length();
+		return len == 0 ? Vec3{0, 0} : *this * (1.0 / len);
 	}
 	TR_GCC_RESTORE()
 
@@ -702,62 +715,78 @@ struct Vec4
 	}
 	constexpr Vec4(Color c);
 
-	constexpr Vec4 operator+(Vec4 r) const
+	constexpr Vec4 operator+(Vec4 other) const
 	{
-		return Vec4(this->x + r.x, this->y + r.y, this->z + r.z, this->w + r.w);
+		return Vec4(
+			this->x + other.x, this->y + other.y, this->z + other.z, this->w + other.w
+		);
 	}
-	constexpr Vec4 operator-(Vec4 r) const
+	constexpr Vec4 operator-(Vec4 other) const
 	{
-		return Vec4(this->x - r.x, this->y - r.y, this->z - r.z, this->w - r.w);
+		return Vec4(
+			this->x - other.x, this->y - other.y, this->z - other.z, this->w - other.w
+		);
 	}
-	constexpr Vec4 operator*(Vec4 r) const
+	constexpr Vec4 operator*(Vec4 other) const
 	{
-		return Vec4(this->x * r.x, this->y * r.y, this->z * r.z, this->w * r.w);
+		return Vec4(
+			this->x * other.x, this->y * other.y, this->z * other.z, this->w * other.w
+		);
 	}
-	constexpr Vec4 operator*(T r) const
+	constexpr Vec4 operator*(T other) const
 	{
-		return Vec4(this->x * r, this->y * r, this->z * r, this->w * r);
+		return Vec4(this->x * other, this->y * other, this->z * other, this->w * other);
 	}
-	constexpr Vec4 operator/(Vec4 r) const
+	constexpr Vec4 operator/(Vec4 other) const
 	{
-		return Vec4(this->x / r.x, this->y / r.y, this->z / r.z, this->w / r.z);
+		return Vec4(
+			this->x / other.x, this->y / other.y, this->z / other.z, this->w / other.z
+		);
 	}
-	constexpr Vec4 operator/(T r) const
+	constexpr Vec4 operator/(T other) const
 	{
-		return Vec4(this->x / r, this->y / r, this->z / r, this->w / r);
+		return Vec4(this->x / other, this->y / other, this->z / other, this->w / other);
 	}
-	constexpr Vec4 operator%(Vec4 r) const
+	constexpr Vec4 operator%(Vec4 other) const
 	{
-		return Vec4(this->x % r.x, this->y % r.y, this->z % r.z, this->w % r.z);
+		return Vec4(
+			this->x % other.x, this->y % other.y, this->z % other.z, this->w % other.z
+		);
 	}
-	constexpr Vec4 operator%(T r) const
+	constexpr Vec4 operator%(T other) const
 	{
-		return Vec4(this->x % r, this->y % r, this->z % r, this->w % r);
+		return Vec4(this->x % other, this->y % other, this->z % other, this->w % other);
 	}
 
-	constexpr bool operator==(Vec4 r) const
+	constexpr bool operator==(Vec4 other) const
 	{
-		return this->x == r.x && this->y == r.y && this->z == r.z && this->w == r.w;
+		return this->x == other.x && this->y == other.y && this->z == other.z &&
+		       this->w == other.w;
 	}
-	constexpr bool operator!=(Vec4 r) const
+	constexpr bool operator!=(Vec4 other) const
 	{
-		return this->x != r.x && this->y != r.y && this->z != r.z && this->w != r.w;
+		return this->x != other.x || this->y != other.y || this->z != other.z ||
+		       this->w != other.w;
 	}
-	constexpr bool operator>(Vec4 r) const
+	constexpr bool operator>(Vec4 other) const
 	{
-		return this->x > r.x && this->y > r.y && this->z > r.z && this->w > r.w;
+		return this->x > other.x || this->y > other.y || this->z > other.z ||
+		       this->w > other.w;
 	}
-	constexpr bool operator>=(Vec4 r) const
+	constexpr bool operator>=(Vec4 other) const
 	{
-		return this->x >= r.x && this->y >= r.y && this->z >= r.z && this->w >= r.w;
+		return this->x >= other.x || this->y >= other.y || this->z >= other.z ||
+		       this->w >= other.w;
 	}
-	constexpr bool operator<(Vec4 r) const
+	constexpr bool operator<(Vec4 other) const
 	{
-		return this->x < r.x && this->y < r.y && this->z < r.z && this->w < r.w;
+		return this->x < other.x || this->y < other.y || this->z < other.z ||
+		       this->w < other.w;
 	}
-	constexpr bool operator<=(Vec4 r) const
+	constexpr bool operator<=(Vec4 other) const
 	{
-		return this->x <= r.x && this->y <= r.y && this->z <= r.z && this->w <= r.w;
+		return this->x <= other.x || this->y <= other.y || this->z <= other.z ||
+		       this->w <= other.w;
 	}
 
 	constexpr Vec4& operator+=(Vec4 other)
@@ -814,8 +843,7 @@ struct Vec4
 			return this->w;
 			break;
 		default:
-			tr::panic("sir this is a vec4<T> not a vec%zu<T>", idx + 1);
-			break;
+			tr::panic("index out of range: vec4[%zu], must be <= 3", idx);
 		}
 	}
 
@@ -835,9 +863,15 @@ struct Vec4
 			return this->w;
 			break;
 		default:
-			tr::panic("sir this is a vec4<T> not a vec%zu<T>", idx + 1);
-			break;
+			tr::panic("index out of range: vec4[%zu], must be <= 2", idx);
 		}
+	}
+
+	template<typename T2>
+	constexpr Vec4<T2> cast() const
+	{
+		return {static_cast<T2>(x), static_cast<T2>(y), static_cast<T2>(z),
+			static_cast<T2>(w)};
 	}
 
 	constexpr T mul_inner(Vec4<T> b) const
@@ -855,7 +889,8 @@ struct Vec4
 	}
 	constexpr Vec4<T> normalize() const
 	{
-		return *this * (1 / this->length());
+		float64 len = this->length();
+		return len == 0 ? Vec4{0, 0} : *this * (1.0 / len);
 	}
 
 	constexpr Vec4<T> cross_product(Vec4<T> b) const
@@ -2604,8 +2639,11 @@ namespace palette {
 	constexpr Color TRANSPARENT = Color::rgba(0x00000000);
 }
 
+// White.
 static constexpr Color COLOR_WHITE = Color::rgb(0xffffff);
+// Black.
 static constexpr Color COLOR_BLACK = Color::rgb(0x000000);
+//
 static constexpr Color COLOR_TRANSPARENT = Color::rgba(0x00000000);
 
 // Matrix intended for use with OpenGL. This entire struct is stolen from linmath.h btw lmao
@@ -2830,10 +2868,27 @@ struct Rect
 			return size.y;
 			break;
 		default:
-			tr::panic(
-				"sir a rect has 4 items not %zu items you distinguished gentleman",
-				idx + 1
-			);
+			tr::panic("index out of range: rect[%zu], must be <= 3", idx);
+		}
+	}
+
+	constexpr const T& operator[](usize idx) const
+	{
+		switch (idx) {
+		case 0:
+			return position.x;
+			break;
+		case 1:
+			return position.y;
+			break;
+		case 2:
+			return size.x;
+			break;
+		case 3:
+			return size.y;
+			break;
+		default:
+			tr::panic("index out of range: rect[%zu], must be <= 3", idx);
 		}
 	}
 };

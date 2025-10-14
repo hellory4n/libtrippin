@@ -52,8 +52,9 @@ tr::warn("sir");
 tr::error("sir");
 
 // same formatting as printf
-tr::info("sir %i", 9462952);
+tr::info("hi %s", "mom");
 
+TR_ASSERT(true != false);
 TR_ASSERT_MSG(2 + 2 == 5, "i might be wrong");
 tr::panic("AAAAAHHH");
 

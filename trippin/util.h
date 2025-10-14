@@ -200,6 +200,7 @@ public:
 		TR_UNREACHABLE();
 	}
 
+	[[nodiscard]]
 	V& operator[](K key)
 	{
 		_validate();

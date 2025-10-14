@@ -82,8 +82,8 @@ struct ArenaSettings
 	usize page_size = tr::kb_to_bytes(4);
 	// null = no limit (grows infinitely)
 	Maybe<usize> max_pages = {};
-	// If false, the pages will be left with random garbage (like malloc/operator new). Maybe
-	// you want that, idk
+	// If false, the pages will be left with random garbage (like malloc/operator
+	// new). Maybe you want that, idk
 	bool zero_initialize = true;
 	// What should happen on allocation errors
 	ErrorBehavior error_behavior = ArenaSettings::ErrorBehavior::PANIC;
@@ -140,8 +140,8 @@ public:
 
 	explicit Arena(ArenaSettings settings);
 
-	// Initializes the arena. `page_size` is the base size for the buffers, you can have more
-	// buffers or bigger buffers.
+	// Initializes the arena. `page_size` is the base size for the buffers, you
+	// can have more buffers or bigger buffers.
 	[[deprecated("use the ArenaSettings overload")]]
 	explicit Arena(usize page_size)
 		: Arena({.page_size = page_size})
@@ -156,15 +156,15 @@ public:
 	void free();
 
 	// Allocates some crap on the arena.
-	[[gnu::malloc]]
+	[[nodiscard, gnu::malloc]]
 	void* alloc(usize size, usize align = alignof(max_align_t));
 
 	// Reuses the entire arena and sets everything to 0 :)
 	void reset();
 
-	// Kinda like `new`/`malloc` but for arenas. The funky variadic templates allow you to pass
-	// any arguments here to the actual constructor. Note this supports calling destructors for
-	// when the arena is deleted, but why?
+	// Kinda like `new`/`malloc` but for arenas. The funky variadic templates
+	// allow you to pass any arguments here to the actual constructor. Note this
+	// supports calling destructors for when the arena is deleted, but why?
 	template<typename T, typename... Args>
 	[[deprecated("use make_ref or make_ptr instead")]]
 	T& make(Args&&... args)
@@ -182,18 +182,20 @@ public:
 		return *huh;
 	}
 
-	// Kinda like `new`/`malloc` but for arenas. The funky variadic templates allow you to pass
-	// any arguments here to the actual constructor. Note this supports calling destructors for
-	// when the arena is deleted, but why?
+	// Kinda like `new`/`malloc` but for arenas. The funky variadic templates
+	// allow you to pass any arguments here to the actual constructor. Note this
+	// supports calling destructors for when the arena is deleted, but why would you ever do
+	// that
 	template<typename T, typename... Args>
+	[[nodiscard]]
 	T& make_ref(Args&&... args)
 	{
 		void* ptr = this->alloc(sizeof(T), alignof(T));
 		T* obj = new (ptr) T(std::forward<Args>(args)...);
 
-		// fancy fuckery to get destructors to be called :)
+		// fancy fuckery to get destructors to be called
 		auto* call = static_cast<DestructorCall*>(this->alloc(sizeof(DestructorCall)));
-		call->func = [](void* obj) -> void { static_cast<T*>(obj)->~T(); };
+		call->func = [](void* obj) { static_cast<T*>(obj)->~T(); };
 		call->object = obj;
 		call->next = this->_destructors;
 		this->_destructors = call;
@@ -201,18 +203,20 @@ public:
 		return *obj;
 	}
 
-	// Kinda like `new`/`malloc` but for arenas. The funky variadic templates allow you to pass
-	// any arguments here to the actual constructor. Note this supports calling destructors for
-	// when the arena is deleted, but why?
+	// Kinda like `new`/`malloc` but for arenas. The funky variadic templates
+	// allow you to pass any arguments here to the actual constructor. Note this
+	// supports calling destructors for when the arena is deleted, but why would you ever do
+	// that
 	template<typename T, typename... Args>
+	[[nodiscard]]
 	T* make_ptr(Args&&... args)
 	{
 		void* ptr = this->alloc(sizeof(T), alignof(T));
 		T* obj = new (ptr) T(std::forward<Args>(args)...);
 
-		// fancy fuckery to get destructors to be called :)
+		// fancy fuckery to get destructors to be called
 		auto* call = static_cast<DestructorCall*>(this->alloc(sizeof(DestructorCall)));
-		call->func = [](void* obj) -> void { static_cast<T*>(obj)->~T(); };
+		call->func = [](void* obj) { static_cast<T*>(obj)->~T(); };
 		call->object = obj;
 		call->next = this->_destructors;
 		this->_destructors = call;
@@ -227,7 +231,8 @@ public:
 	usize capacity() const;
 };
 
-// Temporary arena intended for temporary allocations. In other words, a sane `alloca()`.
+// Temporary arena intended for temporary allocations. In other words, a sane
+// `alloca()`.
 Arena& scratchpad();
 
 // This is just for iterators
@@ -238,14 +243,14 @@ struct ArrayItem
 	T& val;
 };
 
-// std::initializer_list<T> doesn't live very long. to prevent fucking (dangling ptrs), we have to
-// copy the data somewhere that lasts longer, and trap them in purgatory for as long as the program
-// is open.
+// std::initializer_list<T> doesn't live very long. to prevent fucking (dangling
+// ptrs), we have to copy the data somewhere that lasts longer, and trap them in
+// purgatory for as long as the program is open.
 extern Arena _consty_arena;
 
-// A slice of memory, usually from an arena but can point to anywhere. Similar to a Go slice, or
-// other examples. Arrays don't own the value and don't use fancy RAII fuckery, so you can pass them
-// by value.
+// A slice of memory, usually from an arena but can point to anywhere. Similar
+// to a Go slice, or other examples. Arrays don't own the value and don't use
+// fancy RAII fuckery, so you can pass them by value.
 template<typename T>
 class Array
 {
@@ -253,14 +258,13 @@ class Array
 	using MutT = RefWrapper<std::remove_const_t<T>>;
 	using ConstT = const RefWrapper<T>;
 
-	// used for when you don't set the length (which you usually do if you're just gonna use
-	// .add())
+	// used for when you don't set the length (which you usually do if you're just
+	// gonna use .add())
 	static constexpr usize INITIAL_CAPACITY = 16;
 
-	// if it's from an arena the internal ptr just can't be const, as you're copying the
-	// original const data to the arena
-	// BUT if it's not and is just pointing somewhere, then having it not be const can be very
-	// questionable
+	// if it's from an arena the internal ptr just can't be const, as you're
+	// copying the original const data to the arena BUT if it's not and is just
+	// pointing somewhere, then having it not be const can be very questionable
 	union {
 		MutT* _arena_ptr = nullptr;
 		ConstT* _ptr;
@@ -329,17 +333,17 @@ public:
 			return;
 		}
 
-		// 'void* memcpy(void*, const void*, size_t)' forming offset [1, 1024] is out of the
-		// bounds [0, 1] the warning is wrong :)
-		TR_GCC_IGNORE_WARNING(-Warray-bounds);
-		TR_GCC_IGNORE_WARNING(-Wstringop-overread);
+		// 'void* memcpy(void*, const void*, size_t)' forming offset [1, 1024] is
+		// out of the bounds [0, 1] the warning is wrong :)
+		TR_GCC_IGNORE_WARNING(-Warray - bounds);
+		TR_GCC_IGNORE_WARNING(-Wstringop - overread);
 		memcpy(static_cast<void*>(_arena_ptr), data, len * sizeof(T));
 		TR_GCC_RESTORE();
 		TR_GCC_RESTORE();
 	}
 
-	// Initializes an array that points to any buffer. You really should only use this for
-	// temporary arrays.
+	// Initializes an array that points to any buffer. You really should only use
+	// this for temporary arrays.
 	constexpr Array(ConstT* data, usize len)
 		: _ptr(data)
 		, _len(len)
@@ -363,9 +367,8 @@ public:
 	Array(std::initializer_list<RefWrapper<const T>> initlist)
 		: Array(tr::_consty_arena, initlist)
 	{
-		// using an arena for this would make the rest of the class assume you can grow it
-		// later
-		// but nuh uh you can't
+		// using an arena for this would make the rest of the class assume you can
+		// grow it later but nuh uh you can't
 		_can_grow = false;
 	}
 
@@ -382,15 +385,16 @@ public:
 	}
 
 	// mutable array to const array
-	// there's no version for the other way around because, much like const_cast, that'd be EVIL
+	// there's no version for the other way around because, much like const_cast,
+	// that'd be EVIL
 	operator Array<const T>() const
 	requires(!std::is_const_v<T>)
 	{
 		return Array<const T>(_ptr, _len);
 	}
 
-	// Similar to `operator[]`, but when getting an index out of bounds, instead of panicking,
-	// it returns null, which is probably useful sometimes.
+	// Similar to `operator[]`, but when getting an index out of bounds, instead
+	// of panicking, it returns null, which is probably useful sometimes.
 	Maybe<T&> try_get(usize idx) const
 	{
 		_validate();
@@ -510,9 +514,9 @@ public:
 		return Iterator(this->buf() + this->len(), this->len());
 	}
 
-	// Adds a new item to the array, and resizes it if necessary. This only works on
-	// arena-allocated arrays, if you try to use this on an array without an arena, it will
-	// panic.
+	// Adds a new item to the array, and resizes it if necessary. This only works
+	// on arena-allocated arrays, if you try to use this on an array without an
+	// arena, it will panic.
 	void add(const T& val)
 	requires(!std::is_const_v<T>)
 	{
@@ -552,6 +556,7 @@ public:
 	}
 
 	// As the name implies, it copies the array and its items to somewhere else.
+	[[nodiscard]]
 	Array<T> duplicate(Arena& arena) const
 	{
 		_validate();
@@ -578,6 +583,6 @@ public:
 	}
 };
 
-}
+} // namespace tr
 
 #endif
