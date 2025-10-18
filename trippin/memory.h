@@ -248,6 +248,13 @@ struct ArrayItem
 // purgatory for as long as the program is open.
 extern Arena _consty_arena;
 
+// man
+enum class ArrayClearBehavior
+{
+	RESET_ALL_ITEMS,
+	DO_NOTHING
+};
+
 // A slice of memory, usually from an arena but can point to anywhere. Similar
 // to a Go slice, or other examples. Arrays don't own the value and don't use
 // fancy RAII fuckery, so you can pass them by value.
@@ -291,6 +298,7 @@ public:
 
 	// Initializes an empty array at an arena.
 	Array(Arena& arena, usize len)
+	requires(!std::is_const_v<T>) // otherwise what would you even do with it?
 		: _src_arena(&arena)
 		, _len(len)
 		, _cap(len)
@@ -300,11 +308,22 @@ public:
 		// i'm just keeping this behavior so it doesn't break everything that used
 		// Array(arena, 0)
 		if (len == 0) {
-			_len = 0;
 			_cap = INITIAL_CAPACITY;
 		}
 
 		_arena_ptr = static_cast<MutT*>(arena.alloc(sizeof(T) * _cap));
+
+		// arena memory isn't always zero-initialized
+		if constexpr (std::is_reference_v<T>) {
+			for (usize i = 0; i < len; i++) {
+				_arena_ptr[i] = nullptr;
+			}
+		}
+		else {
+			for (auto [_, item] : *this) {
+				item = T{};
+			}
+		}
 	}
 
 	// Initializes an array from a buffer. (the data is copied into the arena)
@@ -333,13 +352,7 @@ public:
 			return;
 		}
 
-		// 'void* memcpy(void*, const void*, size_t)' forming offset [1, 1024] is
-		// out of the bounds [0, 1] the warning is wrong :)
-		TR_GCC_IGNORE_WARNING(-Warray - bounds);
-		TR_GCC_IGNORE_WARNING(-Wstringop - overread);
 		memcpy(static_cast<void*>(_arena_ptr), data, len * sizeof(T));
-		TR_GCC_RESTORE();
-		TR_GCC_RESTORE();
 	}
 
 	// Initializes an array that points to any buffer. You really should only use
@@ -363,8 +376,8 @@ public:
 	{
 	}
 
-	// std::initializer_list<T> doesn't live very long so we have to copy it
 	Array(std::initializer_list<RefWrapper<const T>> initlist)
+		// std::initializer_list<T> doesn't live very long so we have to copy it
 		: Array(tr::_consty_arena, initlist)
 	{
 		// using an arena for this would make the rest of the class assume you can
@@ -395,7 +408,7 @@ public:
 
 	// Similar to `operator[]`, but when getting an index out of bounds, instead
 	// of panicking, it returns null, which is probably useful sometimes.
-	Maybe<T&> try_get(usize idx) const
+	Maybe<const T&> try_get(usize idx) const
 	{
 		_validate();
 
@@ -422,7 +435,49 @@ public:
 		}
 	}
 
-	T& operator[](usize idx) const
+	// Similar to `operator[]`, but when getting an index out of bounds, instead
+	// of panicking, it returns null, which is probably useful sometimes.
+	Maybe<T&> try_get(usize idx)
+	{
+		_validate();
+
+		if (idx >= this->_len) {
+			return {};
+		}
+
+		// oh dear
+		if constexpr (std::is_const_v<T>) {
+			if constexpr (std::is_reference_v<T>) {
+				return *this->_ptr[idx];
+			}
+			else {
+				return this->_ptr[idx];
+			}
+		}
+		else {
+			if constexpr (std::is_reference_v<T>) {
+				return *this->_arena_ptr[idx];
+			}
+			else {
+				return this->_arena_ptr[idx];
+			}
+		}
+	}
+
+	const T& operator[](usize idx) const
+	{
+		_validate();
+
+		Maybe<const T&> item = try_get(idx);
+		if (!item.is_valid()) {
+			tr::panic(
+				"index out of range: array[%zu] when the length is %zu", idx, _len
+			);
+		}
+		return item.unwrap();
+	}
+
+	T& operator[](usize idx)
 	{
 		_validate();
 
@@ -460,7 +515,7 @@ public:
 		return _cap;
 	}
 	// Shorthand for `.buf()`
-	constexpr ConstT* operator*() const
+	constexpr RefWrapper<T>* operator*() const
 	{
 		return buf();
 	}
@@ -563,20 +618,23 @@ public:
 		return Array<T>{arena, buf(), len()};
 	}
 
-	// Clears the array duh. The `reset_all_items` sets the existing buffer to 0, which you may
-	// not want if you just want to reuse the buffer for hyper-ultra-blazingly-fast-optimization
-	void clear(bool reset_all_items = true)
+	// Clears the array duh. `ArrayClearBehavior::RESET_ALL_ITEMS` goes through every
+	// item and calls the default constructor, which you may not want if you just want
+	// to reuse the buffer for hyper-ultra-blazingly-fast-optimization
+	void clear(ArrayClearBehavior behavior = ArrayClearBehavior::RESET_ALL_ITEMS)
 	requires(!std::is_const_v<T>)
 	{
 		_validate();
-		if (reset_all_items) {
-			// apparently memset is fucked, std::fill_n does nothing and memset_s just
-			// doesn't exist in c++?? source:
-			// https://en.cppreference.com/w/cpp/string/byte/memset#Notes
-			// maybe i'm just stupid :)
-			// TODO am i stupid? (the answer is yes)
-			for (usize i = 0; i < _len * sizeof(T); i++) {
-				static_cast<uint8*>(_arena_ptr)[i] = 0;
+		if (behavior == ArrayClearBehavior::RESET_ALL_ITEMS) {
+			if constexpr (std::is_reference_v<T>) {
+				for (usize i = 0; i < len(); i++) {
+					_arena_ptr[i] = nullptr;
+				}
+			}
+			else {
+				for (auto [_, item] : *this) {
+					item = T{};
+				}
 			}
 		}
 		this->_len = 0;

@@ -39,6 +39,9 @@ static void test::logging()
 	tr::log("S%sa (formatted arguments)", "igm");
 }
 
+#ifdef TR_ONLY_GCC
+[[gnu::optimize("O0")]]
+#endif
 static void test::util()
 {
 	tr::log("\n==== UTILITY ====");
@@ -53,11 +56,17 @@ static void test::util()
 	tr::Stopwatch stopwatch{};
 	tr::log("doing nothing...");
 	stopwatch.start();
+#ifdef TR_ONLY_CLANG
+	#pragma clang optimize off
+#endif
 	[[maybe_unused]]
 	int compiler_pls_dont_optimize_this = 0;
 	for (int i = 0; i < 1'000'000; i++) {
 		compiler_pls_dont_optimize_this++;
 	}
+#ifdef TR_ONLY_CLANG
+	#pragma clang optimize on
+#endif
 	stopwatch.stop();
 	stopwatch.print_time_us("doing nothing");
 }

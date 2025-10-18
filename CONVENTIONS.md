@@ -1,8 +1,14 @@
 # libtrippin coding style
 
-libtrippin is great, but how does one truly libtrippin? In this document, we detail how to libtrippin all over the place.
+libtrippin is great, but how does one truly libtrippin? In this document, we detail how to libtrippin all over the place. This document can be used both for libtrippin and libtrippin-based projects.
 
 Small formatting choices (spaces, parenthesis, braces, etc) should follow the formatting options in `.clang-format`. Most editors can be configured to format automatically using clang-format. clang-format 19 or higher is required.
+
+## tl;dr
+
+- Program like a C developer, using libtrippin to use the good parts of C++
+- Prefer [procedural](https://en.wikipedia.org/wiki/Procedural_programming)/[DOD](https://en.wikipedia.org/wiki/Data-oriented_design) over [OOP](https://en.wikipedia.org/wiki/Object-oriented_programming) or [functional](https://en.wikipedia.org/wiki/Functional_programming)
+- STL bad (mostly)
 
 ## Naming
 
@@ -36,7 +42,7 @@ Global variables and functions should be accessed by their namespace (and if the
 app::_count++;
 
 // wrong
-_count++; // where is this from?
+_count++; // is this the class or the namespace?
 ```
 
 Setters should be prefixed with `set_`. Getters have no prefix.
@@ -51,7 +57,7 @@ void count_set(int);
 int get_count() const;
 ```
 
-Never use `using namespace`.
+Namespaces should have short names (2-6 letters) and be lowercase. Never use `using namespace`.
 
 ## Slightly pedantic rules
 
@@ -204,12 +210,13 @@ There is a single exception to this rule: marking a function parameter: `(void)a
 
 Don't use RAII. (Resource Acquisition Is Initialization)
 
-RAII is not only overly implicit (best case is you notice you forgot a `&` and fix it years later for a free performance boost, worst case is an insane debugging session), but also just a pain in the rear end in general.
+RAII is not only overly implicit, but also just a pain in the rear end in general.
 
 libtrippin provides a simple alternative: `TR_DEFER`, and functions. For example:
 
 ```cpp
-void function() {
+void function()
+{
         Doohickey a = {};
         TR_DEFER(a.free());
 
@@ -237,6 +244,17 @@ Doohickey duplicate() const;
 
 It's more explicit but that's the point.
 
+One issue of `TR_DEFER` is that overusing it can make code harder to read, as it no longer linear:
+
+```cpp
+// bad
+TR_DEFER(do_final_thing());
+do_work();
+do_more_work();
+```
+
+For that reason we only recommend `TR_DEFER` for when there is an obvious 'start' and 'end' command.
+
 ## Exceptions
 
 Exceptions also have a similar issue of being overly implicit. Instead, use `tr::Result<T, E>`. I already made documentation for that.
@@ -258,6 +276,31 @@ Few parts of the STL can be used too:
 
 These all share either being pointless to implement in libtrippin, or a pain in the rear end to implement yourself, or both.
 
-## Notes
+Here is a table of common STL types and their closest libtrippin equivalent:
 
-Some parts of this document are from the [Ladybird coding style](https://github.com/LadybirdBrowser/ladybird/blob/master/Documentation/CodingStyle.md) (i may or may not be legally required to mention this, i'm not sure) (it's a good document)
+| libtrippin type | STL type | Comment |
+| -------- | --------------- | ------- |
+| `tr::String` | `std::string_view` | |
+| `tr::Array` | `std::vector`, `std::array`, `std::span` | arena-allocated arrays can be used as vectors, passing arrays around should usually be done with `tr::Array<const T>` |
+| `tr::HashMap` | `std::unordered_map` | |
+| `tr::Maybe` | `std::optional` | |
+| `tr::Error` | `std::exception` | libtrippin uses a different error system from exceptions |
+| `tr::Reader` | `std::basic_istream` | |
+| `tr::Writer` | `std::basic_ostream` | |
+| `tr::File` | `std::*fstream` | |
+
+## GLSL shaders
+
+Most style conventions in C++ also apply to GLSL.
+
+There are a few additional naming conventions:
+- vertex input should start with `vs_`
+- vertex output/fragment input should start with `fs_`
+- uniforms, UBO variables, and SSBO variables should start with `u_`
+
+## Similar projects
+
+- [Ladybird coding style](https://github.com/LadybirdBrowser/ladybird/blob/master/Documentation/CodingStyle.md) (some parts of this document are stolen from there)
+- [Orthodox C++](https://gist.github.com/bkaradzic/2e39896bc7d8c34e042b)
+- [Dear ImGui](https://github.com/ocornut/imgui) coding style
+- [libdown](https://codeberg.org/krall2125/libdown)

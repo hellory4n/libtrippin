@@ -2,8 +2,7 @@
 #include <trippin/common.h>
 #include <trippin/log.h>
 
-// just so clang shuts up :)
-[[noreturn]]
+[[noreturn /* shut up */]]
 void test_logging()
 {
 	tr::use_log_file("log.txt");

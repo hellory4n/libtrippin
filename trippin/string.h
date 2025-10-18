@@ -97,7 +97,11 @@ public:
 	}
 
 	// man
-	constexpr char& operator[](usize idx) const
+	const char& operator[](usize idx) const
+	{
+		return this->array[idx];
+	}
+	char& operator[](usize idx)
 	{
 		return this->array[idx];
 	}
@@ -106,11 +110,15 @@ public:
 	{
 		return this->array.len() - 1;
 	}
-	constexpr char* buf() const
+	constexpr const char* buf() const
 	{
 		return this->array.buf();
 	}
-	constexpr operator char*() const
+	constexpr char* buf()
+	{
+		return this->array.buf();
+	}
+	constexpr operator char*()
 	{
 		return this->buf();
 	}
@@ -119,7 +127,11 @@ public:
 		return this->buf();
 	}
 	// Shorthand for `.buf()`
-	constexpr char* operator*() const
+	constexpr char* operator*()
+	{
+		return this->buf();
+	}
+	constexpr const char* operator*() const
 	{
 		return this->buf();
 	}

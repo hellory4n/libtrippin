@@ -173,11 +173,6 @@ void* tr::Arena::alloc(usize size, usize align)
 	ArenaPage* new_page = new (std::nothrow) ArenaPage(_settings, new_page_size, align);
 	TR_ASSERT_MSG(new_page != nullptr, "couldn't create new arena page");
 
-	// TODO tf was i on when i wrote this
-	// dude... dude... dude... what? GOOD NEWS OGOD NEANEWS OGOOD NEWS
-	// NFOGOSJRJIGIRISJTOAEOTGOAGOKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-	// AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-	// AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 	new_page->prev = _page;
 	if (_page != nullptr) {
 		_page->next = new_page;
