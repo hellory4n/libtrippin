@@ -150,7 +150,6 @@ public:
 
 	// please use references instead
 	Arena(const Arena&) = delete;
-	Arena& operator=(const Arena&) = delete;
 
 	// Frees the arena.
 	void free();
