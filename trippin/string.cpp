@@ -311,8 +311,9 @@ tr::Array<byte*> tr::strlib::split_by_char(
 
 	for (usize i = 0; i < s_len; i += ch_len) {
 		if (memcmp(&s[i], ch, ch_len) == 0) {
-			byte* newstr = static_cast<byte*>(arena.alloc(i - last_str));
+			byte* newstr = static_cast<byte*>(arena.alloc(i - last_str + ch_len));
 			memcpy(newstr, &s[last_str], i - last_str);
+			tr::strlib::explicit_memset(newstr + i - last_str, ch_len, 0);
 			strs.add(newstr);
 			last_str = i + ch_len;
 		}
@@ -320,8 +321,9 @@ tr::Array<byte*> tr::strlib::split_by_char(
 
 	// if nothing was found
 	if (strs.len() == 0) {
-		byte* newstr = static_cast<byte*>(arena.alloc(s_len));
+		byte* newstr = static_cast<byte*>(arena.alloc(s_len + ch_len));
 		memcpy(newstr, s, s_len);
+		tr::strlib::explicit_memset(newstr + last_str, ch_len, 0);
 		strs.add(newstr);
 	}
 

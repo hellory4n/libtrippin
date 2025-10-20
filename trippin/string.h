@@ -178,8 +178,9 @@ public:
 	BaseString(Arena& arena, const T* str, usize len)
 		: _len(len)
 	{
-		_ptr = arena.alloc(len * sizeof(T));
-		memcpy(_ptr, str, len * sizeof(T));
+		T* newptr = static_cast<T*>(arena.alloc(len * sizeof(T)));
+		memcpy(newptr, str, len * sizeof(T));
+		_ptr = newptr;
 	}
 
 	// Copies an existing string ptr to an arena
@@ -281,7 +282,8 @@ public:
 	bool operator==(BaseString other) const
 	{
 		return tr::strlib::strs_equal(
-			buf(), len() * sizeof(T), other.buf(), other.len() * sizeof(T)
+			reinterpret_cast<const byte*>(buf()), len() * sizeof(T),
+			reinterpret_cast<const byte*>(other.buf()), other.len() * sizeof(T)
 		);
 	}
 
@@ -306,8 +308,8 @@ public:
 	{
 		T* buffer = static_cast<T*>(arena.alloc((end - start + 1) * sizeof(T)));
 		tr::strlib::substr(
-			buf(), len() * sizeof(T), start * sizeof(T), end * sizeof(T), buffer,
-			sizeof(T)
+			reinterpret_cast<const byte*>(buf()), len() * sizeof(T), start * sizeof(T),
+			end * sizeof(T), reinterpret_cast<byte*>(buffer), sizeof(T)
 		);
 		return {buffer, end - start};
 	}
@@ -342,8 +344,9 @@ public:
 			end = len();
 		}
 		Array<usize> indexes = tr::strlib::find_str(
-			arena, buf(), len() * sizeof(T), start * sizeof(T), end * sizeof(T),
-			str.buf(), str.len()
+			arena, reinterpret_cast<const byte*>(buf()), len() * sizeof(T),
+			start * sizeof(T), end * sizeof(T),
+			reinterpret_cast<const byte*>(str.buf()), str.len()
 		);
 
 		// strlib::find_str returns indexes in bytes, a character may be more than that
@@ -362,7 +365,9 @@ public:
 	{
 		T* newstr = static_cast<T*>(arena.alloc((len() + 1) * sizeof(T)));
 		tr::strlib::concat(
-			buf(), len() * sizeof(T), other, other.len() * sizeof(T), newstr, sizeof(T)
+			reinterpret_cast<const byte*>(buf()), len() * sizeof(T),
+			reinterpret_cast<const byte*>(other.buf()), other.len() * sizeof(T),
+			reinterpret_cast<byte*>(newstr), sizeof(T)
 		);
 		return newstr;
 	}
@@ -371,7 +376,8 @@ public:
 	bool starts_with(BaseString str) const
 	{
 		return tr::strlib::starts_with(
-			buf(), len() * sizeof(T), str.buf(), str.len() * sizeof(T)
+			reinterpret_cast<const byte*>(buf()), len() * sizeof(T),
+			reinterpret_cast<const byte*>(str.buf()), str.len() * sizeof(T)
 		);
 	}
 
@@ -379,7 +385,8 @@ public:
 	bool ends_with(BaseString str) const
 	{
 		return tr::strlib::ends_with(
-			buf(), len() * sizeof(T), str.buf(), str.len() * sizeof(T)
+			reinterpret_cast<const byte*>(buf()), len() * sizeof(T),
+			reinterpret_cast<const byte*>(str.buf()), str.len() * sizeof(T)
 		);
 	}
 
@@ -387,10 +394,14 @@ public:
 	[[nodiscard]]
 	BaseString file(Arena& arena) const
 	{
+		// FIXME this wont work on other encodings
 		char8* newstr;
 		usize newlen;
-		tr::strlib::strfile(arena, buf(), len() * sizeof(T), &newstr, &newlen);
-		return {newstr, newlen};
+		tr::strlib::strfile(
+			arena, reinterpret_cast<const char8*>(buf()), len() * sizeof(T), &newstr,
+			&newlen
+		);
+		return {reinterpret_cast<const T*>(newstr), newlen};
 	}
 
 	// Gets the directory in a path e.g. returns `/path/to` for `/path/to/file.txt`
@@ -399,8 +410,11 @@ public:
 	{
 		char8* newstr;
 		usize newlen;
-		tr::strlib::strdir(arena, buf(), len() * sizeof(T), &newstr, &newlen);
-		return {newstr, newlen};
+		tr::strlib::strdir(
+			arena, reinterpret_cast<const char8*>(buf()), len() * sizeof(T), &newstr,
+			&newlen
+		);
+		return {reinterpret_cast<const T*>(newstr), newlen};
 	}
 
 	// Returns the extension in a path, e.g. returns `.txt` for `/path/to/file.txt`, `.blend.1`
@@ -410,14 +424,19 @@ public:
 	{
 		char8* newstr;
 		usize newlen;
-		tr::strlib::strext(arena, buf(), len() * sizeof(T), &newstr, &newlen);
-		return {newstr, newlen};
+		tr::strlib::strext(
+			arena, reinterpret_cast<const char8*>(buf()), len() * sizeof(T), &newstr,
+			&newlen
+		);
+		return {reinterpret_cast<const T*>(newstr), newlen};
 	}
 
 	// If true, the path is absolute. Else, it's relative.
 	bool is_absolute() const
 	{
-		return tr::strlib::strabsolute(buf(), len() * sizeof(T));
+		return tr::strlib::strabsolute(
+			reinterpret_cast<const char8*>(buf()), len() * sizeof(T)
+		);
 	}
 
 	// If true, the path is relative. Else, it's absolute.
@@ -439,10 +458,18 @@ public:
 	[[nodiscard]]
 	Array<BaseString> split(Arena& arena, T delimiter) const
 	{
+		// FIXME tr::strlib::split_by_char might be dogshit
 		Array<byte*> mn = tr::strlib::split_by_char(
-			arena, buf(), len() * sizeof(T), &delimiter, sizeof(T)
+			arena, reinterpret_cast<const byte*>(buf()), len() * sizeof(T),
+			reinterpret_cast<const byte*>(&delimiter), sizeof(T)
 		);
-		return {reinterpret_cast<T**>(mn.buf()), mn.len()};
+
+		// type fucking to get it to not be a byte ptr
+		Array<BaseString> thej{arena, mn.len()};
+		for (auto [i, ptr] : mn) {
+			thej[i] = reinterpret_cast<const T*>(ptr);
+		}
+		return thej;
 	}
 };
 
@@ -474,13 +501,13 @@ public:
 	}
 
 	// Initializes a string builder from a buffer. (the data is copied into the arena)
-	BaseStringBuilder(Arena& arena, T* str, usize len)
+	BaseStringBuilder(Arena& arena, const T* str, usize len)
 		: _array(arena, str, len)
 	{
 	}
 
 	// Initializes a string builder from a buffer. (the data is copied into the arena)
-	BaseStringBuilder(Arena& arena, T* str)
+	BaseStringBuilder(Arena& arena, const T* str)
 		: _array(arena, str, tr::strlib::constexpr_strlen(str))
 	{
 	}
@@ -494,12 +521,6 @@ public:
 	// Initializes the string with just an arena so you can add crap later :)
 	BaseStringBuilder(Arena& arena)
 		: _array(arena)
-	{
-	}
-
-	// Initializes a string builder from a regular old boring string
-	BaseStringBuilder(BaseString<T> str)
-		: BaseStringBuilder(str.buf(), str.len())
 	{
 	}
 

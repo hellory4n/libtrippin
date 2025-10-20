@@ -1002,7 +1002,7 @@ void tr::_init_paths()
 	}
 	else {
 		exedir[static_cast<usize>(len)] = '\0';
-		exedir = tr::exe_dir.directory(tr::core_arena);
+		exedir = {tr::core_arena, tr::exe_dir.directory(tr::core_arena)};
 	}
 
 	tr::exe_dir = exedir;
