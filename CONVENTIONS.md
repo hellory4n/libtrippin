@@ -84,6 +84,25 @@ for (auto it = children.begin(); it != children.end(); ++it) {
 }
 ```
 
+Function definitions must include the full names of all types:
+
+```cpp
+// declaration
+namespace app {
+class Doohickey
+{
+public:
+        void do_thing(Thingamabob) const;
+};
+} // namespace app
+
+// definition
+void app::Doohickey::do_thing(app::Thingamabob) const
+{
+        // ...
+}
+```
+
 ## Pointers vs refernces
 
 Prefer references to pointers. If you need optional values with `nullptr`, use `tr::Maybe<T&>` instead. If you need pointers for arrays, use `tr::Array<T>` instead. Pointers should be reserved to frightening low-level code. (pointer scary!)
@@ -281,10 +300,11 @@ Here is a table of common STL types and their closest libtrippin equivalent:
 | libtrippin type | STL type | Comment |
 | -------- | --------------- | ------- |
 | `tr::String` | `std::string_view` | |
+| `tr::StringBuilder` | `std::string` | |
 | `tr::Array` | `std::vector`, `std::array`, `std::span` | arena-allocated arrays can be used as vectors, passing arrays around should usually be done with `tr::Array<const T>` |
 | `tr::HashMap` | `std::unordered_map` | |
 | `tr::Maybe` | `std::optional` | |
-| `tr::Error` | `std::exception` | libtrippin uses a different error system from exceptions |
+| `tr::Error`/`tr::Result` | `std::exception` | libtrippin uses a different error system from exceptions |
 | `tr::Reader` | `std::basic_istream` | |
 | `tr::Writer` | `std::basic_ostream` | |
 | `tr::File` | `std::*fstream` | |

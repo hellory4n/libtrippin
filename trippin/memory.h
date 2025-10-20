@@ -148,9 +148,6 @@ public:
 	{
 	}
 
-	// please use references instead
-	Arena(const Arena&) = delete;
-
 	// Frees the arena.
 	void free();
 
@@ -280,12 +277,12 @@ class Array
 	usize _cap = 0;
 	bool _can_grow;
 
-	bool _is_from_arena() const
+	constexpr bool _is_from_arena() const
 	{
 		return _src_arena != nullptr;
 	}
 
-	void _validate() const
+	constexpr void _validate() const
 	{
 		if (_ptr == nullptr) {
 			tr::panic("uninitialized tr::Array<T>!");
@@ -332,6 +329,11 @@ public:
 		, _cap(len)
 		, _can_grow(true)
 	{
+		TR_ASSERT_MSG(
+			data != nullptr, "tr::Array<T> can't be null, if that's intentional use "
+					 "tr::Maybe<tr::Array<T>>"
+		);
+
 		// you may initialize with a length of 0 so you can then add crap later
 		// i'm just keeping this behavior so it doesn't break everything :)
 		if (len == 0) {

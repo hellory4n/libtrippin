@@ -70,7 +70,6 @@ IncludeCategories:
 # misc
 ColumnLimit: 100
 AlignConsecutiveMacros: false
-InsertBraces: true
 InsertNewlineAtEOF: true
 LineEnding: LF
 

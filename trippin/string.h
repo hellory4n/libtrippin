@@ -27,185 +27,388 @@
 #define _TRIPPIN_STRING_H
 
 #include <cstdarg>
+#include <type_traits>
 
 #include "trippin/common.h"
+#include "trippin/log.h"
 #include "trippin/memory.h"
 
 namespace tr {
 
-// why won't you let me use strlen in constexpr :(
-constexpr usize constexpr_strlen(const char* str)
-{
-	if (str == nullptr) {
-		return 0;
+template<typename T>
+concept Character =
+	std::is_same_v<T, char> || std::is_same_v<T, wchar_t> || std::is_same_v<T, char8> ||
+	std::is_same_v<T, char16> || std::is_same_v<T, char32>;
+
+// replacement for libc's `str*` functions, which are unsafe and evil. `tr::strlib` also supports
+// multiple character types. should probably not be used directly (use
+// `tr::String`/`tr::StringBuilder` etc)
+namespace strlib {
+	// why won't you let me use strlen in constexpr :(
+	template<Character T>
+	constexpr usize constexpr_strlen(const T* str)
+	{
+		if (str == nullptr) {
+			return 0;
+		}
+
+		usize i = 0;
+		while (str[i] != '\0') {
+			i++;
+		}
+		return i;
 	}
 
-	usize i = 0;
-	while (str[i] != '\0') {
-		i++;
-	}
-	return i;
+	// in true C fashion, these are all (probably) unsafe
+	// these all work in bytes, if the character size matters then you should pass that through
+	// `ch_len`. note 'character' and 'byte' are different terms used here, a character may or
+	// may not be 1 byte. all input lengths are expected to *not* include the null terminator.
+
+	// source: https://en.cppreference.com/w/c/string/byte/memset#Notes
+	// > memset may be optimized away (under the as-if rules) if the object modified by this
+	// > function is not accessed again for the rest of its lifetime (e.g., gcc bug 8537). For
+	// > that reason, this function cannot be used to scrub memory (e.g., to fill an array that
+	// > stored a password with zeroes).
+	void explicit_memset(byte* ptr, usize len, byte val);
+	// returns true if A and B are exactly equal
+	bool strs_equal(const byte* a, usize a_len, const byte* b, usize b_len);
+	// copies a section of S into out, out buffer must have +1 character for the null terminator
+	void substr(const byte* s, usize len, usize start, usize end, byte* out, usize ch_len);
+	// returns an array of indexes (bytes) allocated from arena, referring to the parts of the
+	// string with the specified character (can be multiple bytes)
+	Array<usize> find_char(
+		Arena& arena, const byte* s, usize len, usize start, usize end, const byte* ch,
+		usize ch_len
+	);
+	// returns an array of indexes (bytes) allocated from arena, referring to the parts of the
+	// strings with the specified string
+	Array<usize> find_str(
+		Arena& arena, const byte* s, usize len, usize start, usize end, const byte* substr,
+		usize substr_len
+	);
+	// concatenates 2 strings into out. out buffer's size should be a_len + b_len + 1 character
+	// for the null terminator.
+	void
+	concat(const byte* a, usize a_len, const byte* b, usize b_len, byte* out, usize ch_len);
+	// returns true if the first [substr_len] bytes of `s` are equal to `substr`
+	bool starts_with(const byte* s, usize s_len, const byte* substr, usize substr_len);
+	// returns true if the last [substr_len] bytes of `s` are equal to `substr`
+	bool ends_with(const byte* s, usize s_len, const byte* substr, usize substr_len);
+	// replaces a character in the string with another string
+	void
+	replace(const byte* s, usize s_len, const byte* from_ch, const byte* to_ch, usize ch_len,
+		byte* out);
+	// im splitting by char<3
+	Array<byte*>
+	split_by_char(Arena& arena, const byte* s, usize s_len, const byte* ch, usize ch_len);
+
+	// these are all utf-8 only (as it would be too annoying to make them encoding-independent),
+	// for all other encodings you must first convert to utf-8, call the function, then convert
+	// back to the desired encoding.
+
+	// in a path, gets the file in the path. writes the ptr into `out` and the length into
+	// `out_len`
+	void strfile(Arena& arena, const char8* s, usize len, char8** out, usize* out_len);
+	// in a path, gets the directory in the path. writes the ptr into `out` and the length into
+	// `out_len`
+	void strdir(Arena& arena, const char8* s, usize len, char8** out, usize* out_len);
+	// in a path, gets the file extension in the path. writes the ptr into `out` and the length
+	// into `out_len`. `out` is nullptr if there is no extension.
+	void strext(Arena& arena, const char8* s, usize len, char8** out, usize* out_len);
+	// returns true if the string is an absolute path
+	bool strabsolute(const char8* s, usize len);
 }
 
-// Literally just a wrapper around `tr::Array`, so it works better with strings. Also all of the
-// functions that return strings copy the original strings first. Strings don't own the value and
-// don't use fancy RAII fuckery, so you can pass them by value.
-class String
+// A view into immutable strings. Strings are just a pointer + length, with the underlying data
+// being const (if you want to modify it, copy the data). The 'default' string type, equivalent to
+// `std::string_view`.
+template<Character T>
+class BaseString
 {
-	Array<char> array = {};
+	const T* _ptr;
+	usize _len;
+
+	void _validate() const
+	{
+		if (_ptr != nullptr) {
+			tr::panic(
+				"string cannot be nullptr, use tr::Maybe<tr::String> if this is "
+				"intentional"
+			);
+		}
+	}
 
 public:
-	using Type = char;
+	using Type = T;
 
-	// Initializes a string from an arena and C string.
-	explicit String(Arena& arena, const char* str, usize len)
+	constexpr BaseString(const T* str, usize len)
+		: _ptr(str)
+		, _len(len + 1)
 	{
-		// TODO pls get rid of the const casts im begging you
-		// maybe do it the same way Array<T> did? (which is a mess but it works)
-		this->array = Array<char>(arena, const_cast<char*>(str), len + 1);
+		// does len already include the null terminator?
+		if (_len > 0) {
+			if (_ptr[_len] == '\0') {
+				_len--;
+			}
+		}
 	}
 
-	// Initializes an empty string from an arena
-	explicit String(Arena& arena, usize len)
-	{
-		this->array = Array<char>(arena, len + 1);
-	}
-
-	// Initializes a string from any C string. You really should only use this for temporary
-	// arrays.
-	constexpr explicit String(const char* str, usize len)
-	{
-		this->array = Array<char>(const_cast<char*>(str), len + 1);
-	}
-
-	// Initializes a string from any C string. You really should only use this for temporary
-	// strings.
-	constexpr String(const char* str)
-		: String(str, tr::constexpr_strlen(str))
+	constexpr BaseString(const T* str)
+		: BaseString(str, tr::strlib::constexpr_strlen(str))
 	{
 	}
 
-	constexpr String()
-		: String("")
+	constexpr BaseString()
+		: _ptr("")
+		, _len(0)
 	{
 	}
 
-	String(char c)
+	BaseString(char c)
 		// c++ can't do (char[]){c, '\0'} like c99 can :)))))
-		: String(Array<const char>{c, '\0'}.buf())
+		: BaseString(Array<const char>{c, '\0'}.buf())
 	{
 	}
 
-	// man
-	const char& operator[](usize idx) const
+	// Copies an existing string ptr to an arena
+	BaseString(Arena& arena, const T* str, usize len)
+		: _len(len)
 	{
-		return this->array[idx];
+		_ptr = arena.alloc(len * sizeof(T));
+		memcpy(_ptr, str, len * sizeof(T));
 	}
-	char& operator[](usize idx)
+
+	// Copies an existing string ptr to an arena
+	BaseString(Arena& arena, const T* str)
+		: BaseString(arena, str, tr::strlib::constexpr_strlen(str))
 	{
-		return this->array[idx];
 	}
-	// Returns the length, doesn't include the null terminator
+
 	constexpr usize len() const
 	{
-		return this->array.len() - 1;
+		return _len;
 	}
-	constexpr const char* buf() const
+
+	const T* buf() const
 	{
-		return this->array.buf();
+		_validate();
+		return _ptr;
 	}
-	constexpr char* buf()
+
+	operator const T*()
 	{
-		return this->array.buf();
+		_validate();
+		return _ptr;
 	}
-	constexpr operator char*()
+
+	// Similar to `operator[]`, but when getting an index out of bounds, instead
+	// of panicking, it returns null, which is probably useful sometimes.
+	Maybe<T> try_get(usize idx) const
 	{
-		return this->buf();
+		_validate();
+		if (idx >= this->_len) {
+			return {};
+		}
+		return this->_ptr[idx];
 	}
-	constexpr operator const char*() const
+
+	T operator[](usize idx) const
 	{
-		return this->buf();
+		_validate();
+		Maybe<T> item = try_get(idx);
+		if (!item.is_valid()) {
+			tr::panic(
+				"index out of range: string[%zu] when the length is %zu", idx, _len
+			);
+		}
+		return item.unwrap();
 	}
-	// Shorthand for `.buf()`
-	constexpr char* operator*()
+
+	class Iterator
 	{
-		return this->buf();
+	public:
+		constexpr Iterator(const T* pointer, usize index)
+			: _idx(index)
+			, _ptr(pointer)
+		{
+		}
+		constexpr ArrayItem<T> operator*() const
+		{
+			return {_idx, *_ptr};
+		}
+		constexpr Iterator& operator++()
+		{
+			_ptr++;
+			_idx++;
+			return *this;
+		}
+		constexpr bool operator!=(const Iterator& other) const
+		{
+			return _ptr != other._ptr;
+		}
+
+	private:
+		usize _idx;
+		Type* _ptr;
+	};
+
+	constexpr Iterator begin() const
+	{
+		return Iterator(buf(), 0);
 	}
-	constexpr const char* operator*() const
+	constexpr Iterator end() const
 	{
-		return this->buf();
+		return Iterator(buf() + len() - 1, len());
 	}
-	constexpr Array<char>::Iterator begin() const
+
+	// As the name implies, it copies the array and its items to somewhere else.
+	[[nodiscard]]
+	BaseString duplicate(Arena& arena) const
 	{
-		return this->array.begin();
+		return {arena, buf(), len()};
 	}
-	constexpr Array<char>::Iterator end() const
+
+	bool operator==(BaseString other) const
 	{
-		// this one is different since you don't want to iterate over the null terminator
-		return Array<char>::Iterator(
-			const_cast<char*>(this->buf()) + this->len() - 1, this->len() - 1
+		return tr::strlib::strs_equal(
+			buf(), len() * sizeof(T), other.buf(), other.len() * sizeof(T)
 		);
 	}
 
-	String duplicate(Arena& arena) const
-	{
-		Array<char> arrayma = this->array.duplicate(arena);
-		return String(arrayma.buf(), arrayma.len() + 1);
-	}
-	// i know .add() is missing
-
-	// special string crap
-	bool operator==(String other) const;
-	bool operator!=(String other) const
+	bool operator!=(BaseString other) const
 	{
 		return !(*this == other);
 	}
-	bool operator==(const char* other) const
+
+	bool operator==(const T* other) const
 	{
-		return *this == String(other);
+		return *this == BaseString{other};
 	}
-	bool operator!=(const char* other) const
+
+	bool operator!=(const T* other) const
 	{
-		return *this != String(other);
+		return *this != BaseString{other};
 	}
 
 	// Gets a substring. The returned string doesn't include the end character.
 	[[nodiscard]]
-	String substr(Arena& arena, usize start, usize end) const;
+	BaseString substr(Arena& arena, usize start, usize end) const
+	{
+		T* buffer = static_cast<T*>(arena.alloc((end - start + 1) * sizeof(T)));
+		tr::strlib::substr(
+			buf(), len() * sizeof(T), start * sizeof(T), end * sizeof(T), buffer,
+			sizeof(T)
+		);
+		return {buffer, end - start};
+	}
 
 	// Returns an array with all of the indexes containing that character (the index is where it
 	// starts)
-	Array<usize> find(Arena& arena, char c, usize start = 0, usize end = 0) const;
+	Array<usize> find(Arena& arena, T c, usize start = 0, usize end = 0) const
+	{
+		if (end == 0 || end > len()) {
+			end = len();
+		}
+		Array<usize> indexes = tr::strlib::find_char(
+			arena, buf(), len() * sizeof(T), start * sizeof(T), end * sizeof(T), &c,
+			sizeof(T)
+		);
+
+		// strlib::find_char returns indexes in bytes, a character may be more than that
+		// the character may be so very special...
+		if constexpr (sizeof(T) > 1) {
+			for (auto [_, idx] : indexes) {
+				idx = idx / sizeof(T);
+			}
+		}
+		return indexes;
+	}
 
 	// Returns an array with all of the indexes containing the substring (the index is where it
 	// starts)
-	Array<usize> find(Arena& arena, String str, usize start = 0, usize end = 0) const;
+	Array<usize> find(Arena& arena, BaseString str, usize start = 0, usize end = 0) const
+	{
+		if (end == 0 || end > len()) {
+			end = len();
+		}
+		Array<usize> indexes = tr::strlib::find_str(
+			arena, buf(), len() * sizeof(T), start * sizeof(T), end * sizeof(T),
+			str.buf(), str.len()
+		);
+
+		// strlib::find_str returns indexes in bytes, a character may be more than that
+		// the character may be so very special...
+		if constexpr (sizeof(T) > 1) {
+			for (auto [_, idx] : indexes) {
+				idx = idx / sizeof(T);
+			}
+		}
+		return indexes;
+	}
 
 	// It concatenates 2 strings lmao.
 	[[nodiscard]]
-	String concat(Arena& arena, String other) const;
+	BaseString concat(Arena& arena, BaseString other) const
+	{
+		T* newstr = static_cast<T*>(arena.alloc((len() + 1) * sizeof(T)));
+		tr::strlib::concat(
+			buf(), len() * sizeof(T), other, other.len() * sizeof(T), newstr, sizeof(T)
+		);
+		return newstr;
+	}
 
 	// If true, the string starts with that other crap.
-	bool starts_with(String str) const;
+	bool starts_with(BaseString str) const
+	{
+		return tr::strlib::starts_with(
+			buf(), len() * sizeof(T), str.buf(), str.len() * sizeof(T)
+		);
+	}
 
 	// If true, the string ends with that other crap.
-	bool ends_with(String str) const;
+	bool ends_with(BaseString str) const
+	{
+		return tr::strlib::ends_with(
+			buf(), len() * sizeof(T), str.buf(), str.len() * sizeof(T)
+		);
+	}
 
 	// Gets the filename in a path, e.g. returns `file.txt` for `/path/to/file.txt`
 	[[nodiscard]]
-	String file(Arena& arena) const;
+	BaseString file(Arena& arena) const
+	{
+		char8* newstr;
+		usize newlen;
+		tr::strlib::strfile(arena, buf(), len() * sizeof(T), &newstr, &newlen);
+		return {newstr, newlen};
+	}
 
 	// Gets the directory in a path e.g. returns `/path/to` for `/path/to/file.txt`
 	[[nodiscard]]
-	String directory(Arena& arena) const;
+	BaseString directory(Arena& arena) const
+	{
+		char8* newstr;
+		usize newlen;
+		tr::strlib::strdir(arena, buf(), len() * sizeof(T), &newstr, &newlen);
+		return {newstr, newlen};
+	}
 
 	// Returns the extension in a path, e.g. returns `.txt` for `/path/to/file.txt`, `.blend.1`
 	// for `teapot.blend.1`, and an empty string for `.gitignore`
 	[[nodiscard]]
-	String extension(Arena& arena) const;
+	BaseString extension(Arena& arena) const
+	{
+		char8* newstr;
+		usize newlen;
+		tr::strlib::strext(arena, buf(), len() * sizeof(T), &newstr, &newlen);
+		return {newstr, newlen};
+	}
 
 	// If true, the path is absolute. Else, it's relative.
-	bool is_absolute() const;
+	bool is_absolute() const
+	{
+		return tr::strlib::strabsolute(buf(), len() * sizeof(T));
+	}
 
 	// If true, the path is relative. Else, it's absolute.
 	bool is_relative() const
@@ -215,20 +418,172 @@ public:
 
 	// Replaces a character with another character.
 	[[nodiscard]]
-	String replace(Arena& arena, char from, char to) const;
+	BaseString replace(Arena& arena, T from, T to) const
+	{
+		T* newstr = arena.alloc((len() + 1) * sizeof(T));
+		tr::strlib::replace(buf(), len() * sizeof(T), &from, &to, sizeof(T), newstr);
+		return {newstr, len()};
+	}
 
 	// Splits the string into several substrings using the specified delimiter.
 	[[nodiscard]]
-	Array<String> split(Arena& arena, char delimiter) const;
+	Array<BaseString> split(Arena& arena, T delimiter) const
+	{
+		Array<byte*> mn = tr::strlib::split_by_char(
+			arena, buf(), len() * sizeof(T), &delimiter, sizeof(T)
+		);
+		return {reinterpret_cast<T**>(mn.buf()), mn.len()};
+	}
 };
+
+// A view into immutable UTF-8 strings.
+using String8 = BaseString<char>;
+// A view into immutable UTF-8 strings.
+using String = String8; // utf-8 is the default
+
+// TODO encoding conversion functions:
+// utf-8 to utf-16
+// utf-8 to utf-32
+// utf-16 to utf-8
+// utf-16 to utf-32
+// utf-32 to utf-8
+// utf-32 to utf-16
+
+// Mutable string. You can change it and stuff. 90% of the time you should use `tr::String` instead.
+template<Character T>
+requires(!std::is_const_v<T>)
+class BaseStringBuilder
+{
+	Array<T> _array;
+
+public:
+	// Initializes an empty string builder at an arena.
+	BaseStringBuilder(Arena& arena, usize len)
+		: _array(arena, len)
+	{
+	}
+
+	// Initializes a string builder from a buffer. (the data is copied into the arena)
+	BaseStringBuilder(Arena& arena, T* str, usize len)
+		: _array(arena, str, len)
+	{
+	}
+
+	// Initializes a string builder from a buffer. (the data is copied into the arena)
+	BaseStringBuilder(Arena& arena, T* str)
+		: _array(arena, str, tr::strlib::constexpr_strlen(str))
+	{
+	}
+
+	// man fuck you
+	BaseStringBuilder()
+		: _array()
+	{
+	}
+
+	// Initializes the string with just an arena so you can add crap later :)
+	BaseStringBuilder(Arena& arena)
+		: _array(arena)
+	{
+	}
+
+	// string builder to string view
+	operator BaseString<T>() const
+	{
+		return BaseString<T>(*_array, _array.len());
+	}
+
+	// Similar to `operator[]`, but when getting an index out of bounds, instead
+	// of panicking, it returns null, which is probably useful sometimes.
+	Maybe<T&> try_get(usize idx)
+	{
+		return _array.try_get(idx);
+	}
+
+	// Similar to `operator[]`, but when getting an index out of bounds, instead
+	// of panicking, it returns null, which is probably useful sometimes.
+	Maybe<const T&> try_get(usize idx) const
+	{
+		return _array.try_get(idx);
+	}
+
+	const T& operator[](usize idx) const
+	{
+		return _array[idx];
+	}
+
+	T& operator[](usize idx)
+	{
+		return _array[idx];
+	}
+
+	// Returns the buffer. Bufma blals.
+	constexpr T* buf() const
+	{
+		return _array.buf();
+	}
+
+	// Returns the length of the string.
+	constexpr usize len() const
+	{
+		return _array.len();
+	}
+
+	// Returns how many characters the string can hold before having to resize.
+	constexpr usize cap() const
+	{
+		return _array.cap();
+	}
+
+	// Shorthand for `.buf()`
+	constexpr T* operator*() const
+	{
+		return _array.buf();
+	}
+
+	constexpr Array<T>::Iterator begin() const
+	{
+		return _array.begin();
+	}
+	constexpr Array<T>::Iterator end() const
+	{
+		// not going directly thru _array.end() so that it doesn't iterate over the null
+		// terminator
+		return Array<T>::Iterator(buf() + len() - 1, len());
+	}
+
+	// As the name implies, it copies the array and its items to somewhere else.
+	[[nodiscard]]
+	BaseStringBuilder duplicate(Arena& arena) const
+	{
+		return {arena, buf(), len()};
+	}
+
+	// Clears the array duh. `ArrayClearBehavior::RESET_ALL_ITEMS` goes through every
+	// item and calls the default constructor, which you may not want if you just want
+	// to reuse the buffer for hyper-ultra-blazingly-fast-optimization
+	void clear(ArrayClearBehavior behavior = ArrayClearBehavior::RESET_ALL_ITEMS)
+	{
+		_array.clear(behavior);
+	}
+
+	// Adds a character to the string.
+	void append(T c)
+	{
+		_array.add(c);
+	}
+};
+
+// Mutable UTF-8 string. You can change it and stuff.
+using StringBuilder8 = BaseStringBuilder<char>;
+// Mutable UTF-8 string. You can change it and stuff.
+using StringBuilder = StringBuilder8; // utf-8 is the default
 
 String fmt_args(Arena& arena, const char* fmt, va_list arg);
 
 // It's just `sprintf` for `tr::String` lmao.
 [[gnu::format(printf, 2, 3)]]
 String fmt(Arena& arena, const char* fmt, ...);
-
-// TODO StringBuilder
 
 }
 

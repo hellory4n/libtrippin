@@ -2373,22 +2373,22 @@ constexpr T rad2deg(T rad)
 }
 
 // Picks the smaller option
-template<typename T>
-constexpr T min(T a, T b)
+template<typename T, typename U>
+constexpr auto min(T a, U b)
 {
 	return a < b ? a : b;
 }
 
 // Picks the bigger option
-template<typename T>
-constexpr T max(T a, T b)
+template<typename T, typename U>
+constexpr auto max(T a, U b)
 {
 	return a > b ? a : b;
 }
 
 // clamp
-template<typename T>
-constexpr T clamp(T val, T min, T max)
+template<typename T, typename U, typename V>
+constexpr auto clamp(T val, U min, V max)
 {
 	return tr::min(tr::max(min, val), max);
 }

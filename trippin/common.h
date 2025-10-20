@@ -124,6 +124,14 @@ using float64 = double;
 using usize = size_t;
 using isize = ptrdiff_t;
 
+using char8 = char8_t;
+using char16 = char16_t;
+using char32 = char32_t;
+
+// a byte makes it clear you're working with bytes (e.g. low level faffery), while an uint8 may just
+// be an unsigned int that happens to be 8 bits for whatever reason
+using byte = uint8_t;
+
 // it's usually true, but not guaranteed by the standard
 // TODO c++23 has float32_t, float64_t, and even float16_t
 static_assert(sizeof(usize) == sizeof(isize), "size_t and ptrdiff_t must be the same size");
@@ -133,13 +141,13 @@ static_assert(sizeof(float64) == 8, "double must be 64-bits");
 namespace tr {
 
 // I sure love versions.
-constexpr const char* VERSION = "v2.7.2";
+constexpr const char* VERSION = "v2.8.0-dev";
 
 // I sure love versions. Format is XYYZZ
-constexpr uint32 VERSION_NUM = 2'07'02;
+constexpr uint32 VERSION_NUM = 2'08'00;
 constexpr uint32 VERSION_MAJOR = 2;
-constexpr uint32 VERSION_MINOR = 7;
-constexpr uint32 VERSION_PATCH = 2;
+constexpr uint32 VERSION_MINOR = 8;
+constexpr uint32 VERSION_PATCH = 0;
 
 // Initializes the bloody library lmao.
 void init();

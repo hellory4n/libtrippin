@@ -27,160 +27,256 @@
 
 #include <cstdarg>
 #include <cstdio>
+#include <cstring>
 
+#include "trippin/common.h"
+#include "trippin/log.h"
 #include "trippin/math.h"
+#include "trippin/memory.h"
 
-// TODO maybe use less <cstring> bcuz it can get fucky
-// it's probably not that hard to implement it yourself
+// FIXME theres probably 2050 different violations of strict aliasing
+// and 2050 different security vulnerabilities
 
-bool tr::String::operator==(tr::String other) const
+void tr::strlib::explicit_memset(byte* ptr, usize len, byte val)
 {
-	// strncmp gets mad with null
-	if (this->buf() == nullptr || *other == nullptr) {
-		return this->buf() == *other;
+	TR_ASSERT(ptr);
+	volatile byte* p = reinterpret_cast<volatile byte*>(ptr);
+	for (usize i = 0; i < len; i++) {
+		p[i] = val;
 	}
-	return strncmp(this->buf(), *other, tr::max(this->len(), other.len())) == 0;
 }
 
-tr::String tr::String::substr(tr::Arena& arena, usize start, usize end) const
+bool tr::strlib::strs_equal(const byte* a, usize a_len, const byte* b, usize b_len)
 {
-	String str = String(this->buf() + start, end + 1).duplicate(arena);
-	str[end] = '\0';
-	return str;
+	if (a == nullptr || b == nullptr) [[unlikely]] {
+		return a == b;
+	}
+	if (a == b) [[unlikely]] {
+		return true;
+	}
+	if (a_len != b_len) {
+		return false;
+	}
+	return memcmp(a, b, a_len) == 0;
 }
 
-tr::Array<usize> tr::String::find(tr::Arena& arena, char c, usize start, usize end) const
+void tr::strlib::substr(const byte* s, usize len, usize start, usize end, byte* out, usize ch_len)
 {
-	if (end == 0 || end > this->len()) {
-		end = this->len();
+	TR_ASSERT(s);
+	TR_ASSERT(out);
+
+	end = tr::clamp(end, start, len) + 1;
+	memcpy(out, s + start, start - end);
+	tr::strlib::explicit_memset(out + start - end + 1, ch_len, 0);
+}
+
+tr::Array<usize> tr::strlib::find_char(
+	tr::Arena& arena, const byte* s, usize len, usize start, usize end, const byte* ch,
+	usize ch_len
+)
+{
+	TR_ASSERT(s);
+	TR_ASSERT(ch);
+
+	if (end == 0) {
+		end = len;
 	}
-	// you can't find it if it's not there
-	if (this->len() == 0) {
+	end = tr::clamp(end, start, len) + 1;
+	// you can't find if it's not there
+	if (len == 0) {
 		return {};
 	}
 
-	Array<usize> indexes(tr::scratchpad(), 0);
-
-	for (usize i = start; i < end; i++) {
-		if ((*this)[i] == c) {
+	Array<usize> indexes{arena};
+	for (usize i = start; i < end; i += ch_len) {
+		if (memcmp(&s[i * ch_len], ch, ch_len) == 0) {
 			indexes.add(i);
 		}
 	}
-
-	return Array<usize>(arena, indexes.buf(), indexes.len());
+	return indexes;
 }
 
-tr::Array<usize> tr::String::find(tr::Arena& arena, tr::String str, usize start, usize end) const
+tr::Array<usize> tr::strlib::find_str(
+	Arena& arena, const byte* s, usize len, usize start, usize end, const byte* substr,
+	usize substr_len
+)
 {
-	if (end == 0 || end > this->len()) {
-		end = this->len();
+	TR_ASSERT(s);
+	TR_ASSERT(substr);
+
+	if (end == 0) {
+		end = len;
 	}
-	// you can't find it if it's not there
-	if (str.len() == 0 || this->len() == 0) {
+	end = tr::clamp(end, start, len) + 1;
+	// you can't find if it's not there
+	if (len == 0) {
 		return {};
 	}
 
-	Array<usize> indexes(tr::scratchpad(), 0);
-
+	Array<usize> indexes{arena};
 	for (usize i = start; i < end; i++) {
-		String substr = this->substr(tr::scratchpad(), i, str.len());
-		if (substr == str) {
+		if (memcmp(&s[i], substr, substr_len) == 0) {
 			indexes.add(i);
 		}
 	}
-
-	return Array<usize>(arena, indexes.buf(), indexes.len());
+	return indexes;
 }
 
-tr::String tr::String::concat(tr::Arena& arena, tr::String other) const
+void tr::strlib::concat(
+	const byte* a, usize a_len, const byte* b, usize b_len, byte* out, usize ch_len
+)
 {
-	String new_str(arena, this->buf(), this->len() + other.len());
-// msvc is a little bitch
-#ifdef TR_ONLY_MSVC
-	errno_t ohno = strncat_s(new_str.buf(), new_str.len() + 1, other.buf(), other.len());
-	TR_ASSERT(ohno == 0);
-#else
-	strncat(new_str.buf(), other.buf(), other.len());
-#endif
-	return new_str;
+	TR_ASSERT(a);
+	TR_ASSERT(b);
+	TR_ASSERT(out);
+
+	memcpy(out, a, a_len);
+	memcpy(out + a_len, b, b_len);
+	tr::strlib::explicit_memset(out + a_len + b_len + 1, ch_len, 0);
 }
 
-bool tr::String::starts_with(tr::String str) const
+bool tr::strlib::starts_with(const byte* s, usize s_len, const byte* substr, usize substr_len)
 {
-	return String(this->buf(), str.len()) == str;
+	TR_ASSERT(s);
+	TR_ASSERT(substr);
+
+	substr_len = tr::clamp(substr_len, 0u, s_len);
+	return tr::strlib::strs_equal(s, substr_len, substr, substr_len);
 }
 
-bool tr::String::ends_with(tr::String str) const
+bool tr::strlib::ends_with(const byte* s, usize s_len, const byte* substr, usize substr_len)
 {
-	return String(this->buf() + this->len() - str.len(), str.len()) == str;
+	TR_ASSERT(s);
+	TR_ASSERT(substr);
+
+	substr_len = tr::clamp(substr_len, 0u, s_len);
+	return tr::strlib::strs_equal(s + s_len - substr_len, substr_len, substr, substr_len);
 }
 
-tr::String tr::String::file(Arena& arena) const
+void tr::strlib::strfile(tr::Arena& arena, const char8* s, usize len, char8** out, usize* out_len)
 {
-	for (usize i = this->len() - 1; i < this->len(); i--) {
-		if ((*this)[i] == '/' || (*this)[i] == '\\') {
-			return this->substr(arena, i + 1, this->len() + 1);
+	TR_ASSERT(s);
+	TR_ASSERT(out);
+	TR_ASSERT(out_len);
+
+	for (usize i = len - 1; i < len; i--) {
+		if (s[i] == '/' || s[i] == '\\') {
+			char8* newstr = static_cast<char8*>(arena.alloc(len - i + 1));
+			tr::strlib::substr(
+				reinterpret_cast<const byte*>(s), len, i, len,
+				reinterpret_cast<byte*>(newstr), 1
+			);
+			*out = newstr;
+			*out_len = len - i;
 		}
 	}
-	return this->duplicate(arena);
+
+	// just duplicate the string
+	char8* newstr = static_cast<char8*>(arena.alloc(len + 1));
+	memcpy(newstr, s, len);
+	newstr[len] = '\0';
+	*out = newstr;
+	*out_len = len;
 }
 
-tr::String tr::String::directory(Arena& arena) const
+void tr::strlib::strdir(tr::Arena& arena, const char8* s, usize len, char8** out, usize* out_len)
 {
-	for (usize i = this->len() - 1; i < this->len(); i--) {
-		if ((*this)[i] == '/' || (*this)[i] == '\\') {
-			return this->substr(arena, 0, i);
+	TR_ASSERT(s);
+	TR_ASSERT(out);
+	TR_ASSERT(out_len);
+
+	for (usize i = len - 1; i < len; i--) {
+		if (s[i] == '/' || s[i] == '\\') {
+			char8* newstr = static_cast<char8*>(arena.alloc(len - i + 1));
+			tr::strlib::substr(
+				reinterpret_cast<const byte*>(s), len, 0, i,
+				reinterpret_cast<byte*>(newstr), 1
+			);
+			*out = newstr;
+			*out_len = len - i;
 		}
 	}
-	return this->duplicate(arena);
+
+	// just duplicate the string
+	char8* newstr = static_cast<char8*>(arena.alloc(len + 1));
+	memcpy(newstr, s, len);
+	newstr[len] = '\0';
+	*out = newstr;
+	*out_len = len;
 }
 
-tr::String tr::String::extension(Arena& arena) const
+void tr::strlib::strext(tr::Arena& arena, const char8* s, usize len, char8** out, usize* out_len)
 {
-	String filename = this->file(arena);
-	for (usize i = 0; i < filename.len(); i++) {
-		if (filename[i] == '.') {
+	TR_ASSERT(s);
+	TR_ASSERT(out);
+	TR_ASSERT(out_len);
+
+	char8* file;
+	usize file_len;
+	tr::strlib::strfile(arena, s, len, &file, &file_len);
+
+	for (usize i = 0; i < file_len; i++) {
+		if (file[i] == '.') {
 			// a . prefix is a hidden file in unix, not an extension
 			if (i == 0) {
-				return "";
+				continue;
 			}
-			return filename.substr(arena, i, filename.len() + 1);
+
+			char8* newstr = static_cast<char8*>(arena.alloc(len - i + 1));
+			tr::strlib::substr(
+				reinterpret_cast<const byte*>(s), len, i, len + 1,
+				reinterpret_cast<byte*>(newstr), 1
+			);
+			*out = newstr;
+			*out_len = len - i;
 		}
 	}
-	return "";
+
+	*out = nullptr;
+	*out_len = 0;
 }
 
-bool tr::String::is_absolute() const
+bool tr::strlib::strabsolute(const char8* s, usize len)
 {
-	if (this->starts_with("/")) {
+	TR_ASSERT(s);
+
+	// unfortunately the c-like api with c++ types makes this ugly as fuck
+	const byte* sbytes = reinterpret_cast<const byte*>(s);
+
+	const byte* unix_root = reinterpret_cast<const byte*>("/");
+	if (tr::strlib::starts_with(sbytes, len, unix_root, sizeof("/") - 1)) {
 		return true;
 	}
-	if (this->starts_with("~/")) {
+	const byte* unix_home = reinterpret_cast<const byte*>("~/");
+	if (tr::strlib::starts_with(sbytes, len, unix_home, sizeof("~/") - 1)) {
 		return true;
 	}
-	if (this->starts_with("./")) {
+	const byte* unix_this_dir = reinterpret_cast<const byte*>("./");
+	if (tr::strlib::starts_with(sbytes, len, unix_this_dir, sizeof("./") - 1)) {
 		return false;
 	}
-	if (this->starts_with("../")) {
+	const byte* unix_parent_dir = reinterpret_cast<const byte*>("../");
+	if (tr::strlib::starts_with(sbytes, len, unix_parent_dir, sizeof("../") - 1)) {
 		return false;
 	}
-	if (this->starts_with(".\\")) {
+	const byte* win_this_dir = reinterpret_cast<const byte*>(".\\");
+	if (tr::strlib::starts_with(sbytes, len, win_this_dir, sizeof(".\\") - 1)) {
 		return false;
 	}
-	if (this->starts_with("..\\")) {
-		return false;
+	const byte* win_parent_dir = reinterpret_cast<const byte*>("..\\");
+	if (tr::strlib::starts_with(sbytes, len, win_parent_dir, sizeof("..\\") - 1)) {
+		return true;
 	}
 
 	// handle both windows drives and URI schemes
 	// they're both some letters followed by `:/`
-	for (ArrayItem<char> c : *this) {
+	for (usize i = 0; i < len; i++) {
+		char8 c = s[i];
 		// just ascii bcuz i doubt theres an uri scheme like lösarquívos://
-		if ((c.val >= '0' && c.val <= '9') || (c.val >= 'A' && c.val <= 'Z') ||
-		    (c.val >= 'a' && c.val <= 'z')) {
-			// pls don't crash
-			if (this->len() > c.i + 2) {
-				if ((*this)[c.i + 1] == ':' &&
-				    ((*this)[c.i + 2] == '/' || (*this)[c.i + 2] == '\\')) {
+		if ((c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) {
+			// pls don't ~~crash~~ undefine behavior all over the place
+			if (len > i + 2) {
+				if (s[i + 1] == ':' && (s[i + 2] == '/' || s[i + 2] == '\\')) {
 					return true;
 				}
 			}
@@ -190,55 +286,50 @@ bool tr::String::is_absolute() const
 	return false;
 }
 
-[[nodiscard]]
-tr::String tr::String::replace(tr::Arena& arena, char from, char to) const
+void tr::strlib::replace(
+	const byte* s, usize s_len, const byte* from_ch, const byte* to_ch, usize ch_len, byte* out
+)
 {
-	Array<usize> indexes = this->find(tr::scratchpad(), from);
-	String str = this->duplicate(tr::scratchpad());
+	TR_ASSERT(s);
+	TR_ASSERT(from_ch);
+	TR_ASSERT(to_ch);
+	TR_ASSERT(out);
 
-	for (auto [_, idx] : indexes) {
-		str[idx] = to;
+	for (usize i = 0; i < s_len; i += ch_len) {
+		if (memcmp(&s[i], from_ch, ch_len) == 0) {
+			memcpy(&out[i], to_ch, ch_len);
+		}
 	}
-
-	return str.duplicate(arena);
 }
 
-[[nodiscard]]
-tr::Array<tr::String> tr::String::split(tr::Arena& arena, char delimiter) const
+tr::Array<byte*> tr::strlib::split_by_char(
+	tr::Arena& arena, const byte* s, usize s_len, const byte* ch, usize ch_len
+)
 {
-	Array<String> strings(tr::scratchpad());
-	String str = this->duplicate(tr::scratchpad());
-	char delim[2] = {delimiter, '\0'};
+	Array<byte*> strs{arena};
+	usize last_str = 0;
 
-// windows has strtok_s, posix has strtok_r
-// they're pretty much the same thing
-// interestingly strtok_s is optional (from c11) but also microsoft's strtok_s is different
-// because FUCK ME
-#ifdef _WIN32
-	char* context = nullptr;
-	char* token = strtok_s(str, delim, &context);
-	while (token != nullptr) {
-		String m = String(arena, token, strlen(token));
-		strings.add(m);
-		token = strtok_s(nullptr, delim, &context);
+	for (usize i = 0; i < s_len; i += ch_len) {
+		if (memcmp(&s[i], ch, ch_len) == 0) {
+			byte* newstr = static_cast<byte*>(arena.alloc(i - last_str));
+			memcpy(newstr, &s[last_str], i - last_str);
+			strs.add(newstr);
+			last_str = i + ch_len;
+		}
 	}
-#else
-	char* saveptr;
-	char* token = strtok_r(str, delim, &saveptr);
-	while (token != nullptr) {
-		String m = String(arena, token, strlen(token));
-		strings.add(m);
-		token = strtok_r(nullptr, delim, &saveptr);
-	}
-#endif
 
-	return Array<String>(arena, strings.buf(), strings.len());
+	// if nothing was found
+	if (strs.len() == 0) {
+		byte* newstr = static_cast<byte*>(arena.alloc(s_len));
+		memcpy(newstr, s, s_len);
+		strs.add(newstr);
+	}
+
+	return strs;
 }
 
 tr::String tr::fmt_args(tr::Arena& arena, const char* fmt, va_list arg)
 {
-	// TODO does this work on mingw gcc?
-
 	va_list arglen;
 	va_copy(arglen, arg);
 
@@ -253,7 +344,7 @@ tr::String tr::fmt_args(tr::Arena& arena, const char* fmt, va_list arg)
 
 	// the string constructor handles the null terminator shut up
 	TR_ASSERT(size >= 0);
-	String str(arena, static_cast<usize>(size));
+	StringBuilder str{arena, static_cast<usize>(size)};
 
 	// do the formatting frfrfrfr
 	va_list argfmt;
