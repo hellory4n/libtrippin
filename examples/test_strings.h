@@ -8,7 +8,7 @@ void test_strings()
 	tr::log("%s", *str);
 
 	// arena string
-	tr::String str2(tr::scratchpad(), "a string", sizeof("a string"));
+	tr::String str2{tr::scratchpad(), "a string", sizeof("a string")};
 
 	// you can do formatting too
 	tr::String str3 = tr::fmt(tr::scratchpad(), "hi %s", "mom");

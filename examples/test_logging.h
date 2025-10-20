@@ -13,6 +13,7 @@ void test_logging()
 	tr::warn("sir");
 	tr::error("sir");
 
+	TR_ASSERT(true != false);
 	TR_ASSERT_MSG(2 + 2 == 5, "i might be wrong");
 	tr::panic("AHHHHHHH");
 

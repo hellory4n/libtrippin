@@ -25,6 +25,7 @@
 
 #include "trippin/common.h"
 #include "trippin/error.h"
+#include "trippin/string.h"
 
 // :(
 // TODO macOS exists
@@ -75,7 +76,7 @@ String user_dir;
 
 tr::Result<tr::String> tr::Reader::read_string(tr::Arena& arena, int64 length)
 {
-	String str(arena, static_cast<usize>(length));
+	StringBuilder str{arena, static_cast<usize>(length)};
 	TR_TRY_ASSIGN(int64 read, this->read_bytes(str.buf(), sizeof(char), length));
 
 	if (read != int64(length)) {
@@ -83,7 +84,7 @@ tr::Result<tr::String> tr::Reader::read_string(tr::Arena& arena, int64 length)
 			"expected %zu bytes, got %li (might be EOF)", length, read
 		);
 	}
-	return str;
+	return static_cast<String>(str);
 }
 
 tr::Result<tr::String> tr::Reader::read_line(Arena& arena)
@@ -120,9 +121,9 @@ tr::Result<tr::String> tr::Reader::read_line(Arena& arena)
 	}
 
 	if (linema.len() == 0) {
-		return String("");
+		return String{""};
 	}
-	return String(arena, linema.buf(), linema.len() + 1);
+	return String{arena, linema.buf(), linema.len() + 1};
 }
 
 tr::Result<tr::Array<uint8>> tr::Reader::read_all_bytes(tr::Arena& arena)
@@ -138,14 +139,14 @@ tr::Result<tr::String> tr::Reader::read_all_text(tr::Arena& arena)
 {
 	TR_TRY_ASSIGN(int64 length, this->len());
 
-	String man(arena, static_cast<usize>(length));
+	StringBuilder man{arena, static_cast<usize>(length)};
 	TR_TRY(this->read_bytes(man.buf(), sizeof(char), length));
-	return man;
+	return static_cast<String>(man);
 }
 
 tr::Result<void> tr::Writer::write_string(tr::String str)
 {
-	Array<uint8> manfuckyou(reinterpret_cast<uint8*>(str.buf()), str.len());
+	Array<uint8> manfuckyou{reinterpret_cast<const uint8*>(str.buf()), str.len()};
 	return this->write_bytes(manfuckyou);
 }
 
@@ -664,7 +665,7 @@ tr::Result<tr::File&> tr::File::open(tr::Arena& arena, tr::String path, tr::File
 	}
 
 	File& file = arena.make_ref<File>();
-	file.fptr = fopen(path, modefrfr);
+	file.fptr = fopen(*path, *modefrfr);
 	if (file.fptr == nullptr) {
 		return FileError::from_errno(path, "", FileOperation::OPEN_FILE);
 	}
@@ -840,7 +841,7 @@ tr::Result<void> tr::remove_file(tr::String path)
 {
 	FileError::reset_errors();
 
-	int i = remove(path);
+	int i = remove(*path);
 	if (i == -1) {
 		return FileError::from_errno(path, "", FileOperation::REMOVE_FILE);
 	}
@@ -858,7 +859,7 @@ tr::Result<void> tr::move_file(tr::String from, tr::String to)
 		return FileError(from, to, FileErrorType::FILE_EXISTS, FileOperation::MOVE_FILE);
 	}
 
-	int i = rename(from, to);
+	int i = rename(*from, *to);
 	if (i == -1) {
 		return FileError::from_errno(from, to, FileOperation::MOVE_FILE);
 	}
@@ -873,7 +874,7 @@ bool tr::file_exists(tr::String path)
 	// we could just fopen(path, "r") then check if that's null, but then it would return false
 	// on permission errors, even though it does in fact exist
 	struct stat buffer = {};
-	return stat(path, &buffer) == 0;
+	return stat(*path, &buffer) == 0;
 }
 
 bool tr::path_exists(tr::String path)
@@ -883,7 +884,7 @@ bool tr::path_exists(tr::String path)
 	// we could just fopen(path, "r") then check if that's null, but then it would return false
 	// on permission errors, even though it does in fact exist
 	struct stat buffer = {};
-	return stat(path, &buffer) == 0;
+	return stat(*path, &buffer) == 0;
 }
 
 tr::Result<void> tr::create_dir(tr::String path)
@@ -922,7 +923,7 @@ tr::Result<void> tr::create_dir(tr::String path)
 			continue;
 		}
 
-		if (mkdir(full_dir, 0755) == -1) {
+		if (mkdir(*full_dir, 0755) == -1) {
 			return FileError::from_errno(full_dir, "", FileOperation::CREATE_DIR);
 		}
 	}
@@ -933,7 +934,7 @@ tr::Result<void> tr::remove_dir(tr::String path)
 {
 	FileError::reset_errors();
 
-	if (rmdir(path) != 0) {
+	if (rmdir(*path) != 0) {
 		return FileError::from_errno(path, "", FileOperation::REMOVE_DIR);
 	}
 	return {};
@@ -944,7 +945,7 @@ tr::list_dir(tr::Arena& arena, tr::String path, bool include_hidden)
 {
 	FileError::reset_errors();
 
-	DIR* dir = opendir(path);
+	DIR* dir = opendir(*path);
 	if (dir == nullptr) {
 		return FileError::from_errno(path, "", FileOperation::LIST_DIR);
 	}
@@ -977,7 +978,7 @@ tr::Result<bool> tr::is_file(tr::String path)
 	FileError::reset_errors();
 
 	struct stat statma = {};
-	if (stat(path, &statma) != 0) {
+	if (stat(*path, &statma) != 0) {
 		return FileError::from_errno(path, "", FileOperation::IS_FILE);
 	}
 
@@ -993,17 +994,18 @@ void tr::_init_paths()
 {
 	// TODO macOS exists
 	// TODO bsd exists
-	tr::exe_dir = String(tr::core_arena, PATH_MAX);
-	ssize_t len = readlink("/proc/self/exe", exe_dir, exe_dir.len());
+	StringBuilder exedir{tr::core_arena, PATH_MAX};
+	ssize_t len = readlink("/proc/self/exe", *exedir, exedir.len());
 	if (len == -1) {
 		tr::warn("couldn't get executable directory, using relative paths for app://");
 		tr::exe_dir = ".";
 	}
 	else {
-		tr::exe_dir[static_cast<usize>(len)] = '\0';
-		tr::exe_dir = tr::exe_dir.directory(tr::core_arena);
+		exedir[static_cast<usize>(len)] = '\0';
+		exedir = tr::exe_dir.directory(tr::core_arena);
 	}
 
+	tr::exe_dir = exedir;
 	char* home = getenv("HOME");
 	tr::appdata_dir = tr::fmt(tr::core_arena, "%s/.local/share", home);
 }

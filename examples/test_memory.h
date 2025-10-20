@@ -11,7 +11,7 @@ struct CrapStruct
 
 void test_memory()
 {
-	tr::Arena arena{};
+	tr::Arena arena = {};
 	TR_DEFER(arena.free());
 
 	// arenas are infinite
@@ -22,7 +22,9 @@ void test_memory()
 
 	// you can also allocate arrays
 	// tr::scratchpad() is a temporary arena (like a sane alloca)
-	tr::Array<int64> array(tr::scratchpad(), {1, 2, 3, 4, 5});
+	tr::Array<int64> array = {
+		tr::scratchpad(), {1, 2, 3, 4, 5}
+	};
 	array.add(6);
 	for (auto [i, num] : array) {
 		tr::log("array[%zu] = %li", i, num);

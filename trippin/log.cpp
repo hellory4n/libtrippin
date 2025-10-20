@@ -185,7 +185,7 @@ void tr::_impl_assert(const char* expr, const char* fmt, ...)
 
 	String prefix = tr::fmt(tr::scratchpad(), "failed assert \"%s\": ", expr);
 
-	_log(tr::ConsoleColor::ERROR, prefix, true, fmt, args);
+	_log(tr::ConsoleColor::ERROR, *prefix, true, fmt, args);
 	va_end(args);
 	// straight up [[noreturn]]ing it
 	exit(1);

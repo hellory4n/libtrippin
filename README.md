@@ -6,7 +6,7 @@ The most biggest most massive library of all time. I'm insane.
 
 ## Featuring
 
-- C++20 with no external dependencies (only libc/stdc++)
+- C++20 with no external dependencies (other than libc/stdc++)
 - Cross-platform (Windows and POSIX)
 - Arenas for memory management
 - Arrays, strings, hashmaps

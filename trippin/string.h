@@ -119,9 +119,13 @@ namespace strlib {
 	bool strabsolute(const char8* s, usize len);
 }
 
+template<Character T>
+requires(!std::is_const_v<T>)
+class BaseStringBuilder;
+
 // A view into immutable strings. Strings are just a pointer + length, with the underlying data
-// being const (if you want to modify it, copy the data). The 'default' string type, equivalent to
-// `std::string_view`.
+// being const. If you want to modify it, copy the data, or use `StringBuilder`. The 'default'
+// string type, equivalent to `std::string_view`.
 template<Character T>
 class BaseString
 {
@@ -147,7 +151,7 @@ public:
 	{
 		// does len already include the null terminator?
 		if (_len > 0) {
-			if (_ptr[_len] == '\0') {
+			if (_ptr[_len - 1] == '\0') {
 				_len--;
 			}
 		}
@@ -184,6 +188,12 @@ public:
 	{
 	}
 
+	// Creates a `String` from a `StringBuilder`
+	explicit BaseString(BaseStringBuilder<T> sb);
+
+	// Creates a `String` by copying a `StringBuilder`
+	BaseString(Arena& arena, BaseStringBuilder<T> sb);
+
 	constexpr usize len() const
 	{
 		return _len;
@@ -195,7 +205,7 @@ public:
 		return _ptr;
 	}
 
-	operator const T*()
+	const T* operator*() const
 	{
 		_validate();
 		return _ptr;
@@ -487,6 +497,18 @@ public:
 	{
 	}
 
+	// Initializes a string builder from a regular old boring string
+	BaseStringBuilder(BaseString<T> str)
+		: BaseStringBuilder(str.buf(), str.len())
+	{
+	}
+
+	// Initializes a string builder by copying a regular old boring string
+	BaseStringBuilder(Arena& arena, BaseString<T> str)
+		: BaseStringBuilder(arena, str.buf(), str.len())
+	{
+	}
+
 	// string builder to string view
 	operator BaseString<T>() const
 	{
@@ -573,6 +595,13 @@ public:
 		_array.add(c);
 	}
 };
+
+template<Character T>
+BaseString<T>::BaseString(BaseStringBuilder<T> sb)
+	: _ptr(*sb)
+	, _len(sb.len())
+{
+}
 
 // Mutable UTF-8 string. You can change it and stuff.
 using StringBuilder8 = BaseStringBuilder<char>;
