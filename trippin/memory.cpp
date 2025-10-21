@@ -3,7 +3,7 @@
  * https://github.com/hellory4n/libtrippin
  *
  * trippin/memory.cpp
- * Reference counting, arenas, arrays, and a few utilities
+ * Arenas, arrays, and a few utilities
  *
  * Copyright (C) 2025 by hellory4n <hellory4n@gmail.com>
  *

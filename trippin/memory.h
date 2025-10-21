@@ -3,7 +3,7 @@
  * https://github.com/hellory4n/libtrippin
  *
  * trippin/memory.h
- * Reference counting, arenas, arrays, and a few utilities
+ * Arenas, arrays, and a few utilities
  *
  * Copyright (C) 2025 by hellory4n <hellory4n@gmail.com>
  *
@@ -107,7 +107,7 @@ public:
 	usize available_space() const;
 
 	// Allocates something in the page lmao. Returns null on failure
-	void* alloc(usize size, usize align);
+	void* alloc(usize size, usize align) TR_LIFETIME_BOUND;
 };
 
 // Internal utility to manage calling destructors :)
@@ -153,7 +153,7 @@ public:
 
 	// Allocates some crap on the arena.
 	[[nodiscard, gnu::malloc]]
-	void* alloc(usize size, usize align = alignof(max_align_t));
+	void* alloc(usize size, usize align = alignof(max_align_t)) TR_LIFETIME_BOUND;
 
 	// Reuses the entire arena and sets everything to 0 :)
 	void reset();
@@ -184,7 +184,7 @@ public:
 	// that
 	template<typename T, typename... Args>
 	[[nodiscard]]
-	T& make_ref(Args&&... args)
+	T& make_ref(Args&&... args) TR_LIFETIME_BOUND
 	{
 		void* ptr = this->alloc(sizeof(T), alignof(T));
 		T* obj = new (ptr) T(std::forward<Args>(args)...);
@@ -205,7 +205,7 @@ public:
 	// that
 	template<typename T, typename... Args>
 	[[nodiscard]]
-	T* make_ptr(Args&&... args)
+	T* make_ptr(Args&&... args) TR_LIFETIME_BOUND
 	{
 		void* ptr = this->alloc(sizeof(T), alignof(T));
 		T* obj = new (ptr) T(std::forward<Args>(args)...);
@@ -323,7 +323,7 @@ public:
 	}
 
 	// Initializes an array from a buffer. (the data is copied into the arena)
-	Array(Arena& arena, ConstT* data, usize len)
+	Array(Arena& arena TR_LIFETIME_BOUND, ConstT* data, usize len)
 		: _src_arena(&arena)
 		, _len(len)
 		, _cap(len)
@@ -358,7 +358,7 @@ public:
 
 	// Initializes an array that points to any buffer. You really should only use
 	// this for temporary arrays.
-	constexpr Array(ConstT* data, usize len)
+	constexpr Array(ConstT* data TR_LIFETIME_BOUND, usize len)
 		: _ptr(data)
 		, _len(len)
 		, _cap(len)
@@ -372,7 +372,7 @@ public:
 		}
 	}
 
-	Array(Arena& arena, std::initializer_list<RefWrapper<const T>> initlist)
+	Array(Arena& arena TR_LIFETIME_BOUND, std::initializer_list<RefWrapper<const T>> initlist)
 		: Array(arena, initlist.begin(), initlist.size())
 	{
 	}
@@ -613,7 +613,7 @@ public:
 
 	// As the name implies, it copies the array and its items to somewhere else.
 	[[nodiscard]]
-	Array<T> duplicate(Arena& arena) const
+	Array<T> duplicate(Arena& arena TR_LIFETIME_BOUND) const
 	{
 		_validate();
 		return Array<T>{arena, buf(), len()};

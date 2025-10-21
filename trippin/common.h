@@ -33,78 +33,7 @@
 #include <type_traits>
 #include <utility>
 
-// check for C++20 support
-#ifndef _MSC_VER
-	#if __cplusplus < 202002L
-		#error "libtrippin requires C++20 or higher"
-	#endif
-#else
-	// as always msvc is a bitch and doesn't correctly define __cplusplus until newer
-	// versions, but only if you use some extra flag of course like why what the fuck is
-	// wrong with you
-	#if _MSC_VER >= 1914
-		#if _MSVC_LANG < 202002L
-			#error "libtrippin requires C++20 or higher"
-		#endif
-	#else
-		#error "Your Visual Studio installation is too old, please update to Visual Studio 2022 or higher"
-	#endif
-#endif
-
-// get compiler
-// checking between gcc and clang is useful because some warnings are different
-#if defined(__clang__)
-	#define TR_ONLY_CLANG
-#elif defined(__GNUC__)
-	#define TR_ONLY_GCC
-#elif defined(_MSC_VER)
-	#define TR_ONLY_MSVC
-#endif
-
-#if defined(__GNUC__) && defined(_WIN32)
-	#define TR_ONLY_MINGW_GCC
-#endif
-#if defined(_MSC_VER) && defined(__clang__)
-	#define TR_ONLY_CLANG_CL
-#endif
-
-// but they're similar enough that we can usually check for both
-#ifdef __GNUC__
-	#define TR_GCC_OR_CLANG
-#endif
-
-// TODO msvc version
-#ifdef TR_GCC_OR_CLANG
-	#define TR_GCC_PRAGMA(X) _Pragma(#X)
-
-	/* so you don't have to check between GCC and clang, it'll just shut up */
-	#ifdef TR_ONLY_CLANG
-		#define TR_GCC_IGNORE_WARNING(Warning) \
-			TR_GCC_PRAGMA(GCC diagnostic push)                  \
-			TR_GCC_PRAGMA(GCC diagnostic ignored "-Wunknown-warning-option")                  \
-			TR_GCC_PRAGMA(GCC diagnostic push)                  \
-			TR_GCC_PRAGMA(GCC diagnostic ignored #Warning)
-	#else
-		#define TR_GCC_IGNORE_WARNING(Warning) \
-			TR_GCC_PRAGMA(GCC diagnostic push)                  \
-			TR_GCC_PRAGMA(GCC diagnostic ignored "-Wpragmas")                  \
-			TR_GCC_PRAGMA(GCC diagnostic push)                  \
-			TR_GCC_PRAGMA(GCC diagnostic ignored #Warning)
-	#endif
-
-	#define TR_GCC_RESTORE() \
-		TR_GCC_PRAGMA(GCC diagnostic pop)    \
-		TR_GCC_PRAGMA(GCC diagnostic pop)
-#else
-	#define TR_GCC_PRAGMA(X)
-	#define TR_GCC_IGNORE_WARNING(Warning)
-	#define TR_GCC_RESTORE()
-#endif
-
-// evil macro fuckery
-#define _TR_CONCAT2(A, B) A##B
-#define _TR_CONCAT(A, B) _TR_CONCAT2(A, B)
-#define _TR_UNIQUE_NAME(Base) _TR_CONCAT(Base, __LINE__)
+#include "trippin/bits/platform.h" // IWYU pragma: export
 
 // number types
 // i'm not a huge fan of random '_t's everywhere

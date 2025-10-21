@@ -145,7 +145,7 @@ class BaseString
 public:
 	using Type = T;
 
-	constexpr BaseString(const T* str, usize len)
+	constexpr BaseString(const T* str TR_LIFETIME_BOUND, usize len)
 		: _ptr(str)
 		, _len(len + 1)
 	{
@@ -157,7 +157,7 @@ public:
 		}
 	}
 
-	constexpr BaseString(const T* str)
+	constexpr BaseString(const T* str TR_LIFETIME_BOUND)
 		: BaseString(str, tr::strlib::constexpr_strlen(str))
 	{
 	}
@@ -175,7 +175,7 @@ public:
 	}
 
 	// Copies an existing string ptr to an arena
-	BaseString(Arena& arena, const T* str, usize len)
+	BaseString(Arena& arena TR_LIFETIME_BOUND, const T* str, usize len)
 		: _len(len)
 	{
 		T* newptr = static_cast<T*>(arena.alloc(len * sizeof(T)));
@@ -184,7 +184,7 @@ public:
 	}
 
 	// Copies an existing string ptr to an arena
-	BaseString(Arena& arena, const T* str)
+	BaseString(Arena& arena TR_LIFETIME_BOUND, const T* str)
 		: BaseString(arena, str, tr::strlib::constexpr_strlen(str))
 	{
 	}
@@ -193,7 +193,7 @@ public:
 	explicit BaseString(BaseStringBuilder<T> sb);
 
 	// Creates a `String` by copying a `StringBuilder`
-	BaseString(Arena& arena, BaseStringBuilder<T> sb);
+	BaseString(Arena& arena TR_LIFETIME_BOUND, BaseStringBuilder<T> sb);
 
 	constexpr usize len() const
 	{
@@ -304,7 +304,7 @@ public:
 
 	// Gets a substring. The returned string doesn't include the end character.
 	[[nodiscard]]
-	BaseString substr(Arena& arena, usize start, usize end) const
+	BaseString substr(Arena& arena TR_LIFETIME_BOUND, usize start, usize end) const
 	{
 		T* buffer = static_cast<T*>(arena.alloc((end - start + 1) * sizeof(T)));
 		tr::strlib::substr(
@@ -316,7 +316,7 @@ public:
 
 	// Returns an array with all of the indexes containing that character (the index is where it
 	// starts)
-	Array<usize> find(Arena& arena, T c, usize start = 0, usize end = 0) const
+	Array<usize> find(Arena& arena TR_LIFETIME_BOUND, T c, usize start = 0, usize end = 0) const
 	{
 		if (end == 0 || end > len()) {
 			end = len();
@@ -338,7 +338,8 @@ public:
 
 	// Returns an array with all of the indexes containing the substring (the index is where it
 	// starts)
-	Array<usize> find(Arena& arena, BaseString str, usize start = 0, usize end = 0) const
+	Array<usize>
+	find(Arena& arena TR_LIFETIME_BOUND, BaseString str, usize start = 0, usize end = 0) const
 	{
 		if (end == 0 || end > len()) {
 			end = len();
@@ -361,7 +362,7 @@ public:
 
 	// It concatenates 2 strings lmao.
 	[[nodiscard]]
-	BaseString concat(Arena& arena, BaseString other) const
+	BaseString concat(Arena& arena TR_LIFETIME_BOUND, BaseString other) const
 	{
 		T* newstr = static_cast<T*>(arena.alloc((len() + 1) * sizeof(T)));
 		tr::strlib::concat(
@@ -392,7 +393,7 @@ public:
 
 	// Gets the filename in a path, e.g. returns `file.txt` for `/path/to/file.txt`
 	[[nodiscard]]
-	BaseString file(Arena& arena) const
+	BaseString file(Arena& arena TR_LIFETIME_BOUND) const
 	{
 		// FIXME this wont work on other encodings
 		char8* newstr;
@@ -406,7 +407,7 @@ public:
 
 	// Gets the directory in a path e.g. returns `/path/to` for `/path/to/file.txt`
 	[[nodiscard]]
-	BaseString directory(Arena& arena) const
+	BaseString directory(Arena& arena TR_LIFETIME_BOUND) const
 	{
 		char8* newstr;
 		usize newlen;
@@ -420,7 +421,7 @@ public:
 	// Returns the extension in a path, e.g. returns `.txt` for `/path/to/file.txt`, `.blend.1`
 	// for `teapot.blend.1`, and an empty string for `.gitignore`
 	[[nodiscard]]
-	BaseString extension(Arena& arena) const
+	BaseString extension(Arena& arena TR_LIFETIME_BOUND) const
 	{
 		char8* newstr;
 		usize newlen;
@@ -447,7 +448,7 @@ public:
 
 	// Replaces a character with another character.
 	[[nodiscard]]
-	BaseString replace(Arena& arena, T from, T to) const
+	BaseString replace(Arena& arena TR_LIFETIME_BOUND, T from, T to) const
 	{
 		T* newstr = arena.alloc((len() + 1) * sizeof(T));
 		tr::strlib::replace(buf(), len() * sizeof(T), &from, &to, sizeof(T), newstr);
@@ -456,7 +457,7 @@ public:
 
 	// Splits the string into several substrings using the specified delimiter.
 	[[nodiscard]]
-	Array<BaseString> split(Arena& arena, T delimiter) const
+	Array<BaseString> split(Arena& arena TR_LIFETIME_BOUND, T delimiter) const
 	{
 		// FIXME tr::strlib::split_by_char might be dogshit
 		Array<byte*> mn = tr::strlib::split_by_char(
@@ -495,19 +496,19 @@ class BaseStringBuilder
 
 public:
 	// Initializes an empty string builder at an arena.
-	BaseStringBuilder(Arena& arena, usize len)
+	BaseStringBuilder(Arena& arena TR_LIFETIME_BOUND, usize len)
 		: _array(arena, len)
 	{
 	}
 
 	// Initializes a string builder from a buffer. (the data is copied into the arena)
-	BaseStringBuilder(Arena& arena, const T* str, usize len)
+	BaseStringBuilder(Arena& arena TR_LIFETIME_BOUND, const T* str, usize len)
 		: _array(arena, str, len)
 	{
 	}
 
 	// Initializes a string builder from a buffer. (the data is copied into the arena)
-	BaseStringBuilder(Arena& arena, const T* str)
+	BaseStringBuilder(Arena& arena TR_LIFETIME_BOUND, const T* str)
 		: _array(arena, str, tr::strlib::constexpr_strlen(str))
 	{
 	}
@@ -519,13 +520,13 @@ public:
 	}
 
 	// Initializes the string with just an arena so you can add crap later :)
-	BaseStringBuilder(Arena& arena)
+	BaseStringBuilder(Arena& arena TR_LIFETIME_BOUND)
 		: _array(arena)
 	{
 	}
 
 	// Initializes a string builder by copying a regular old boring string
-	BaseStringBuilder(Arena& arena, BaseString<T> str)
+	BaseStringBuilder(Arena& arena TR_LIFETIME_BOUND, BaseString<T> str)
 		: BaseStringBuilder(arena, str.buf(), str.len())
 	{
 	}
@@ -597,7 +598,7 @@ public:
 
 	// As the name implies, it copies the array and its items to somewhere else.
 	[[nodiscard]]
-	BaseStringBuilder duplicate(Arena& arena) const
+	BaseStringBuilder duplicate(Arena& arena TR_LIFETIME_BOUND) const
 	{
 		return {arena, buf(), len()};
 	}
