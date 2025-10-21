@@ -61,6 +61,9 @@ tr::ArenaPage::ArenaPage(tr::ArenaSettings settings, usize size, usize align)
 	if (settings.zero_initialize) {
 		memset(this->buffer, 0, this->bufsize);
 	}
+
+	// should be inaccessible before any .alloc()
+	TR_ASAN_POISON_MEMORY(this->buffer, size);
 }
 
 void tr::ArenaPage::free()
@@ -94,6 +97,8 @@ void* tr::ArenaPage::alloc(usize size, usize align)
 	// ma
 	this->alloc_pos += padding;
 	void* aligned_ptr = base + this->alloc_pos;
+	// it's accessible now
+	TR_ASAN_UNPOISON_MEMORY(aligned_ptr, size);
 	this->alloc_pos += size;
 	return aligned_ptr;
 }

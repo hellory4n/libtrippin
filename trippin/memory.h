@@ -284,7 +284,7 @@ class Array
 
 	constexpr void _validate() const
 	{
-		if (_ptr == nullptr) {
+		if (_ptr == nullptr) [[unlikely]] {
 			tr::panic("uninitialized tr::Array<T>!");
 		}
 	}
