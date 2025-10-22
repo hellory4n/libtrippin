@@ -107,7 +107,7 @@ public:
 	usize available_space() const;
 
 	// Allocates something in the page lmao. Returns null on failure
-	void* alloc(usize size, usize align) TR_LIFETIME_BOUND;
+	void* alloc(usize size, usize align);
 };
 
 // Internal utility to manage calling destructors :)
@@ -153,7 +153,17 @@ public:
 
 	// Allocates some crap on the arena.
 	[[nodiscard, gnu::malloc]]
-	void* alloc(usize size, usize align = alignof(max_align_t)) TR_LIFETIME_BOUND;
+	void* alloc(usize size, usize align = alignof(max_align_t));
+
+	// Like `.alloc()` but without an `static_cast<T*>`. Mind-boggling. You're required to use a
+	// pointer so that it's not confused with `.make_ptr()`, this is the evil low-level version.
+	template<typename T>
+	requires std::is_pointer_v<T>
+	[[nodiscard, gnu::malloc]]
+	auto* alloc(usize size, usize align = alignof(T))
+	{
+		return static_cast<T>(alloc(size, align));
+	}
 
 	// Reuses the entire arena and sets everything to 0 :)
 	void reset();
@@ -184,7 +194,7 @@ public:
 	// that
 	template<typename T, typename... Args>
 	[[nodiscard]]
-	T& make_ref(Args&&... args) TR_LIFETIME_BOUND
+	T& make_ref(Args&&... args)
 	{
 		void* ptr = this->alloc(sizeof(T), alignof(T));
 		T* obj = new (ptr) T(std::forward<Args>(args)...);
@@ -205,7 +215,7 @@ public:
 	// that
 	template<typename T, typename... Args>
 	[[nodiscard]]
-	T* make_ptr(Args&&... args) TR_LIFETIME_BOUND
+	T* make_ptr(Args&&... args)
 	{
 		void* ptr = this->alloc(sizeof(T), alignof(T));
 		T* obj = new (ptr) T(std::forward<Args>(args)...);
@@ -323,7 +333,7 @@ public:
 	}
 
 	// Initializes an array from a buffer. (the data is copied into the arena)
-	Array(Arena& arena TR_LIFETIME_BOUND, ConstT* data, usize len)
+	Array(Arena& arena, ConstT* data, usize len)
 		: _src_arena(&arena)
 		, _len(len)
 		, _cap(len)
@@ -358,7 +368,7 @@ public:
 
 	// Initializes an array that points to any buffer. You really should only use
 	// this for temporary arrays.
-	constexpr Array(ConstT* data TR_LIFETIME_BOUND, usize len)
+	constexpr Array(ConstT* data, usize len)
 		: _ptr(data)
 		, _len(len)
 		, _cap(len)
@@ -372,7 +382,7 @@ public:
 		}
 	}
 
-	Array(Arena& arena TR_LIFETIME_BOUND, std::initializer_list<RefWrapper<const T>> initlist)
+	Array(Arena& arena, std::initializer_list<RefWrapper<const T>> initlist)
 		: Array(arena, initlist.begin(), initlist.size())
 	{
 	}
@@ -613,7 +623,7 @@ public:
 
 	// As the name implies, it copies the array and its items to somewhere else.
 	[[nodiscard]]
-	Array<T> duplicate(Arena& arena TR_LIFETIME_BOUND) const
+	Array<T> duplicate(Arena& arena) const
 	{
 		_validate();
 		return Array<T>{arena, buf(), len()};

@@ -43,7 +43,7 @@
 	#define TR_ONLY_MSVC
 #endif
 
-// slightly fucky compiler variants
+// slightly esoteric compiler variants
 #if defined(__GNUC__) && defined(_WIN32)
 	#define TR_ONLY_MINGW_GCC
 #endif
@@ -162,20 +162,8 @@
 #define _TR_CONCAT(A, B) _TR_CONCAT2(A, B)
 #define _TR_UNIQUE_NAME(Base) _TR_CONCAT(Base, __LINE__)
 
-// the lifetime bound attribute tells the compiler that the returned value does not outlive whatever
-// parameter you put this attribute on
-// for example:
-// 	int& get_int(Array<int> from TR_LIFETIME_BOUND);
-// in this case TR_LIFETIME_BOUND applies to the implicit `this` parameter:
-// 	void* alloc(usize size) TR_LIFETIME_BOUND;
-#ifdef TR_ONLY_CLANG
-	#define TR_LIFETIME_BOUND [[clang::lifetimebound]]
-#else
-	#define TR_LIFETIME_BOUND
-#endif
-
 // asan stuff
-/*#if __has_feature(address_sanitizer) || defined(__SANITIZE_ADDRESS__)
+#if __has_feature(address_sanitizer) || defined(__SANITIZE_ADDRESS__)
 	#include <sanitizer/asan_interface.h>
 	#define TR_HAS_ADDRESS_SANITIZER
 	#define TR_ASAN_POISON_MEMORY(addr, size) __asan_poison_memory_region((addr), (size))
@@ -183,11 +171,11 @@
 	#define TR_LSAN_REGISTER_ROOT_REGION(base, size) __lsan_register_root_region((base), (size))
 	#define TR_LSAN_UNREGISTER_ROOT_REGION(base, size)    \
 		__lsan_unregister_root_region((base), (size))
-#else*/
-#define TR_ASAN_POISON_MEMORY(addr, size)
-#define TR_ASAN_UNPOISON_MEMORY(addr, size)
-#define TR_LSAN_REGISTER_ROOT_REGION(base, size)
-#define TR_LSAN_UNREGISTER_ROOT_REGION(base, size)
-// #endif
+#else
+	#define TR_ASAN_POISON_MEMORY(addr, size)
+	#define TR_ASAN_UNPOISON_MEMORY(addr, size)
+	#define TR_LSAN_REGISTER_ROOT_REGION(base, size)
+	#define TR_LSAN_UNREGISTER_ROOT_REGION(base, size)
+#endif
 
 #endif

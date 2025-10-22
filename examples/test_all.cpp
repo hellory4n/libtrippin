@@ -143,7 +143,8 @@ static void test::strings()
 	TR_ASSERT(str == "sigma");
 	TR_ASSERT(str != "ballshshjs");
 	TR_ASSERT(str != "sigmaaaa pelotas");
-	TR_ASSERT(str.substr(tr::scratchpad(), 1, 3) == "igm");
+	auto sub = str.substr(tr::scratchpad(), 1, 3);
+	TR_ASSERT(sub == "igm");
 	tr::Array<usize> sigma = tr::String("sigmysigmy").find(tr::scratchpad(), "ig");
 	TR_ASSERT(sigma.len() == 2);
 	tr::String sigmaa = tr::String("figma").concat(tr::scratchpad(), " balls");

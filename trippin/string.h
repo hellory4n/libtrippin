@@ -145,19 +145,19 @@ class BaseString
 public:
 	using Type = T;
 
-	constexpr BaseString(const T* str TR_LIFETIME_BOUND, usize len)
+	constexpr BaseString(const T* str, usize len)
 		: _ptr(str)
 		, _len(len + 1)
 	{
 		// does len already include the null terminator?
-		if (_len > 0) {
-			if (_ptr[_len - 1] == '\0') {
+		if (len > 0) {
+			if (_ptr[len - 1] == '\0') {
 				_len--;
 			}
 		}
 	}
 
-	constexpr BaseString(const T* str TR_LIFETIME_BOUND)
+	constexpr BaseString(const T* str)
 		: BaseString(str, tr::strlib::constexpr_strlen(str))
 	{
 	}
@@ -168,19 +168,19 @@ public:
 	{
 	}
 
-	BaseString(char c)
+	BaseString(T c)
 		// c++ can't do (char[]){c, '\0'} like c99 can :)))))
-		: BaseString(Array<const char>{c, '\0'}.buf())
+		: BaseString(Array<const T>{c, '\0'}.buf())
 	{
 	}
 
 	// Copies an existing string ptr to an arena
 	BaseString(Arena& arena, const T* str, usize len)
-		: _len(len)
+		: _len(len + 1)
 	{
 		// does len already include the null terminator?
-		if (_len > 0) {
-			if (_ptr[_len - 1] == '\0') {
+		if (len > 0) {
+			if (str[len - 1] == '\0') {
 				_len--;
 			}
 		}
@@ -202,9 +202,10 @@ public:
 	// Creates a `String` by copying a `StringBuilder`
 	BaseString(Arena& arena, BaseStringBuilder<T> sb);
 
+	// Does NOT include the null terminator
 	constexpr usize len() const
 	{
-		return _len;
+		return _len - 1;
 	}
 
 	const T* buf() const
@@ -309,7 +310,7 @@ public:
 		return *this != BaseString{other};
 	}
 
-	// Gets a substring. The returned string doesn't include the end character.
+	// Gets a substring. The returned string includes the end character.
 	[[nodiscard]]
 	BaseString substr(Arena& arena, usize start, usize end) const
 	{
@@ -521,7 +522,7 @@ public:
 
 	// Initializes a string builder from a buffer. (the data is copied into the arena)
 	BaseStringBuilder(Arena& arena, const T* str)
-		: _array(arena, str, tr::strlib::constexpr_strlen(str))
+		: _array(arena, str, tr::strlib::constexpr_strlen(str) + 1)
 	{
 	}
 
@@ -582,7 +583,7 @@ public:
 	// Returns the length of the string.
 	constexpr usize len() const
 	{
-		return _array.len();
+		return _array.len() - 1;
 	}
 
 	// Returns how many characters the string can hold before having to resize.
@@ -633,7 +634,7 @@ public:
 template<Character T>
 BaseString<T>::BaseString(BaseStringBuilder<T> sb)
 	: _ptr(*sb)
-	, _len(sb.len())
+	, _len(sb.len() + 1)
 {
 }
 

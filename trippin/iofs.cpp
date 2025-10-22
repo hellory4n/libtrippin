@@ -996,13 +996,19 @@ void tr::_init_paths()
 	// TODO bsd exists
 	StringBuilder exedir{tr::core_arena, PATH_MAX};
 	ssize_t len = readlink("/proc/self/exe", *exedir, exedir.len());
-	if (len == -1) {
+	if (len < 1) {
 		tr::warn("couldn't get executable directory, using relative paths for app://");
 		tr::exe_dir = ".";
 	}
 	else {
 		exedir[static_cast<usize>(len)] = '\0';
-		exedir = {tr::core_arena, tr::exe_dir.directory(tr::core_arena)};
+		// FIXME this copies the data twice for no reason, when it could just go through
+		// StringBuilder directly
+		exedir = {
+			tr::core_arena,
+			String{*exedir, static_cast<usize>(len)}
+                        .directory(tr::core_arena)
+		};
 	}
 
 	tr::exe_dir = exedir;

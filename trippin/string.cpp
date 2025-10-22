@@ -65,9 +65,9 @@ void tr::strlib::substr(const byte* s, usize len, usize start, usize end, byte* 
 	TR_ASSERT(s);
 	TR_ASSERT(out);
 
-	end = tr::clamp(end, start, len) + 1;
-	memcpy(out, s + start, start - end);
-	tr::strlib::explicit_memset(out + start - end + 1, ch_len, 0);
+	end = tr::clamp(end, start, len);
+	memcpy(out, s + start, len - end);
+	tr::strlib::explicit_memset(out + len - end, ch_len, 0);
 }
 
 tr::Array<usize> tr::strlib::find_char(
@@ -161,7 +161,7 @@ void tr::strlib::strfile(tr::Arena& arena, const char8* s, usize len, char8** ou
 
 	for (usize i = len - 1; i < len; i--) {
 		if (s[i] == '/' || s[i] == '\\') {
-			char8* newstr = static_cast<char8*>(arena.alloc(len - i + 1));
+			char8* newstr = arena.alloc<char8*>(len - i + 1);
 			tr::strlib::substr(
 				reinterpret_cast<const byte*>(s), len, i, len,
 				reinterpret_cast<byte*>(newstr), 1
@@ -172,7 +172,7 @@ void tr::strlib::strfile(tr::Arena& arena, const char8* s, usize len, char8** ou
 	}
 
 	// just duplicate the string
-	char8* newstr = static_cast<char8*>(arena.alloc(len + 1));
+	char8* newstr = arena.alloc<char8*>(len + 1);
 	memcpy(newstr, s, len);
 	newstr[len] = '\0';
 	*out = newstr;
@@ -187,10 +187,10 @@ void tr::strlib::strdir(tr::Arena& arena, const char8* s, usize len, char8** out
 
 	for (usize i = len - 1; i < len; i--) {
 		if (s[i] == '/' || s[i] == '\\') {
-			char8* newstr = static_cast<char8*>(arena.alloc(len - i + 1));
+			char8* newstr = arena.alloc<char8*>(len - i);
 			tr::strlib::substr(
 				reinterpret_cast<const byte*>(s), len, 0, i,
-				reinterpret_cast<byte*>(newstr), 1
+				reinterpret_cast<byte*>(newstr), sizeof(char8)
 			);
 			*out = newstr;
 			*out_len = len - i;
@@ -198,7 +198,7 @@ void tr::strlib::strdir(tr::Arena& arena, const char8* s, usize len, char8** out
 	}
 
 	// just duplicate the string
-	char8* newstr = static_cast<char8*>(arena.alloc(len + 1));
+	char8* newstr = arena.alloc<char8*>(len + 1);
 	memcpy(newstr, s, len);
 	newstr[len] = '\0';
 	*out = newstr;
@@ -222,7 +222,7 @@ void tr::strlib::strext(tr::Arena& arena, const char8* s, usize len, char8** out
 				continue;
 			}
 
-			char8* newstr = static_cast<char8*>(arena.alloc(len - i + 1));
+			char8* newstr = arena.alloc<char8*>(len - i + 1);
 			tr::strlib::substr(
 				reinterpret_cast<const byte*>(s), len, i, len + 1,
 				reinterpret_cast<byte*>(newstr), 1
@@ -311,7 +311,7 @@ tr::Array<byte*> tr::strlib::split_by_char(
 
 	for (usize i = 0; i < s_len; i += ch_len) {
 		if (memcmp(&s[i], ch, ch_len) == 0) {
-			byte* newstr = static_cast<byte*>(arena.alloc(i - last_str + ch_len));
+			byte* newstr = arena.alloc<byte*>(i - last_str + ch_len);
 			memcpy(newstr, &s[last_str], i - last_str);
 			tr::strlib::explicit_memset(newstr + i - last_str, ch_len, 0);
 			strs.add(newstr);
@@ -321,7 +321,7 @@ tr::Array<byte*> tr::strlib::split_by_char(
 
 	// if nothing was found
 	if (strs.len() == 0) {
-		byte* newstr = static_cast<byte*>(arena.alloc(s_len + ch_len));
+		byte* newstr = arena.alloc<byte*>(s_len + ch_len);
 		memcpy(newstr, s, s_len);
 		tr::strlib::explicit_memset(newstr + last_str, ch_len, 0);
 		strs.add(newstr);
