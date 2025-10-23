@@ -143,8 +143,7 @@ static void test::strings()
 	TR_ASSERT(str == "sigma");
 	TR_ASSERT(str != "ballshshjs");
 	TR_ASSERT(str != "sigmaaaa pelotas");
-	auto sub = str.substr(tr::scratchpad(), 1, 3);
-	TR_ASSERT(sub == "igm");
+	TR_ASSERT(str.substr(tr::scratchpad(), 1, 3) == "igm");
 	tr::Array<usize> sigma = tr::String("sigmysigmy").find(tr::scratchpad(), "ig");
 	TR_ASSERT(sigma.len() == 2);
 	tr::String sigmaa = tr::String("figma").concat(tr::scratchpad(), " balls");
@@ -161,12 +160,13 @@ static void test::strings()
 	TR_ASSERT(!tr::String("./sigma").is_absolute());
 	TR_ASSERT(tr::String("~/sigma").is_absolute());
 
-	// split string :)
 	tr::String strma = "crap,shit,fuck,balls";
 	tr::Array<tr::String> splitma = strma.split(tr::scratchpad(), ',');
-	for (auto c : splitma) {
-		tr::log("split[%zu] = %s", c.i, *c.val);
-	}
+	TR_ASSERT(splitma.len() == 4);
+	TR_ASSERT(splitma[0] == "crap");
+	TR_ASSERT(splitma[1] == "shit");
+	TR_ASSERT(splitma[2] == "fuck");
+	TR_ASSERT(splitma[3] == "balls");
 }
 
 static void test::hashmaps()
@@ -193,6 +193,7 @@ static void test::hashmaps()
 	TR_ASSERT(hashmaballs.contains("oSgmggg"));
 	TR_ASSERT(!hashmaballs.contains("oh no it go it gone bye bye (bye)"));
 	TR_ASSERT(hashmaballs.try_get("Balls").is_valid());
+	TR_ASSERT(!hashmaballs.try_get("oh no it go it gone bye bye (bye)").is_valid());
 
 	// iterator
 	for (auto item : hashmaballs) {

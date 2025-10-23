@@ -66,8 +66,8 @@ void tr::strlib::substr(const byte* s, usize len, usize start, usize end, byte* 
 	TR_ASSERT(out);
 
 	end = tr::clamp(end, start, len);
-	memcpy(out, s + start, len - end);
-	tr::strlib::explicit_memset(out + len - end, ch_len, 0);
+	memcpy(out, s + start, end);
+	tr::strlib::explicit_memset(out + end, ch_len, 0);
 }
 
 tr::Array<usize> tr::strlib::find_char(
@@ -163,11 +163,12 @@ void tr::strlib::strfile(tr::Arena& arena, const char8* s, usize len, char8** ou
 		if (s[i] == '/' || s[i] == '\\') {
 			char8* newstr = arena.alloc<char8*>(len - i + 1);
 			tr::strlib::substr(
-				reinterpret_cast<const byte*>(s), len, i, len,
+				reinterpret_cast<const byte*>(s), len, i + 1, len,
 				reinterpret_cast<byte*>(newstr), 1
 			);
 			*out = newstr;
 			*out_len = len - i;
+			return;
 		}
 	}
 
@@ -194,6 +195,7 @@ void tr::strlib::strdir(tr::Arena& arena, const char8* s, usize len, char8** out
 			);
 			*out = newstr;
 			*out_len = len - i;
+			return;
 		}
 	}
 
@@ -222,13 +224,14 @@ void tr::strlib::strext(tr::Arena& arena, const char8* s, usize len, char8** out
 				continue;
 			}
 
-			char8* newstr = arena.alloc<char8*>(len - i + 1);
+			char8* newstr = arena.alloc<char8*>(file_len - i + 1);
 			tr::strlib::substr(
-				reinterpret_cast<const byte*>(s), len, i, len + 1,
+				reinterpret_cast<const byte*>(file), file_len, i, file_len,
 				reinterpret_cast<byte*>(newstr), 1
 			);
 			*out = newstr;
-			*out_len = len - i;
+			*out_len = file_len - i;
+			return;
 		}
 	}
 
@@ -310,12 +313,23 @@ tr::Array<byte*> tr::strlib::split_by_char(
 	usize last_str = 0;
 
 	for (usize i = 0; i < s_len; i += ch_len) {
-		if (memcmp(&s[i], ch, ch_len) == 0) {
+		if (memcmp(&s[i], ch, ch_len) == 0 || i == s_len - 1) {
+			// small hack so that i don't have to change this code any more than what is
+			// required to make it work
+			if (i == s_len - 1) {
+				s_len++;
+				i++;
+			}
+
 			byte* newstr = arena.alloc<byte*>(i - last_str + ch_len);
 			memcpy(newstr, &s[last_str], i - last_str);
 			tr::strlib::explicit_memset(newstr + i - last_str, ch_len, 0);
 			strs.add(newstr);
 			last_str = i + ch_len;
+
+			if (i == s_len - 1) {
+				return strs;
+			}
 		}
 	}
 

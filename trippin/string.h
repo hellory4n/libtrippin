@@ -319,7 +319,7 @@ public:
 			reinterpret_cast<const byte*>(buf()), len() * sizeof(T), start * sizeof(T),
 			end * sizeof(T), reinterpret_cast<byte*>(buffer), sizeof(T)
 		);
-		return {buffer, end - start};
+		return {buffer, end - start + 1};
 	}
 
 	// Returns an array with all of the indexes containing that character (the index is where it
