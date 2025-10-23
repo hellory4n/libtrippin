@@ -64,12 +64,14 @@
 #endif
 
 #if defined(__APPLE__) && defined(__MACH__) && !defined(__IOS__)
-	#define TR_OS_MAC
+	#define TR_OS_MACOSX
+	#define TR_OS_DARWIN
 	#define TR_OS_BSDLIKE
 #endif
 
 #if defined(__IOS__)
 	#define TR_OS_IOS
+	#define TR_OS_DARWIN
 	#define TR_OS_BSDLIKE
 #endif
 
@@ -105,9 +107,43 @@
 	#define TR_OS_EMSCRIPTEN
 #endif
 
-// weirdly msvc only defines __cplusplus as c++98, that is unless you either set a compile
-// flag, or, use another macro, which isn't defined in all versions (so we'll assume if it's
-// not defined, it's too old for c++20 anyway)
+// architecture
+#if defined(__amd64__) || defined(__x86_64__) || defined(_M_X64) || defined(_M_AMD64)
+	#define TR_ARCH_X86_64
+	#define TR_ARCH_X86
+	#define TR_ARCH_64_BITS
+#elif defined(__i386__) || defined(__i386) || defined(_M_IX86) || defined(_X86_)
+	#define TR_ARCH_X86_32
+	#define TR_ARCH_X86
+	#define TR_ARCH_32_BITS
+#endif
+
+#if defined(__aarch64__) || defined(_M_ARM64)
+	#define TR_ARCH_ARM64
+	#define TR_ARCH_ARM
+	#define TR_ARCH_64_BITS
+#elif defined(__arm__) || defined(__arm) || defined(_ARM) || defined(_M_ARM)
+	#define TR_ARCH_ARM32
+	#define TR_ARCH_ARM
+	#define TR_ARCH_32_BITS
+#endif
+
+#ifdef __riscv
+	#define TR_ARCH_RISCV
+	#ifdef __riscv_xlen
+		#if __riscv_xlen == 32
+			#define TR_ARCH_RISCV_32
+			#define TR_ARCH_32_BITS
+		#elif __riscv_xlen == 64
+			#define TR_ARCH_RISCV_32
+			#define TR_ARCH_32_BITS
+		#endif
+	#endif
+#endif
+
+// weirdly msvc only defines __cplusplus as c++98, that is unless you either set a
+// compile flag, or, use another macro, which isn't defined in all versions (so
+// we'll assume if it's not defined, it's too old for c++20 anyway)
 #ifndef TR_ONLY_MSVC
 	#define TR_CPLUSPLUS __cplusplus
 #else

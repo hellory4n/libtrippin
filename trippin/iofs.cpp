@@ -994,8 +994,8 @@ void tr::_init_paths()
 {
 	// TODO macOS exists
 	// TODO bsd exists
-	StringBuilder exedir{tr::core_arena, PATH_MAX};
-	ssize_t len = readlink("/proc/self/exe", *exedir, exedir.len());
+	StringBuilder exedir{tr::core_arena, PATH_MAX - 1};
+	isize len = readlink("/proc/self/exe", *exedir, exedir.len());
 	if (len < 1) {
 		tr::warn("couldn't get executable directory, using relative paths for app://");
 		tr::exe_dir = ".";
