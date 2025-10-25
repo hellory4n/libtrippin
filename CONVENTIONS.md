@@ -59,6 +59,8 @@ int get_count() const;
 
 Namespaces should have short names (2-6 letters) and be lowercase. Never use `using namespace`.
 
+Use snake_case for filenames, as path case sensitivity can vary between platforms. One exception is files that are expected to have a specific name by external tools. (Makefile, README.md, etc)
+
 ## Slightly pedantic rules
 
 Prefer `constexpr` to `#define`/`const`. Prefer inline/constexpr functions over function-like macros.

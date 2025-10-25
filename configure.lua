@@ -17,26 +17,28 @@ local includes = {".", ".."}
 
 io.write("libtrippin auto configurator 3000++\n")
 
-io.write("- Compile mode (debug/release):\n> ")
+io.write("- compiler, e.g. clang++ > ")
+local cxx = io.read("*l")
+
+io.write("- compile mode [debug/release] > ")
 local compmode = io.read("*l")
 assert(compmode == "debug" or compmode == "release")
 
-io.write("- Target platform (windows/linux)\n    windows requires mingw-w64 gcc and g++:\n> ")
+io.write("- target platform [windows/linux] > ")
 local platform = io.read("*l")
 assert(platform == "linux" or platform == "windows")
 
-io.write("- Use a sanitizer?\n    maps directly to a -fsanitize flag. you can usually ignore this.\n> ")
+io.write("- use a sanitizer? maps directly to a -fsanitize flag. you can usually ignore this. > ")
 local sanitize = io.read("*l")
 
-io.write("- Generate compile_commands.json for clangd? (Y/n)\n> ")
+io.write("- generate compile_commands.json for clangd? [Y/n] > ")
 local compile_commands = io.read("*l")
 if compile_commands == "" then compile_commands = "y" end
 assert(compile_commands == "y" or compile_commands == "n")
 
 io.write("generating...\n")
 
-local cxx = "clang++"
-if platform == "windows" then
+if cxx == "g++" and platform == "windows" then
 	cxx = "x86_64-w64-mingw32-g++"
 end
 
@@ -85,7 +87,7 @@ f:write("  description = Linking $out\n")
 
 f:write("\nrule archive\n")
 f:write("  command = $ar $arflags $out $in\n")
-f:write("  description = Linking $out\n")
+f:write("  description = Archiving $out\n")
 
 -- build crap :)
 for _, src in ipairs(srcs) do

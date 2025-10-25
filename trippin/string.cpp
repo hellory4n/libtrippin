@@ -37,10 +37,10 @@
 // FIXME theres probably 2050 different violations of strict aliasing
 // and 2050 different security vulnerabilities
 
-void tr::strlib::explicit_memset(byte* ptr, usize len, byte val)
+void tr::strlib::explicit_memset(void* ptr, usize len, byte val)
 {
 	TR_ASSERT(ptr);
-	volatile byte* p = reinterpret_cast<volatile byte*>(ptr);
+	volatile byte* p = static_cast<volatile byte*>(ptr);
 	for (usize i = 0; i < len; i++) {
 		p[i] = val;
 	}

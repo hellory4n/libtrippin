@@ -25,11 +25,12 @@
 
 #include "trippin/memory.h"
 
-#include <new>
+#include <cstdlib>
 
-#include "common.h"
+#include "trippin/common.h"
 #include "trippin/log.h"
 #include "trippin/math.h"
+#include "trippin/string.h"
 
 namespace tr {
 
@@ -37,14 +38,17 @@ thread_local Arena _the_real_scratchpad({.page_size = tr::kb_to_bytes(4)});
 
 }
 
-tr::ArenaPage::ArenaPage(tr::ArenaSettings settings, usize size, usize align)
+tr::ArenaPage::ArenaPage(tr::ArenaSettings settings, usize size)
 	: bufsize(size)
-	, alignment(align)
 {
 	TR_ASSERT(size != 0);
 
-	// man.
-	this->buffer = ::operator new(size, std::align_val_t(align), std::nothrow);
+	if (settings.zero_initialize) {
+		this->buffer = std::calloc(1, size);
+	}
+	else {
+		this->buffer = std::malloc(size);
+	}
 	this->alloc_pos = 0;
 	this->next = nullptr;
 	this->prev = nullptr;
@@ -58,18 +62,14 @@ tr::ArenaPage::ArenaPage(tr::ArenaSettings settings, usize size, usize align)
 		}
 	}
 
-	if (settings.zero_initialize) {
-		memset(this->buffer, 0, this->bufsize);
-	}
-
-	// should be inaccessible before any .alloc()
+	// should be inaccessible before any .alloc() call
 	TR_ASAN_POISON_MEMORY(this->buffer, size);
 }
 
 void tr::ArenaPage::free()
 {
 	if (this->buffer != nullptr) {
-		::operator delete(this->buffer, std::align_val_t(this->alignment), std::nothrow);
+		std::free(buffer);
 		this->buffer = nullptr;
 	}
 }
@@ -81,8 +81,8 @@ usize tr::ArenaPage::available_space() const
 
 void* tr::ArenaPage::alloc(usize size, usize align)
 {
-	uint8* base = static_cast<uint8*>(this->buffer);
-	uint8* ptr = base + this->alloc_pos;
+	byte* base = static_cast<byte*>(this->buffer);
+	byte* ptr = base + this->alloc_pos;
 	usize address = reinterpret_cast<usize>(ptr);
 
 	// fucking padding aligning fuckery
@@ -108,13 +108,14 @@ tr::Arena::Arena(ArenaSettings settings)
 {
 	// it doesn't make a page until you allocate something
 	if (_settings.error_behavior == ArenaSettings::ErrorBehavior::PANIC) {
-		TR_ASSERT_MSG(
-			_settings.page_size != 0,
-			"you doofus why would you make an arena of 0 bytes"
-		);
-	}
-	else {
-		tr::warn("using arena with a page size of 0 bytes, will likely fail");
+		if (_settings.page_size == 0) [[unlikely]] {
+			tr::panic("you doofus why would you make an arena of 0 bytes");
+		}
+		if (_settings.max_pages.is_valid()) {
+			if (settings.max_pages.unwrap() == 0) [[unlikely]] {
+				tr::panic("max arena pages is set to 0, can't allocate anything");
+			}
+		}
 	}
 }
 
@@ -135,7 +136,8 @@ void tr::Arena::free()
 
 	while (head != nullptr) {
 		ArenaPage* next = head->next;
-		delete head;
+		head->free();
+		std::free(head);
 		head = next;
 	}
 }
@@ -175,8 +177,9 @@ void* tr::Arena::alloc(usize size, usize align)
 
 	// it doesn't fit, make a new page
 	usize new_page_size = tr::max(_settings.page_size, size + align);
-	ArenaPage* new_page = new (std::nothrow) ArenaPage(_settings, new_page_size, align);
-	TR_ASSERT_MSG(new_page != nullptr, "couldn't create new arena page");
+	void* new_page_ptr = std::malloc(sizeof(ArenaPage));
+	TR_ASSERT_MSG(new_page_ptr != nullptr, "couldn't create new arena page");
+	ArenaPage* new_page = new (new_page_ptr) ArenaPage(_settings, new_page_size);
 
 	new_page->prev = _page;
 	if (_page != nullptr) {
@@ -235,15 +238,15 @@ void tr::Arena::reset()
 	while (head != nullptr && head != headfrfr) {
 		this->_capacity -= head->bufsize;
 		ArenaPage* next = head->next;
-		delete head;
+		head->free();
+		std::free(head);
 		head = next;
 	}
 
 	// we keep the first page :)
 	this->_page = headfrfr;
-	// TODO see https://en.cppreference.com/w/cpp/string/byte/memset#Notes
 	if (_settings.zero_initialize) {
-		memset(headfrfr->buffer, 0, headfrfr->bufsize);
+		tr::strlib::explicit_memset(headfrfr->buffer, headfrfr->bufsize, 0);
 	}
 	headfrfr->alloc_pos = 0;
 	headfrfr->prev = nullptr;

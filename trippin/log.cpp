@@ -24,6 +24,7 @@
  */
 
 #include <cstdarg>
+#include <cstdio>
 #include <cstdlib>
 #include <ctime>
 #ifdef _MSC_VER
@@ -62,6 +63,22 @@ void tr::use_log_file(const char* path)
 
 void tr::_log(const char* color, const char* prefix, bool panic, const char* fmt, va_list arg)
 {
+	// if string/array/files panic it'll go back here and loop until the stack overflows, which
+	// is really annoying to debug
+	if (tr::panicked_on_quit) {
+		printf("tr::panic is broken and will loop forever, aborting\n");
+		fflush(stdout);
+		abort();
+	}
+
+	// i'm having a minor aneurysm rn
+	if (panic) {
+		if (tr::panicking) {
+			tr::panicked_on_quit = true;
+		}
+		tr::panicking = true;
+	}
+
 	// you understand mechanical hands are the ruler of everything (ah)
 	// TODO tr::time?? idfk
 	char timestr[32];
@@ -96,11 +113,6 @@ void tr::_log(const char* color, const char* prefix, bool panic, const char* fmt
 	}
 
 	if (panic) {
-		// i'm having a minor aneurysm rn
-		if (tr::panicking) {
-			tr::panicked_on_quit = true;
-		}
-		tr::panicking = true;
 		tr::free();
 
 // i don't think anyone is gonna be compiling with intel c++ or whatever the fuck

@@ -366,7 +366,7 @@ public:
 	// TODO disconnect()
 
 	// Emits the signal to all listeners that's what a signal does lmao.
-	void emit(Args&&... args)
+	void emit(Args... args)
 	{
 		for (auto [_, func] : this->listeners) {
 			func(std::forward<Args>(args)...);

@@ -214,4 +214,18 @@
 	#define TR_LSAN_UNREGISTER_ROOT_REGION(base, size)
 #endif
 
+// used for detecting dangling references and pointers and stuff
+// e.g. void* alloc_memory(Arena& arena TR_LIFETIMEBOUND)
+// or void* Arena::alloc() TR_LIFETIMEBOUND
+#ifdef TR_ONLY_CLANG
+	#define TR_LIFETIMEBOUND [[clang::lifetimebound]]
+#elif defined(TR_ONLY_MSVC)
+	#define TR_LIFETIMEBOUND [[msvc::lifetimebound]]
+	// we have to enable the warning so it actually does something
+	// https://learn.microsoft.com/en-us/cpp/code-quality/c26815
+	#pragma warning(default : 26815)
+#else
+	#define TR_LIFETIMEBOUND
+#endif
+
 #endif

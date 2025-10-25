@@ -86,15 +86,17 @@ void tr::free()
 	// so it doesn't keep emitting the signal forever
 	if (tr::panicked_on_quit) {
 		tr::warn("panicked from tr::call_on_quit, aborting");
-		return;
+		abort();
 	}
 
-	// c++ is fucking with the template varargs
-	// idk why i can't just pass the variable
-	// but it works by negating it twice (which makes it the same value)
-	// TODO rewrite in rust
-	tr::the_new_all_on_quit.emit(!!tr::panicking);
+	tr::the_new_all_on_quit.emit(tr::panicking);
 	tr::info("deinitialized libtrippin");
+
+	// FIXME since tr::scratchpad is thread_local, there is no way to properly free it
+	// from all the threads (or at least afaik)
+	core_arena.free();
+	_consty_arena.free();
+	tr::scratchpad().free();
 }
 
 [[noreturn]]

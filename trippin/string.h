@@ -69,7 +69,7 @@ namespace strlib {
 	// > function is not accessed again for the rest of its lifetime (e.g., gcc bug 8537). For
 	// > that reason, this function cannot be used to scrub memory (e.g., to fill an array that
 	// > stored a password with zeroes).
-	void explicit_memset(byte* ptr, usize len, byte val);
+	void explicit_memset(void* ptr, usize len, byte val);
 	// returns true if A and B are exactly equal
 	bool strs_equal(const byte* a, usize a_len, const byte* b, usize b_len);
 	// copies a section of S into out, out buffer must have +1 character for the null terminator

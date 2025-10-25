@@ -34,6 +34,7 @@
 
 #include "trippin/common.h"
 #include "trippin/log.h"
+#include "trippin/math.h"
 
 namespace tr {
 
@@ -94,13 +95,12 @@ class ArenaPage
 {
 public:
 	const usize bufsize = 0;
-	const usize alignment = 0;
 	usize alloc_pos = 0;
 	ArenaPage* prev = nullptr;
 	ArenaPage* next = nullptr;
 	void* buffer = nullptr;
 
-	explicit ArenaPage(ArenaSettings settings, usize size, usize align = alignof(max_align_t));
+	explicit ArenaPage(ArenaSettings settings, usize size);
 	void free();
 
 	// Returns how much space left the page has
@@ -153,14 +153,14 @@ public:
 
 	// Allocates some crap on the arena.
 	[[nodiscard, gnu::malloc]]
-	void* alloc(usize size, usize align = alignof(max_align_t));
+	void* alloc(usize size, usize align = alignof(max_align_t)) TR_LIFETIMEBOUND;
 
 	// Like `.alloc()` but without an `static_cast<T*>`. Mind-boggling. You're required to use a
 	// pointer so that it's not confused with `.make_ptr()`, this is the evil low-level version.
 	template<typename T>
 	requires std::is_pointer_v<T>
 	[[nodiscard, gnu::malloc]]
-	auto* alloc(usize size, usize align = alignof(T))
+	auto* alloc(usize size, usize align = alignof(T)) TR_LIFETIMEBOUND
 	{
 		return static_cast<T>(alloc(size, align));
 	}
@@ -173,7 +173,7 @@ public:
 	// supports calling destructors for when the arena is deleted, but why?
 	template<typename T, typename... Args>
 	[[deprecated("use make_ref or make_ptr instead")]]
-	T& make(Args&&... args)
+	T& make(Args&&... args) TR_LIFETIMEBOUND
 	{
 		void* baseball = this->alloc(sizeof(T), alignof(T));
 		T* huh = new (baseball) T(std::forward<Args>(args)...);
@@ -194,7 +194,7 @@ public:
 	// that
 	template<typename T, typename... Args>
 	[[nodiscard]]
-	T& make_ref(Args&&... args)
+	T& make_ref(Args... args) TR_LIFETIMEBOUND
 	{
 		void* ptr = this->alloc(sizeof(T), alignof(T));
 		T* obj = new (ptr) T(std::forward<Args>(args)...);
@@ -215,7 +215,7 @@ public:
 	// that
 	template<typename T, typename... Args>
 	[[nodiscard]]
-	T* make_ptr(Args&&... args)
+	T* make_ptr(Args... args) TR_LIFETIMEBOUND
 	{
 		void* ptr = this->alloc(sizeof(T), alignof(T));
 		T* obj = new (ptr) T(std::forward<Args>(args)...);
@@ -587,12 +587,12 @@ public:
 	requires(!std::is_const_v<T>)
 	{
 		_validate();
-		if (!_can_grow) {
+		if (!_can_grow || _src_arena == nullptr) [[unlikely]] {
 			tr::panic("array can't grow (likely not allocated from arena)");
 		}
 
 		// does it already fit?
-		if (_len < _cap) {
+		if (_len < _cap) [[likely]] {
 			if constexpr (std::is_reference_v<T>) {
 				_arena_ptr[_len++] = &val;
 			}
@@ -603,7 +603,7 @@ public:
 		}
 
 		// reallocate array
-		RefWrapper<T>* old_buffer = _arena_ptr;
+		MutT* old_buffer = _arena_ptr;
 		_cap *= 2;
 		_arena_ptr = static_cast<MutT*>(_src_arena->alloc(_cap * sizeof(T)));
 
@@ -649,6 +649,140 @@ public:
 			}
 		}
 		this->_len = 0;
+	}
+};
+
+// Like a C array, but with bounds checking and stuff so that you can sleep at night. Converts to an
+// `Array<T>` automagically and is mostly constexpr.
+template<usize N, typename T>
+requires(!std::is_reference_v<T>)
+class List
+{
+	T _array[N] = {};
+
+public:
+	using Type = T;
+
+	constexpr List() {}
+	constexpr List(std::initializer_list<const T> initlist)
+	{
+		std::memcpy(_array, initlist.begin(), tr::min(initlist.size() * sizeof(T), N));
+	}
+
+	constexpr Maybe<const T&> try_get(usize idx) const TR_LIFETIMEBOUND
+	{
+		if (idx >= N) [[unlikely]] {
+			return {};
+		}
+		return _array[idx];
+	}
+
+	const T& operator[](usize idx) const TR_LIFETIMEBOUND
+	{
+		Maybe<T&> x = try_get(idx);
+		if (!x.is_valid()) {
+			tr::panic(
+				"index out of range: stack array[%zu] when the length is %zu", idx,
+				N
+			);
+		}
+	}
+
+	constexpr Maybe<T&> try_get(usize idx) TR_LIFETIMEBOUND
+	{
+		if (idx >= N) [[unlikely]] {
+			return {};
+		}
+		return _array[idx];
+	}
+
+	T& operator[](usize idx) TR_LIFETIMEBOUND
+	{
+		Maybe<T&> x = try_get(idx);
+		if (!x.is_valid()) {
+			tr::panic(
+				"index out of range: stack array[%zu] when the length is %zu", idx,
+				N
+			);
+		}
+	}
+
+	constexpr const T* buf() const TR_LIFETIMEBOUND
+	{
+		return _array;
+	}
+
+	constexpr T* buf() TR_LIFETIMEBOUND
+	{
+		return _array;
+	}
+
+	constexpr const T* operator*() const TR_LIFETIMEBOUND
+	{
+		return _array;
+	}
+
+	constexpr T* operator*() TR_LIFETIMEBOUND
+	{
+		return _array;
+	}
+
+	constexpr usize len() const
+	{
+		return N;
+	}
+
+	operator Array<const T>() const TR_LIFETIMEBOUND
+	{
+		return {_array, N};
+	}
+
+	operator Array<T>() TR_LIFETIMEBOUND
+	{
+		return {_array, N};
+	}
+
+	Array<T> duplicate(Arena& arena) const
+	{
+		return static_cast<Array<T>>(*this).duplicate(arena); // stupid idc
+	}
+
+	// fucking iterator
+	class Iterator
+	{
+	public:
+		constexpr Iterator(T* pointer, usize index)
+			: idx(index)
+			, ptr(pointer)
+		{
+		}
+		constexpr ArrayItem<T> operator*() const
+		{
+			return {this->idx, *this->ptr};
+		}
+		constexpr Iterator& operator++()
+		{
+			this->ptr++;
+			this->idx++;
+			return *this;
+		}
+		constexpr bool operator!=(const Iterator& other) const
+		{
+			return ptr != other.ptr;
+		}
+
+	private:
+		usize idx;
+		Type* ptr;
+	};
+
+	constexpr Iterator begin() const
+	{
+		return Iterator{this->buf(), 0};
+	}
+	constexpr Iterator end() const
+	{
+		return Iterator(this->buf() + this->len(), this->len());
 	}
 };
 
