@@ -302,6 +302,9 @@ void tr::strlib::replace(
 		if (memcmp(&s[i], from_ch, ch_len) == 0) {
 			memcpy(&out[i], to_ch, ch_len);
 		}
+		else {
+			memcpy(&out[i], &s[i], ch_len);
+		}
 	}
 }
 

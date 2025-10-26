@@ -43,6 +43,7 @@
 
 	// conflicts :D
 	#undef ERROR
+	#undef TRANSPARENT
 
 	#include <cstdio>
 
@@ -234,7 +235,7 @@ static tr::String from_win32_to_trippin_str(WinStrConst str)
 	int size = WideCharToMultiByte(CP_UTF8, 0, str, -1, nullptr, 0, nullptr, nullptr);
 	TR_ASSERT_MSG(size != 0, "blame it on windows");
 
-	tr::String new_str(tr::scratchpad(), static_cast<usize>(size));
+	tr::StringBuilder new_str{tr::scratchpad(), static_cast<usize>(size)};
 	int result =
 		WideCharToMultiByte(CP_UTF8, 0, str, -1, new_str.buf(), size, nullptr, nullptr);
 	TR_ASSERT_MSG(result != 0, "blame it on windows");
@@ -448,7 +449,7 @@ tr::Result<void> tr::remove_file(tr::String path)
 {
 	FileError::reset_errors();
 
-	int i = remove(path);
+	int i = _wremove(from_trippin_to_win32_str(path));
 	if (i == -1) {
 		return FileError::from_errno(path, "", FileOperation::REMOVE_FILE);
 	}
@@ -466,7 +467,7 @@ tr::Result<void> tr::move_file(tr::String from, tr::String to)
 		return FileError(from, to, FileErrorType::FILE_EXISTS, FileOperation::MOVE_FILE);
 	}
 
-	int i = rename(from, to);
+	int i = _wrename(from_trippin_to_win32_str(from), from_trippin_to_win32_str(to));
 	if (i == -1) {
 		return FileError::from_errno(from, to, FileOperation::MOVE_FILE);
 	}

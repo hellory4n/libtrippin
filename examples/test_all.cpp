@@ -167,6 +167,11 @@ static void test::strings()
 	TR_ASSERT(splitma[1] == "shit");
 	TR_ASSERT(splitma[2] == "fuck");
 	TR_ASSERT(splitma[3] == "balls");
+
+	TR_ASSERT(
+		tr::String("sigma\\sigma\\on\\the\\wall").replace(tr::scratchpad(), '\\', '/') ==
+		"sigma/sigma/on/the/wall"
+	);
 }
 
 static void test::hashmaps()

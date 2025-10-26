@@ -50,7 +50,9 @@ end
 
 -- ldflags
 local ldflags = ""
-if platform ~= "windows" then
+if platform == "windows" then
+	ldflags = "-lstdc++ -static"
+else
 	ldflags = "-lm"
 end
 

@@ -457,8 +457,12 @@ public:
 	[[nodiscard]]
 	BaseString replace(Arena& arena, T from, T to) const
 	{
-		T* newstr = arena.alloc((len() + 1) * sizeof(T));
-		tr::strlib::replace(buf(), len() * sizeof(T), &from, &to, sizeof(T), newstr);
+		T* newstr = static_cast<T*>(arena.alloc((len() + 1) * sizeof(T)));
+		tr::strlib::replace(
+			reinterpret_cast<const byte*>(buf()), len() * sizeof(T),
+			reinterpret_cast<byte*>(&from), reinterpret_cast<byte*>(&to), sizeof(T),
+			reinterpret_cast<byte*>(newstr)
+		);
 		return {newstr, len()};
 	}
 

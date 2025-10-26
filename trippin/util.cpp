@@ -36,6 +36,7 @@
 
 	// conflicts :D
 	#undef ERROR
+	#undef TRANSPARENT
 	#undef far
 	#undef near
 #else // posix

@@ -31,6 +31,7 @@
 	#define NOMINMAX
 	#include <windows.h>
 	#undef ERROR
+	#undef TRANSPARENT
 
 	#include <cerrno>
 #else
@@ -144,8 +145,6 @@ tr::FileError::from_win32(tr::String patha, tr::String pathb, tr::FileOperation 
 		t = FileErrorType::ACCESS_DENIED;
 		break;
 	case ERROR_SHARING_VIOLATION:
-		t = FileErrorType::DEVICE_OR_RESOURCE_BUSY;
-		break;
 	case ERROR_BUSY:
 		t = FileErrorType::DEVICE_OR_RESOURCE_BUSY;
 		break;
@@ -153,8 +152,6 @@ tr::FileError::from_win32(tr::String patha, tr::String pathb, tr::FileOperation 
 		t = FileErrorType::NO_SPACE_LEFT;
 		break;
 	case ERROR_FILE_EXISTS:
-		t = FileErrorType::FILE_EXISTS;
-		break;
 	case ERROR_ALREADY_EXISTS:
 		t = FileErrorType::FILE_EXISTS;
 		break;
@@ -162,8 +159,6 @@ tr::FileError::from_win32(tr::String patha, tr::String pathb, tr::FileOperation 
 		t = FileErrorType::BAD_HANDLE;
 		break;
 	case ERROR_GEN_FAILURE:
-		t = FileErrorType::HARDWARE_ERROR_OR_UNKNOWN;
-		break;
 	case ERROR_IO_DEVICE:
 		t = FileErrorType::HARDWARE_ERROR_OR_UNKNOWN;
 		break;

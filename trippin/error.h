@@ -118,7 +118,7 @@ public:
 	FileOperation op = FileOperation::UNKNOWN;
 	int errno_code = 0;
 #ifdef _WIN32
-	int win32_code = 0;
+	unsigned win32_code = 0;
 #endif
 
 	FileError() {}
