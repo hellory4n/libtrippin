@@ -199,7 +199,8 @@
 #define _TR_UNIQUE_NAME(Base) _TR_CONCAT(Base, __LINE__)
 
 // asan stuff
-#if __has_feature(address_sanitizer) || defined(__SANITIZE_ADDRESS__)
+#if (__has_feature(address_sanitizer) || defined(__SANITIZE_ADDRESS__)) && \
+	__has_include(<sanitizer/asan_interface.h>)
 	#include <sanitizer/asan_interface.h>
 	#define TR_HAS_ADDRESS_SANITIZER
 	#define TR_ASAN_POISON_MEMORY(addr, size) __asan_poison_memory_region((addr), (size))

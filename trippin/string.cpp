@@ -188,13 +188,13 @@ void tr::strlib::strdir(tr::Arena& arena, const char8* s, usize len, char8** out
 
 	for (usize i = len - 1; i < len; i--) {
 		if (s[i] == '/' || s[i] == '\\') {
-			char8* newstr = arena.alloc<char8*>(len - i + 1);
+			char8* newstr = arena.alloc<char8*>(i + 1);
 			tr::strlib::substr(
 				reinterpret_cast<const byte*>(s), len, 0, i,
 				reinterpret_cast<byte*>(newstr), sizeof(char8)
 			);
 			*out = newstr;
-			*out_len = len - i;
+			*out_len = i;
 			return;
 		}
 	}
