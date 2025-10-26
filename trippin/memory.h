@@ -652,8 +652,8 @@ public:
 	}
 };
 
-// Like a C array, but with bounds checking and stuff so that you can sleep at night. Converts to an
-// `Array<T>` automagically and is mostly constexpr.
+// Like a C stack array, but with bounds checking and stuff so that you can sleep at night. Converts
+// to an `Array<T>` automagically and is mostly constexpr.
 template<usize N, typename T>
 requires(!std::is_reference_v<T>)
 class List

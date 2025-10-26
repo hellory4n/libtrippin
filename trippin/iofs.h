@@ -298,8 +298,9 @@ Result<Array<String>> list_dir(Arena& arena, String path, bool include_hidden = 
 Result<bool> is_file(String path);
 
 // Fancy path utility thing. The `app://` prefix is relative to the exectuable's directory, while
-// `user://` refers to the directory intended for saving user crap (e.g. `%APPDATA%` on windows).
-// You should configure this first with `tr::set_paths`
+// `user://` refers to the directory intended for saving user crap (e.g. `%APPDATA%` on windows). If
+// the path has neither prefix, it returns the same string. You should configure this first with
+// `tr::set_paths`
 String path(Arena& arena, String path);
 
 // Sets the paths used by `tr::path`. For example `tr::set_paths("assets", "handsome_app")`, or even

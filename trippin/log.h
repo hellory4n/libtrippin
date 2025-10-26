@@ -26,6 +26,7 @@
 #ifndef _TRIPPIN_LOG_H
 #define _TRIPPIN_LOG_H
 
+#include "trippin/bits/macros.h" // IWYU pragma: export
 #include "trippin/common.h"
 
 namespace tr {
@@ -51,60 +52,32 @@ namespace ConsoleColor {
 void use_log_file(const char* path);
 
 // it's annoying me over %li and %zu like the shut the fuck up i swear to fucking god
-#if defined(TR_GCC_OR_CLANG) && !defined(TR_ONLY_MINGW_GCC)
-[[gnu::format(printf, 1, 2)]]
+#if defined(TR_GCC_OR_CLANG) && !defined(TR_OS_WINDOWS)
+	#define _TR_PRINTF_ATTR [[gnu::format(printf, 1, 2)]]
+#else
+	#define _TR_PRINTF_ATTR
 #endif
+
 // Log.
+_TR_PRINTF_ATTR
 void log(const char* fmt, ...);
 
-#if defined(TR_GCC_OR_CLANG) && !defined(TR_ONLY_MINGW_GCC)
-[[gnu::format(printf, 1, 2)]]
-#endif
 // Log. (gray edition) (this is for libraries that use libtrippin so you can filter out library
 // logs)
+_TR_PRINTF_ATTR
 void info(const char* fmt, ...);
 
-#if defined(TR_GCC_OR_CLANG) && !defined(TR_ONLY_MINGW_GCC)
-[[gnu::format(printf, 1, 2)]]
-#endif
 // Oh nose.
+_TR_PRINTF_ATTR
 void warn(const char* fmt, ...);
 
-#if defined(TR_GCC_OR_CLANG) && !defined(TR_ONLY_MINGW_GCC)
-[[gnu::format(printf, 1, 2)]]
-#endif
 // Oh god oh fuck. Note this doesn't crash and die everything, `tr::panic` does.
+_TR_PRINTF_ATTR
 void error(const char* fmt, ...);
 
-#if defined(TR_GCC_OR_CLANG) && !defined(TR_ONLY_MINGW_GCC)
-[[gnu::format(printf, 1, 2)]]
-#endif
 // Oh god oh fuck. Note this crashes and kills everything, `tr::error` doesn't.
-[[noreturn]]
+_TR_PRINTF_ATTR [[noreturn]]
 void panic(const char* fmt, ...);
-
-#if defined(TR_GCC_OR_CLANG) && !defined(TR_ONLY_MINGW_GCC)
-[[gnu::format(printf, 2, 3)]]
-#endif
-[[noreturn]]
-void _impl_assert(const char* expr, const char* fmt, ...);
-
-// Formatted assert?????????
-#define TR_ASSERT_MSG(X, ...)                      \
-	if (!(X)) {                                \
-		tr::_impl_assert(#X, __VA_ARGS__); \
-	}
-
-#define TR_ASSERT(...)                                      \
-	if (!(__VA_ARGS__)) {                               \
-		/* e.g. "failed assert 'false': aborting"*/ \
-		tr::_impl_assert(#__VA_ARGS__, "aborting"); \
-	}
-
-// yeah
-#define TR_UNREACHABLE() tr::panic("unreachable code at %s:%i", __FILE__, __LINE__)
-
-#define TR_TODO() tr::panic("unimplemented functionality at %s:%i", __FILE__, __LINE__)
 
 }
 

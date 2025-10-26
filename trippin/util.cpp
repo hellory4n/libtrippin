@@ -115,5 +115,5 @@ void tr::Stopwatch::print_time_ms(String label) const
 void tr::Stopwatch::print_time_us(String label) const
 {
 	// windows pls dont shit yourself with a mere µ
-	tr::log("%s took %li µs", *label, elapsed_us());
+	tr::log(reinterpret_cast<const char*>(u8"%s took %li µs"), *label, elapsed_us());
 }

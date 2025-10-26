@@ -117,6 +117,10 @@ namespace strlib {
 	void strext(Arena& arena, const char8* s, usize len, char8** out, usize* out_len);
 	// returns true if the string is an absolute path
 	bool strabsolute(const char8* s, usize len);
+
+	// windows uses a different function for this for reasons unbeknownst to man. this copies
+	// the va_list for you so no need to do that yourself.
+	usize sprintf_len(const char* fmt, va_list arg);
 }
 
 template<Character T>
@@ -125,7 +129,8 @@ class BaseStringBuilder;
 
 // A view into immutable strings. Strings are just a pointer + length, with the underlying data
 // being const. If you want to modify it, copy the data, or use `StringBuilder`. The 'default'
-// string type, equivalent to `std::string_view`.
+// string type, equivalent to `std::string_view`. Always null-terminated, so it can be safely used
+// with C libraries.
 template<Character T>
 class BaseString
 {
@@ -499,6 +504,7 @@ using String = String8; // utf-8 is the default
 // utf-32 to utf-16
 
 // Mutable string. You can change it and stuff. 90% of the time you should use `tr::String` instead.
+// Always null-terminated, so it can be safely used with C libraries.
 template<Character T>
 requires(!std::is_const_v<T>)
 class BaseStringBuilder
@@ -631,7 +637,8 @@ public:
 	// Adds a character to the string.
 	void append(T c)
 	{
-		_array.add(c);
+		_array[len() - 1] = c;
+		_array.add('\0');
 	}
 };
 

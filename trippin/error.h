@@ -26,6 +26,7 @@
 #ifndef _TRIPPIN_ERROR_H
 #define _TRIPPIN_ERROR_H
 
+#include "trippin/bits/macros.h" // IWYU pragma: export
 #include "trippin/common.h"
 #include "trippin/string.h"
 
@@ -35,7 +36,7 @@ namespace tr {
 class Error
 {
 public:
-	virtual ~Error() {}
+	virtual ~Error() {} // shut up
 
 	// Returns the error message
 	virtual String message() const = 0;
@@ -55,7 +56,7 @@ public:
 		: msg(str)
 	{
 	}
-	// Pretty much just a shorthand for `tr::StringError(tr::fmt(tr::scratchpad(), ...))`
+	// Shorthand for `tr::StringError(tr::fmt(tr::scratchpad(), ...))`
 	StringError(const char* fmt, ...);
 
 	String message() const override
@@ -169,6 +170,12 @@ public:
 		return value.is_left();
 	}
 
+	// If true, the result has an error. Else, it has a value.
+	bool is_invalid() const
+	{
+		return value.is_right();
+	}
+
 	T unwrap() const
 	{
 		if (!this->is_valid()) {
@@ -208,6 +215,12 @@ public:
 		return this->value.right();
 	}
 
+	// Shorthand for unwrap()
+	T operator*() const
+	{
+		return unwrap();
+	}
+
 	// Similar to the `??`/null coalescing operator in modern languages
 	const T value_or(const T other) const
 	{
@@ -240,10 +253,16 @@ public:
 	{
 	}
 
-	// If false, it has an error.
+	// If true, it has a value. Else, it has an error.
 	bool is_valid() const
 	{
 		return !this->value.is_valid();
+	}
+
+	// If true, it has an error. Else, it has a value.
+	bool is_invalid() const
+	{
+		return this->value.is_valid();
 	}
 
 	// Pretty much just asserts that it's valid :D
@@ -276,6 +295,11 @@ public:
 		}
 	}
 
+	void operator*() const
+	{
+		unwrap();
+	}
+
 	E unwrap_err() const
 	{
 		if (this->is_valid()) {
@@ -290,32 +314,6 @@ public:
 		this->value.match(error_func, valid_func);
 	}
 };
-
-// evil macro fuckery for less boilerplate
-
-// Shorthand for calling a function, unwrapping if valid, and returning an error otherwise
-// example: TR_TRY_ASSIGN(int32 var, some_function());
-#define TR_TRY_ASSIGN(Var, ...)                                   \
-	const auto _TR_UNIQUE_NAME(_tr_try_tmp) = (__VA_ARGS__);  \
-	if (!_TR_UNIQUE_NAME(_tr_try_tmp).is_valid()) {           \
-		return _TR_UNIQUE_NAME(_tr_try_tmp).unwrap_err(); \
-	}                                                         \
-	Var = _TR_UNIQUE_NAME(_tr_try_tmp).unwrap()
-
-// `TR_TRY_ASSIGN` but for `tr::Result<void, E>`, or for when you don't care about the result
-// example: TR_TRY(some_function());
-#define TR_TRY(...)                                               \
-	const auto _TR_UNIQUE_NAME(_tr_try_tmp) = (__VA_ARGS__);  \
-	if (!_TR_UNIQUE_NAME(_tr_try_tmp).is_valid()) {           \
-		return _TR_UNIQUE_NAME(_tr_try_tmp).unwrap_err(); \
-	}
-
-// Similar to `tr::assert`, but instead of panicking, it returns an error.
-// example: TR_TRY_ASSERT(false, tr::StringError("something went wrong"));
-#define TR_TRY_ASSERT(X, ...)         \
-	if (!(X)) {                   \
-		return (__VA_ARGS__); \
-	}
 
 }
 

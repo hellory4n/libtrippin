@@ -211,7 +211,7 @@ static void test::filesystem()
 {
 	tr::log("\n==== FILESYSTEM ====");
 
-	// we don't care about these ones failing :)
+	// we don't care about these ones failing
 	// it'll only succeed if it failed last time
 	(void)tr::remove_file("fucker.txt");
 	(void)tr::remove_file("fuckoffman.txt");
@@ -327,10 +327,9 @@ int main(int argc, char* argv[])
 }
 
 // just making sure it compiles
-// please shut up
 // TODO this sucks
-TR_GCC_IGNORE_WARNING(-Wunused-variable)
-TR_GCC_IGNORE_WARNING(-Wunused-but-set-variable)
+TR_GCC_IGNORE_WARNING(-Wunused-variable) // please shut up
+TR_GCC_IGNORE_WARNING(-Wunused-but-set-variable) // please shut up 2
 #include "test_collection.h" // IWYU pragma: keep
 #include "test_error.h" // IWYU pragma: keep
 #include "test_logging.h" // IWYU pragma: keep

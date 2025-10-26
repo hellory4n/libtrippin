@@ -33,6 +33,8 @@
 #include <type_traits>
 #include <utility>
 
+#include "trippin/bits/concepts.h"
+#include "trippin/bits/macros.h" // IWYU pragma: export
 #include "trippin/bits/platform.h" // IWYU pragma: export
 
 // number types
@@ -303,6 +305,12 @@ public:
 		return this->has_value;
 	}
 
+	// If true, the maybe is, in fact, a nope.
+	constexpr bool is_invalid() const
+	{
+		return !this->has_value;
+	}
+
 	// Gets the value or panics if it's null
 	constexpr T unwrap() const
 	{
@@ -310,6 +318,11 @@ public:
 			return this->value.left();
 		}
 		tr::panic("couldn't unwrap Maybe<T>");
+	}
+
+	constexpr T operator*() const
+	{
+		return unwrap();
 	}
 
 	// Similar to the `??`/null coalescing operator in modern languages
@@ -478,10 +491,6 @@ struct Pair
 
 // NOLINTEND(bugprone-macro-parentheses)
 
-// nubmerb :D
-template<typename T>
-concept Number = std::is_integral_v<T> || std::is_floating_point_v<T>;
-
 // I love reinventing the wheel
 // TODO this kinda sucks
 template<Number T>
@@ -564,34 +573,6 @@ RangeIterator<T> range(T end)
 {
 	return RangeIterator<T>(0, end, 0, 1);
 }
-
-// defer
-// usage: e.g. TR_DEFER(free(ptr));
-template<typename Fn>
-struct Defer
-{
-	Fn fn;
-
-	Defer(Fn fn)
-		: fn(fn)
-	{
-	}
-
-	~Defer()
-	{
-		fn();
-	}
-};
-
-template<typename Fn>
-Defer<Fn> _defer_func(Fn fn)
-{
-	return Defer<Fn>(fn);
-}
-
-#define TR_DEFER(...)                                                             \
-	[[maybe_unused]]                                                          \
-	auto _TR_UNIQUE_NAME(_tr_defer) = tr::_defer_func([&]() { __VA_ARGS__; })
 
 // So you can check for debug without having to do ugly preprocessing fuckery :)
 constexpr bool is_debug()

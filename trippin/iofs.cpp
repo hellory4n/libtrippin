@@ -25,6 +25,7 @@
 
 #include "trippin/common.h"
 #include "trippin/error.h"
+#include "trippin/memory.h"
 #include "trippin/string.h"
 
 // :(
@@ -188,7 +189,7 @@ tr::String tr::path(tr::Arena& arena, tr::String path)
 		);
 	}
 
-	return path.duplicate(arena);
+	return path;
 }
 
 void tr::set_paths(tr::String appdir, tr::String userdir)
@@ -244,6 +245,7 @@ static tr::String from_win32_to_trippin_str(WinStrConst str)
 
 tr::Result<tr::File&> tr::File::open(tr::Arena& arena, tr::String path, FileMode mode)
 {
+	path = tr::path(tr::scratchpad(), path);
 	FileError::reset_errors();
 
 	// get mode
@@ -447,6 +449,7 @@ bool tr::File::can_write()
 
 tr::Result<void> tr::remove_file(tr::String path)
 {
+	path = tr::path(tr::scratchpad(), path);
 	FileError::reset_errors();
 
 	int i = _wremove(from_trippin_to_win32_str(path));
@@ -458,6 +461,8 @@ tr::Result<void> tr::remove_file(tr::String path)
 
 tr::Result<void> tr::move_file(tr::String from, tr::String to)
 {
+	from = tr::path(tr::scratchpad(), from);
+	to = tr::path(tr::scratchpad(), to);
 	FileError::reset_errors();
 
 	// libc rename() is different on windows and posix
@@ -477,18 +482,21 @@ tr::Result<void> tr::move_file(tr::String from, tr::String to)
 [[deprecated("use tr::path_exists instead")]]
 bool tr::file_exists(tr::String path)
 {
+	path = tr::path(tr::scratchpad(), path);
 	DWORD attr = GetFileAttributesW(from_trippin_to_win32_str(path));
 	return attr != INVALID_FILE_ATTRIBUTES;
 }
 
 bool tr::path_exists(tr::String path)
 {
+	path = tr::path(tr::scratchpad(), path);
 	DWORD attr = GetFileAttributesW(from_trippin_to_win32_str(path));
 	return attr != INVALID_FILE_ATTRIBUTES;
 }
 
 tr::Result<void> tr::create_dir(tr::String path)
 {
+	path = tr::path(tr::scratchpad(), path);
 	FileError::reset_errors();
 
 	// it's recursive :)
@@ -529,6 +537,7 @@ tr::Result<void> tr::create_dir(tr::String path)
 
 tr::Result<void> tr::remove_dir(tr::String path)
 {
+	path = tr::path(tr::scratchpad(), path);
 	FileError::reset_errors();
 
 	if (!RemoveDirectoryW(from_trippin_to_win32_str(path))) {
@@ -540,6 +549,7 @@ tr::Result<void> tr::remove_dir(tr::String path)
 tr::Result<tr::Array<tr::String>>
 tr::list_dir(tr::Arena& arena, tr::String path, bool include_hidden)
 {
+	path = tr::path(tr::scratchpad(), path);
 	// this looks so horrible what the fuck is wrong with you bill gates
 	WIN32_FIND_DATAW find_file_data;
 	HANDLE hfind;
@@ -576,6 +586,7 @@ tr::list_dir(tr::Arena& arena, tr::String path, bool include_hidden)
 
 tr::Result<bool> tr::is_file(tr::String path)
 {
+	path = tr::path(tr::scratchpad(), path);
 	DWORD attributes = GetFileAttributesW(from_trippin_to_win32_str(path));
 
 	if (attributes == INVALID_FILE_ATTRIBUTES) {
@@ -637,6 +648,7 @@ void tr::_init_paths()
 
 tr::Result<tr::File&> tr::File::open(tr::Arena& arena, tr::String path, tr::FileMode mode)
 {
+	path = tr::path(tr::scratchpad(), path);
 	FileError::reset_errors();
 
 	// get mode
@@ -840,6 +852,7 @@ bool tr::File::can_write()
 
 tr::Result<void> tr::remove_file(tr::String path)
 {
+	path = tr::path(tr::scratchpad(), path);
 	FileError::reset_errors();
 
 	int i = remove(*path);
@@ -851,6 +864,8 @@ tr::Result<void> tr::remove_file(tr::String path)
 
 tr::Result<void> tr::move_file(tr::String from, tr::String to)
 {
+	from = tr::path(tr::scratchpad(), from);
+	to = tr::path(tr::scratchpad(), to);
 	FileError::reset_errors();
 
 	// libc rename() is different on windows and posix
@@ -880,6 +895,7 @@ bool tr::file_exists(tr::String path)
 
 bool tr::path_exists(tr::String path)
 {
+	path = tr::path(tr::scratchpad(), path);
 	FileError::reset_errors();
 
 	// we could just fopen(path, "r") then check if that's null, but then it would return false
@@ -890,6 +906,7 @@ bool tr::path_exists(tr::String path)
 
 tr::Result<void> tr::create_dir(tr::String path)
 {
+	path = tr::path(tr::scratchpad(), path);
 	FileError::reset_errors();
 
 	// it's recursive :)
@@ -933,6 +950,7 @@ tr::Result<void> tr::create_dir(tr::String path)
 
 tr::Result<void> tr::remove_dir(tr::String path)
 {
+	path = tr::path(tr::scratchpad(), path);
 	FileError::reset_errors();
 
 	if (rmdir(*path) != 0) {
@@ -944,6 +962,7 @@ tr::Result<void> tr::remove_dir(tr::String path)
 tr::Result<tr::Array<tr::String>>
 tr::list_dir(tr::Arena& arena, tr::String path, bool include_hidden)
 {
+	path = tr::path(tr::scratchpad(), path);
 	FileError::reset_errors();
 
 	DIR* dir = opendir(*path);
@@ -976,6 +995,7 @@ tr::list_dir(tr::Arena& arena, tr::String path, bool include_hidden)
 
 tr::Result<bool> tr::is_file(tr::String path)
 {
+	path = tr::path(tr::scratchpad(), path);
 	FileError::reset_errors();
 
 	struct stat statma = {};

@@ -347,13 +347,11 @@ tr::Array<byte*> tr::strlib::split_by_char(
 	return strs;
 }
 
-tr::String tr::fmt_args(tr::Arena& arena, const char* fmt, va_list arg)
+usize tr::strlib::sprintf_len(const char* fmt, va_list arg)
 {
 	va_list arglen;
 	va_copy(arglen, arg);
 
-// get size
-// I LOVE WINDOWS!!!!!!!!!!
 #ifdef _WIN32
 	int size = _vscprintf(fmt, arglen);
 #else
@@ -361,8 +359,13 @@ tr::String tr::fmt_args(tr::Arena& arena, const char* fmt, va_list arg)
 #endif
 	va_end(arglen);
 
+	return static_cast<usize>(size);
+}
+
+tr::String tr::fmt_args(tr::Arena& arena, const char* fmt, va_list arg)
+{
+	usize size = tr::strlib::sprintf_len(fmt, arg);
 	// the string constructor handles the null terminator shut up
-	TR_ASSERT(size >= 0);
 	StringBuilder str{arena, static_cast<usize>(size)};
 
 	// do the formatting frfrfrfr

@@ -193,11 +193,6 @@
 	#define TR_GCC_RESTORE()
 #endif
 
-// evil macro fuckery
-#define _TR_CONCAT2(A, B) A##B
-#define _TR_CONCAT(A, B) _TR_CONCAT2(A, B)
-#define _TR_UNIQUE_NAME(Base) _TR_CONCAT(Base, __LINE__)
-
 // asan stuff
 #if (__has_feature(address_sanitizer) || defined(__SANITIZE_ADDRESS__)) && \
 	__has_include(<sanitizer/asan_interface.h>)
