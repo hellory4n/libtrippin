@@ -11,8 +11,8 @@ The most biggest most massive library of all time. I'm insane.
 - Arenas for memory management
 - Arrays, strings, hashmaps
 - Simple math for games
-- Simple logging
-- Files/IO (no need to include windows.h)
+- Basic logging
+- Files/IO
 - Spicy functional errors
 - And more
 
@@ -199,29 +199,24 @@ file.write_string("Man...\nso true");
 file.write_struct(2758952);
 ```
 
-## Building
+## Building (for contributors)
 
-libtrippin uses [Xmake](https://xmake.io) for building, so you obviously need that installed. Then you can run `xmake --help` like any normal person would.
+libtrippin uses [ninja](https://ninja-build.org) for building and [lua](https://lua.org) to generate the build script, so you obviously need both installed.
 
-If you just want commands to copy and paste then:
+First run `./configure.lua` to generate the build script. The options should be pretty easy to understand, but if you're illiterate, you can copy the options I usually use:
 
-```sh
-# setup project
-$ xmake config -m debug --cxx=clang++
-
-# get ide files, e.g.
-$ xmake project -k vsxmake -m "debug,release" # for visual studio
-$ xmake project -k compile_commands # for everyone else
-
-# build
-$ xmake
-
-# run
-$ xmake run -d testing_it
-
-# clean
-$ xmake clean
+```plaintext
+libtrippin auto configurator 3000++
+- compiler, e.g. clang++ > clang++
+- compile mode [debug/release] > debug
+- target platform [windows/linux] > linux
+- use a sanitizer? maps directly to a -fsanitize flag. you can usually ignore this. >
+- generate compile_commands.json for clangd? [Y/n] >
 ```
+
+Please note that building from Windows isn't supported, just use WSL or something.
+
+After compiling by running `ninja`, you will get a `libtrippin.a` file with the actual library, and `testingit` which is the test program for the library.
 
 ## FAQ
 

@@ -261,6 +261,10 @@ enum class ArrayClearBehavior
 	DO_NOTHING
 };
 
+// used for when you don't set the length (which you usually do if you're just
+// gonna use .add())
+static constexpr usize ARRAY_INITIAL_CAPACITY = 16;
+
 // A slice of memory, usually from an arena but can point to anywhere. Similar
 // to a Go slice, or other examples. Arrays don't own the value and don't use
 // fancy RAII fuckery, so you can pass them by value.
@@ -270,10 +274,6 @@ class Array
 	// used for the ptr types
 	using MutT = RefWrapper<std::remove_const_t<T>>;
 	using ConstT = const RefWrapper<T>;
-
-	// used for when you don't set the length (which you usually do if you're just
-	// gonna use .add())
-	static constexpr usize INITIAL_CAPACITY = 16;
 
 	// if it's from an arena the internal ptr just can't be const, as you're
 	// copying the original const data to the arena BUT if it's not and is just
@@ -314,7 +314,7 @@ public:
 		// i'm just keeping this behavior so it doesn't break everything that used
 		// Array(arena, 0)
 		if (len == 0) {
-			_cap = INITIAL_CAPACITY;
+			_cap = ARRAY_INITIAL_CAPACITY;
 		}
 
 		_arena_ptr = static_cast<MutT*>(arena.alloc(sizeof(T) * _cap));
@@ -348,7 +348,7 @@ public:
 		// i'm just keeping this behavior so it doesn't break everything :)
 		if (len == 0) {
 			_len = 0;
-			_cap = INITIAL_CAPACITY;
+			_cap = ARRAY_INITIAL_CAPACITY;
 		}
 
 		if (data == nullptr) {
@@ -411,7 +411,7 @@ public:
 	// mutable array to const array
 	// there's no version for the other way around because, much like const_cast,
 	// that'd be EVIL
-	operator Array<const T>() const
+	constexpr operator Array<const T>() const
 	requires(!std::is_const_v<T>)
 	{
 		return Array<const T>(_ptr, _len);
@@ -419,7 +419,7 @@ public:
 
 	// Similar to `operator[]`, but when getting an index out of bounds, instead
 	// of panicking, it returns null, which is probably useful sometimes.
-	Maybe<const T&> try_get(usize idx) const
+	constexpr Maybe<const T&> try_get(usize idx) const
 	{
 		_validate();
 
@@ -448,7 +448,7 @@ public:
 
 	// Similar to `operator[]`, but when getting an index out of bounds, instead
 	// of panicking, it returns null, which is probably useful sometimes.
-	Maybe<T&> try_get(usize idx)
+	constexpr Maybe<T&> try_get(usize idx)
 	{
 		_validate();
 
@@ -475,30 +475,26 @@ public:
 		}
 	}
 
-	const T& operator[](usize idx) const
+	constexpr const T& operator[](usize idx) const
 	{
 		_validate();
 
 		Maybe<const T&> item = try_get(idx);
-		if (!item.is_valid()) {
-			tr::panic(
-				"index out of range: array[%zu] when the length is %zu", idx, _len
-			);
+		if (item.is_valid()) {
+			return item.unwrap();
 		}
-		return item.unwrap();
+		tr::panic("index out of range: array[%zu] when the length is %zu", idx, _len);
 	}
 
-	T& operator[](usize idx)
+	constexpr T& operator[](usize idx)
 	{
 		_validate();
 
 		Maybe<T&> item = try_get(idx);
-		if (!item.is_valid()) {
-			tr::panic(
-				"index out of range: array[%zu] when the length is %zu", idx, _len
-			);
+		if (item.is_valid()) {
+			return item.unwrap();
 		}
-		return item.unwrap();
+		tr::panic("index out of range: array[%zu] when the length is %zu", idx, _len);
 	}
 
 	// Returns the buffer.
@@ -621,6 +617,48 @@ public:
 		};
 	}
 
+	// A bit like add() except it doesn't add items, it reserves space for adding items later.
+	// This is useful if you're gonna add a gazillion items because then it will be only 1
+	// memory allocation
+	void reserve(usize items)
+	requires(!std::is_const_v<T>)
+	{
+		_validate();
+		if (!_can_grow || _src_arena == nullptr) [[unlikely]] {
+			tr::panic("array can't grow (likely not allocated from arena)");
+		}
+		// just in case the math blows up or some shit
+		if (items == 0) [[unlikely]] {
+			return;
+		}
+
+		// does it already fit?
+		if (_len + items < _cap) {
+			return;
+		}
+
+		// reallocate array
+		MutT* old_buffer = _arena_ptr;
+		_cap = tr::max(_cap * 2, _cap + items);
+		_arena_ptr = static_cast<MutT*>(_src_arena->alloc(_cap * sizeof(T)));
+
+		// you may initialize with a length of 0 so you can then add crap later
+		if (_len > 0) {
+			memcpy(static_cast<void*>(_arena_ptr), static_cast<const void*>(old_buffer),
+			       _len * sizeof(T));
+		}
+
+		// initialize the new items so nothing evil happens
+		for (usize i = _len; i < _len + items; i++) {
+			if constexpr (std::is_reference_v<T>) {
+				_arena_ptr[i] = nullptr;
+			}
+			else {
+				_arena_ptr[i] = T{};
+			}
+		}
+	}
+
 	// As the name implies, it copies the array and its items to somewhere else.
 	[[nodiscard]]
 	Array<T> duplicate(Arena& arena) const
@@ -677,15 +715,13 @@ public:
 		return _array[idx];
 	}
 
-	const T& operator[](usize idx) const TR_LIFETIMEBOUND
+	constexpr const T& operator[](usize idx) const TR_LIFETIMEBOUND
 	{
-		Maybe<T&> x = try_get(idx);
-		if (!x.is_valid()) {
-			tr::panic(
-				"index out of range: stack array[%zu] when the length is %zu", idx,
-				N
-			);
+		Maybe<const T&> item = try_get(idx);
+		if (item.is_valid()) {
+			return item.unwrap();
 		}
+		tr::panic("index out of range: list[%zu] when the length is %zu", idx, N);
 	}
 
 	constexpr Maybe<T&> try_get(usize idx) TR_LIFETIMEBOUND
@@ -696,15 +732,13 @@ public:
 		return _array[idx];
 	}
 
-	T& operator[](usize idx) TR_LIFETIMEBOUND
+	constexpr T& operator[](usize idx) TR_LIFETIMEBOUND
 	{
-		Maybe<T&> x = try_get(idx);
-		if (!x.is_valid()) {
-			tr::panic(
-				"index out of range: stack array[%zu] when the length is %zu", idx,
-				N
-			);
+		Maybe<T&> item = try_get(idx);
+		if (item.is_valid()) {
+			return item.unwrap();
 		}
+		tr::panic("index out of range: list[%zu] when the length is %zu", idx, N);
 	}
 
 	constexpr const T* buf() const TR_LIFETIMEBOUND
@@ -732,12 +766,12 @@ public:
 		return N;
 	}
 
-	operator Array<const T>() const TR_LIFETIMEBOUND
+	constexpr operator Array<const T>() const TR_LIFETIMEBOUND
 	{
 		return {_array, N};
 	}
 
-	operator Array<T>() TR_LIFETIMEBOUND
+	constexpr operator Array<T>() TR_LIFETIMEBOUND
 	{
 		return {_array, N};
 	}

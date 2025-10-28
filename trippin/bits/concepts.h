@@ -34,6 +34,18 @@ namespace tr {
 template<typename T>
 concept Number = std::is_integral_v<T> || std::is_floating_point_v<T>;
 
+template<typename T>
+concept Character =
+	std::is_same_v<T, char> || std::is_same_v<T, wchar_t> || std::is_same_v<T, char8_t> ||
+	std::is_same_v<T, char16_t> || std::is_same_v<T, char32_t>;
+
+// not a concept idc
+
+// someone at C++ hq decided for some fucking reason that actually, a reference is not just a fancy
+// pointer...stupid i know
+template<typename T>
+using RefWrapper = std::conditional_t<std::is_reference_v<T>, std::remove_reference_t<T>*, T>;
+
 }
 
 #endif

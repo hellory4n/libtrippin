@@ -33,7 +33,7 @@
 #include <type_traits>
 #include <utility>
 
-#include "trippin/bits/concepts.h"
+#include "trippin/bits/concepts.h" // IWYU pragma: export
 #include "trippin/bits/macros.h" // IWYU pragma: export
 #include "trippin/bits/platform.h" // IWYU pragma: export
 
@@ -104,11 +104,6 @@ void call_on_quit(const std::function<void(bool is_panic)>& func);
 [[noreturn]]
 void panic(const char* fmt, ...);
 
-// someone at C++ hq decided for some fucking reason that actually, a reference is not just a fancy
-// pointer...stupid i know
-template<typename T>
-using RefWrapper = std::conditional_t<std::is_reference_v<T>, std::remove_reference_t<T>*, T>;
-
 // Functional propaganda
 template<typename L, typename R>
 class Either
@@ -130,12 +125,12 @@ public:
 	using LeftType = L;
 	using RightType = R;
 
-	Either()
+	constexpr Either()
 		: side(Side::UNINITIALIZED)
 	{
 	}
 
-	Either(L l)
+	constexpr Either(L l)
 		: side(Side::LEFT)
 	{
 		// c++ is consuming my brain
@@ -148,7 +143,7 @@ public:
 		}
 	}
 
-	Either(R r)
+	constexpr Either(R r)
 		: side(Side::RIGHT)
 	{
 		if constexpr (std::is_reference_v<R>) {
@@ -159,9 +154,8 @@ public:
 		}
 	}
 
-	void free()
+	constexpr void free()
 	{
-		// TODO this WILL break
 		if constexpr (std::is_pointer_v<L> || std::is_pointer_v<R>) {
 			return;
 		}
@@ -181,12 +175,13 @@ public:
 	}
 
 	// evil rule of 3 fuckery
-	~Either()
+	// TODO should we remove this? (since no raii and this is clearly raii)
+	constexpr ~Either()
 	{
 		this->free();
 	}
 
-	Either(const Either& other)
+	constexpr Either(const Either& other)
 		: side(other.side)
 	{
 		if (this->side == Side::LEFT) {
@@ -207,7 +202,7 @@ public:
 		}
 	}
 
-	Either& operator=(const Either& other)
+	constexpr Either& operator=(const Either& other)
 	{
 		if (this != &other) {
 			this->free();
@@ -217,12 +212,12 @@ public:
 	}
 
 	// If true, it's left. Else, it's right.
-	bool is_left() const
+	constexpr bool is_left() const
 	{
 		return this->side == Side::LEFT;
 	}
 	// If true, it's right. Else, it's left.
-	bool is_right() const
+	constexpr bool is_right() const
 	{
 		return this->side == Side::RIGHT;
 	}
@@ -258,7 +253,7 @@ public:
 	}
 
 	// Calls a function (usually a lambda) depending on wheth1er it's left, or right.
-	void
+	constexpr void
 	match(const std::function<void(L left)>& on_left,
 	      const std::function<void(R right)>& on_right)
 	{

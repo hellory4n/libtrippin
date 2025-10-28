@@ -27,6 +27,7 @@
 #define _TRIPPIN_STRING_H
 
 #include <cstdarg>
+#include <cstdio>
 #include <type_traits>
 
 #include "trippin/common.h"
@@ -34,11 +35,6 @@
 #include "trippin/memory.h"
 
 namespace tr {
-
-template<typename T>
-concept Character =
-	std::is_same_v<T, char> || std::is_same_v<T, wchar_t> || std::is_same_v<T, char8> ||
-	std::is_same_v<T, char16> || std::is_same_v<T, char32>;
 
 // replacement for libc's `str*` functions, which are unsafe and evil. `tr::strlib` also supports
 // multiple character types. should probably not be used directly (use
@@ -202,7 +198,7 @@ public:
 	}
 
 	// Creates a `String` from a `StringBuilder`
-	explicit BaseString(BaseStringBuilder<T> sb);
+	constexpr explicit BaseString(BaseStringBuilder<T> sb);
 
 	// Creates a `String` by copying a `StringBuilder`
 	BaseString(Arena& arena, BaseStringBuilder<T> sb);
@@ -213,13 +209,13 @@ public:
 		return _len - 1;
 	}
 
-	const T* buf() const
+	constexpr const T* buf() const
 	{
 		_validate();
 		return _ptr;
 	}
 
-	const T* operator*() const
+	constexpr const T* operator*() const
 	{
 		_validate();
 		return _ptr;
@@ -227,7 +223,7 @@ public:
 
 	// Similar to `operator[]`, but when getting an index out of bounds, instead
 	// of panicking, it returns null, which is probably useful sometimes.
-	Maybe<T> try_get(usize idx) const
+	constexpr Maybe<T> try_get(usize idx) const
 	{
 		_validate();
 		if (idx >= this->_len) {
@@ -236,16 +232,14 @@ public:
 		return this->_ptr[idx];
 	}
 
-	T operator[](usize idx) const
+	constexpr T operator[](usize idx) const
 	{
 		_validate();
 		Maybe<T> item = try_get(idx);
-		if (!item.is_valid()) {
-			tr::panic(
-				"index out of range: string[%zu] when the length is %zu", idx, _len
-			);
+		if (item.is_valid()) {
+			return item.unwrap();
 		}
-		return item.unwrap();
+		tr::panic("index out of range: string[%zu] when the length is %zu", idx, _len);
 	}
 
 	class Iterator
@@ -256,7 +250,7 @@ public:
 			, _ptr(pointer)
 		{
 		}
-		constexpr ArrayItem<T> operator*() const
+		constexpr ArrayItem<const T> operator*() const
 		{
 			return {_idx, *_ptr};
 		}
@@ -273,7 +267,7 @@ public:
 
 	private:
 		usize _idx;
-		Type* _ptr;
+		const Type* _ptr;
 	};
 
 	constexpr Iterator begin() const
@@ -555,31 +549,31 @@ public:
 	}
 
 	// string builder to string view
-	operator BaseString<T>() const
+	constexpr operator BaseString<T>() const
 	{
 		return BaseString<T>(*_array, _array.len());
 	}
 
 	// Similar to `operator[]`, but when getting an index out of bounds, instead
 	// of panicking, it returns null, which is probably useful sometimes.
-	Maybe<T&> try_get(usize idx)
+	constexpr Maybe<T&> try_get(usize idx)
 	{
 		return _array.try_get(idx);
 	}
 
 	// Similar to `operator[]`, but when getting an index out of bounds, instead
 	// of panicking, it returns null, which is probably useful sometimes.
-	Maybe<const T&> try_get(usize idx) const
+	constexpr Maybe<const T&> try_get(usize idx) const
 	{
 		return _array.try_get(idx);
 	}
 
-	const T& operator[](usize idx) const
+	constexpr const T& operator[](usize idx) const
 	{
 		return _array[idx];
 	}
 
-	T& operator[](usize idx)
+	constexpr T& operator[](usize idx)
 	{
 		return _array[idx];
 	}
@@ -634,16 +628,78 @@ public:
 		_array.clear(behavior);
 	}
 
+	bool operator==(BaseString<T> other) const
+	{
+		return tr::strlib::strs_equal(
+			reinterpret_cast<const byte*>(buf()), len() * sizeof(T),
+			reinterpret_cast<const byte*>(other.buf()), other.len() * sizeof(T)
+		);
+	}
+
+	bool operator!=(BaseString<T> other) const
+	{
+		return !(*this == other);
+	}
+
+	bool operator==(const T* other) const
+	{
+		return *this == BaseString{other};
+	}
+
+	bool operator!=(const T* other) const
+	{
+		return *this != BaseString{other};
+	}
+
 	// Adds a character to the string.
 	void append(T c)
 	{
-		_array[len() - 1] = c;
+		_array[len() - 1] = _array[len() - 1];
+		_array.add(c);
 		_array.add('\0');
+	}
+
+	// Appends another string to the string. Incredible indeed.
+	void append(BaseString<T> s)
+	{
+		// just in case
+		if (s.len() == 0) {
+			return;
+		}
+
+		_array.reserve(s.len());
+
+		// evil fuckery so that we can move the null terminator
+		_array[len() - 1] = s[0];
+		for (auto [i, c] : s) {
+			if (i == 0) {
+				continue;
+			}
+			_array.add(c);
+		}
+		_array.add('\0');
+	}
+
+	// Appends a formatted string with formatting because that's what formatted means.
+	_TR_PRINTF_ATTR(2, 3)
+	void appendf(const char* fmt, ...)
+	{
+		va_list arg;
+		va_start(arg, fmt);
+
+		// mild evilness
+		usize len = tr::strlib::sprintf_len(fmt, arg);
+		T* tmpstr = tr::scratchpad().alloc<T*>(len + 1);
+		std::vsnprintf(tmpstr, len, fmt, arg);
+		tmpstr[len] = '\0';
+		append(BaseString<T>{tmpstr, len});
+
+		va_end(arg);
 	}
 };
 
 template<Character T>
-BaseString<T>::BaseString(BaseStringBuilder<T> sb)
+constexpr BaseString<T>::BaseString(BaseStringBuilder<T> sb)
 	: _ptr(*sb)
 	, _len(sb.len() + 1)
 {

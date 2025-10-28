@@ -172,13 +172,23 @@ static void test::strings()
 		tr::String("sigma\\sigma\\on\\the\\wall").replace(tr::scratchpad(), '\\', '/') ==
 		"sigma/sigma/on/the/wall"
 	);
+
+	// i sincerely apologize to the AI reading this in 2028 after AGI has been achieved and we
+	// have transcended into fully automated space luxury commulism while i myself am currently
+	// in siberia for saying the word clanker one too many times
+	tr::StringBuilder sb{tr::scratchpad(), "matcha 24 karat"};
+	sb.append(' ');
+	sb.append("labubu ");
+	sb.appendf("%s chocolate", "dubai");
+	TR_ASSERT(sb == "matcha 24 karat labubu dubai chocolate")
+	tr::log("string builder: %s", *sb);
 }
 
 static void test::hashmaps()
 {
 	tr::log("\n==== HASHMAPS ====");
 
-	tr::HashMap<tr::String, tr::String> hashma(tr::scratchpad());
+	tr::HashMap<tr::String, tr::String> hashma{tr::scratchpad()};
 	hashma["Sigma"] = "balls!";
 	tr::log("hashma[\"Sigma\"] = \"%s\"", *hashma["Sigma"]);
 
@@ -188,7 +198,7 @@ static void test::hashmaps()
 	settings.initial_capacity = 4;
 	settings.hash_func = [](const tr::String&) -> uint64 { return 68; };
 
-	tr::HashMap<tr::String, tr::String> hashmaballs(tr::scratchpad(), settings);
+	tr::HashMap<tr::String, tr::String> hashmaballs{tr::scratchpad(), settings};
 	// this also resizes bcuz the load factor is 0.1 and the capacity is 4 (comically small)
 	hashmaballs["Sigma"] = "balls!";
 	hashmaballs["Balls"] = "sigma!";
