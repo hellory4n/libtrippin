@@ -276,7 +276,7 @@ public:
 	}
 	constexpr Iterator end() const
 	{
-		return Iterator(buf() + len() - 1, len());
+		return Iterator(buf() + len(), len());
 	}
 
 	// As the name implies, it copies the array and its items to somewhere else.
@@ -654,8 +654,7 @@ public:
 	// Adds a character to the string.
 	void append(T c)
 	{
-		_array[len() - 1] = _array[len() - 1];
-		_array.add(c);
+		_array[len()] = c;
 		_array.add('\0');
 	}
 
@@ -668,16 +667,9 @@ public:
 		}
 
 		_array.reserve(s.len());
-
-		// evil fuckery so that we can move the null terminator
-		_array[len() - 1] = s[0];
-		for (auto [i, c] : s) {
-			if (i == 0) {
-				continue;
-			}
-			_array.add(c);
+		for (auto [_, c] : s) {
+			append(c);
 		}
-		_array.add('\0');
 	}
 
 	// Appends a formatted string with formatting because that's what formatted means.
@@ -690,8 +682,7 @@ public:
 		// mild evilness
 		usize len = tr::strlib::sprintf_len(fmt, arg);
 		T* tmpstr = tr::scratchpad().alloc<T*>(len + 1);
-		std::vsnprintf(tmpstr, len, fmt, arg);
-		tmpstr[len] = '\0';
+		std::vsnprintf(tmpstr, len + 1, fmt, arg);
 		append(BaseString<T>{tmpstr, len});
 
 		va_end(arg);

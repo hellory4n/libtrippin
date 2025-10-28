@@ -194,12 +194,12 @@ static void test::hashmaps()
 
 	// check collsiions
 	tr::HashMapSettings<tr::String> settings = {};
-	settings.load_factor = 0.1;
+	settings.load_factor = 0.05;
 	settings.initial_capacity = 4;
 	settings.hash_func = [](const tr::String&) -> uint64 { return 68; };
 
 	tr::HashMap<tr::String, tr::String> hashmaballs{tr::scratchpad(), settings};
-	// this also resizes bcuz the load factor is 0.1 and the capacity is 4 (comically small)
+	// this also resizes bcuz the load factor is 0.01 and the capacity is 4 (small)
 	hashmaballs["Sigma"] = "balls!";
 	hashmaballs["Balls"] = "sigma!";
 	hashmaballs["oh no it go it gone bye bye (bye)"] = "ball. one";
