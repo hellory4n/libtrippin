@@ -76,6 +76,10 @@ void tr::init()
 
 	logfiles.add(tr::std_out);
 
+#ifdef TR_OS_WINDOWS
+	SetConsoleOutputCP(CP_UTF8);
+#endif
+
 	tr::_init_paths();
 
 	tr::info("initialized libtrippin %s", tr::VERSION);

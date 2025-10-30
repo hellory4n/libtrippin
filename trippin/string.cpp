@@ -33,6 +33,7 @@
 #include "trippin/log.h"
 #include "trippin/math.h"
 #include "trippin/memory.h"
+#include "trippin/thirdparty/utf8proc/utf8proc.c" // i love the preprocessor
 
 // FIXME theres probably 2050 different violations of strict aliasing
 // and 2050 different security vulnerabilities
@@ -315,13 +316,15 @@ tr::Array<byte*> tr::strlib::split_by_char(
 	Array<byte*> strs{arena};
 	usize last_str = 0;
 
+	// FIXME this WILL break
+
 	for (usize i = 0; i < s_len; i += ch_len) {
 		if (memcmp(&s[i], ch, ch_len) == 0 || i == s_len - 1) {
 			// small hack so that i don't have to change this code any more than what is
 			// required to make it work
 			if (i == s_len - 1) {
-				s_len++;
-				i++;
+				s_len += ch_len;
+				i += ch_len;
 			}
 
 			byte* newstr = arena.alloc<byte*>(i - last_str + ch_len);
@@ -368,20 +371,44 @@ tr::String tr::fmt_args(tr::Arena& arena, const char* fmt, va_list arg)
 	// the string constructor handles the null terminator shut up
 	StringBuilder str{arena, static_cast<usize>(size)};
 
-	// do the formatting frfrfrfr
-	va_list argfmt;
-	va_copy(argfmt, arg);
 #ifdef _WIN32
-	vsnprintf_s(str.buf(), size + 1, _TRUNCATE, fmt, argfmt);
+	vsnprintf_s(str.buf(), size + 1, _TRUNCATE, fmt, arg);
 #else
-	vsnprintf(str.buf(), static_cast<usize>(size) + 1, fmt, argfmt);
+	vsnprintf(str.buf(), static_cast<usize>(size) + 1, fmt, arg);
 #endif
-	va_end(argfmt);
 
 	// just in case
 	str[static_cast<usize>(size)] = '\0';
 
 	return str;
+}
+
+tr::String16 tr::utf8_to_utf16(tr::Arena& arena, tr::String8 src)
+{
+	(void)arena;
+	(void)src;
+	TR_TODO();
+}
+
+tr::String8 tr::utf16_to_utf8(tr::Arena& arena, tr::String16 src)
+{
+	(void)arena;
+	(void)src;
+	TR_TODO();
+}
+
+tr::String32 tr::utf8_to_utf32(tr::Arena& arena, tr::String8 src)
+{
+	(void)arena;
+	(void)src;
+	TR_TODO();
+}
+
+tr::String8 tr::utf32_to_utf8(tr::Arena& arena, tr::String32 src)
+{
+	(void)arena;
+	(void)src;
+	TR_TODO();
 }
 
 [[gnu::format(printf, 2, 3)]]

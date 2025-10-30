@@ -8,6 +8,7 @@
 #include <trippin/string.h>
 #include <trippin/util.h>
 
+#include "trippin/bits/macros.h"
 #include "trippin/util.h"
 
 // TODO use actual tests you dumbass

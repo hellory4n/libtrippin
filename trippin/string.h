@@ -117,7 +117,20 @@ namespace strlib {
 	// windows uses a different function for this for reasons unbeknownst to man. this copies
 	// the va_list for you so no need to do that yourself.
 	usize sprintf_len(const char* fmt, va_list arg);
+
+	// utf-8 lib (just an utf8proc wrapper)
+
+	// converts an unicode string to uppercase.
+	void utf8_to_uppercase(const char8* s, usize len, char8* out);
+	// converts an unicode string to lowercase.
+	void utf8_to_lowercase(const char8* s, usize len, char8* out);
 }
+
+// more utf-8 stuff (no need to make a low level version for these)
+
+// Returns true if a codepoint is valid, regardless of whether or not it has been assigned a
+// value by the current Unicode standard.
+bool is_unicode_codepoint_valid(char32 c);
 
 template<Character T>
 requires(!std::is_const_v<T>)
@@ -202,6 +215,28 @@ public:
 
 	// Creates a `String` by copying a `StringBuilder`
 	BaseString(Arena& arena, BaseStringBuilder<T> sb);
+
+	// since the C++ committee hates its users, we must explicitly cast from char8 to char
+	// technically undefined behavior but should work anywhere that uses ASCII/UTF-8 (so most
+	// places)
+	constexpr BaseString(const char8* str, usize len)
+	requires(std::is_same_v<T, char>)
+		: BaseString(reinterpret_cast<const char*>(str), len)
+	{
+	}
+	constexpr BaseString(const char8* str)
+	requires(std::is_same_v<T, char>)
+		: BaseString(reinterpret_cast<const char*>(str), tr::strlib::constexpr_strlen(str))
+	{
+	}
+	BaseString(Arena& arena, const char8* str)
+	requires(std::is_same_v<T, char>)
+		: BaseString(
+			  arena, reinterpret_cast<const char*>(str),
+			  tr::strlib::constexpr_strlen(str)
+		  )
+	{
+	}
 
 	// Does NOT include the null terminator
 	constexpr usize len() const
@@ -309,7 +344,9 @@ public:
 		return *this != BaseString{other};
 	}
 
-	// Gets a substring. The returned string includes the end character.
+	// Gets a substring. The returned string includes the end character. Note that `start` and
+	// `end` are NOT in codepoints but instead in indexes (bytes for UTF-8, 2 bytes for UTF-16,
+	// 4 bytes for UTF-32)
 	[[nodiscard]]
 	BaseString substr(Arena& arena, usize start, usize end) const
 	{
@@ -322,7 +359,7 @@ public:
 	}
 
 	// Returns an array with all of the indexes containing that character (the index is where it
-	// starts)
+	// starts). Note that the indexes and `start` and `end` are NOT in codepoints.
 	Array<usize> find(Arena& arena, T c, usize start = 0, usize end = 0) const
 	{
 		if (end == 0 || end > len()) {
@@ -344,7 +381,7 @@ public:
 	}
 
 	// Returns an array with all of the indexes containing the substring (the index is where it
-	// starts)
+	// starts). Note that the indexes and `start` and `end` are NOT in codepoints.
 	Array<usize> find(Arena& arena, BaseString str, usize start = 0, usize end = 0) const
 	{
 		if (end == 0 || end > len()) {
@@ -366,7 +403,7 @@ public:
 		return indexes;
 	}
 
-	// It concatenates 2 strings lmao.
+	// It concatenates 2 strings lmao. Usually you should use `tr::fmt` or `tr::StringBuilder`.
 	[[nodiscard]]
 	BaseString concat(Arena& arena, BaseString other) const
 	{
@@ -401,7 +438,16 @@ public:
 	[[nodiscard]]
 	BaseString file(Arena& arena) const
 	{
-		// FIXME this wont work on other encodings
+		const char8* oldstr;
+		usize oldlen;
+		if constexpr (std::is_same_v<T, char> || std::is_same_v<T, char8>) {
+			oldstr = reinterpret_cast<const char8*>(buf());
+			oldlen = len();
+		}
+		else {
+			// BaseString<char> tmp =
+		}
+
 		char8* newstr;
 		usize newlen;
 		tr::strlib::strfile(
@@ -435,6 +481,10 @@ public:
 			arena, reinterpret_cast<const char8*>(buf()), len() * sizeof(T), &newstr,
 			&newlen
 		);
+		// strext returns nullptr if there's no extension
+		if (newstr == nullptr) {
+			return {};
+		}
 		return {reinterpret_cast<const T*>(newstr), newlen};
 	}
 
@@ -484,21 +534,40 @@ public:
 	}
 };
 
-// A view into immutable UTF-8 strings.
+// A view into immutable UTF-8 strings. It's important to note that any complex string
+// handling involving Unicode characters should be done  using `String32`, as you can not only fit
+// every codepoint in 1 'character' (as in array item), but also many string functions take in a
+// character, which in this case would be just 1 byte, aka, not enough.
 using String8 = BaseString<char>;
-// A view into immutable UTF-8 strings.
+// A view into immutable UTF-8 strings. It's important to note that any complex string
+// handling involving Unicode characters should be done  using `String32`, as you can not only fit
+// every codepoint in 1 'character' (as in array item), but also many string functions take in a
+// character, which in this case would be just 1 byte, aka, not enough.
 using String = String8; // utf-8 is the default
 
-// TODO encoding conversion functions:
-// utf-8 to utf-16
-// utf-8 to utf-32
-// utf-16 to utf-8
-// utf-16 to utf-32
-// utf-32 to utf-8
-// utf-32 to utf-16
+// A view into immutable UTF-16 strings. Please note that UTF-16 is ass, so only use it for interop
+// with other APIs such as Win32.
+using String16 = BaseString<char16>;
 
-// Mutable string. You can change it and stuff. 90% of the time you should use `tr::String` instead.
-// Always null-terminated, so it can be safely used with C libraries.
+// A view into immutable UTF-32 strings. You may think UTF-32 is ass, and it is for most things, but
+// with UTF-32 every Unicode codepoint can fit into 1 array item, which is sometimes useful.
+// Otherwise, use `String8`.
+using String32 = BaseString<char32>;
+
+// conversion technology
+String16 utf8_to_utf16(Arena& arena, String8 src);
+
+// conversion technology
+String8 utf16_to_utf8(Arena& arena, String16 src);
+
+// conversion technology
+String32 utf8_to_utf32(Arena& arena, String8 src);
+
+// conversion technology
+String8 utf32_to_utf8(Arena& arena, String32 src);
+
+// Mutable string. You can change it and stuff. 90% of the time you should use `tr::String`
+// instead. Always null-terminated, so it can be safely used with C libraries.
 template<Character T>
 requires(!std::is_const_v<T>)
 class BaseStringBuilder
@@ -693,6 +762,12 @@ template<Character T>
 constexpr BaseString<T>::BaseString(BaseStringBuilder<T> sb)
 	: _ptr(*sb)
 	, _len(sb.len() + 1)
+{
+}
+
+template<Character T>
+BaseString<T>::BaseString(Arena& arena, BaseStringBuilder<T> sb)
+	: BaseString(arena, *sb, sb.len())
 {
 }
 
