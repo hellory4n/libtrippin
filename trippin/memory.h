@@ -246,7 +246,7 @@ template<typename T>
 struct ArrayItem
 {
 	usize i;
-	T& val;
+	T val;
 };
 
 // std::initializer_list<T> doesn't live very long. to prevent fucking (dangling
@@ -540,7 +540,7 @@ public:
 			, ptr(pointer)
 		{
 		}
-		constexpr ArrayItem<T> operator*() const
+		constexpr ArrayItem<T&> operator*() const
 		{
 			if constexpr (std::is_reference_v<T>) {
 				return {this->idx, **this->ptr};

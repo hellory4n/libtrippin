@@ -27,8 +27,6 @@
 #define _TRIPPIN_STRING_H
 
 #include <cstdarg>
-#include <cstdio>
-#include <type_traits>
 
 #include "trippin/common.h"
 #include "trippin/log.h"
@@ -55,64 +53,12 @@ namespace strlib {
 		return i;
 	}
 
-	// in true C fashion, these are all (probably) unsafe
-	// these all work in bytes, if the character size matters then you should pass that through
-	// `ch_len`. note 'character' and 'byte' are different terms used here, a character may or
-	// may not be 1 byte. all input lengths are expected to *not* include the null terminator.
-
 	// source: https://en.cppreference.com/w/c/string/byte/memset#Notes
 	// > memset may be optimized away (under the as-if rules) if the object modified by this
 	// > function is not accessed again for the rest of its lifetime (e.g., gcc bug 8537). For
 	// > that reason, this function cannot be used to scrub memory (e.g., to fill an array that
 	// > stored a password with zeroes).
 	void explicit_memset(void* ptr, usize len, byte val);
-	// returns true if A and B are exactly equal
-	bool strs_equal(const byte* a, usize a_len, const byte* b, usize b_len);
-	// copies a section of S into out, out buffer must have +1 character for the null terminator
-	void substr(const byte* s, usize len, usize start, usize end, byte* out, usize ch_len);
-	// returns an array of indexes (bytes) allocated from arena, referring to the parts of the
-	// string with the specified character (can be multiple bytes)
-	Array<usize> find_char(
-		Arena& arena, const byte* s, usize len, usize start, usize end, const byte* ch,
-		usize ch_len
-	);
-	// returns an array of indexes (bytes) allocated from arena, referring to the parts of the
-	// strings with the specified string
-	Array<usize> find_str(
-		Arena& arena, const byte* s, usize len, usize start, usize end, const byte* substr,
-		usize substr_len
-	);
-	// concatenates 2 strings into out. out buffer's size should be a_len + b_len + 1 character
-	// for the null terminator.
-	void
-	concat(const byte* a, usize a_len, const byte* b, usize b_len, byte* out, usize ch_len);
-	// returns true if the first [substr_len] bytes of `s` are equal to `substr`
-	bool starts_with(const byte* s, usize s_len, const byte* substr, usize substr_len);
-	// returns true if the last [substr_len] bytes of `s` are equal to `substr`
-	bool ends_with(const byte* s, usize s_len, const byte* substr, usize substr_len);
-	// replaces a character in the string with another string
-	void
-	replace(const byte* s, usize s_len, const byte* from_ch, const byte* to_ch, usize ch_len,
-		byte* out);
-	// im splitting by char<3
-	Array<byte*>
-	split_by_char(Arena& arena, const byte* s, usize s_len, const byte* ch, usize ch_len);
-
-	// these are all utf-8 only (as it would be too annoying to make them encoding-independent),
-	// for all other encodings you must first convert to utf-8, call the function, then convert
-	// back to the desired encoding.
-
-	// in a path, gets the file in the path. writes the ptr into `out` and the length into
-	// `out_len`
-	void strfile(Arena& arena, const char8* s, usize len, char8** out, usize* out_len);
-	// in a path, gets the directory in the path. writes the ptr into `out` and the length into
-	// `out_len`
-	void strdir(Arena& arena, const char8* s, usize len, char8** out, usize* out_len);
-	// in a path, gets the file extension in the path. writes the ptr into `out` and the length
-	// into `out_len`. `out` is nullptr if there is no extension.
-	void strext(Arena& arena, const char8* s, usize len, char8** out, usize* out_len);
-	// returns true if the string is an absolute path
-	bool strabsolute(const char8* s, usize len);
 
 	// windows uses a different function for this for reasons unbeknownst to man. this copies
 	// the va_list for you so no need to do that yourself.
@@ -121,29 +67,26 @@ namespace strlib {
 	// utf-8 lib (just an utf8proc wrapper)
 
 	// converts an unicode string to uppercase.
-	void utf8_to_uppercase(const char8* s, usize len, char8* out);
+	void utf8_to_uppercase(const char* s, usize len, char* out);
 	// converts an unicode string to lowercase.
-	void utf8_to_lowercase(const char8* s, usize len, char8* out);
+	void utf8_to_lowercase(const char* s, usize len, char* out);
 }
 
-// more utf-8 stuff (no need to make a low level version for these)
+// more utf-8 stuff
 
 // Returns true if a codepoint is valid, regardless of whether or not it has been assigned a
 // value by the current Unicode standard.
 bool is_unicode_codepoint_valid(char32 c);
 
-template<Character T>
-requires(!std::is_const_v<T>)
-class BaseStringBuilder;
+class StringBuilder;
 
-// A view into immutable strings. Strings are just a pointer + length, with the underlying data
-// being const. If you want to modify it, copy the data, or use `StringBuilder`. The 'default'
+// A view into immutable UTF-8 strings. Strings are just a pointer + length, with the underlying
+// data being const. If you want to modify it, copy the data, or use `StringBuilder`. The 'default'
 // string type, equivalent to `std::string_view`. Always null-terminated, so it can be safely used
 // with C libraries.
-template<Character T>
-class BaseString
+class String
 {
-	const T* _ptr;
+	const char* _ptr;
 	usize _len;
 
 	void _validate() const
@@ -157,9 +100,9 @@ class BaseString
 	}
 
 public:
-	using Type = T;
+	using Type = char;
 
-	constexpr BaseString(const T* str, usize len)
+	constexpr String(const char* str, usize len)
 		: _ptr(str)
 		, _len(len + 1)
 	{
@@ -171,25 +114,25 @@ public:
 		}
 	}
 
-	constexpr BaseString(const T* str)
-		: BaseString(str, tr::strlib::constexpr_strlen(str))
+	constexpr String(const char* str)
+		: String(str, tr::strlib::constexpr_strlen(str))
 	{
 	}
 
-	constexpr BaseString()
+	constexpr String()
 		: _ptr("")
 		, _len(0)
 	{
 	}
 
-	BaseString(T c)
+	String(char c)
 		// c++ can't do (char[]){c, '\0'} like c99 can :)))))
-		: BaseString(Array<const T>{c, '\0'}.buf())
+		: String(Array<const char>{c, '\0'}.buf())
 	{
 	}
 
 	// Copies an existing string ptr to an arena
-	BaseString(Arena& arena, const T* str, usize len)
+	String(Arena& arena, const char* str, usize len)
 		: _len(len + 1)
 	{
 		// does len already include the null terminator?
@@ -199,66 +142,73 @@ public:
 			}
 		}
 
-		T* newptr = static_cast<T*>(arena.alloc(len * sizeof(T)));
-		memcpy(newptr, str, len * sizeof(T));
+		char* newptr = arena.alloc<char*>(len * sizeof(char));
+		memcpy(newptr, str, len * sizeof(char));
 		_ptr = newptr;
 	}
 
 	// Copies an existing string ptr to an arena
-	BaseString(Arena& arena, const T* str)
-		: BaseString(arena, str, tr::strlib::constexpr_strlen(str))
+	String(Arena& arena, const char* str)
+		: String(arena, str, tr::strlib::constexpr_strlen(str))
 	{
 	}
 
 	// Creates a `String` from a `StringBuilder`
-	constexpr explicit BaseString(BaseStringBuilder<T> sb);
+	explicit String(StringBuilder sb);
 
 	// Creates a `String` by copying a `StringBuilder`
-	BaseString(Arena& arena, BaseStringBuilder<T> sb);
+	String(Arena& arena, StringBuilder sb);
 
 	// since the C++ committee hates its users, we must explicitly cast from char8 to char
 	// technically undefined behavior but should work anywhere that uses ASCII/UTF-8 (so most
 	// places)
-	constexpr BaseString(const char8* str, usize len)
-	requires(std::is_same_v<T, char>)
-		: BaseString(reinterpret_cast<const char*>(str), len)
+	String(const char8* str, usize len)
+		: String(reinterpret_cast<const char*>(str), len)
 	{
 	}
-	constexpr BaseString(const char8* str)
-	requires(std::is_same_v<T, char>)
-		: BaseString(reinterpret_cast<const char*>(str), tr::strlib::constexpr_strlen(str))
+	String(const char8* str)
+		: String(reinterpret_cast<const char*>(str), tr::strlib::constexpr_strlen(str))
 	{
 	}
-	BaseString(Arena& arena, const char8* str)
-	requires(std::is_same_v<T, char>)
-		: BaseString(
-			  arena, reinterpret_cast<const char*>(str),
-			  tr::strlib::constexpr_strlen(str)
-		  )
+	String(Arena& arena, const char8* str)
+		: String(arena, reinterpret_cast<const char*>(str),
+			 tr::strlib::constexpr_strlen(str))
 	{
 	}
 
-	// Does NOT include the null terminator
+	// Converts an UTF-16 string to UTF-8
+	String(Arena& arena, const char16* str, usize len);
+
+	// Converts an UTF-32 string to UTF-8
+	String(Arena& arena, const char32* str, usize len);
+
+	// Does NOT include the null terminator. In bytes, use `codepoint_len()` if you need the
+	// amount of codepoints
 	constexpr usize len() const
 	{
 		return _len - 1;
 	}
 
-	constexpr const T* buf() const
+	// Returns the amount of codepoints, not to be confused with `len()` which returns the
+	// length in bytes.
+	usize codepoint_len() const;
+
+	constexpr const char* buf() const
 	{
 		_validate();
 		return _ptr;
 	}
 
-	constexpr const T* operator*() const
+	constexpr const char* operator*() const
 	{
 		_validate();
 		return _ptr;
 	}
 
 	// Similar to `operator[]`, but when getting an index out of bounds, instead
-	// of panicking, it returns null, which is probably useful sometimes.
-	constexpr Maybe<T> try_get(usize idx) const
+	// of panicking, it returns null, which is probably useful sometimes. Note this works with
+	// bytes, NOT codepoints. Use `try_get_codepoint()` if you need codepoints.
+	constexpr Maybe<char> try_get(usize idx) const
 	{
 		_validate();
 		if (idx >= this->_len) {
@@ -267,234 +217,119 @@ public:
 		return this->_ptr[idx];
 	}
 
-	constexpr T operator[](usize idx) const
+	// Note this works with bytes, NOT codepoints. Use `get_codepoint()` if you need codepoints.
+	constexpr char operator[](usize idx) const
 	{
 		_validate();
-		Maybe<T> item = try_get(idx);
+		Maybe<char> item = try_get(idx);
 		if (item.is_valid()) {
 			return item.unwrap();
 		}
 		tr::panic("index out of range: string[%zu] when the length is %zu", idx, _len);
 	}
 
+	Maybe<char32> try_get_codepoint(usize idx) const;
+	char32 get_codepoint(usize idx) const;
+
 	class Iterator
 	{
 	public:
-		constexpr Iterator(const T* pointer, usize index)
-			: _idx(index)
-			, _ptr(pointer)
-		{
-		}
-		constexpr ArrayItem<const T> operator*() const
-		{
-			return {_idx, *_ptr};
-		}
-		constexpr Iterator& operator++()
-		{
-			_ptr++;
-			_idx++;
-			return *this;
-		}
+		Iterator(const char* pointer, usize index);
+		ArrayItem<char32> operator*() const;
+		Iterator& operator++();
 		constexpr bool operator!=(const Iterator& other) const
 		{
 			return _ptr != other._ptr;
 		}
 
 	private:
+		const char* _ptr;
 		usize _idx;
-		const Type* _ptr;
+		char32 _codepoint;
 	};
 
-	constexpr Iterator begin() const
+	// Works with codepoints, just iterate the buffer manually if you need bytes
+	Iterator begin() const
 	{
-		return Iterator(buf(), 0);
+		return Iterator{buf(), 0};
 	}
-	constexpr Iterator end() const
+	Iterator end() const
 	{
-		return Iterator(buf() + len(), len());
+		return Iterator{buf() + len(), len()};
 	}
 
-	// As the name implies, it copies the array and its items to somewhere else.
+	// As the name implies, it copies the string and its items to somewhere else.
 	[[nodiscard]]
-	BaseString duplicate(Arena& arena) const
+	String duplicate(Arena& arena) const
 	{
 		return {arena, buf(), len()};
 	}
 
-	bool operator==(BaseString other) const
-	{
-		return tr::strlib::strs_equal(
-			reinterpret_cast<const byte*>(buf()), len() * sizeof(T),
-			reinterpret_cast<const byte*>(other.buf()), other.len() * sizeof(T)
-		);
-	}
+	bool operator==(String other) const;
 
-	bool operator!=(BaseString other) const
+	bool operator!=(String other) const
 	{
 		return !(*this == other);
 	}
 
-	bool operator==(const T* other) const
+	bool operator==(const char* other) const
 	{
-		return *this == BaseString{other};
+		return *this == String{other};
 	}
 
-	bool operator!=(const T* other) const
+	bool operator!=(const char* other) const
 	{
-		return *this != BaseString{other};
+		return *this != String{other};
 	}
+
+	// Converts the UTF-8 data to UTF-32, which might be useful sometimes
+	Array<char32> to_utf32(Arena& arena) const;
+
+	// Converts the UTF-8 data to UTF-16, which is mostly for interop with bullshit e.g. Win32
+	// APIs
+	Array<char16> to_utf16(Arena& arena) const;
 
 	// Gets a substring. The returned string includes the end character. Note that `start` and
 	// `end` are NOT in codepoints but instead in indexes (bytes for UTF-8, 2 bytes for UTF-16,
 	// 4 bytes for UTF-32)
 	[[nodiscard]]
-	BaseString substr(Arena& arena, usize start, usize end) const
-	{
-		T* buffer = static_cast<T*>(arena.alloc((end - start + 1) * sizeof(T)));
-		tr::strlib::substr(
-			reinterpret_cast<const byte*>(buf()), len() * sizeof(T), start * sizeof(T),
-			end * sizeof(T), reinterpret_cast<byte*>(buffer), sizeof(T)
-		);
-		return {buffer, end - start + 1};
-	}
+	String substr(Arena& arena, usize start, usize end) const;
 
 	// Returns an array with all of the indexes containing that character (the index is where it
 	// starts). Note that the indexes and `start` and `end` are NOT in codepoints.
-	Array<usize> find(Arena& arena, T c, usize start = 0, usize end = 0) const
-	{
-		if (end == 0 || end > len()) {
-			end = len();
-		}
-		Array<usize> indexes = tr::strlib::find_char(
-			arena, buf(), len() * sizeof(T), start * sizeof(T), end * sizeof(T), &c,
-			sizeof(T)
-		);
+	Array<usize> find(Arena& arena, char c, usize start = 0, usize end = 0) const;
 
-		// strlib::find_char returns indexes in bytes, a character may be more than that
-		// the character may be so very special...
-		if constexpr (sizeof(T) > 1) {
-			for (auto [_, idx] : indexes) {
-				idx = idx / sizeof(T);
-			}
-		}
-		return indexes;
-	}
+	// TODO find_codepoint? idk how useful that'd be
 
 	// Returns an array with all of the indexes containing the substring (the index is where it
 	// starts). Note that the indexes and `start` and `end` are NOT in codepoints.
-	Array<usize> find(Arena& arena, BaseString str, usize start = 0, usize end = 0) const
-	{
-		if (end == 0 || end > len()) {
-			end = len();
-		}
-		Array<usize> indexes = tr::strlib::find_str(
-			arena, reinterpret_cast<const byte*>(buf()), len() * sizeof(T),
-			start * sizeof(T), end * sizeof(T),
-			reinterpret_cast<const byte*>(str.buf()), str.len()
-		);
-
-		// strlib::find_str returns indexes in bytes, a character may be more than that
-		// the character may be so very special...
-		if constexpr (sizeof(T) > 1) {
-			for (auto [_, idx] : indexes) {
-				idx = idx / sizeof(T);
-			}
-		}
-		return indexes;
-	}
+	Array<usize> find(Arena& arena, String str, usize start = 0, usize end = 0) const;
 
 	// It concatenates 2 strings lmao. Usually you should use `tr::fmt` or `tr::StringBuilder`.
 	[[nodiscard]]
-	BaseString concat(Arena& arena, BaseString other) const
-	{
-		T* newstr = static_cast<T*>(arena.alloc((len() + 1) * sizeof(T)));
-		tr::strlib::concat(
-			reinterpret_cast<const byte*>(buf()), len() * sizeof(T),
-			reinterpret_cast<const byte*>(other.buf()), other.len() * sizeof(T),
-			reinterpret_cast<byte*>(newstr), sizeof(T)
-		);
-		return newstr;
-	}
+	String concat(Arena& arena, String other) const;
 
 	// If true, the string starts with that other crap.
-	bool starts_with(BaseString str) const
-	{
-		return tr::strlib::starts_with(
-			reinterpret_cast<const byte*>(buf()), len() * sizeof(T),
-			reinterpret_cast<const byte*>(str.buf()), str.len() * sizeof(T)
-		);
-	}
+	bool starts_with(String str) const;
 
 	// If true, the string ends with that other crap.
-	bool ends_with(BaseString str) const
-	{
-		return tr::strlib::ends_with(
-			reinterpret_cast<const byte*>(buf()), len() * sizeof(T),
-			reinterpret_cast<const byte*>(str.buf()), str.len() * sizeof(T)
-		);
-	}
+	bool ends_with(String str) const;
 
 	// Gets the filename in a path, e.g. returns `file.txt` for `/path/to/file.txt`
 	[[nodiscard]]
-	BaseString file(Arena& arena) const
-	{
-		const char8* oldstr;
-		usize oldlen;
-		if constexpr (std::is_same_v<T, char> || std::is_same_v<T, char8>) {
-			oldstr = reinterpret_cast<const char8*>(buf());
-			oldlen = len();
-		}
-		else {
-			// BaseString<char> tmp =
-		}
-
-		char8* newstr;
-		usize newlen;
-		tr::strlib::strfile(
-			arena, reinterpret_cast<const char8*>(buf()), len() * sizeof(T), &newstr,
-			&newlen
-		);
-		return {reinterpret_cast<const T*>(newstr), newlen};
-	}
+	String file(Arena& arena) const;
 
 	// Gets the directory in a path e.g. returns `/path/to` for `/path/to/file.txt`
 	[[nodiscard]]
-	BaseString directory(Arena& arena) const
-	{
-		char8* newstr;
-		usize newlen;
-		tr::strlib::strdir(
-			arena, reinterpret_cast<const char8*>(buf()), len() * sizeof(T), &newstr,
-			&newlen
-		);
-		return {reinterpret_cast<const T*>(newstr), newlen};
-	}
+	String directory(Arena& arena) const;
 
 	// Returns the extension in a path, e.g. returns `.txt` for `/path/to/file.txt`, `.blend.1`
 	// for `teapot.blend.1`, and an empty string for `.gitignore`
 	[[nodiscard]]
-	BaseString extension(Arena& arena) const
-	{
-		char8* newstr;
-		usize newlen;
-		tr::strlib::strext(
-			arena, reinterpret_cast<const char8*>(buf()), len() * sizeof(T), &newstr,
-			&newlen
-		);
-		// strext returns nullptr if there's no extension
-		if (newstr == nullptr) {
-			return {};
-		}
-		return {reinterpret_cast<const T*>(newstr), newlen};
-	}
+	String extension(Arena& arena) const;
 
 	// If true, the path is absolute. Else, it's relative.
-	bool is_absolute() const
-	{
-		return tr::strlib::strabsolute(
-			reinterpret_cast<const char8*>(buf()), len() * sizeof(T)
-		);
-	}
+	bool is_absolute() const;
 
 	// If true, the path is relative. Else, it's absolute.
 	bool is_relative() const
@@ -504,85 +339,32 @@ public:
 
 	// Replaces a character with another character.
 	[[nodiscard]]
-	BaseString replace(Arena& arena, T from, T to) const
-	{
-		T* newstr = static_cast<T*>(arena.alloc((len() + 1) * sizeof(T)));
-		tr::strlib::replace(
-			reinterpret_cast<const byte*>(buf()), len() * sizeof(T),
-			reinterpret_cast<byte*>(&from), reinterpret_cast<byte*>(&to), sizeof(T),
-			reinterpret_cast<byte*>(newstr)
-		);
-		return {newstr, len()};
-	}
+	String replace(Arena& arena, char from, char to) const;
+
+	// TODO replace_codepoint?
 
 	// Splits the string into several substrings using the specified delimiter.
 	[[nodiscard]]
-	Array<BaseString> split(Arena& arena, T delimiter) const
-	{
-		// FIXME tr::strlib::split_by_char might be dogshit
-		Array<byte*> mn = tr::strlib::split_by_char(
-			arena, reinterpret_cast<const byte*>(buf()), len() * sizeof(T),
-			reinterpret_cast<const byte*>(&delimiter), sizeof(T)
-		);
+	Array<String> split(Arena& arena, char delimiter) const;
 
-		// type fucking to get it to not be a byte ptr
-		Array<BaseString> thej{arena, mn.len()};
-		for (auto [i, ptr] : mn) {
-			thej[i] = reinterpret_cast<const T*>(ptr);
-		}
-		return thej;
-	}
+	// TODO split_by_codepoint?
 };
-
-// A view into immutable UTF-8 strings. It's important to note that any complex string
-// handling involving Unicode characters should be done  using `String32`, as you can not only fit
-// every codepoint in 1 'character' (as in array item), but also many string functions take in a
-// character, which in this case would be just 1 byte, aka, not enough.
-using String8 = BaseString<char>;
-// A view into immutable UTF-8 strings. It's important to note that any complex string
-// handling involving Unicode characters should be done  using `String32`, as you can not only fit
-// every codepoint in 1 'character' (as in array item), but also many string functions take in a
-// character, which in this case would be just 1 byte, aka, not enough.
-using String = String8; // utf-8 is the default
-
-// A view into immutable UTF-16 strings. Please note that UTF-16 is ass, so only use it for interop
-// with other APIs such as Win32.
-using String16 = BaseString<char16>;
-
-// A view into immutable UTF-32 strings. You may think UTF-32 is ass, and it is for most things, but
-// with UTF-32 every Unicode codepoint can fit into 1 array item, which is sometimes useful.
-// Otherwise, use `String8`.
-using String32 = BaseString<char32>;
-
-// conversion technology
-String16 utf8_to_utf16(Arena& arena, String8 src);
-
-// conversion technology
-String8 utf16_to_utf8(Arena& arena, String16 src);
-
-// conversion technology
-String32 utf8_to_utf32(Arena& arena, String8 src);
-
-// conversion technology
-String8 utf32_to_utf8(Arena& arena, String32 src);
 
 // Mutable string. You can change it and stuff. 90% of the time you should use `tr::String`
 // instead. Always null-terminated, so it can be safely used with C libraries.
-template<Character T>
-requires(!std::is_const_v<T>)
-class BaseStringBuilder
+class StringBuilder
 {
-	Array<T> _array;
+	Array<char> _array;
 
 public:
 	// Initializes an empty string builder at an arena.
-	BaseStringBuilder(Arena& arena, usize len)
+	StringBuilder(Arena& arena, usize len)
 		: _array(arena, len + 1)
 	{
 	}
 
 	// Initializes a string builder from a buffer. (the data is copied into the arena)
-	BaseStringBuilder(Arena& arena, const T* str, usize len)
+	StringBuilder(Arena& arena, const char* str, usize len)
 	{
 		// does len already include the null terminator?
 		if (len > 0) {
@@ -594,61 +376,65 @@ public:
 	}
 
 	// Initializes a string builder from a buffer. (the data is copied into the arena)
-	BaseStringBuilder(Arena& arena, const T* str)
+	StringBuilder(Arena& arena, const char* str)
 		: _array(arena, str, tr::strlib::constexpr_strlen(str) + 1)
 	{
 	}
 
 	// man fuck you
-	BaseStringBuilder()
+	StringBuilder()
 		: _array()
 	{
 	}
 
 	// Initializes the string with just an arena so you can add crap later :)
-	BaseStringBuilder(Arena& arena)
+	StringBuilder(Arena& arena)
 		: _array(arena)
 	{
 	}
 
 	// Initializes a string builder by copying a regular old boring string
-	BaseStringBuilder(Arena& arena, BaseString<T> str)
-		: BaseStringBuilder(arena, str.buf(), str.len())
+	StringBuilder(Arena& arena, String str)
+		: StringBuilder(arena, str.buf(), str.len())
 	{
 	}
 
 	// string builder to string view
-	constexpr operator BaseString<T>() const
+	constexpr operator String() const
 	{
-		return BaseString<T>(*_array, _array.len());
+		return String(*_array, _array.len());
 	}
 
 	// Similar to `operator[]`, but when getting an index out of bounds, instead
-	// of panicking, it returns null, which is probably useful sometimes.
-	constexpr Maybe<T&> try_get(usize idx)
+	// of panicking, it returns null, which is probably useful sometimes. Note this works with
+	// bytes, NOT codepoints.
+	constexpr Maybe<char&> try_get(usize idx)
 	{
 		return _array.try_get(idx);
 	}
 
 	// Similar to `operator[]`, but when getting an index out of bounds, instead
-	// of panicking, it returns null, which is probably useful sometimes.
-	constexpr Maybe<const T&> try_get(usize idx) const
+	// of panicking, it returns null, which is probably useful sometimes. Note this works with
+	// bytes, NOT codepoints.
+	constexpr Maybe<const char&> try_get(usize idx) const
 	{
 		return _array.try_get(idx);
 	}
 
-	constexpr const T& operator[](usize idx) const
+	// Note this works with bytes, NOT codepoints.
+	constexpr const char& operator[](usize idx) const
 	{
 		return _array[idx];
 	}
 
-	constexpr T& operator[](usize idx)
+	// Note this works with bytes, NOT codepoints.
+	constexpr char& operator[](usize idx)
 	{
 		return _array[idx];
 	}
 
 	// Returns the buffer. Bufma blals.
-	constexpr T* buf() const
+	constexpr char* buf() const
 	{
 		return _array.buf();
 	}
@@ -666,115 +452,91 @@ public:
 	}
 
 	// Shorthand for `.buf()`
-	constexpr T* operator*() const
+	constexpr char* operator*() const
 	{
 		return _array.buf();
 	}
 
-	constexpr Array<T>::Iterator begin() const
+	class Iterator
 	{
-		return _array.begin();
+	public:
+		Iterator(const char* pointer, usize index);
+		ArrayItem<char&> operator*() const;
+		Iterator& operator++();
+		constexpr bool operator!=(const Iterator& other) const
+		{
+			return _ptr != other._ptr;
+		}
+
+	private:
+		char* _ptr;
+		usize _idx;
+		char32 _codepoint;
+	};
+
+	// Works with codepoints, just iterate the buffer manually if you need bytes
+	Iterator begin() const
+	{
+		return Iterator{buf(), 0};
 	}
-	constexpr Array<T>::Iterator end() const
+	Iterator end() const
 	{
-		// not going directly thru _array.end() so that it doesn't iterate over the null
-		// terminator
-		return Array<T>::Iterator(buf() + len() - 1, len());
+		return Iterator{buf() + len(), len()};
 	}
 
-	// As the name implies, it copies the array and its items to somewhere else.
+	// As the name implies, it copies the string builder and its items to somewhere else.
 	[[nodiscard]]
-	BaseStringBuilder duplicate(Arena& arena) const
+	StringBuilder duplicate(Arena& arena) const
 	{
 		return {arena, buf(), len()};
 	}
 
-	// Clears the array duh. `ArrayClearBehavior::RESET_ALL_ITEMS` goes through every
-	// item and calls the default constructor, which you may not want if you just want
-	// to reuse the buffer for hyper-ultra-blazingly-fast-optimization
+	// Clears the string builder duh. `ArrayClearBehavior::RESET_ALL_ITEMS` sets the entire
+	// buffer to 0, which you may not want if you just want to reuse the buffer for
+	// hyper-ultra-blazingly-fast-optimization
 	void clear(ArrayClearBehavior behavior = ArrayClearBehavior::RESET_ALL_ITEMS)
 	{
 		_array.clear(behavior);
 	}
 
-	bool operator==(BaseString<T> other) const
-	{
-		return tr::strlib::strs_equal(
-			reinterpret_cast<const byte*>(buf()), len() * sizeof(T),
-			reinterpret_cast<const byte*>(other.buf()), other.len() * sizeof(T)
-		);
-	}
+	bool operator==(String other) const;
 
-	bool operator!=(BaseString<T> other) const
+	bool operator!=(String other) const
 	{
 		return !(*this == other);
 	}
 
-	bool operator==(const T* other) const
+	bool operator==(const char* other) const
 	{
-		return *this == BaseString{other};
+		return *this == String{other};
 	}
 
-	bool operator!=(const T* other) const
+	bool operator!=(const char* other) const
 	{
-		return *this != BaseString{other};
+		return *this != String{other};
 	}
 
 	// Adds a character to the string.
-	void append(T c)
-	{
-		_array[len()] = c;
-		_array.add('\0');
-	}
+	void append(char c);
 
 	// Appends another string to the string. Incredible indeed.
-	void append(BaseString<T> s)
-	{
-		// just in case
-		if (s.len() == 0) {
-			return;
-		}
-
-		_array.reserve(s.len());
-		for (auto [_, c] : s) {
-			append(c);
-		}
-	}
+	void append(String s);
 
 	// Appends a formatted string with formatting because that's what formatted means.
 	_TR_PRINTF_ATTR(2, 3)
-	void appendf(const char* fmt, ...)
-	{
-		va_list arg;
-		va_start(arg, fmt);
-
-		// mild evilness
-		usize len = tr::strlib::sprintf_len(fmt, arg);
-		T* tmpstr = tr::scratchpad().alloc<T*>(len + 1);
-		std::vsnprintf(tmpstr, len + 1, fmt, arg);
-		append(BaseString<T>{tmpstr, len});
-
-		va_end(arg);
-	}
+	void appendf(const char* fmt, ...);
 };
 
-template<Character T>
-constexpr BaseString<T>::BaseString(BaseStringBuilder<T> sb)
+String::String(StringBuilder sb)
 	: _ptr(*sb)
 	, _len(sb.len() + 1)
 {
 }
 
-template<Character T>
-BaseString<T>::BaseString(Arena& arena, BaseStringBuilder<T> sb)
-	: BaseString(arena, *sb, sb.len())
+String::String(Arena& arena, StringBuilder sb)
+	: String(arena, *sb, sb.len())
 {
 }
-
-// Mutable UTF-8 string. You can change it and stuff.
-using StringBuilder8 = BaseStringBuilder<char>;
-// Mutable UTF-8 string. You can change it and stuff.
-using StringBuilder = StringBuilder8; // utf-8 is the default
 
 String fmt_args(Arena& arena, const char* fmt, va_list arg);
 
