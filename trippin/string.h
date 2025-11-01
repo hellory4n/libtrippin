@@ -27,6 +27,7 @@
 #define _TRIPPIN_STRING_H
 
 #include <cstdarg>
+#include <type_traits>
 
 #include "trippin/common.h"
 #include "trippin/log.h"
@@ -195,13 +196,17 @@ public:
 
 	constexpr const char* buf() const
 	{
-		_validate();
+		if (!std::is_constant_evaluated()) {
+			_validate();
+		}
 		return _ptr;
 	}
 
 	constexpr const char* operator*() const
 	{
-		_validate();
+		if (!std::is_constant_evaluated()) {
+			_validate();
+		}
 		return _ptr;
 	}
 
@@ -210,7 +215,9 @@ public:
 	// bytes, NOT codepoints. Use `try_get_codepoint()` if you need codepoints.
 	constexpr Maybe<char> try_get(usize idx) const
 	{
-		_validate();
+		if (!std::is_constant_evaluated()) {
+			_validate();
+		}
 		if (idx >= this->_len) {
 			return {};
 		}
@@ -220,7 +227,10 @@ public:
 	// Note this works with bytes, NOT codepoints. Use `get_codepoint()` if you need codepoints.
 	constexpr char operator[](usize idx) const
 	{
-		_validate();
+		// """"""""""constexpr"""""""""" function
+		if (!std::is_constant_evaluated()) {
+			_validate();
+		}
 		Maybe<char> item = try_get(idx);
 		if (item.is_valid()) {
 			return item.unwrap();
@@ -234,7 +244,11 @@ public:
 	class Iterator
 	{
 	public:
-		Iterator(const char* pointer, usize index);
+		Iterator(const char* ptr, usize idx)
+			: _ptr(ptr)
+			, _idx(idx)
+		{
+		}
 		ArrayItem<char32> operator*() const;
 		Iterator& operator++();
 		constexpr bool operator!=(const Iterator& other) const
@@ -245,7 +259,6 @@ public:
 	private:
 		const char* _ptr;
 		usize _idx;
-		char32 _codepoint;
 	};
 
 	// Works with codepoints, just iterate the buffer manually if you need bytes
@@ -278,6 +291,16 @@ public:
 	}
 
 	bool operator!=(const char* other) const
+	{
+		return *this != String{other};
+	}
+
+	bool operator==(const char8* other) const
+	{
+		return *this == String{other};
+	}
+
+	bool operator!=(const char8* other) const
 	{
 		return *this != String{other};
 	}
@@ -460,8 +483,12 @@ public:
 	class Iterator
 	{
 	public:
-		Iterator(const char* pointer, usize index);
-		ArrayItem<char&> operator*() const;
+		Iterator(char* ptr, usize idx)
+			: _ptr(ptr)
+			, _idx(idx)
+		{
+		}
+		ArrayItem<char32> operator*() const;
 		Iterator& operator++();
 		constexpr bool operator!=(const Iterator& other) const
 		{
@@ -471,7 +498,6 @@ public:
 	private:
 		char* _ptr;
 		usize _idx;
-		char32 _codepoint;
 	};
 
 	// Works with codepoints, just iterate the buffer manually if you need bytes

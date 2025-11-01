@@ -112,8 +112,8 @@ static void test::arrays()
 
 	tr::Array<int64> array(tr::scratchpad(), {1, 2, 3, 4, 5});
 	array.add(66);
-	for (tr::ArrayItem<int64> item : array) {
-		tr::log("array[%zu] = %li", item.i, item.val);
+	for (auto [i, val] : array) {
+		tr::log("array[%zu] = %li", i, val);
 	}
 
 	TR_ASSERT(!array.try_get(893463).is_valid());
@@ -183,6 +183,26 @@ static void test::strings()
 	sb.appendf("%s chocolate", "dubai");
 	TR_ASSERT(sb == "matcha 24 karat labubu dubai chocolate")
 	tr::log("string builder: %s", *sb);
+
+	// unicode support
+	tr::String utf8 = u8"изгиб tbh";
+	TR_ASSERT(utf8.len() == 15);
+	TR_ASSERT(utf8.codepoint_len() == 9);
+	TR_ASSERT(utf8.get_codepoint(4) == U'б');
+
+	// encoding conversions
+	tr::String utf16{tr::scratchpad(), u"изгиб tbh", sizeof(u"изгиб tbh")};
+	TR_ASSERT(utf16 == u8"изгиб tbh");
+	tr::String utf32{tr::scratchpad(), U"изгиб tbh", sizeof(U"изгиб tbh")};
+	TR_ASSERT(utf32 == u8"изгиб tbh");
+	TR_ASSERT(
+		memcmp(utf16.to_utf16(tr::scratchpad()).buf(), u"изгиб tbh",
+		       sizeof(u"изгиб tbh")) == 0
+	);
+	TR_ASSERT(
+		memcmp(utf32.to_utf32(tr::scratchpad()).buf(), U"изгиб tbh",
+		       sizeof(U"изгиб tbh")) == 0
+	);
 }
 
 static void test::hashmaps()
