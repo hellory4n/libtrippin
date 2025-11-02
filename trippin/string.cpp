@@ -29,13 +29,11 @@
 #include <cstdio>
 #include <cstring>
 
-#include "trippin/bits/macros.h"
 #include "trippin/common.h"
 #include "trippin/log.h"
 #include "trippin/math.h"
 #include "trippin/memory.h"
 #include "trippin/thirdparty/utf8proc/utf8proc.c" // i love the preprocessor
-#include "trippin/thirdparty/utf8proc/utf8proc.h"
 
 // FIXME theres probably 2050 different violations of strict aliasing
 // and 2050 different security vulnerabilities
@@ -64,43 +62,49 @@ usize tr::strlib::sprintf_len(const char* fmt, va_list arg)
 	return static_cast<usize>(size);
 }
 
-tr::String::String(tr::Arena& arena, const char16* str, usize len)
-{
-	TR_TODO();
-}
-
-tr::String::String(tr::Arena& arena, const char32* str, usize len)
-{
-	TR_TODO();
-}
-
 usize tr::String::codepoint_len() const
 {
-	TR_TODO();
+	usize n = 0;
+	for (auto _ : *this) {
+		n++;
+	}
+	return n;
 }
 
 tr::Maybe<char32> tr::String::try_get_codepoint(usize idx) const
 {
-	TR_TODO();
+	for (auto [i, c] : *this) {
+		if (i == idx) {
+			return c;
+		}
+	}
+	return {};
 }
 
 char32 tr::String::get_codepoint(usize idx) const
 {
-	TR_TODO();
+	Maybe<char32> perchance = try_get_codepoint(idx);
+	if (perchance.is_invalid()) {
+		tr::panic(
+			"index out of range: string.get_codepoint(%zu) when string only has %zu "
+			"codepoints",
+			idx, codepoint_len()
+		);
+	}
+	return perchance.unwrap();
 }
 
 tr::ArrayItem<char32> tr::String::Iterator::operator*() const
 {
 	int32 codepoint;
 	utf8proc_iterate(
-		reinterpret_cast<const uint8*>(_ptr), static_cast<isize>(_idx), &codepoint
+		reinterpret_cast<const uint8*>(_ptr), static_cast<isize>(_len), &codepoint
 	);
 
 	// invalid codepoints
 	if (codepoint == -1) [[unlikely]] {
 		codepoint = U'�'; // replacement character
 	}
-	TR_ASSERT(codepoint > -1);
 	return {_idx, static_cast<char32>(codepoint)};
 }
 
@@ -110,7 +114,7 @@ tr::String::Iterator& tr::String::Iterator::operator++()
 	[[maybe_unused]]
 	int32 codepoint;
 	isize read = utf8proc_iterate(
-		reinterpret_cast<const uint8*>(_ptr), static_cast<isize>(_idx), &codepoint
+		reinterpret_cast<const uint8*>(_ptr), static_cast<isize>(_len), &codepoint
 	);
 
 	// invalid codepoints
@@ -123,7 +127,7 @@ tr::String::Iterator& tr::String::Iterator::operator++()
 	else {
 		_ptr += read;
 	}
-	TR_ASSERT(codepoint > -1);
+	_idx++;
 	return *this;
 }
 
@@ -140,12 +144,11 @@ bool tr::String::operator==(tr::String other) const
 
 tr::Array<char32> tr::String::to_utf32(tr::Arena& arena) const
 {
-	TR_TODO();
-}
-
-tr::Array<char16> tr::String::to_utf16(tr::Arena& arena) const
-{
-	TR_TODO();
+	Array<char32> mnznbnzbgx{arena, codepoint_len() + 1};
+	for (auto [i, c] : *this) {
+		mnznbnzbgx[i] = c;
+	}
+	return mnznbnzbgx;
 }
 
 tr::String tr::String::substr(tr::Arena& arena, usize start, usize end) const
@@ -392,16 +395,16 @@ tr::Array<tr::String> tr::String::split(tr::Arena& arena, char delimiter) const
 
 tr::ArrayItem<char32> tr::StringBuilder::Iterator::operator*() const
 {
+	// TODO all this calculation crap could be done once since strings are immutable
 	int32 codepoint;
 	utf8proc_iterate(
-		reinterpret_cast<const uint8*>(_ptr), static_cast<isize>(_idx), &codepoint
+		reinterpret_cast<const uint8*>(_ptr), static_cast<isize>(_len), &codepoint
 	);
 
 	// invalid codepoints
 	if (codepoint == -1) [[unlikely]] {
 		codepoint = U'�'; // replacement character
 	}
-	TR_ASSERT(codepoint > -1);
 	return {_idx, static_cast<char32>(codepoint)};
 }
 
@@ -411,7 +414,7 @@ tr::StringBuilder::Iterator& tr::StringBuilder::Iterator::operator++()
 	[[maybe_unused]]
 	int32 codepoint;
 	isize read = utf8proc_iterate(
-		reinterpret_cast<const uint8*>(_ptr), static_cast<isize>(_idx), &codepoint
+		reinterpret_cast<const uint8*>(_ptr), static_cast<isize>(_len), &codepoint
 	);
 
 	// invalid codepoints
@@ -424,7 +427,7 @@ tr::StringBuilder::Iterator& tr::StringBuilder::Iterator::operator++()
 	else {
 		_ptr += read;
 	}
-	TR_ASSERT(codepoint > -1);
+	_idx++;
 	return *this;
 }
 

@@ -184,21 +184,15 @@ static void test::strings()
 	// unicode support
 	tr::String utf8 = u8"изгиб tbh";
 	TR_ASSERT(utf8.len() == 14);
-	TR_ASSERT(utf8.codepoint_len() == 9);
+	auto cunt = utf8.codepoint_len();
+	TR_ASSERT(cunt == 9);
 	TR_ASSERT(utf8.get_codepoint(4) == U'б');
 
 	// encoding conversions
-	tr::String utf16{tr::scratchpad(), u"изгиб tbh", sizeof(u"изгиб tbh")};
-	TR_ASSERT(utf16 == u8"изгиб tbh");
-	tr::String utf32{tr::scratchpad(), U"изгиб tbh", sizeof(U"изгиб tbh")};
-	TR_ASSERT(utf32 == u8"изгиб tbh");
+	// TODO More.
 	TR_ASSERT(
-		memcmp(utf16.to_utf16(tr::scratchpad()).buf(), u"изгиб tbh",
-		       sizeof(u"изгиб tbh")) == 0
-	);
-	TR_ASSERT(
-		memcmp(utf32.to_utf32(tr::scratchpad()).buf(), U"изгиб tbh",
-		       sizeof(U"изгиб tbh")) == 0
+		memcmp(utf8.to_utf32(tr::scratchpad()).buf(), U"изгиб tbh", sizeof(U"изгиб tbh")) ==
+		0
 	);
 }
 

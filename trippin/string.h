@@ -177,12 +177,6 @@ public:
 	{
 	}
 
-	// Converts an UTF-16 string to UTF-8
-	String(Arena& arena, const char16* str, usize len);
-
-	// Converts an UTF-32 string to UTF-8
-	String(Arena& arena, const char32* str, usize len);
-
 	// Does NOT include the null terminator. In bytes, use `codepoint_len()` if you need the
 	// amount of codepoints
 	constexpr usize len() const
@@ -244,9 +238,10 @@ public:
 	class Iterator
 	{
 	public:
-		Iterator(const char* ptr, usize idx)
+		Iterator(const char* ptr, usize idx, usize len)
 			: _ptr(ptr)
 			, _idx(idx)
+			, _len(len)
 		{
 		}
 		ArrayItem<char32> operator*() const;
@@ -259,16 +254,17 @@ public:
 	private:
 		const char* _ptr;
 		usize _idx;
+		usize _len;
 	};
 
 	// Works with codepoints, just iterate the buffer manually if you need bytes
 	Iterator begin() const
 	{
-		return Iterator{buf(), 0};
+		return Iterator{buf(), 0, len()};
 	}
 	Iterator end() const
 	{
-		return Iterator{buf() + len(), len()};
+		return Iterator{buf() + len(), len(), len()};
 	}
 
 	// As the name implies, it copies the string and its items to somewhere else.
@@ -307,10 +303,6 @@ public:
 
 	// Converts the UTF-8 data to UTF-32, which might be useful sometimes
 	Array<char32> to_utf32(Arena& arena) const;
-
-	// Converts the UTF-8 data to UTF-16, which is mostly for interop with bullshit e.g. Win32
-	// APIs
-	Array<char16> to_utf16(Arena& arena) const;
 
 	// Gets a substring. The returned string includes the end character. Note that `start` and
 	// `end` are NOT in codepoints but instead in indexes (bytes for UTF-8, 2 bytes for UTF-16,
@@ -483,9 +475,10 @@ public:
 	class Iterator
 	{
 	public:
-		Iterator(char* ptr, usize idx)
+		Iterator(char* ptr, usize idx, usize len)
 			: _ptr(ptr)
 			, _idx(idx)
+			, _len(len)
 		{
 		}
 		ArrayItem<char32> operator*() const;
@@ -498,16 +491,17 @@ public:
 	private:
 		char* _ptr;
 		usize _idx;
+		usize _len;
 	};
 
 	// Works with codepoints, just iterate the buffer manually if you need bytes
 	Iterator begin() const
 	{
-		return Iterator{buf(), 0};
+		return Iterator{buf(), 0, len()};
 	}
 	Iterator end() const
 	{
-		return Iterator{buf() + len(), len()};
+		return Iterator{buf() + len(), len(), len()};
 	}
 
 	// As the name implies, it copies the string builder and its items to somewhere else.
