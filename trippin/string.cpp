@@ -129,13 +129,13 @@ tr::String::Iterator& tr::String::Iterator::operator++()
 
 bool tr::String::operator==(tr::String other) const
 {
-	if (**this == nullptr || *other == nullptr) [[unlikely]] {
-		return **this == *other;
+	if (buf() == nullptr || *other == nullptr) [[unlikely]] {
+		return buf() == *other;
 	}
 	if (len() != other.len()) {
 		return false;
 	}
-	return memcmp(**this, *other, len()) == 0;
+	return memcmp(buf(), *other, len()) == 0;
 }
 
 tr::Array<char32> tr::String::to_utf32(tr::Arena& arena) const
@@ -159,9 +159,9 @@ tr::String tr::String::substr(tr::Arena& arena, usize start, usize end) const
 	}
 
 	char* newstr = arena.alloc<char*>(end - start + 1);
-	memcpy(newstr, **this + start, end);
+	memcpy(newstr, buf() + start, end);
 	tr::strlib::explicit_memset(newstr + end, 1, 0);
-	return {newstr, end - start};
+	return {newstr, end - start + 1};
 }
 
 tr::Array<usize> tr::String::find(tr::Arena& arena, char c, usize start, usize end) const
@@ -177,7 +177,7 @@ tr::Array<usize> tr::String::find(tr::Arena& arena, char c, usize start, usize e
 
 	Array<usize> indexes{arena};
 	for (usize i = start; i < end; i++) {
-		if (**this[i] == c) {
+		if (buf()[i] == c) {
 			indexes.add(i);
 		}
 	}
@@ -214,7 +214,7 @@ tr::String tr::String::concat(tr::Arena& arena, tr::String other) const
 	other._validate();
 
 	StringBuilder out{arena, len() + other.len()};
-	memcpy(*out, **this, len());
+	memcpy(*out, buf(), len());
 	memcpy(*out + len(), *other, other.len());
 	tr::strlib::explicit_memset(*out + len() + other.len() + 1, 1, 0);
 	return out;
@@ -226,7 +226,7 @@ bool tr::String::starts_with(tr::String str) const
 	str._validate();
 
 	usize substr_len = tr::clamp(str.len(), 0u, len());
-	return *this == String{*str, substr_len};
+	return String{buf(), substr_len} == String{*str, substr_len};
 }
 
 bool tr::String::ends_with(tr::String str) const
@@ -235,7 +235,7 @@ bool tr::String::ends_with(tr::String str) const
 	str._validate();
 
 	usize substr_len = tr::clamp(str.len(), 0u, len());
-	return String{**this + len() - substr_len, substr_len} == String{*str, substr_len};
+	return String{buf() + len() - substr_len, substr_len} == String{*str, substr_len};
 }
 
 tr::String tr::String::file(tr::Arena& arena) const
@@ -245,7 +245,7 @@ tr::String tr::String::file(tr::Arena& arena) const
 	// this is actually safe since it'll overflow and become massive
 	// TODO consider not
 	for (usize i = len() - 1; i < len(); i--) {
-		if (**this[i] == '/' || **this[i] == '\\') {
+		if (buf()[i] == '/' || buf()[i] == '\\') {
 			return substr(arena, i + 1, len());
 		}
 	}
@@ -261,7 +261,7 @@ tr::String tr::String::directory(tr::Arena& arena) const
 	// this is actually safe since it'll overflow and become massive
 	// TODO consider not
 	for (usize i = len() - 1; i < len(); i--) {
-		if (**this[i] == '/' || **this[i] == '\\') {
+		if (buf()[i] == '/' || buf()[i] == '\\') {
 			return substr(arena, 0, i);
 		}
 	}
@@ -317,13 +317,13 @@ bool tr::String::is_absolute() const
 	// handle both windows drives and URI schemes
 	// they're both some letters followed by `:/`
 	for (usize i = 0; i < len(); i++) {
-		char c = **this[i];
+		char c = buf()[i];
 		// just ascii bcuz i doubt there's an uri scheme like lösarquívoççs://
 		if ((c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) {
 			// pls don't undefine behavior all over the place
 			if (len() > i + 2) {
-				if (**this[i + 1] == ':' &&
-				    (**this[i + 2] == '/' || **this[i + 2] == '\\')) {
+				if (buf()[i + 1] == ':' &&
+				    (buf()[i + 2] == '/' || buf()[i + 2] == '\\')) {
 					return true;
 				}
 			}
@@ -359,20 +359,25 @@ tr::Array<tr::String> tr::String::split(tr::Arena& arena, char delimiter) const
 
 	Array<String> strs{arena};
 	usize last_str = 0;
+	usize tmplen = len();
 
-	for (usize i = 0; i < len(); i++) {
-		if (**this[i] == delimiter || i == len() - 1) {
+	for (usize i = 0; i < tmplen; i++) {
+		if (buf()[i] == delimiter || i == tmplen - 1) {
 			// small hack so that i don't have to change this code any more than what is
 			// required to make it work
-			if (i == len() - 1) {
+			if (i == tmplen - 1) {
+				tmplen++;
 				i++;
 			}
 
-			String sub = substr(arena, last_str, i - last_str);
-			strs.add(sub);
+			// substr() just breaks for whatever reason
+			char* newstr = arena.alloc<char*>(i - last_str + 1);
+			memcpy(newstr, &buf()[last_str], i - last_str);
+			tr::strlib::explicit_memset(newstr + i - last_str, 1, 0);
+			strs.add(newstr);
 			last_str = i + 1;
 
-			if (i == len()) {
+			if (i == tmplen - 1) {
 				return strs;
 			}
 		}
@@ -425,13 +430,13 @@ tr::StringBuilder::Iterator& tr::StringBuilder::Iterator::operator++()
 
 bool tr::StringBuilder::operator==(tr::String other) const
 {
-	if (**this == nullptr || *other == nullptr) [[unlikely]] {
-		return **this == *other;
+	if (buf() == nullptr || *other == nullptr) [[unlikely]] {
+		return buf() == *other;
 	}
 	if (len() != other.len()) {
 		return false;
 	}
-	return memcmp(**this, *other, len()) == 0;
+	return memcmp(buf(), *other, len()) == 0;
 }
 
 void tr::StringBuilder::append(char c)

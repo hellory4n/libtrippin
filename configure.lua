@@ -58,7 +58,7 @@ end
 
 -- man.
 if compmode == "debug" then
-	cflags = cflags .. " -Og -g -DDEBUG -D_DEBUG"
+	cflags = cflags .. " -O0 -g -DDEBUG -D_DEBUG"
 else
 	cflags = cflags .. " -O3 -g -fno-omit-frame-pointer"
 end

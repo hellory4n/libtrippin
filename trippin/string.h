@@ -553,13 +553,13 @@ public:
 	void appendf(const char* fmt, ...);
 };
 
-String::String(StringBuilder sb)
+inline String::String(StringBuilder sb)
 	: _ptr(*sb)
 	, _len(sb.len() + 1)
 {
 }
 
-String::String(Arena& arena, StringBuilder sb)
+inline String::String(Arena& arena, StringBuilder sb)
 	: String(arena, *sb, sb.len())
 {
 }

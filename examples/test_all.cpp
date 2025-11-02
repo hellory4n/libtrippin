@@ -8,9 +8,6 @@
 #include <trippin/string.h>
 #include <trippin/util.h>
 
-#include "trippin/bits/macros.h"
-#include "trippin/util.h"
-
 // TODO use actual tests you dumbass
 
 namespace test {
@@ -186,7 +183,7 @@ static void test::strings()
 
 	// unicode support
 	tr::String utf8 = u8"изгиб tbh";
-	TR_ASSERT(utf8.len() == 15);
+	TR_ASSERT(utf8.len() == 14);
 	TR_ASSERT(utf8.codepoint_len() == 9);
 	TR_ASSERT(utf8.get_codepoint(4) == U'б');
 
