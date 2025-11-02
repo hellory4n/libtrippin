@@ -26,6 +26,10 @@
 #ifndef _TRIPPIN_BITS_MACROS_H
 #define _TRIPPIN_BITS_MACROS_H
 
+#ifndef _TRIPPIN_COMMON_H
+	#error "Never include trippin/bits/macros.h directly. Use trippin/common.h."
+#endif
+
 namespace tr {
 
 // evil macro fuckery

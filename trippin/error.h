@@ -26,7 +26,6 @@
 #ifndef _TRIPPIN_ERROR_H
 #define _TRIPPIN_ERROR_H
 
-#include "trippin/bits/macros.h" // IWYU pragma: export
 #include "trippin/common.h"
 #include "trippin/string.h"
 

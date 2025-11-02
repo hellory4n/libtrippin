@@ -182,17 +182,20 @@ static void test::strings()
 	tr::log("string builder: %s", *sb);
 
 	// unicode support
-	tr::String utf8 = u8"изгиб tbh";
-	TR_ASSERT(utf8.len() == 14);
-	auto cunt = utf8.codepoint_len();
-	TR_ASSERT(cunt == 9);
+	// TODO emoji can be multiple codepoints
+	// maybe add String.visible_len()? idfk
+	tr::String utf8 = u8"изгиб tbh😀😀😀🕴️🕴️";
+	TR_ASSERT(utf8.len() == 40);
+	TR_ASSERT(utf8.codepoint_len() == 16);
 	TR_ASSERT(utf8.get_codepoint(4) == U'б');
+	TR_ASSERT(utf8.get_codepoint(10) == U'😀');
+	tr::log("%s", *utf8);
 
 	// encoding conversions
 	// TODO More.
 	TR_ASSERT(
-		memcmp(utf8.to_utf32(tr::scratchpad()).buf(), U"изгиб tbh", sizeof(U"изгиб tbh")) ==
-		0
+		memcmp(utf8.to_utf32(tr::scratchpad()).buf(), U"изгиб tbh😀😀😀🕴️🕴️",
+		       sizeof(U"изгиб tbh😀😀😀🕴️🕴️")) == 0
 	);
 }
 

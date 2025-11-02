@@ -26,6 +26,10 @@
 #ifndef _TRIPPIN_BITS_PLATFORM_H
 #define _TRIPPIN_BITS_PLATFORM_H
 
+#ifndef _TRIPPIN_COMMON_H
+	#error "Never include trippin/bits/platform.h directly. Use trippin/common.h."
+#endif
+
 // get compiler
 // checking between gcc and clang is useful because some warnings are different
 #if defined(__clang__)

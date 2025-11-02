@@ -962,6 +962,7 @@ tr::Result<void> tr::remove_dir(tr::String path)
 tr::Result<tr::Array<tr::String>>
 tr::list_dir(tr::Arena& arena, tr::String path, bool include_hidden)
 {
+	// FIXME this might be broken for some fucking reason
 	path = tr::path(tr::scratchpad(), path);
 	FileError::reset_errors();
 
@@ -970,24 +971,24 @@ tr::list_dir(tr::Arena& arena, tr::String path, bool include_hidden)
 		return FileError::from_errno(path, "", FileOperation::LIST_DIR);
 	}
 
-	Array<String> entries(arena);
+	Array<String> entries{arena};
 	struct dirent* entry;
 
 	while ((entry = readdir(dir)) != nullptr) {
-		if (String(entry->d_name) == ".") {
+		if (String{entry->d_name} == ".") {
 			continue;
 		}
-		if (String(entry->d_name) == "..") {
+		if (String{entry->d_name} == "..") {
 			continue;
 		}
 
 		if (!include_hidden) {
-			if (String(entry->d_name).starts_with(".")) {
+			if (String{entry->d_name}.starts_with(".")) {
 				continue;
 			}
 		}
 
-		entries.add(String(arena, entry->d_name, strlen(entry->d_name)));
+		entries.add(String{arena, entry->d_name});
 	}
 
 	return entries;

@@ -26,6 +26,10 @@
 #ifndef _TRIPPIN_BITS_CONCEPTS_H
 #define _TRIPPIN_BITS_CONCEPTS_H
 
+#ifndef _TRIPPIN_COMMON_H
+	#error "Never include trippin/bits/concepts.h directly. Use trippin/common.h."
+#endif
+
 #include <type_traits>
 
 namespace tr {
