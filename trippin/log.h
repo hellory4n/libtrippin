@@ -26,7 +26,6 @@
 #ifndef _TRIPPIN_LOG_H
 #define _TRIPPIN_LOG_H
 
-#include "trippin/bits/macros.h" // IWYU pragma: export
 #include "trippin/common.h"
 
 namespace tr {
@@ -48,8 +47,10 @@ namespace ConsoleColor {
 
 } // namespace ConsoleColor
 
+class String;
+
 // Sets the log file to somewhere. There can be multiple log files.
-void use_log_file(const char* path);
+void use_log_file(String path);
 
 // it's annoying me over %li and %zu like the shut the fuck up i swear to fucking god
 #if defined(TR_GCC_OR_CLANG) && !defined(TR_OS_WINDOWS)

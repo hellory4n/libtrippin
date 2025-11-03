@@ -49,16 +49,15 @@ void _log(const char* color, const char* prefix, bool panic, const char* fmt, va
 
 }
 
-void tr::use_log_file(const char* path)
+void tr::use_log_file(String path)
 {
-	Result<File&, const Error&> f = File::open(core_arena, path, FileMode::WRITE_TEXT);
+	Result<File&> f = File::open(core_arena, path, FileMode::WRITE_TEXT);
 	if (!f.is_valid()) {
-		tr::warn("couldn't use log file '%s': %s", path, f.unwrap_err().message().buf());
+		tr::warn("couldn't use log file '%s': %s", *path, *f.unwrap_err().message());
 	}
 	File& file = f.unwrap();
 	logfiles.add(file);
-
-	tr::info("using log file \"%s\"", path);
+	tr::info("using log file '%s'", *path);
 }
 
 void tr::_log(const char* color, const char* prefix, bool panic, const char* fmt, va_list arg)
@@ -66,7 +65,8 @@ void tr::_log(const char* color, const char* prefix, bool panic, const char* fmt
 	// if string/array/files panic it'll go back here and loop until the stack overflows, which
 	// is really annoying to debug
 	if (tr::panicked_on_quit) {
-		printf("tr::panic is broken and will loop forever, aborting\n");
+		printf("tr::panic is broken and will loop forever, aborting\ntrying to print: %s\n",
+		       fmt);
 		fflush(stdout);
 		abort();
 	}
@@ -85,7 +85,7 @@ void tr::_log(const char* color, const char* prefix, bool panic, const char* fmt
 	time_t now = time(nullptr);
 // FUCK ME
 #ifdef _WIN32
-	struct tm tm_info;
+	struct tm tm_info{};
 	localtime_s(&tm_info, &now);
 	strftime(timestr, sizeof(timestr), "%Y-%m-%d %H:%M:%S", &tm_info);
 #else

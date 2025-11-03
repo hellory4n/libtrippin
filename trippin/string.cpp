@@ -33,6 +33,7 @@
 #include "trippin/log.h"
 #include "trippin/math.h"
 #include "trippin/memory.h"
+#define UTF8PROC_STATIC // otherwise it shits itself on windows
 #include "trippin/thirdparty/utf8proc/utf8proc.c" // i love the preprocessor
 
 // FIXME theres probably 2050 different violations of strict aliasing

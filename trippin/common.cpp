@@ -29,6 +29,23 @@
 #include <cstdio> // IWYU pragma: keep
 #include <cstdlib>
 
+// :(
+#ifdef _WIN32
+	#define WIN32_LEAN_AND_MEAN
+	#define NOSERVICE
+	#define NOMCX
+	#define NOIME
+	// mingw gcc already defines that by default??
+	#ifndef NOMINMAX
+		#define NOMINMAX
+	#endif
+	#include <windows.h>
+
+	// conflicts
+	#undef ERROR
+	#undef TRANSPARENT
+#endif
+
 #include "trippin/iofs.h"
 #include "trippin/log.h"
 #include "trippin/memory.h"
