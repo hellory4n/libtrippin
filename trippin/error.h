@@ -144,22 +144,21 @@ public:
 	String message() const override;
 };
 
-// So spicy. E should inherit implement Error
-template<typename T, typename E = const Error&>
+// So spicy.
+template<typename T>
 class [[nodiscard]] Result
 {
-	Either<T, E> value = {};
+	Either<T, const Error*> value = {};
 
 public:
 	using Type = T;
-	using ErrorType = E;
 
 	Result(T val)
 		: value(val)
 	{
 	}
-	Result(E err)
-		: value(err)
+	Result(const Error& err)
+		: value(&err)
 	{
 	}
 
@@ -178,40 +177,18 @@ public:
 	T unwrap() const
 	{
 		if (!this->is_valid()) {
-			// error: taking the address of a temporary object of type 'T'
-			E pain = value.right();
-			const Error* errormaballs = dynamic_cast<const Error*>(&pain);
-			String error;
-			if (errormaballs == nullptr) {
-				error = "unknown error";
-#ifdef DEBUG
-				tr::panic(
-					"tr::Result<T, E> is supposed to use tr::Error you "
-					"distinguished gentleman/lady/everything in between"
-				);
-#else
-				tr::warn(
-					"warning: tr::Result<T, E> is supposed to use tr::Error "
-					"you distinguished gentleman/lady/everything in between"
-				);
-#endif
-			}
-			else {
-				error = errormaballs->message();
-			}
-
-			tr::panic("couldn't unwrap tr::Result<T, E>: %s", error.buf());
+			tr::panic("couldn't unwrap tr::Result<T>: %s", *value.right()->message());
 		}
 
 		return this->value.left();
 	}
 
-	E unwrap_err() const
+	const Error& unwrap_err() const
 	{
 		if (this->is_valid()) {
 			tr::panic("couldn't unwrap tr::Result<T, E>'s error, as it's valid");
 		}
-		return this->value.right();
+		return *this->value.right();
 	}
 
 	// Shorthand for unwrap()
@@ -225,30 +202,23 @@ public:
 	{
 		return this->is_valid() ? this->unwrap() : other;
 	}
-
-	// Calls a function (usually a lambda) depending on whether it's valid or not.
-	void match(std::function<void(T val)> valid_func, std::function<void(E err)> error_func)
-	{
-		this->value.match(valid_func, error_func);
-	}
 };
 
 // Result for when you don't need the result :D
-template<typename E>
-class [[nodiscard]] Result<void, E>
+template<>
+class [[nodiscard]] Result<void>
 {
-	Maybe<E> value;
+	Maybe<const Error*> value;
 
 public:
 	using Type = void;
-	using ErrorType = E;
 
 	Result()
 		: value()
 	{
 	}
-	Result(E err)
-		: value(err)
+	Result(const Error& err)
+		: value(&err)
 	{
 	}
 
@@ -268,29 +238,7 @@ public:
 	void unwrap() const
 	{
 		if (!this->is_valid()) {
-			// error: taking the address of a temporary object of type 'T'
-			E pain = value.unwrap();
-			const Error* errormaballs = dynamic_cast<const Error*>(&pain);
-			String error;
-			if (errormaballs == nullptr) {
-				error = "unknown error";
-#ifdef DEBUG
-				tr::panic(
-					"tr::Result<T, E> is supposed to use tr::Error you "
-					"distinguished gentleman/lady/everything in between"
-				);
-#else
-				tr::warn(
-					"warning: tr::Result<T, E> is supposed to use tr::Error "
-					"you distinguished gentleman/lady/everything in between"
-				);
-#endif
-			}
-			else {
-				error = errormaballs->message();
-			}
-
-			tr::panic("couldn't unwrap tr::Result<T, E>: %s", error.buf());
+			tr::panic("couldn't unwrap tr::Result<T>: %s", *value.unwrap()->message());
 		}
 	}
 
@@ -299,18 +247,12 @@ public:
 		unwrap();
 	}
 
-	E unwrap_err() const
+	const Error& unwrap_err() const
 	{
 		if (this->is_valid()) {
 			tr::panic("couldn't unwrap tr::Result<T, E>'s error, as it's valid");
 		}
-		return this->value.unwrap();
-	}
-
-	// Calls a function (usually a lambda) depending on whether it's valid or not.
-	void match(std::function<void()> valid_func, std::function<void(E err)> error_func)
-	{
-		this->value.match(error_func, valid_func);
+		return *this->value.unwrap();
 	}
 };
 

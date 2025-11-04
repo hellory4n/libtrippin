@@ -79,7 +79,7 @@ String user_dir;
 tr::Result<tr::String> tr::Reader::read_string(tr::Arena& arena, int64 length)
 {
 	StringBuilder str{arena, static_cast<usize>(length)};
-	TR_TRY_ASSIGN(int64 read, this->read_bytes(str.buf(), sizeof(char), length));
+	int64 read = TR_TRY(this->read_bytes(str.buf(), sizeof(char), length));
 
 	if (read != int64(length)) {
 		return tr::scratchpad().make_ref<StringError>(
@@ -95,7 +95,7 @@ tr::Result<tr::String> tr::Reader::read_line(Arena& arena)
 
 	while (true) {
 		char byte = '\0';
-		TR_TRY_ASSIGN(int64 read, this->read_bytes(&byte, sizeof(char), 1));
+		int64 read = TR_TRY(this->read_bytes(&byte, sizeof(char), 1));
 
 		// eof? idfk man
 		if (read == 0) {
@@ -110,7 +110,7 @@ tr::Result<tr::String> tr::Reader::read_line(Arena& arena)
 		// windows :(
 		if (byte == '\r') {
 			char next_byte = '\0';
-			TR_TRY_ASSIGN(read, this->read_bytes(&next_byte, sizeof(char), 1));
+			read = TR_TRY(this->read_bytes(&next_byte, sizeof(char), 1));
 
 			// eof still counts
 			if (read == 0 || next_byte == '\n') {
@@ -130,7 +130,7 @@ tr::Result<tr::String> tr::Reader::read_line(Arena& arena)
 
 tr::Result<tr::Array<uint8>> tr::Reader::read_all_bytes(tr::Arena& arena)
 {
-	TR_TRY_ASSIGN(int64 length, this->len());
+	int64 length = TR_TRY(this->len());
 
 	Array<uint8> man(arena, static_cast<usize>(length));
 	TR_TRY(this->read_bytes(man.buf(), sizeof(uint8), length));
@@ -139,7 +139,7 @@ tr::Result<tr::Array<uint8>> tr::Reader::read_all_bytes(tr::Arena& arena)
 
 tr::Result<tr::String> tr::Reader::read_all_text(tr::Arena& arena)
 {
-	TR_TRY_ASSIGN(int64 length, this->len());
+	int64 length = TR_TRY(this->len());
 
 	StringBuilder man{arena, static_cast<usize>(length)};
 	TR_TRY(this->read_bytes(man.buf(), sizeof(char), length));
@@ -515,9 +515,7 @@ tr::Result<void> tr::create_dir(tr::String path)
 		}
 
 		if (tr::path_exists(full_dir)) {
-			TR_TRY_ASSIGN(
-			bool is_file, tr::is_file(full_dir)
-			);
+			bool is_file = TR_TRY(tr::is_file(full_dir));
 
 			TR_TRY_ASSERT(
 				!is_file, tr::scratchpad().make_ref<FileError>(
@@ -931,7 +929,7 @@ tr::Result<void> tr::create_dir(tr::String path)
 		}
 
 		if (tr::path_exists(full_dir)) {
-			TR_TRY_ASSIGN(bool is_file, tr::is_file(full_dir));
+			bool is_file = TR_TRY(tr::is_file(full_dir));
 			TR_TRY_ASSERT(
 				!is_file, tr::scratchpad().make_ref<FileError>(
 						  full_dir, "", FileErrorType::IS_NOT_DIRECTORY,

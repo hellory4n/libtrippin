@@ -26,6 +26,7 @@
 #ifndef _TRIPPIN_BITS_MACROS_H
 #define _TRIPPIN_BITS_MACROS_H
 
+#include <type_traits>
 #ifndef _TRIPPIN_COMMON_H
 	#error "Never include trippin/bits/macros.h directly. Use trippin/common.h."
 #endif
@@ -71,55 +72,120 @@ void _impl_assert(const char* expr, const char* fmt, ...);
 // defer
 // usage: e.g. TR_DEFER(free(ptr));
 template<typename Fn>
-struct Defer
+struct _defer
 {
 	Fn fn;
 
-	Defer(Fn fn)
+	_defer(Fn fn)
 		: fn(fn)
 	{
 	}
 
-	~Defer()
+	~_defer()
 	{
 		fn();
 	}
 };
 
 template<typename Fn>
-Defer<Fn> _defer_func(Fn fn)
+_defer<Fn> _defer_func(Fn fn)
 {
-	return Defer<Fn>(fn);
+	return _defer<Fn>{fn};
 }
 
-#define TR_DEFER(...)                                                             \
-	[[maybe_unused]]                                                          \
-	auto _TR_UNIQUE_NAME(_tr_defer) = tr::_defer_func([&]() { __VA_ARGS__; })
+#define TR_DEFER(...)                                                               \
+	[[maybe_unused]]                                                            \
+	auto _TR_UNIQUE_NAME(_tr_defer) = ::tr::_defer_func([&]() { __VA_ARGS__; })
 
 // Shorthand for calling a function, unwrapping if valid, and returning an error otherwise
 // example: TR_TRY_ASSIGN(int32 var, some_function());
-#define TR_TRY_ASSIGN(Var, ...)                                   \
-	const auto _TR_UNIQUE_NAME(_tr_try_tmp) = (__VA_ARGS__);  \
-	if (_TR_UNIQUE_NAME(_tr_try_tmp).is_invalid()) {          \
-		return _TR_UNIQUE_NAME(_tr_try_tmp).unwrap_err(); \
-	}                                                         \
-	Var = _TR_UNIQUE_NAME(_tr_try_tmp).unwrap()
+#ifdef __GNUC__
+	#define TR_TRY_ASSIGN(Var, ...)                                   \
+		/* clang-format off */ \
+		_Pragma("GCC warning \"TR_TRY_ASSIGN is deprecated: you can now use the all-new new all TR_TRY, e.g. int x = TR_TRY(whatever)\"");                                  \
+		/* clang-format on */                                     \
+		const auto _TR_UNIQUE_NAME(_tr_try_tmp) = (__VA_ARGS__);  \
+		if (_TR_UNIQUE_NAME(_tr_try_tmp).is_invalid()) {          \
+			return _TR_UNIQUE_NAME(_tr_try_tmp).unwrap_err(); \
+		}                                                         \
+		Var = _TR_UNIQUE_NAME(_tr_try_tmp).unwrap()
+#else
+	#define TR_TRY_ASSIGN(Var, ...)                                   \
+		const auto _TR_UNIQUE_NAME(_tr_try_tmp) = (__VA_ARGS__);  \
+		if (_TR_UNIQUE_NAME(_tr_try_tmp).is_invalid()) {          \
+			return _TR_UNIQUE_NAME(_tr_try_tmp).unwrap_err(); \
+		}                                                         \
+		Var = _TR_UNIQUE_NAME(_tr_try_tmp).unwrap()
+#endif
 
-// `TR_TRY_ASSIGN` but for `tr::Result<void, E>`, or for when you don't care about the result
-// example: TR_TRY(some_function());
-#define TR_TRY(...)                                               \
-	const auto _TR_UNIQUE_NAME(_tr_try_tmp) = (__VA_ARGS__);  \
-	if (_TR_UNIQUE_NAME(_tr_try_tmp).is_invalid()) {          \
-		return _TR_UNIQUE_NAME(_tr_try_tmp).unwrap_err(); \
+// to support TR_TRY
+[[maybe_unused]]
+static thread_local bool _last_try_failed;
+[[maybe_unused]]
+static thread_local const void* _last_try_error;
+
+template<typename T>
+requires(!std::is_reference_v<T>)
+union _evilTryUnion {
+	T val;
+	unsigned char no_val = 0;
+};
+
+// so Result<void> doesn't break everything
+template<>
+union _evilTryUnion<void> {
+	unsigned char val;
+	unsigned char no_val;
+};
+
+// our most evil macro to date
+// example: int x = TR_TRY(function());
+// note that TR_TRY only works with variables
+// so this is unsupported: function(TR_TRY(other_function()))
+#define TR_TRY(...)                                                                               \
+	/* i know gcc statement expressions exist but unfortunately msvc is a thing */            \
+	/* both gcc and clang can optimize this pretty well (msvc is stupid) */                   \
+	/* yes i checked the assembly i'm insane */                                               \
+	[&]() {                                                                                   \
+		const auto _TR_UNIQUE_NAME(_tr_try) = (__VA_ARGS__);                              \
+		using _TrTryType = decltype(_TR_UNIQUE_NAME(_tr_try))::Type;                      \
+		if (_TR_UNIQUE_NAME(_tr_try).is_valid()) [[likely]] {                             \
+			/* if constexpr only works properly on templates */                       \
+			/* so use a template lambda which is a thing some reason */               \
+			auto _TR_UNIQUE_NAME(_tr_man) = []<typename _TrTryType2>(                 \
+								_TrTryType2 result                \
+							) {                                       \
+				if constexpr (::std::is_void_v<typename _TrTryType2::Type>) {     \
+					return ::tr::_evilTryUnion<typename _TrTryType2::Type>{}; \
+				}                                                                 \
+				else {                                                            \
+					return ::tr::_evilTryUnion<typename _TrTryType2::Type>{   \
+						.val = result.unwrap()                            \
+					};                                                        \
+				}                                                                 \
+			};                                                                        \
+			return _TR_UNIQUE_NAME(_tr_man)(_TR_UNIQUE_NAME(_tr_try));                \
+		}                                                                                 \
+		else {                                                                            \
+			::tr::_last_try_failed = true;                                            \
+			::tr::_last_try_error = &_TR_UNIQUE_NAME(_tr_try).unwrap_err();           \
+			return ::tr::_evilTryUnion<_TrTryType>{};                                 \
+		}                                                                                 \
+	}()                                                                                       \
+		.val; /* exploiting unions, if the value is invalid we're about to return so it   \
+			   doesn't matter */                                                      \
+	/* pure uncut macro abuse */                                                              \
+	if (::tr::_last_try_failed) {                                                             \
+		::tr::_last_try_failed = false;                                                   \
+		return {*static_cast<const ::tr::Error*>(::tr::_last_try_error)};                 \
 	}
 
-// Similar to `tr::assert`, but instead of panicking, it returns an error.
-// example: TR_TRY_ASSERT(false, tr::StringError("something went wrong"));
+// Similar to `TR_ASSERT`, but instead of panicking, it returns an error.
+// example: TR_TRY_ASSERT(false, tr::StringError("WHAÇÇT"));
 #define TR_TRY_ASSERT(X, ...)         \
 	if (!(X)) {                   \
 		return (__VA_ARGS__); \
 	}
-
 }
 
 #endif

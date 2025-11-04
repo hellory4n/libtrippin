@@ -2,7 +2,7 @@
 #include <trippin/error.h>
 #include <trippin/memory.h>
 
-tr::Result<int32, tr::Error&> example_function()
+tr::Result<int32> example_function()
 {
 	// on error
 	// you can use any type that implements tr::Error
@@ -15,28 +15,27 @@ tr::Result<int32, tr::Error&> example_function()
 }
 
 // usage
-tr::Result<void, tr::Error&> trippin_main()
+tr::Result<void> trippin_main()
 {
 	// .unwrap() is for if you're *really* sure that it won't fail
 	// it's not recommended because it will panic on fail
 	int32 x = example_function().unwrap();
 
-	// usually you should use the TR_TRY* macros instead
-	TR_TRY_ASSIGN(int32 y, example_function());
-	// which expands to (roughly)
+	// usually you should use the TR_TRY macros instead
+	int32 y = TR_TRY(example_function());
+	// which is equivalent to
 	auto tmp = example_function();
 	if (!tmp.is_valid()) {
 		return tmp.unwrap_err();
 	}
 	int32 z = tmp.unwrap();
-	// but you can only use those macros in functions that return tr::Result<T, E>
+	// but you can only use that macros in functions that return tr::Result<T>
 
-	// additional macros:
-	// TR_TRY is like TR_TRY_ASSIGN but ignoring the result
-	TR_TRY(example_function());
+	// also, TR_TRY is only for variables
+	// so this won't work
+	// function(TR_TRY(other_function()));
 
-	// TR_TRY_ASSERT returns an error instead of panicking on fail
-	TR_TRY_ASSERT(2 + 2 == 5, tr::scratchpad().make_ref<tr::StringError>("i might be wrong"));
+	return {};
 }
 
 void test_error()

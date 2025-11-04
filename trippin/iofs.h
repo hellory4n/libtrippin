@@ -73,7 +73,7 @@ public:
 	Result<T> read_struct()
 	{
 		T man = nullptr;
-		TR_TRY_ASSIGN(int64 bytes_read, this->read_bytes(&man, sizeof(T), 1));
+		int64 bytes_read = TR_TRY(this->read_bytes(&man, sizeof(T), 1));
 
 		if (bytes_read == sizeof(T) && man != nullptr) {
 			return man;
@@ -89,7 +89,7 @@ public:
 	Result<Array<T>> read_array(Arena& arena, int64 items)
 	{
 		T* man = nullptr;
-		TR_TRY_ASSIGN(int64 bytes_read, this->read_bytes(&man, sizeof(T), items));
+		int64 bytes_read = TR_TRY(this->read_bytes(&man, sizeof(T), items));
 
 		if (bytes_read == sizeof(T) * items && man != nullptr) {
 			return Array<T>(arena, man, items);
