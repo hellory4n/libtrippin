@@ -56,10 +56,10 @@ void tr::FileError::reset_errors()
 #endif
 }
 
-tr::FileError&
+tr::FileError
 tr::FileError::from_errno(tr::String patha, tr::String pathb, tr::FileOperation operation)
 {
-	FileError& man = tr::scratchpad().make_ref<FileError>();
+	FileError man{};
 	man.path_a = patha;
 	man.path_b = pathb;
 	man.op = operation;
@@ -124,10 +124,10 @@ tr::FileError::from_errno(tr::String patha, tr::String pathb, tr::FileOperation 
 
 #ifdef _WIN32
 // Checks Windows' `GetLastError` for errors :)
-tr::FileError&
+tr::FileError
 tr::FileError::from_win32(tr::String patha, tr::String pathb, tr::FileOperation operation)
 {
-	FileError& man = tr::scratchpad().make_ref<FileError>();
+	FileError man{};
 	man.path_a = patha;
 	man.path_b = pathb;
 	man.op = operation;

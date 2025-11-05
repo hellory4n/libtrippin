@@ -78,9 +78,9 @@ public:
 		if (bytes_read == sizeof(T) && man != nullptr) {
 			return man;
 		}
-		return tr::scratchpad().make_ref<StringError>(
+		return StringError{
 			"expected %li bytes, got %li (might be EOF)", sizeof(T), bytes_read
-		);
+		};
 	}
 
 	// Wrapper for `read_bytes`, returns an array of N items or null if it isn't able to read
@@ -219,7 +219,7 @@ public:
 	}
 
 	// Opens a fucking file from fucking somewhere. Returns null on error.
-	static Result<File&> open(Arena& arena, String path, FileMode mode);
+	static Result<File> open(Arena& arena, String path, FileMode mode);
 
 	// Closes the file :)
 	void close() override;

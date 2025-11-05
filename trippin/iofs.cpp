@@ -82,16 +82,14 @@ tr::Result<tr::String> tr::Reader::read_string(tr::Arena& arena, int64 length)
 	int64 read = TR_TRY(this->read_bytes(str.buf(), sizeof(char), length));
 
 	if (read != int64(length)) {
-		return tr::scratchpad().make_ref<StringError>(
-			"expected %zu bytes, got %li (might be EOF)", length, read
-		);
+		return StringError{"expected %zu bytes, got %li (might be EOF)", length, read};
 	}
 	return static_cast<String>(str);
 }
 
 tr::Result<tr::String> tr::Reader::read_line(Arena& arena)
 {
-	Array<char> linema(tr::scratchpad(), 0);
+	Array<char> linema{tr::scratchpad(), 0};
 
 	while (true) {
 		char byte = '\0';
@@ -132,7 +130,7 @@ tr::Result<tr::Array<uint8>> tr::Reader::read_all_bytes(tr::Arena& arena)
 {
 	int64 length = TR_TRY(this->len());
 
-	Array<uint8> man(arena, static_cast<usize>(length));
+	Array<uint8> man{arena, static_cast<usize>(length)};
 	TR_TRY(this->read_bytes(man.buf(), sizeof(uint8), length));
 	return man;
 }
@@ -644,7 +642,7 @@ void tr::_init_paths()
  * POSIX IMPLEMENTATION
  */
 
-tr::Result<tr::File&> tr::File::open(tr::Arena& arena, tr::String path, tr::FileMode mode)
+tr::Result<tr::File> tr::File::open(tr::Arena& arena, tr::String path, tr::FileMode mode)
 {
 	path = tr::path(tr::scratchpad(), path);
 	FileError::reset_errors();
@@ -675,7 +673,7 @@ tr::Result<tr::File&> tr::File::open(tr::Arena& arena, tr::String path, tr::File
 		break;
 	}
 
-	File& file = arena.make_ref<File>();
+	File file{};
 	file.fptr = fopen(*path, *modefrfr);
 	if (file.fptr == nullptr) {
 		return FileError::from_errno(path, "", FileOperation::OPEN_FILE);
@@ -767,16 +765,13 @@ tr::Result<int64> tr::File::read_bytes(void* out, int64 size, int64 items)
 {
 	FileError::reset_errors();
 	TR_TRY_ASSERT(
-		out != nullptr, tr::scratchpad().make_ref<StringError>(
-					"you dumbass it's supposed to go somewhere if you don't "
-					"want to use it use File::seek() dumbass"
-				)
+		out != nullptr,
+		StringError{"you dumbass it's supposed to go somewhere if you don't "
+			    "want to use it use File::seek() dumbass"}
 	);
 	TR_TRY_ASSERT(
 		this->can_read(),
-		tr::scratchpad().make_ref<FileError>(
-			this->path, "", FileErrorType::ACCESS_DENIED, FileOperation::READ_FILE
-		)
+		FileError{this->path, "", FileErrorType::ACCESS_DENIED, FileOperation::READ_FILE}
 	);
 
 	// TODO 32-bit won't be happy about this
@@ -806,9 +801,7 @@ tr::Result<void> tr::File::write_bytes(Array<uint8> bytes)
 	FileError::reset_errors();
 	TR_TRY_ASSERT(
 		this->can_write(),
-		tr::scratchpad().make_ref<FileError>(
-			this->path, "", FileErrorType::ACCESS_DENIED, FileOperation::WRITE_FILE
-		)
+		FileError{this->path, "", FileErrorType::ACCESS_DENIED, FileOperation::WRITE_FILE}
 	);
 
 	usize bytes_written =
@@ -870,7 +863,7 @@ tr::Result<void> tr::move_file(tr::String from, tr::String to)
 	// on posix it replaces the destination if it already exists
 	// on windows it fails in that case
 	if (tr::path_exists(to)) {
-		return FileError(from, to, FileErrorType::FILE_EXISTS, FileOperation::MOVE_FILE);
+		return FileError{from, to, FileErrorType::FILE_EXISTS, FileOperation::MOVE_FILE};
 	}
 
 	int i = rename(*from, *to);
@@ -931,10 +924,10 @@ tr::Result<void> tr::create_dir(tr::String path)
 		if (tr::path_exists(full_dir)) {
 			bool is_file = TR_TRY(tr::is_file(full_dir));
 			TR_TRY_ASSERT(
-				!is_file, tr::scratchpad().make_ref<FileError>(
+				!is_file, FileError{
 						  full_dir, "", FileErrorType::IS_NOT_DIRECTORY,
 						  FileOperation::CREATE_DIR
-					  )
+					  }
 			);
 			continue;
 		}

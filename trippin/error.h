@@ -26,6 +26,8 @@
 #ifndef _TRIPPIN_ERROR_H
 #define _TRIPPIN_ERROR_H
 
+#include <type_traits>
+
 #include "trippin/common.h"
 #include "trippin/string.h"
 
@@ -117,7 +119,7 @@ public:
 	FileErrorType type = FileErrorType::UNKNOWN;
 	FileOperation op = FileOperation::UNKNOWN;
 	int errno_code = 0;
-#ifdef _WIN32
+#ifdef TR_OS_WINDOWS
 	unsigned win32_code = 0;
 #endif
 
@@ -131,11 +133,11 @@ public:
 	}
 
 	// Checks errno for errors :)
-	static FileError& from_errno(String patha, String pathb, FileOperation operation);
+	static FileError from_errno(String patha, String pathb, FileOperation operation);
 
-#ifdef _WIN32
-	// Checks Windows' `GetLastError` for errors :)
-	static FileError& from_win32(String patha, String pathb, FileOperation operation);
+#ifdef TR_OS_WINDOWS
+	// Checks Win32's `GetLastError` for errors :)
+	static FileError from_win32(String patha, String pathb, FileOperation operation);
 #endif
 
 	// Why.
@@ -146,49 +148,59 @@ public:
 
 // So spicy.
 template<typename T>
+requires(!std::is_reference_v<T>) // TODO fucking fix it
 class [[nodiscard]] Result
 {
-	Either<T, const Error*> value = {};
+	// store errors inline through type erasure type shit
+	// inheritance requires ptrs, heap memory is overkill for errors (+ don't think there's any
+	// clean way to manage an error arena or whatever)
+	alignas(std::max_align_t) List<MAX_ERROR_SIZE, byte> _inline_error;
+	Maybe<T> _value = {};
 
 public:
 	using Type = T;
 
 	Result(T val)
-		: value(val)
+		: _value(val)
 	{
 	}
-	Result(const Error& err)
-		: value(&err)
+	template<typename E>
+	requires(std::is_base_of_v<Error, E> && sizeof(E) <= MAX_ERROR_SIZE)
+	Result(const E& err)
 	{
+		// if only someone defined that behavior...
+		*reinterpret_cast<E*>(*_inline_error) = err;
 	}
 
 	// If true, the result has a value. Else, it has an error.
 	bool is_valid() const
 	{
-		return value.is_left();
+		return _value.is_valid();
 	}
 
 	// If true, the result has an error. Else, it has a value.
 	bool is_invalid() const
 	{
-		return value.is_right();
+		return _value.is_invalid();
 	}
 
 	T unwrap() const
 	{
-		if (!this->is_valid()) {
-			tr::panic("couldn't unwrap tr::Result<T>: %s", *value.right()->message());
+		if (!is_valid()) {
+			// yea
+			const Error* err = reinterpret_cast<const Error*>(*_inline_error);
+			tr::panic("couldn't unwrap tr::Result<T>: %s", *err->message());
 		}
 
-		return this->value.left();
+		return _value.unwrap();
 	}
 
 	const Error& unwrap_err() const
 	{
-		if (this->is_valid()) {
-			tr::panic("couldn't unwrap tr::Result<T, E>'s error, as it's valid");
+		if (is_valid()) {
+			tr::panic("couldn't unwrap tr::Result<T>'s error, as it's valid");
 		}
-		return *this->value.right();
+		return *reinterpret_cast<const Error*>(*_inline_error);
 	}
 
 	// Shorthand for unwrap()
@@ -208,37 +220,47 @@ public:
 template<>
 class [[nodiscard]] Result<void>
 {
-	Maybe<const Error*> value;
+	// store errors inline through type erasure type shit
+	// inheritance requires ptrs, heap memory is overkill for errors (+ don't think there's any
+	// clean way to manage an error arena or whatever)
+	alignas(std::max_align_t) List<MAX_ERROR_SIZE, byte> _inline_error{};
+	bool _valid = false;
 
 public:
 	using Type = void;
 
 	Result()
-		: value()
+		: _valid(false)
 	{
 	}
-	Result(const Error& err)
-		: value(&err)
+	template<typename E>
+	requires(std::is_base_of_v<Error, E> && sizeof(E) <= MAX_ERROR_SIZE)
+	Result(const E& err)
+		: _valid(true)
 	{
+		// if only someone defined that behavior...
+		*reinterpret_cast<E*>(*_inline_error) = err;
 	}
 
 	// If true, it has a value. Else, it has an error.
 	bool is_valid() const
 	{
-		return !this->value.is_valid();
+		return _valid;
 	}
 
 	// If true, it has an error. Else, it has a value.
 	bool is_invalid() const
 	{
-		return this->value.is_valid();
+		return !_valid;
 	}
 
 	// Pretty much just asserts that it's valid :D
 	void unwrap() const
 	{
-		if (!this->is_valid()) {
-			tr::panic("couldn't unwrap tr::Result<T>: %s", *value.unwrap()->message());
+		if (is_invalid()) {
+			// yea
+			const Error* err = reinterpret_cast<const Error*>(*_inline_error);
+			tr::panic("couldn't unwrap tr::Result<void>: %s", *err->message());
 		}
 	}
 
@@ -249,10 +271,10 @@ public:
 
 	const Error& unwrap_err() const
 	{
-		if (this->is_valid()) {
-			tr::panic("couldn't unwrap tr::Result<T, E>'s error, as it's valid");
+		if (is_valid()) {
+			tr::panic("couldn't unwrap tr::Result<void>'s error, as it's valid");
 		}
-		return *this->value.unwrap();
+		return *reinterpret_cast<const Error*>(*_inline_error);
 	}
 };
 

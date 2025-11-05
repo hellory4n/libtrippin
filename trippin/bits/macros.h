@@ -118,11 +118,14 @@ _defer<Fn> _defer_func(Fn fn)
 		Var = _TR_UNIQUE_NAME(_tr_try_tmp).unwrap()
 #endif
 
+// idk why would you need more than that for a mere error
+constexpr unsigned MAX_ERROR_SIZE = 128;
+
 // to support TR_TRY
 [[maybe_unused]]
 static thread_local bool _last_try_failed;
 [[maybe_unused]]
-static thread_local const void* _last_try_error;
+static thread_local unsigned char _last_try_error[MAX_ERROR_SIZE];
 
 template<typename T>
 requires(!std::is_reference_v<T>)
@@ -168,7 +171,12 @@ union _evilTryUnion<void> {
 		}                                                                                 \
 		else {                                                                            \
 			::tr::_last_try_failed = true;                                            \
-			::tr::_last_try_error = &_TR_UNIQUE_NAME(_tr_try).unwrap_err();           \
+			/* errors are stored inside Result<T> in a buffer that's always the same  \
+			 * size*/                                                                 \
+			::std::memcpy(                                                            \
+				::tr::_last_try_error, &_TR_UNIQUE_NAME(_tr_try).unwrap_err(),    \
+				::tr::MAX_ERROR_SIZE                                              \
+			);                                                                        \
 			return ::tr::_evilTryUnion<_TrTryType>{};                                 \
 		}                                                                                 \
 	}()                                                                                       \
@@ -177,7 +185,7 @@ union _evilTryUnion<void> {
 	/* pure uncut macro abuse */                                                              \
 	if (::tr::_last_try_failed) {                                                             \
 		::tr::_last_try_failed = false;                                                   \
-		return {*static_cast<const ::tr::Error*>(::tr::_last_try_error)};                 \
+		return {*reinterpret_cast<const ::tr::Error*>(::tr::_last_try_error)};            \
 	}
 
 // Similar to `TR_ASSERT`, but instead of panicking, it returns an error.

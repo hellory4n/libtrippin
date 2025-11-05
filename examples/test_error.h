@@ -2,8 +2,13 @@
 #include <trippin/error.h>
 #include <trippin/memory.h>
 
+#include "trippin/iofs.h"
+
 tr::Result<int32> example_function()
 {
+	// test
+	tr::File test = TR_TRY(tr::File::open(tr::scratchpad(), "z", tr::FileMode::READ_TEXT));
+
 	// on error
 	// you can use any type that implements tr::Error
 	return tr::scratchpad().make_ref<tr::StringError>(

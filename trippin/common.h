@@ -26,6 +26,7 @@
 #ifndef _TRIPPIN_COMMON_H
 #define _TRIPPIN_COMMON_H
 
+#include <cstdarg>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -103,6 +104,8 @@ void call_on_quit(const std::function<void(bool is_panic)>& func);
 // Oh god oh fuck. Note this crashes and kills everything, `tr::error` doesn't.
 [[noreturn]]
 void panic(const char* fmt, ...);
+[[noreturn]]
+void panic_args(const char* fmt, va_list args);
 
 // Functional propaganda
 template<typename L, typename R>
@@ -152,63 +155,6 @@ public:
 		else {
 			new (&this->_left) R(std::forward<R>(r));
 		}
-	}
-
-	constexpr void free()
-	{
-		if constexpr (std::is_pointer_v<L> || std::is_pointer_v<R>) {
-			return;
-		}
-
-		if (this->side == Side::LEFT) {
-			if constexpr (!std::is_reference_v<L>) {
-				using U = std::remove_cv_t<L>;
-				reinterpret_cast<U*>(&this->_left)->~U();
-			}
-		}
-		else {
-			if constexpr (!std::is_reference_v<R>) {
-				using U = std::remove_cv_t<R>;
-				reinterpret_cast<U*>(&this->_right)->~U();
-			}
-		}
-	}
-
-	// evil rule of 3 fuckery
-	// TODO should we remove this? (since no raii and this is clearly raii)
-	constexpr ~Either()
-	{
-		this->free();
-	}
-
-	constexpr Either(const Either& other)
-		: side(other.side)
-	{
-		if (this->side == Side::LEFT) {
-			if constexpr (std::is_reference_v<L>) {
-				this->_left = other._left;
-			}
-			else {
-				new (&this->_left) L(*reinterpret_cast<const L*>(&other._left));
-			}
-		}
-		else {
-			if constexpr (std::is_reference_v<R>) {
-				this->_right = other._right;
-			}
-			else {
-				new (&this->_right) R(*reinterpret_cast<const R*>(&other._right));
-			}
-		}
-	}
-
-	constexpr Either& operator=(const Either& other)
-	{
-		if (this != &other) {
-			this->free();
-			new (this) Either(other);
-		}
-		return *this;
 	}
 
 	// If true, it's left. Else, it's right.
@@ -313,6 +259,18 @@ public:
 			return this->value.left();
 		}
 		tr::panic("couldn't unwrap Maybe<T>");
+	}
+
+	// Just unwrap() but with an error message (and formatted too, how fancy)
+	T expect(const char* fmt, ...) const
+	{
+		va_list arg;
+		va_start(arg, fmt);
+		if (this->has_value) {
+			return this->value.left();
+		}
+		tr::panic_args(fmt, arg);
+		va_end(arg);
 	}
 
 	constexpr T operator*() const

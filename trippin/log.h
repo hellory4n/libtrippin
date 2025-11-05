@@ -26,6 +26,8 @@
 #ifndef _TRIPPIN_LOG_H
 #define _TRIPPIN_LOG_H
 
+#include <cstdarg>
+
 #include "trippin/common.h"
 
 namespace tr {
@@ -53,6 +55,7 @@ class String;
 void use_log_file(String path);
 
 // it's annoying me over %li and %zu like the shut the fuck up i swear to fucking god
+// TODO consider not
 #if defined(TR_GCC_OR_CLANG) && !defined(TR_OS_WINDOWS)
 	#define _TR_PRINTF_ATTR(FmtIdx, ArgIdx) [[gnu::format(printf, FmtIdx, ArgIdx)]]
 #else
@@ -80,6 +83,10 @@ void error(const char* fmt, ...);
 _TR_PRINTF_ATTR(1, 2)
 [[noreturn]]
 void panic(const char* fmt, ...);
+
+// why tho
+[[noreturn]]
+void panic_args(const char* fmt, va_list args);
 
 }
 
