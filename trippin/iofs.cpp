@@ -241,7 +241,7 @@ static tr::String from_win32_to_trippin_str(WinStrConst str)
 	return new_str;
 }
 
-tr::Result<tr::File&> tr::File::open(tr::Arena& arena, tr::String path, FileMode mode)
+tr::Result<tr::File> tr::File::open(tr::Arena& arena, tr::String path, FileMode mode)
 {
 	path = tr::path(tr::scratchpad(), path);
 	FileError::reset_errors();
@@ -272,7 +272,7 @@ tr::Result<tr::File&> tr::File::open(tr::Arena& arena, tr::String path, FileMode
 		break;
 	}
 
-	File& file = arena.make_ref<File>();
+	File file = arena.make_ref<File>();
 	// normal fopen gives an error on visual studio??
 	errno_t ohno = _wfopen_s(
 		reinterpret_cast<FILE**>(&file.fptr), from_trippin_to_win32_str(path), modefrfr

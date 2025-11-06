@@ -40,7 +40,7 @@
 namespace tr {
 
 extern Arena core_arena;
-extern Array<File&> logfiles;
+extern Array<File> logfiles;
 extern Signal<bool> the_new_all_on_quit;
 extern bool panicking;
 extern bool panicked_on_quit;

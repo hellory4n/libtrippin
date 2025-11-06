@@ -154,19 +154,22 @@ class [[nodiscard]] Result
 	// store errors inline through type erasure type shit
 	// inheritance requires ptrs, heap memory is overkill for errors (+ don't think there's any
 	// clean way to manage an error arena or whatever)
-	alignas(std::max_align_t) List<MAX_ERROR_SIZE, byte> _inline_error;
-	Maybe<T> _value = {};
+	alignas(std::max_align_t) List<MAX_ERROR_SIZE, byte> _inline_error{};
+	T _value{};
+	bool _valid = false;
 
 public:
 	using Type = T;
 
 	Result(T val)
 		: _value(val)
+		, _valid(true)
 	{
 	}
 	template<typename E>
 	requires(std::is_base_of_v<Error, E> && sizeof(E) <= MAX_ERROR_SIZE)
 	Result(const E& err)
+		: _valid(true)
 	{
 		// if only someone defined that behavior...
 		*reinterpret_cast<E*>(*_inline_error) = err;
@@ -175,24 +178,24 @@ public:
 	// If true, the result has a value. Else, it has an error.
 	bool is_valid() const
 	{
-		return _value.is_valid();
+		return _valid;
 	}
 
 	// If true, the result has an error. Else, it has a value.
 	bool is_invalid() const
 	{
-		return _value.is_invalid();
+		return _valid;
 	}
 
 	T unwrap() const
 	{
-		if (!is_valid()) {
+		if (is_invalid()) {
 			// yea
 			const Error* err = reinterpret_cast<const Error*>(*_inline_error);
 			tr::panic("couldn't unwrap tr::Result<T>: %s", *err->message());
 		}
 
-		return _value.unwrap();
+		return _value;
 	}
 
 	const Error& unwrap_err() const
