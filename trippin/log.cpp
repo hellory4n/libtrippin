@@ -51,11 +51,11 @@ void _log(const char* color, const char* prefix, bool panic, const char* fmt, va
 
 void tr::use_log_file(String path)
 {
-	Result<File&> f = File::open(core_arena, path, FileMode::WRITE_TEXT);
+	Result<File> f = File::open(core_arena, path, FileMode::WRITE_TEXT);
 	if (!f.is_valid()) {
 		tr::warn("couldn't use log file '%s': %s", *path, *f.unwrap_err().message());
 	}
-	File& file = f.unwrap();
+	File file = f.unwrap();
 	logfiles.add(file);
 	tr::info("using log file '%s'", *path);
 }

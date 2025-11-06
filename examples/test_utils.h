@@ -8,16 +8,9 @@
 void test_utils()
 {
 	// maybe
-	// for references/pointers use tr::MaybePtr<T>
 	tr::Maybe<int32> nope;
 	if (nope.is_valid()) {
 		tr::log("%i", nope.unwrap());
-	}
-
-	// either
-	tr::Either<int32, tr::String> depends = 5;
-	if (depends.is_left()) {
-		tr::log("%i", depends.left());
 	}
 
 	// pair

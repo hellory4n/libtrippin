@@ -174,7 +174,10 @@ union _evilTryUnion<void> {
 			/* errors are stored inside Result<T> in a buffer that's always the same  \
 			 * size*/                                                                 \
 			::std::memcpy(                                                            \
-				::tr::_last_try_error, &_TR_UNIQUE_NAME(_tr_try).unwrap_err(),    \
+				::tr::_last_try_error,                                            \
+				reinterpret_cast<const void*>(                                    \
+					&_TR_UNIQUE_NAME(_tr_try).unwrap_err()                    \
+				),                                                                \
 				::tr::MAX_ERROR_SIZE                                              \
 			);                                                                        \
 			return ::tr::_evilTryUnion<_TrTryType>{};                                 \

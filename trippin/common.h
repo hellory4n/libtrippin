@@ -109,7 +109,7 @@ void panic_args(const char* fmt, va_list args);
 
 // Functional propaganda
 template<typename L, typename R>
-class Either
+class [[deprecated("making Either<L, R> not be horrible isn't worth it")]] Either
 {
 	enum class Side : uint8
 	{
@@ -155,6 +155,62 @@ public:
 		else {
 			new (&this->_left) R(std::forward<R>(r));
 		}
+	}
+
+	constexpr void free()
+	{
+		if constexpr (std::is_pointer_v<L> || std::is_pointer_v<R>) {
+			return;
+		}
+
+		if (this->side == Side::LEFT) {
+			if constexpr (!std::is_reference_v<L>) {
+				using U = std::remove_cv_t<L>;
+				reinterpret_cast<U*>(&this->_left)->~U();
+			}
+		}
+		else {
+			if constexpr (!std::is_reference_v<R>) {
+				using U = std::remove_cv_t<R>;
+				reinterpret_cast<U*>(&this->_right)->~U();
+			}
+		}
+	}
+
+	// evil rule of 3 fuckery otherwise c++ kills me to death
+	constexpr ~Either()
+	{
+		this->free();
+	}
+
+	constexpr Either(const Either& other)
+		: side(other.side)
+	{
+		if (this->side == Side::LEFT) {
+			if constexpr (std::is_reference_v<L>) {
+				this->_left = other._left;
+			}
+			else {
+				new (&this->_left) L(*reinterpret_cast<const L*>(&other._left));
+			}
+		}
+		else {
+			if constexpr (std::is_reference_v<R>) {
+				this->_right = other._right;
+			}
+			else {
+				new (&this->_right) R(*reinterpret_cast<const R*>(&other._right));
+			}
+		}
+	}
+
+	constexpr Either& operator=(const Either& other)
+	{
+		if (this != &other) {
+			this->free();
+			new (this) Either(other);
+		}
+		return *this;
 	}
 
 	// If true, it's left. Else, it's right.
@@ -216,47 +272,52 @@ public:
 template<typename T>
 class Maybe
 {
-	// just so you don't get "shit is ambiguous" errors
-	struct StructThatIsMostDefinitelyNothing
-	{
-	};
-
-	Either<T, StructThatIsMostDefinitelyNothing> value = {};
-	bool has_value = false;
+	RefWrapper<T> _value{};
+	bool _has_value = false;
 
 public:
 	using Type = T;
 
 	// Initializes a Maybe<T> as null
 	constexpr Maybe()
-		: value(StructThatIsMostDefinitelyNothing{})
+		: _has_value(false)
 	{
 	}
 
 	// Intializes a Maybe<T> with a value
 	constexpr Maybe(T val)
-		: value(val)
-		, has_value(true)
+		: _has_value(true)
 	{
+		if constexpr (std::is_reference_v<T>) {
+			_value = &val;
+		}
+		else {
+			_value = val;
+		}
 	}
 
 	// If true, the maybe is, in fact, a definitely.
 	constexpr bool is_valid() const
 	{
-		return this->has_value;
+		return _has_value;
 	}
 
 	// If true, the maybe is, in fact, a nope.
 	constexpr bool is_invalid() const
 	{
-		return !this->has_value;
+		return !_has_value;
 	}
 
 	// Gets the value or panics if it's null
 	constexpr T unwrap() const
 	{
-		if (this->has_value) {
-			return this->value.left();
+		if (_has_value) {
+			if constexpr (std::is_reference_v<T>) {
+				return *_value;
+			}
+			else {
+				return _value;
+			}
 		}
 		tr::panic("couldn't unwrap Maybe<T>");
 	}
@@ -266,8 +327,8 @@ public:
 	{
 		va_list arg;
 		va_start(arg, fmt);
-		if (this->has_value) {
-			return this->value.left();
+		if (_has_value) {
+			return _value;
 		}
 		tr::panic_args(fmt, arg);
 		va_end(arg);
@@ -281,15 +342,15 @@ public:
 	// Similar to the `??`/null coalescing operator in modern languages
 	constexpr const T value_or(const T other) const
 	{
-		return this->is_valid() ? this->unwrap() : other;
+		return is_valid() ? unwrap() : other;
 	}
 
 	// Calls a function (usually a lambda) depending on whether it's valid or not.
 	constexpr void
 	match(const std::function<void(T val)>& on_valid, const std::function<void()>& on_invalid)
 	{
-		if (this->is_valid()) {
-			on_valid(this->unwrap());
+		if (is_valid()) {
+			on_valid(unwrap());
 		}
 		else {
 			on_invalid();

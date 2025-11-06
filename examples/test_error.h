@@ -7,13 +7,12 @@
 tr::Result<int32> example_function()
 {
 	// test
-	tr::File test = TR_TRY(tr::File::open(tr::scratchpad(), "z", tr::FileMode::READ_TEXT));
+	tr::File test = tr::File::open(tr::scratchpad(), "z", tr::FileMode::READ_TEXT).unwrap();
+	// tr::File test = TR_TRY(tr::File::open(tr::scratchpad(), "z", tr::FileMode::READ_TEXT));
 
 	// on error
 	// you can use any type that implements tr::Error
-	return tr::scratchpad().make_ref<tr::StringError>(
-		"unexpected happening it is happening unexpectedly"
-	);
+	return tr::StringError{"unexpected happening it is happening unexpectedly"};
 
 	// on success you can just return as usual
 	return 946259;
