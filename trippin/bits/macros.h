@@ -175,9 +175,7 @@ union _evilTryUnion<void> {
 			 * size*/                                                                 \
 			::std::memcpy(                                                            \
 				::tr::_last_try_error,                                            \
-				reinterpret_cast<const void*>(                                    \
-					&_TR_UNIQUE_NAME(_tr_try).unwrap_err()                    \
-				),                                                                \
+				static_cast<const void*>(&_TR_UNIQUE_NAME(_tr_try).unwrap_err()), \
 				::tr::MAX_ERROR_SIZE                                              \
 			);                                                                        \
 			return ::tr::_evilTryUnion<_TrTryType>{};                                 \

@@ -184,7 +184,7 @@ public:
 	// If true, the result has an error. Else, it has a value.
 	bool is_invalid() const
 	{
-		return _valid;
+		return !_valid;
 	}
 
 	T unwrap() const

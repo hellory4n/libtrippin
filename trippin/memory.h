@@ -70,6 +70,21 @@ static constexpr usize bytes_to_gb(usize x)
 	return tr::bytes_to_mb(x) / 1024;
 }
 
+// memcpy is evil and breaks vtables :(
+template<typename T>
+requires(!std::is_const_v<T>)
+void _copy_items(RefWrapper<T>* dst, const RefWrapper<T>* src, usize len)
+{
+	for (usize i = 0; i < len; i++) {
+		if constexpr (std::is_reference_v<T> || std::is_trivially_copyable_v<T>) {
+			dst[i] = src[i];
+		}
+		else {
+			new (&dst[i]) T(src[i]);
+		}
+	}
+}
+
 // Settings for an arena. How incredible.
 struct ArenaSettings
 {
@@ -265,9 +280,10 @@ enum class ArrayClearBehavior
 // gonna use .add())
 static constexpr usize ARRAY_INITIAL_CAPACITY = 16;
 
-// A slice of memory, usually from an arena but can point to anywhere. Similar
-// to a Go slice, or other examples. Arrays don't own the value and don't use
-// fancy RAII fuckery, so you can pass them by value.
+// A slice of memory, usually from an arena but can point to anywhere. Similar to a Go slice, or
+// other examples. Arrays don't own the value and don't use fancy RAII faffery, so you can pass them
+// by value. Arrays can be used both as a vector (`tr::Array<T>` ~= `std::vector<T>`), and, as an
+// immutable view (`tr::Array<const T>` ~= `const T*`)
 template<typename T>
 class Array
 {
@@ -275,9 +291,9 @@ class Array
 	using MutT = RefWrapper<std::remove_const_t<T>>;
 	using ConstT = const RefWrapper<T>;
 
-	// if it's from an arena the internal ptr just can't be const, as you're
-	// copying the original const data to the arena BUT if it's not and is just
-	// pointing somewhere, then having it not be const can be very questionable
+	// if it's from an arena the internal ptr just can't be const, as you're copying the
+	// original const data to the arena BUT if it's not and is just pointing somewhere, then
+	// having it not be const can be very questionable
 	union {
 		MutT* _arena_ptr = nullptr;
 		ConstT* _ptr;
@@ -358,12 +374,12 @@ public:
 			);
 		}
 
-		_arena_ptr = static_cast<MutT*>(arena.alloc(sizeof(T) * this->_cap));
+		_arena_ptr = static_cast<MutT*>(arena.alloc(sizeof(T) * _cap));
 		if (len == 0) {
 			return;
 		}
 
-		memcpy(static_cast<void*>(_arena_ptr), data, len * sizeof(T));
+		tr::_copy_items<MutT>(_arena_ptr, data, len);
 	}
 
 	// Initializes an array that points to any buffer. You really should only use
@@ -423,25 +439,25 @@ public:
 	{
 		_validate();
 
-		if (idx >= this->_len) {
+		if (idx >= _len) {
 			return {};
 		}
 
 		// oh dear
 		if constexpr (std::is_const_v<T>) {
 			if constexpr (std::is_reference_v<T>) {
-				return *this->_ptr[idx];
+				return *_ptr[idx];
 			}
 			else {
-				return this->_ptr[idx];
+				return _ptr[idx];
 			}
 		}
 		else {
 			if constexpr (std::is_reference_v<T>) {
-				return *this->_arena_ptr[idx];
+				return *_arena_ptr[idx];
 			}
 			else {
-				return this->_arena_ptr[idx];
+				return _arena_ptr[idx];
 			}
 		}
 	}
@@ -452,25 +468,25 @@ public:
 	{
 		_validate();
 
-		if (idx >= this->_len) {
+		if (idx >= _len) {
 			return {};
 		}
 
 		// oh dear
 		if constexpr (std::is_const_v<T>) {
 			if constexpr (std::is_reference_v<T>) {
-				return *this->_ptr[idx];
+				return *_ptr[idx];
 			}
 			else {
-				return this->_ptr[idx];
+				return _ptr[idx];
 			}
 		}
 		else {
 			if constexpr (std::is_reference_v<T>) {
-				return *this->_arena_ptr[idx];
+				return *_arena_ptr[idx];
 			}
 			else {
-				return this->_arena_ptr[idx];
+				return _arena_ptr[idx];
 			}
 		}
 	}
@@ -535,51 +551,51 @@ public:
 		using Type =
 			std::conditional_t<std::is_const_v<T>, const RefWrapper<T>, RefWrapper<T>>;
 
-		constexpr Iterator(Type* pointer, usize index)
-			: idx(index)
-			, ptr(pointer)
+		constexpr Iterator(Type* ptr, usize idx)
+			: _idx(idx)
+			, _ptr(ptr)
 		{
 		}
 		constexpr ArrayItem<T&> operator*() const
 		{
 			if constexpr (std::is_reference_v<T>) {
-				return {this->idx, **this->ptr};
+				return {_idx, **_ptr};
 			}
 			else {
-				return {this->idx, *this->ptr};
+				return {_idx, *_ptr};
 			}
 		}
 		constexpr Iterator& operator++()
 		{
-			this->ptr++;
-			this->idx++;
+			_ptr++;
+			_idx++;
 			return *this;
 		}
 		constexpr bool operator!=(const Iterator& other) const
 		{
-			return ptr != other.ptr;
+			return _ptr != other._ptr;
 		}
 
 	private:
-		usize idx;
-		Type* ptr;
+		usize _idx;
+		Type* _ptr;
 	};
 
 	constexpr Iterator begin() const
 	{
 		_validate();
-		return Iterator(this->buf(), 0);
+		return Iterator(buf(), 0);
 	}
 	constexpr Iterator end() const
 	{
 		_validate();
-		return Iterator(this->buf() + this->len(), this->len());
+		return Iterator(buf() + len(), len());
 	}
 
 	// Adds a new item to the array, and resizes it if necessary. This only works
 	// on arena-allocated arrays, if you try to use this on an array without an
 	// arena, it will panic.
-	void add(const T& val)
+	void add(T val)
 	requires(!std::is_const_v<T>)
 	{
 		_validate();
@@ -593,28 +609,27 @@ public:
 				_arena_ptr[_len++] = &val;
 			}
 			else {
-				_arena_ptr[_len++] = val;
-			};
+				new (&_arena_ptr[_len++]) T(val);
+			}
 			return;
 		}
 
 		// reallocate array
 		MutT* old_buffer = _arena_ptr;
 		_cap *= 2;
-		_arena_ptr = static_cast<MutT*>(_src_arena->alloc(_cap * sizeof(T)));
+		_arena_ptr = _src_arena->alloc<MutT*>(_cap * sizeof(T));
 
 		// you may initialize with a length of 0 so you can then add crap later
 		if (_len > 0) {
-			memcpy(static_cast<void*>(_arena_ptr), static_cast<const void*>(old_buffer),
-			       _len * sizeof(T));
+			tr::_copy_items<MutT>(_arena_ptr, old_buffer, _len);
 		}
 
 		if constexpr (std::is_reference_v<T>) {
 			_arena_ptr[_len++] = &val;
 		}
 		else {
-			_arena_ptr[_len++] = val;
-		};
+			new (&_arena_ptr[_len++]) T(val);
+		}
 	}
 
 	// A bit like add() except it doesn't add items, it reserves space for adding items later.
@@ -640,12 +655,11 @@ public:
 		// reallocate array
 		MutT* old_buffer = _arena_ptr;
 		_cap = tr::max(_cap * 2, _cap + items);
-		_arena_ptr = static_cast<MutT*>(_src_arena->alloc(_cap * sizeof(T)));
+		_arena_ptr = _src_arena->alloc<MutT*>(_cap * sizeof(T));
 
 		// you may initialize with a length of 0 so you can then add crap later
 		if (_len > 0) {
-			memcpy(static_cast<void*>(_arena_ptr), static_cast<const void*>(old_buffer),
-			       _len * sizeof(T));
+			tr::_copy_items<MutT>(_arena_ptr, old_buffer, _len);
 		}
 
 		// initialize the new items so nothing evil happens
@@ -686,7 +700,7 @@ public:
 				}
 			}
 		}
-		this->_len = 0;
+		_len = 0;
 	}
 };
 
@@ -704,7 +718,7 @@ public:
 	constexpr List() {}
 	constexpr List(std::initializer_list<const T> initlist)
 	{
-		std::memcpy(_array, initlist.begin(), tr::min(initlist.size() * sizeof(T), N));
+		tr::_copy_items<T>(_array, initlist.begin(), tr::min(initlist.size(), N));
 	}
 
 	constexpr Maybe<const T&> try_get(usize idx) const TR_LIFETIMEBOUND
