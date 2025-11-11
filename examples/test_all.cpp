@@ -8,6 +8,8 @@
 #include <trippin/string.h>
 #include <trippin/util.h>
 
+#include "trippin/error.h"
+
 // TODO use actual tests you dumbass
 
 namespace test {
@@ -67,6 +69,22 @@ static void test::util()
 #endif
 	stopwatch.stop();
 	stopwatch.print_time_us("doing nothing");
+
+	// TR_TRY()
+	auto may_fail = [](int a) -> tr::Result<int> {
+		if (a == 67) {
+			return tr::StringError("man %i", a);
+		}
+		else {
+			return 234414;
+		}
+	};
+	auto try_type_shit = [may_fail]() -> tr::Result<void> {
+		TR_TRY(may_fail(38));
+		TR_TRY(may_fail(67));
+		return {};
+	};
+	try_type_shit().unwrap();
 }
 
 static void test::memory()

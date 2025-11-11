@@ -29,67 +29,103 @@
 #include <type_traits>
 
 #include "trippin/common.h"
+#include "trippin/memory.h"
 #include "trippin/string.h"
 
 namespace tr {
 
-// Error interface for making errors lmao.
-class Error
-{
-public:
-	virtual ~Error() {} // shut up
-
-	// Returns the error message
-	virtual String message() const = 0;
+// Rust devs cry at such beautiful type safety
+union ErrorArg {
+	uint8 u8 = 0;
+	uint16 u16;
+	uint32 u32;
+	uint64 u64;
+	int8 i8;
+	int16 i16;
+	int32 i32;
+	int64 i64;
+	float32 f32;
+	float64 f64;
+	String str;
+	void* ptr;
+	// Note `const char*` will be converted to `tr::String` so that string literals can still be
+	// treated as libtrippin strings. You can still read it as a pointer due to `tr::String`'s
+	// memory layout, but I wouldn't recommend.
+	const void* const_ptr;
 };
 
-// Basic error interface
-class StringError : public Error
+// Error metadata, which is useful for errors that need data. You get 16 slots which can be a
+// arithmetic type, string, or void pointer. I can't imagine errors needing more than that.
+using ErrorArgs = List<16, ErrorArg>;
+
+// As the name implies, an error type. This is a number (arbitrary, usually from a string hash) that
+// maps to a function that can get a string error message.
+struct ErrorType
 {
-	String msg;
+	uint64 id;
 
-public:
-	StringError()
-		: msg("")
+	constexpr ErrorType()
+		: id(0)
 	{
 	}
-	StringError(String str)
-		: msg(str)
+
+	constexpr explicit ErrorType(uint64 x)
+		: id(x)
 	{
 	}
-	// Shorthand for `tr::StringError(tr::fmt(tr::scratchpad(), ...))`
-	StringError(const char* fmt, ...);
 
-	String message() const override
+	constexpr operator uint64() const
 	{
-		return this->msg;
+		return id;
 	}
 };
 
-// Error codes based on POSIX errno.h and WinError.h
-enum class FileErrorType
+// yea
+constexpr ErrorType ERROR_OK = ErrorType{0};
+
+// Does exactly what the name says. Manually choosing number values is gonna eventually cause
+// collisions, so instead we use a hashing algorithm where that won't happen until we have a
+// gazillion different error types (we don't)
+consteval ErrorType errtype_from_string(const char* s)
 {
-	UNKNOWN,
-	NOT_FOUND,
-	ACCESS_DENIED,
-	DEVICE_OR_RESOURCE_BUSY,
-	NO_SPACE_LEFT,
-	FILE_EXISTS,
-	BAD_HANDLE,
-	HARDWARE_ERROR_OR_UNKNOWN,
-	IS_DIRECTORY,
-	IS_NOT_DIRECTORY,
-	TOO_MANY_OPEN_FILES,
-	BROKEN_PIPE,
-	FILENAME_TOO_LONG,
-	INVALID_ARGUMENT,
-	READ_ONLY_FILESYSTEM,
-	ILLEGAL_SEEK,
-	DIRECTORY_NOT_EMPTY,
+	usize len = tr::strlib::constexpr_strlen(s);
+
+	// yes im implementing the same hashing algorithm twice i dont care
+	constexpr uint64 FNV_OFFSET_BASIS = 0xcbf29ce484222325;
+	constexpr uint64 FNV_PRIME = 0x100000001b3;
+	uint64 hash = FNV_OFFSET_BASIS;
+
+	for (usize i = 0; i < len; i++) {
+		hash ^= static_cast<uint8>(s[i]);
+		hash *= FNV_PRIME;
+	}
+
+	return ErrorType{hash};
+}
+
+// Error type + args
+struct Error
+{
+	ErrorArgs args;
+	ErrorType type;
 };
+
+// Registers an error type. How amazing. Returns false if there's already an error with that ID,
+// returns true otherwise.
+bool register_error_type(ErrorType id, String (*msg_func)(ErrorArgs args));
+
+// Slightly fancy macro to register error types right after the error message is declared, which
+// looks nicer than 5000 `tr::register_error_type` calls in the main function.
+#define TR_REGISTER_ERROR_TYPE(Id, MsgFunc)                                    \
+	[[maybe_unused]]                                                       \
+	static bool _tr_register_##Id = ::tr::register_error_type(Id, MsgFunc)
+
+// Looks up the error type, calls its function, and returns the resulting error message. Panics if
+// the ID is invalid (because it should never happen)
+String error_message(ErrorType id, ErrorArgs meta);
 
 // This is just for getting the error message lmao.
-enum class FileOperation
+enum class FileOperation : int32
 {
 	UNKNOWN,
 	OPEN_FILE,
@@ -110,100 +146,214 @@ enum class FileOperation
 	IS_FILE,
 };
 
-// Error for filesystem craps.
-class FileError : public Error
-{
-public:
-	String path_a = "";
-	String path_b = "";
-	FileErrorType type = FileErrorType::UNKNOWN;
-	FileOperation op = FileOperation::UNKNOWN;
-	int errno_code = 0;
+// some fucking bullshit
+
+String errmsg_file_not_found(ErrorArgs meta);
+// args: FileOperation as int32, string path A, string path B
+constexpr ErrorType ERROR_FILE_NOT_FOUND = tr::errtype_from_string("tr::FILE_NOT_FOUND");
+TR_REGISTER_ERROR_TYPE(ERROR_FILE_NOT_FOUND, errmsg_file_not_found);
+
+String errmsg_access_denied(ErrorArgs meta);
+// args: FileOperation as int32, string path A, string path B
+constexpr ErrorType ERROR_ACCESS_DENIED = tr::errtype_from_string("tr::ACCESS_DENIED");
+TR_REGISTER_ERROR_TYPE(ERROR_ACCESS_DENIED, errmsg_access_denied);
+
+String errmsg_device_or_resource_busy(ErrorArgs meta);
+// args: FileOperation as int32, string path A, string path B
+constexpr ErrorType ERROR_DEVICE_OR_RESOURCE_BUSY =
+	tr::errtype_from_string("tr::DEVICE_OR_RESOURCE_BUSY");
+TR_REGISTER_ERROR_TYPE(ERROR_DEVICE_OR_RESOURCE_BUSY, errmsg_device_or_resource_busy);
+
+String errmsg_no_space_left(ErrorArgs meta);
+// args: FileOperation as int32, string path A, string path B
+constexpr ErrorType ERROR_NO_SPACE_LEFT = tr::errtype_from_string("tr::NO_SPACE_LEFT");
+TR_REGISTER_ERROR_TYPE(ERROR_NO_SPACE_LEFT, errmsg_no_space_left);
+
+String errmsg_file_exists(ErrorArgs meta);
+// args: FileOperation as int32, string path A, string path B
+constexpr ErrorType ERROR_FILE_EXISTS = tr::errtype_from_string("tr::FILE_EXISTS");
+TR_REGISTER_ERROR_TYPE(ERROR_FILE_EXISTS, errmsg_access_denied);
+
+String errmsg_bad_handle(ErrorArgs meta);
+// args: FileOperation as int32, string path A, string path B
+constexpr ErrorType ERROR_BAD_HANDLE = tr::errtype_from_string("tr::BAD_HANDLE");
+TR_REGISTER_ERROR_TYPE(ERROR_BAD_HANDLE, errmsg_access_denied);
+
+String errmsg_hardware_error_or_unknown(ErrorArgs meta);
+// args: FileOperation as int32, string path A, string path B
+constexpr ErrorType ERROR_HARDWARE_ERROR_OR_UNKNOWN =
+	tr::errtype_from_string("tr::HARDWARE_ERROR_OR_UNKNOWN");
+TR_REGISTER_ERROR_TYPE(ERROR_HARDWARE_ERROR_OR_UNKNOWN, errmsg_hardware_error_or_unknown);
+
+String errmsg_is_directory(ErrorArgs meta);
+// args: FileOperation as int32, string path A, string path B
+constexpr ErrorType ERROR_IS_DIRECTORY = tr::errtype_from_string("tr::IS_DIRECTORY");
+TR_REGISTER_ERROR_TYPE(ERROR_IS_DIRECTORY, errmsg_is_directory);
+
+String errmsg_is_not_directory(ErrorArgs meta);
+// args: FileOperation as int32, string path A, string path B
+constexpr ErrorType ERROR_IS_NOT_DIRECTORY = tr::errtype_from_string("tr::IS_NOT_DIRECTORY");
+TR_REGISTER_ERROR_TYPE(ERROR_IS_NOT_DIRECTORY, errmsg_is_not_directory);
+
+String errmsg_too_many_open_files(ErrorArgs meta);
+// args: FileOperation as int32, string path A, string path B
+constexpr ErrorType ERROR_TOO_MANY_OPEN_FILES = tr::errtype_from_string("tr::TOO_MANY_OPEN_FILES");
+TR_REGISTER_ERROR_TYPE(ERROR_TOO_MANY_OPEN_FILES, errmsg_too_many_open_files);
+
+String errmsg_broken_pipe(ErrorArgs meta);
+// args: FileOperation as int32, string path A, string path B
+constexpr ErrorType ERROR_BROKEN_PIPE = tr::errtype_from_string("tr::BROKEN_PIPE");
+TR_REGISTER_ERROR_TYPE(ERROR_BROKEN_PIPE, errmsg_broken_pipe);
+
+String errmsg_filename_too_long(ErrorArgs meta);
+// args: FileOperation as int32, string path A, string path B
+constexpr ErrorType ERROR_FILENAME_TOO_LONG = tr::errtype_from_string("tr::FILENAME_TOO_LONG");
+TR_REGISTER_ERROR_TYPE(ERROR_FILENAME_TOO_LONG, errmsg_filename_too_long);
+
+String errmsg_invalid_argument(ErrorArgs meta);
+// args: FileOperation as int32, string path A, string path B
+constexpr ErrorType ERROR_INVALID_ARGUMENT = tr::errtype_from_string("tr::INVALID_ARGUMENT");
+TR_REGISTER_ERROR_TYPE(ERROR_INVALID_ARGUMENT, errmsg_invalid_argument);
+
+String errmsg_read_only_filesystem(ErrorArgs meta);
+// args: FileOperation as int32, string path A, string path B
+constexpr ErrorType ERROR_READ_ONLY_FILESYSTEM =
+	tr::errtype_from_string("tr::READ_ONLY_FILESYSTEM");
+TR_REGISTER_ERROR_TYPE(ERROR_READ_ONLY_FILESYSTEM, errmsg_read_only_filesystem);
+
+String errmsg_illegal_seek(ErrorArgs meta);
+// args: FileOperation as int32, string path A, string path B
+constexpr ErrorType ERROR_ILLEGAL_SEEK = tr::errtype_from_string("tr::ILLEGAL_SEEK");
+TR_REGISTER_ERROR_TYPE(ERROR_ILLEGAL_SEEK, errmsg_illegal_seek);
+
+String errmsg_directory_not_empty(ErrorArgs meta);
+// args: FileOperation as int32, string path A, string path B
+constexpr ErrorType ERROR_DIRECTORY_NOT_EMPTY = tr::errtype_from_string("tr::DIRECTORY_NOT_EMPTY");
+TR_REGISTER_ERROR_TYPE(ERROR_DIRECTORY_NOT_EMPTY, errmsg_directory_not_empty);
+
+// both errno.h and win32 do this bullshit
+void _reset_os_errors();
+
+ErrorType _trippin_error_from_errno();
 #ifdef TR_OS_WINDOWS
-	unsigned win32_code = 0;
+ErrorType _trippin_error_from_win32();
 #endif
-
-	FileError() {}
-	FileError(String patha, String pathb, FileErrorType errtype, FileOperation operation)
-		: path_a(patha)
-		, path_b(pathb)
-		, type(errtype)
-		, op(operation)
-	{
-	}
-
-	// Checks errno for errors :)
-	static FileError from_errno(String patha, String pathb, FileOperation operation);
-
-#ifdef TR_OS_WINDOWS
-	// Checks Win32's `GetLastError` for errors :)
-	static FileError from_win32(String patha, String pathb, FileOperation operation);
-#endif
-
-	// Why.
-	static void reset_errors();
-
-	String message() const override;
-};
 
 // So spicy.
 template<typename T>
 requires(!std::is_reference_v<T>) // TODO fucking fix it
 class [[nodiscard]] Result
 {
-	// store errors inline through type erasure type shit
-	// inheritance requires ptrs, heap memory is overkill for errors (+ don't think there's any
-	// clean way to manage an error arena or whatever)
-	alignas(std::max_align_t) List<MAX_ERROR_SIZE, byte> _inline_error{};
 	T _value{};
-	bool _valid = false;
+	Error _error;
 
 public:
 	using Type = T;
 
-	Result(T val)
+	constexpr Result(T val)
 		: _value(val)
-		, _valid(true)
 	{
 	}
-	template<typename E>
-	requires(std::is_base_of_v<Error, E> && sizeof(E) <= MAX_ERROR_SIZE)
-	Result(const E& err)
-		: _valid(true)
+	constexpr Result(ErrorType type, ErrorArgs args)
+		: _error({.args = args, .type = type})
 	{
-		// if only someone defined that behavior...
-		*reinterpret_cast<E*>(*_inline_error) = err;
+	}
+
+	// Makes an error as well as passing arguments with questionable type safety
+	template<typename... Args>
+	constexpr Result(ErrorType type, Args... args)
+	{
+		_error.type = type;
+		static_assert(sizeof...(Args) <= 16, "only 16 error args allowed");
+
+		// a bit of evil fuckery to get the arg's type (fold expression©®™®™©)
+		usize i = 0;
+		(
+			[&](auto arg) {
+				if constexpr (std::is_same_v<decltype(arg), uint8>) {
+					_error.args[i].u8 = arg;
+				}
+				else if constexpr (std::is_same_v<decltype(arg), uint16>) {
+					_error.args[i].u16 = arg;
+				}
+				else if constexpr (std::is_same_v<decltype(arg), uint32>) {
+					_error.args[i].u32 = arg;
+				}
+				else if constexpr (std::is_same_v<decltype(arg), uint64>) {
+					_error.args[i].u64 = arg;
+				}
+				else if constexpr (std::is_same_v<decltype(arg), int8>) {
+					_error.args[i].i8 = arg;
+				}
+				else if constexpr (std::is_same_v<decltype(arg), int16>) {
+					_error.args[i].i16 = arg;
+				}
+				else if constexpr (std::is_same_v<decltype(arg), int32>) {
+					_error.args[i].i32 = arg;
+				}
+				else if constexpr (std::is_same_v<decltype(arg), int64>) {
+					_error.args[i].i64 = arg;
+				}
+				else if constexpr (std::is_same_v<decltype(arg), float32>) {
+					_error.args[i].f32 = arg;
+				}
+				else if constexpr (std::is_same_v<decltype(arg), float64>) {
+					_error.args[i].f64 = arg;
+				}
+				else if constexpr (std::is_same_v<decltype(arg), String>) {
+					_error.args[i].str = arg;
+				}
+				// treat const char* as a string (which is probably what the user
+				// meant anyway)
+				else if constexpr (std::is_same_v<decltype(arg), const char*>) {
+					_error.args[i].str = String{arg};
+				}
+				else if constexpr (std::is_pointer_v<decltype(arg)> &&
+						   std::is_const_v<decltype(arg)>) {
+					_error.args[i].const_ptr = arg;
+				}
+				else if constexpr (std::is_pointer_v<decltype(arg)>) {
+					_error.args[i].ptr = arg;
+				}
+				else {
+					static_assert(false, "unsupported type, use a pointer");
+				}
+				i++;
+			}(args),
+			...
+		);
 	}
 
 	// If true, the result has a value. Else, it has an error.
-	bool is_valid() const
+	constexpr bool is_valid() const
 	{
-		return _valid;
+		return _error.type == 0;
 	}
 
 	// If true, the result has an error. Else, it has a value.
-	bool is_invalid() const
+	constexpr bool is_invalid() const
 	{
-		return !_valid;
+		return _error.type != 0;
 	}
 
 	T unwrap() const
 	{
 		if (is_invalid()) {
-			// yea
-			const Error* err = reinterpret_cast<const Error*>(*_inline_error);
-			tr::panic("couldn't unwrap tr::Result<T>: %s", *err->message());
+			tr::panic(
+				"couldn't unwrap tr::Result<T>: %s",
+				*tr::error_message(_error.type, _error.args)
+			);
 		}
 
 		return _value;
 	}
 
-	const Error& unwrap_err() const
+	Error unwrap_err() const
 	{
 		if (is_valid()) {
 			tr::panic("couldn't unwrap tr::Result<T>'s error, as it's valid");
 		}
-		return *reinterpret_cast<const Error*>(*_inline_error);
+		return _error;
 	}
 
 	// Shorthand for unwrap()
@@ -215,7 +365,7 @@ public:
 	// Similar to the `??`/null coalescing operator in modern languages
 	const T value_or(const T other) const
 	{
-		return this->is_valid() ? this->unwrap() : other;
+		return is_valid() ? unwrap() : other;
 	}
 };
 
@@ -223,47 +373,99 @@ public:
 template<>
 class [[nodiscard]] Result<void>
 {
-	// store errors inline through type erasure type shit
-	// inheritance requires ptrs, heap memory is overkill for errors (+ don't think there's any
-	// clean way to manage an error arena or whatever)
-	alignas(std::max_align_t) List<MAX_ERROR_SIZE, byte> _inline_error{};
-	bool _valid = false;
+	Error _error;
 
 public:
 	using Type = void;
 
-	Result()
-		: _valid(false)
+	constexpr Result() {}
+	constexpr Result(ErrorType type, ErrorArgs args)
+		: _error({.args = args, .type = type})
 	{
-	}
-	template<typename E>
-	requires(std::is_base_of_v<Error, E> && sizeof(E) <= MAX_ERROR_SIZE)
-	Result(const E& err)
-		: _valid(true)
-	{
-		// if only someone defined that behavior...
-		*reinterpret_cast<E*>(*_inline_error) = err;
 	}
 
-	// If true, it has a value. Else, it has an error.
-	bool is_valid() const
+	// Makes an error as well as passing arguments with questionable type safety
+	template<typename... Args>
+	constexpr Result(ErrorType type, Args... args)
 	{
-		return _valid;
+		_error.type = type;
+		static_assert(sizeof...(Args) <= 16, "only 16 error args allowed");
+
+		// a bit of evil fuckery to get the arg's type (fold expression©®™®™©)
+		usize i = 0;
+		(
+			[&](auto arg) {
+				if constexpr (std::is_same_v<decltype(arg), uint8>) {
+					_error.args[i].u8 = arg;
+				}
+				else if constexpr (std::is_same_v<decltype(arg), uint16>) {
+					_error.args[i].u16 = arg;
+				}
+				else if constexpr (std::is_same_v<decltype(arg), uint32>) {
+					_error.args[i].u32 = arg;
+				}
+				else if constexpr (std::is_same_v<decltype(arg), uint64>) {
+					_error.args[i].u64 = arg;
+				}
+				else if constexpr (std::is_same_v<decltype(arg), int8>) {
+					_error.args[i].i8 = arg;
+				}
+				else if constexpr (std::is_same_v<decltype(arg), int16>) {
+					_error.args[i].i16 = arg;
+				}
+				else if constexpr (std::is_same_v<decltype(arg), int32>) {
+					_error.args[i].i32 = arg;
+				}
+				else if constexpr (std::is_same_v<decltype(arg), int64>) {
+					_error.args[i].i64 = arg;
+				}
+				else if constexpr (std::is_same_v<decltype(arg), float32>) {
+					_error.args[i].f32 = arg;
+				}
+				else if constexpr (std::is_same_v<decltype(arg), float64>) {
+					_error.args[i].f64 = arg;
+				}
+				else if constexpr (std::is_same_v<decltype(arg), String>) {
+					_error.args[i].str = arg;
+				}
+				else if constexpr (std::is_pointer_v<decltype(arg)> &&
+						   std::is_const_v<decltype(arg)>) {
+					_error.args[i].const_ptr = arg;
+				}
+				else if constexpr (std::is_pointer_v<decltype(arg)>) {
+					_error.args[i].ptr = arg;
+				}
+				else {
+					static_assert(false, "unsupported type, use a pointer");
+				}
+				i++;
+			}(args),
+			...
+		);
 	}
 
-	// If true, it has an error. Else, it has a value.
-	bool is_invalid() const
+	// If true, it has a value (which is no value since this is a void result). Else, it has an
+	// error.
+	constexpr bool is_valid() const
 	{
-		return !_valid;
+		return _error.type == 0;
+	}
+
+	// If true, it has an error. Else, it has a value (which is no value since this is a void
+	// result).
+	constexpr bool is_invalid() const
+	{
+		return _error.type != 0;
 	}
 
 	// Pretty much just asserts that it's valid :D
 	void unwrap() const
 	{
 		if (is_invalid()) {
-			// yea
-			const Error* err = reinterpret_cast<const Error*>(*_inline_error);
-			tr::panic("couldn't unwrap tr::Result<void>: %s", *err->message());
+			tr::panic(
+				"couldn't unwrap tr::Result<void>: %s",
+				*tr::error_message(_error.type, _error.args)
+			);
 		}
 	}
 
@@ -272,12 +474,12 @@ public:
 		unwrap();
 	}
 
-	const Error& unwrap_err() const
+	Error unwrap_err() const
 	{
 		if (is_valid()) {
 			tr::panic("couldn't unwrap tr::Result<void>'s error, as it's valid");
 		}
-		return *reinterpret_cast<const Error*>(*_inline_error);
+		return _error;
 	}
 };
 

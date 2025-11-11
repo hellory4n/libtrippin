@@ -26,7 +26,6 @@
 #ifndef _TRIPPIN_MEMORY_H
 #define _TRIPPIN_MEMORY_H
 
-#include <cstring>
 #include <initializer_list>
 #include <new> // IWYU pragma: keep
 #include <type_traits>
@@ -748,11 +747,21 @@ public:
 
 	constexpr T& operator[](usize idx) TR_LIFETIMEBOUND
 	{
-		Maybe<T&> item = try_get(idx);
-		if (item.is_valid()) {
-			return item.unwrap();
+		// exploiting constexpr to get compile-time errors
+		if (std::is_constant_evaluated()) {
+			throw "skill";
+			if (idx >= N) {
+				throw "index out of range";
+			}
+			return _array[idx];
 		}
-		tr::panic("index out of range: list[%zu] when the length is %zu", idx, N);
+		else {
+			Maybe<T&> item = try_get(idx);
+			if (item.is_valid()) {
+				return item.unwrap();
+			}
+			tr::panic("index out of range: list[%zu] when the length is %zu", idx, N);
+		}
 	}
 
 	constexpr const T* buf() const TR_LIFETIMEBOUND

@@ -23,6 +23,9 @@
  *
  */
 
+#include "trippin/memory.h"
+#include "trippin/string.h"
+#include "trippin/util.h"
 #ifdef _WIN32
 	#define WIN32_LEAN_AND_MEAN
 	#define NOSERVICE
@@ -32,23 +35,58 @@
 	#include <windows.h>
 	#undef ERROR
 	#undef TRANSPARENT
-
-	#include <cerrno>
-#else
-	#include <cerrno>
 #endif
+
+#include <cerrno>
 
 #include "trippin/error.h"
 
-tr::StringError::StringError(const char* fmt, ...)
-{
-	va_list arg;
-	va_start(arg, fmt);
-	this->msg = tr::fmt_args(tr::scratchpad(), fmt, arg);
-	va_end(arg);
+// TODO there's no way this is thread safe
+
+namespace tr {
+
+extern Arena core_arena;
+static HashMap<ErrorType, String (*)(ErrorArgs args)> _error_table{core_arena};
+
 }
 
-void tr::FileError::reset_errors()
+bool tr::register_error_type(ErrorType id, String (*msg_func)(ErrorArgs args))
+{
+	// quite the mouthful
+	Maybe<String (*&)(ErrorArgs)> perchance = _error_table.try_get(id);
+	if (perchance.is_valid()) {
+		// same ptr = same function
+		// TODO this probably breaks with inline functions
+		if (perchance.unwrap() == msg_func) {
+			return true;
+		}
+		else {
+			tr::warn(
+				"overriding error %lu's message function (from 0x%lx to 0x%lx)",
+				static_cast<uint64>(id),
+				reinterpret_cast<usize>(perchance.unwrap()),
+				reinterpret_cast<usize>(msg_func)
+			);
+			perchance.unwrap() = msg_func;
+			return false;
+		}
+	}
+
+	perchance.unwrap() = msg_func;
+	return true;
+}
+
+tr::String tr::error_message(tr::ErrorType id, tr::ErrorArgs meta)
+{
+	// quite the mouthful
+	Maybe<String (*&)(ErrorArgs)> perchance = _error_table.try_get(id);
+	if (perchance.is_invalid()) {
+		tr::panic("error type %lu doesn't exist", static_cast<uint64>(id));
+	}
+	return perchance.unwrap()(meta);
+}
+
+void tr::_reset_os_errors()
 {
 	errno = 0;
 #ifdef _WIN32
@@ -56,70 +94,62 @@ void tr::FileError::reset_errors()
 #endif
 }
 
-tr::FileError
-tr::FileError::from_errno(tr::String patha, tr::String pathb, tr::FileOperation operation)
+tr::ErrorType tr::_trippin_error_from_errno()
 {
-	FileError man{};
-	man.path_a = patha;
-	man.path_b = pathb;
-	man.op = operation;
-	man.errno_code = errno;
-	FileErrorType t = FileErrorType::UNKNOWN;
-
+	ErrorType t;
 	switch (errno) {
 	case ENOENT:
-		t = FileErrorType::NOT_FOUND;
+		t = ERROR_FILE_NOT_FOUND;
 		break;
 	case EACCES:
-		t = FileErrorType::ACCESS_DENIED;
+		t = ERROR_ACCESS_DENIED;
 		break;
 	case EBUSY:
-		t = FileErrorType::DEVICE_OR_RESOURCE_BUSY;
+		t = ERROR_DEVICE_OR_RESOURCE_BUSY;
 		break;
 	case ENOSPC:
-		t = FileErrorType::NO_SPACE_LEFT;
+		t = ERROR_NO_SPACE_LEFT;
 		break;
 	case EEXIST:
-		t = FileErrorType::FILE_EXISTS;
+		t = ERROR_FILE_EXISTS;
 		break;
 	case EBADF:
-		t = FileErrorType::BAD_HANDLE;
-		break;
-	case EIO:
-		t = FileErrorType::HARDWARE_ERROR_OR_UNKNOWN;
+		t = ERROR_BAD_HANDLE;
 		break;
 	case EISDIR:
-		t = FileErrorType::IS_DIRECTORY;
+		t = ERROR_IS_DIRECTORY;
 		break;
 	case ENOTDIR:
-		t = FileErrorType::IS_NOT_DIRECTORY;
+		t = ERROR_IS_NOT_DIRECTORY;
 		break;
 	case EMFILE:
 	case ENFILE:
-		t = FileErrorType::TOO_MANY_OPEN_FILES;
+		t = ERROR_TOO_MANY_OPEN_FILES;
 		break;
 	case EPIPE:
-		t = FileErrorType::BROKEN_PIPE;
+		t = ERROR_BROKEN_PIPE;
 		break;
 	case ENAMETOOLONG:
-		t = FileErrorType::FILENAME_TOO_LONG;
+		t = ERROR_FILENAME_TOO_LONG;
 		break;
 	case EINVAL:
-		t = FileErrorType::INVALID_ARGUMENT;
+		t = ERROR_INVALID_ARGUMENT;
 		break;
 	case EROFS:
-		t = FileErrorType::READ_ONLY_FILESYSTEM;
+		t = ERROR_READ_ONLY_FILESYSTEM;
 		break;
 	case ESPIPE:
-		t = FileErrorType::ILLEGAL_SEEK;
+		t = ERROR_ILLEGAL_SEEK;
 		break;
 	case ENOTEMPTY:
-		t = FileErrorType::DIRECTORY_NOT_EMPTY;
+		t = ERROR_DIRECTORY_NOT_EMPTY;
+		break;
+	case EIO:
+	default: // TODO the rest of errno
+		t = ERROR_HARDWARE_ERROR_OR_UNKNOWN;
 		break;
 	}
-
-	man.type = t;
-	return man;
+	return t;
 }
 
 #ifdef _WIN32
@@ -134,8 +164,6 @@ tr::FileError::from_win32(tr::String patha, tr::String pathb, tr::FileOperation 
 	man.win32_code = GetLastError();
 	FileErrorType t = FileErrorType::UNKNOWN;
 
-	// i'm not gonna bother aligning this
-	// windows doesn't deserve it
 	// TODO i think i missed some because win32 is a horrendous affront to mankind
 	switch (man.win32_code) {
 	case ERROR_FILE_NOT_FOUND:
@@ -197,56 +225,57 @@ tr::FileError::from_win32(tr::String patha, tr::String pathb, tr::FileOperation 
 }
 #endif
 
-tr::String tr::FileError::message() const
+static inline tr::String
+_real_file_errmsg(tr::FileOperation op, tr::String error, tr::String path_a, tr::String path_b = {})
 {
-	String operation;
-	switch (this->op) {
-	case FileOperation::OPEN_FILE:
+	tr::String operation;
+	switch (op) {
+	case tr::FileOperation::OPEN_FILE:
 		operation = "couldn't open file";
 		break;
-	case FileOperation::CLOSE_FILE:
+	case tr::FileOperation::CLOSE_FILE:
 		operation = "couldn't close file";
 		break;
-	case FileOperation::GET_FILE_POSITION:
+	case tr::FileOperation::GET_FILE_POSITION:
 		operation = "couldn't get file position";
 		break;
-	case FileOperation::GET_FILE_LENGTH:
+	case tr::FileOperation::GET_FILE_LENGTH:
 		operation = "couldn't get file length";
 		break;
-	case FileOperation::IS_EOF:
+	case tr::FileOperation::IS_EOF:
 		operation = "couldn't check if file ended";
 		break;
-	case FileOperation::SEEK_FILE:
+	case tr::FileOperation::SEEK_FILE:
 		operation = "couldn't seek file";
 		break;
-	case FileOperation::REWIND_FILE:
+	case tr::FileOperation::REWIND_FILE:
 		operation = "couldn't rewind file";
 		break;
-	case FileOperation::READ_FILE:
+	case tr::FileOperation::READ_FILE:
 		operation = "couldn't read file";
 		break;
-	case FileOperation::FLUSH_FILE:
+	case tr::FileOperation::FLUSH_FILE:
 		operation = "couldn't flush file";
 		break;
-	case FileOperation::WRITE_FILE:
+	case tr::FileOperation::WRITE_FILE:
 		operation = "couldn't write file";
 		break;
-	case FileOperation::REMOVE_FILE:
+	case tr::FileOperation::REMOVE_FILE:
 		operation = "couldn't remove file";
 		break;
-	case FileOperation::MOVE_FILE:
+	case tr::FileOperation::MOVE_FILE:
 		operation = "couldn't move file";
 		break;
-	case FileOperation::CREATE_DIR:
+	case tr::FileOperation::CREATE_DIR:
 		operation = "couldn't create directory";
 		break;
-	case FileOperation::REMOVE_DIR:
+	case tr::FileOperation::REMOVE_DIR:
 		operation = "couldn't remove directory";
 		break;
-	case FileOperation::LIST_DIR:
+	case tr::FileOperation::LIST_DIR:
 		operation = "couldn't list directory";
 		break;
-	case FileOperation::IS_FILE:
+	case tr::FileOperation::IS_FILE:
 		operation = "couldn't check if path is file";
 		break;
 	default:
@@ -254,90 +283,126 @@ tr::String tr::FileError::message() const
 		break;
 	}
 
-	String error;
-	switch (this->type) {
-	case FileErrorType::UNKNOWN:
-		error = "unknown error";
-		break;
-	case FileErrorType::NOT_FOUND:
-		error = "no such file or directory";
-		break;
-	case FileErrorType::ACCESS_DENIED:
-		error = "access denied";
-		break;
-	case FileErrorType::DEVICE_OR_RESOURCE_BUSY:
-		error = "device or resource busy";
-		break;
-	case FileErrorType::NO_SPACE_LEFT:
-		error = "no space left on device";
-		break;
-	case FileErrorType::FILE_EXISTS:
-		error = "file exists";
-		break;
-	case FileErrorType::BAD_HANDLE:
-		error = "bad file handle";
-		break;
-	case FileErrorType::HARDWARE_ERROR_OR_UNKNOWN:
-		error = "i/o error (might be a hardware issue)";
-		break;
-	case FileErrorType::IS_DIRECTORY:
-		error = "is directory";
-		break;
-	case FileErrorType::IS_NOT_DIRECTORY:
-		error = "is not directory";
-		break;
-	case FileErrorType::TOO_MANY_OPEN_FILES:
-		error = "too many open files";
-		break;
-	case FileErrorType::BROKEN_PIPE:
-		error = "broken pipe";
-		break;
-	case FileErrorType::FILENAME_TOO_LONG:
-		error = "filename too long";
-		break;
-	case FileErrorType::INVALID_ARGUMENT:
-		error = "invalid argument";
-		break;
-	case FileErrorType::READ_ONLY_FILESYSTEM:
-		error = "read-only filesystem";
-		break;
-	case FileErrorType::ILLEGAL_SEEK:
-		error = "illegal seek";
-		break;
-	case FileErrorType::DIRECTORY_NOT_EMPTY:
-		error = "directory not empty";
-		break;
-	}
-
-// these operations use 2 paths :)
-#ifndef _WIN32
-	if (this->op == FileOperation::MOVE_FILE) {
-		return tr::fmt(
-			tr::scratchpad(), "%s (source '%s', destination '%s', errno %i): %s",
-			operation.buf(), this->path_a.buf(), this->path_b.buf(), this->errno_code,
-			error.buf()
-		);
-	}
-	return tr::fmt(
-		tr::scratchpad(), "%s (path '%s', errno %i): %s", operation.buf(),
-		this->path_a.buf(), this->errno_code, error.buf()
-	);
-
-#else
-	// on windows we currently use both errno and win32
-	if (this->op == FileOperation::MOVE_FILE) {
-		return tr::fmt(
-			tr::scratchpad(),
-			"%s (source '%s', destination '%s', errno %i, win32 %i): %s",
-			operation.buf(), this->path_a.buf(), this->path_b.buf(), this->errno_code,
-			this->win32_code, error.buf()
-		);
+	// not all file operations use 2 paths
+	if (path_b == "") {
+		return tr::fmt(tr::scratchpad(), "%s from '%s': %s", *operation, *path_a, *error);
 	}
 	else {
 		return tr::fmt(
-			tr::scratchpad(), "%s (path '%s', errno %i, win32 %i): %s", operation.buf(),
-			this->path_a.buf(), this->errno_code, this->win32_code, error.buf()
+			tr::scratchpad(), "%s from '%s' to '%s': %s", *operation, *path_a, *path_b,
+			*error
 		);
 	}
-#endif
+}
+
+tr::String tr::errmsg_file_not_found(tr::ErrorArgs meta)
+{
+	return _real_file_errmsg(
+		static_cast<FileOperation>(meta[0].i32), "no such file or directory", meta[16].str
+	);
+}
+
+tr::String tr::errmsg_access_denied(tr::ErrorArgs meta)
+{
+	return _real_file_errmsg(
+		static_cast<FileOperation>(meta[0].i32), "access denied", meta[1].str
+	);
+}
+
+tr::String tr::errmsg_device_or_resource_busy(tr::ErrorArgs meta)
+{
+	return _real_file_errmsg(
+		static_cast<FileOperation>(meta[0].i32), "device or resource busy", meta[1].str
+	);
+}
+
+tr::String tr::errmsg_no_space_left(tr::ErrorArgs meta)
+{
+	return _real_file_errmsg(
+		static_cast<FileOperation>(meta[0].i32), "no space left on device", meta[1].str
+	);
+}
+
+tr::String tr::errmsg_file_exists(tr::ErrorArgs meta)
+{
+	return _real_file_errmsg(
+		static_cast<FileOperation>(meta[0].i32), "file exists", meta[1].str
+	);
+}
+
+tr::String tr::errmsg_bad_handle(tr::ErrorArgs meta)
+{
+	return _real_file_errmsg(
+		static_cast<FileOperation>(meta[0].i32), "bad file handle", meta[1].str
+	);
+}
+
+tr::String tr::errmsg_hardware_error_or_unknown(tr::ErrorArgs meta)
+{
+	return _real_file_errmsg(
+		static_cast<FileOperation>(meta[0].i32), "I/O error (hardware issue?)", meta[1].str
+	);
+}
+
+tr::String tr::errmsg_is_directory(tr::ErrorArgs meta)
+{
+	return _real_file_errmsg(
+		static_cast<FileOperation>(meta[0].i32), "is directory", meta[1].str
+	);
+}
+
+tr::String tr::errmsg_is_not_directory(tr::ErrorArgs meta)
+{
+	return _real_file_errmsg(
+		static_cast<FileOperation>(meta[0].i32), "is not directory", meta[1].str
+	);
+}
+
+tr::String tr::errmsg_too_many_open_files(tr::ErrorArgs meta)
+{
+	return _real_file_errmsg(
+		static_cast<FileOperation>(meta[0].i32), "too many open files", meta[1].str
+	);
+}
+
+tr::String tr::errmsg_broken_pipe(tr::ErrorArgs meta)
+{
+	return _real_file_errmsg(
+		static_cast<FileOperation>(meta[0].i32), "broken pipe", meta[1].str
+	);
+}
+
+tr::String tr::errmsg_filename_too_long(tr::ErrorArgs meta)
+{
+	return _real_file_errmsg(
+		static_cast<FileOperation>(meta[0].i32), "filename too long", meta[1].str
+	);
+}
+
+tr::String tr::errmsg_invalid_argument(tr::ErrorArgs meta)
+{
+	return _real_file_errmsg(
+		static_cast<FileOperation>(meta[0].i32), "invalid argument", meta[1].str
+	);
+}
+
+tr::String tr::errmsg_read_only_filesystem(tr::ErrorArgs meta)
+{
+	return _real_file_errmsg(
+		static_cast<FileOperation>(meta[0].i32), "read-only filesystem", meta[1].str
+	);
+}
+
+tr::String tr::errmsg_illegal_seek(tr::ErrorArgs meta)
+{
+	return _real_file_errmsg(
+		static_cast<FileOperation>(meta[0].i32), "illegal seek", meta[1].str
+	);
+}
+
+tr::String tr::errmsg_directory_not_empty(tr::ErrorArgs meta)
+{
+	return _real_file_errmsg(
+		static_cast<FileOperation>(meta[0].i32), "directory not empty", meta[1].str
+	);
 }

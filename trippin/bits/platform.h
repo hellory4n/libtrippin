@@ -59,10 +59,6 @@
 #endif
 
 // os
-#ifdef __unix__
-	#define TR_OS_UNIXLIKE
-#endif
-
 #if defined(__linux__)
 	#define TR_OS_LINUX
 #endif
@@ -97,6 +93,10 @@
 #if defined(__DragonFly__)
 	#define TR_OS_BSDLIKE
 	#define TR_OS_DRAGONFLY
+#endif
+
+#if defined(__unix__) || defined(TR_OS_LINUX) || defined(TR_OS_BSDLIKE)
+	#define TR_OS_UNIXLIKE
 #endif
 
 #if defined(_WIN32) || defined(_WIN64)
