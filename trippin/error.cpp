@@ -46,8 +46,19 @@
 namespace tr {
 
 extern Arena core_arena;
-static HashMap<ErrorType, String (*)(ErrorArgs args)> _error_table{core_arena};
+static HashMap<ErrorType, String (*)(ErrorArgs args)> _error_table;
 
+}
+
+// you can't control the order in which static vars are initialized, so instead of initializing
+// _error_table where it's defined, we initialize it when the first error is registered
+static inline void _error_table_init()
+{
+	static bool initialized = false;
+	if (!initialized) {
+		tr::_error_table =
+			tr::HashMap<tr::ErrorType, tr::String (*)(tr::ErrorArgs)>{tr::core_arena};
+	}
 }
 
 tr::String tr::Error::message() const
@@ -57,6 +68,8 @@ tr::String tr::Error::message() const
 
 bool tr::register_error_type(ErrorType id, String (*msg_func)(ErrorArgs args), bool override)
 {
+	_error_table_init();
+
 	// quite the mouthful
 	Maybe<String (*&)(ErrorArgs)> perchance = _error_table.try_get(id);
 	if (perchance.is_valid()) {
@@ -66,7 +79,7 @@ bool tr::register_error_type(ErrorType id, String (*msg_func)(ErrorArgs args), b
 		return false;
 	}
 
-	perchance.unwrap() = msg_func;
+	_error_table[id] = msg_func;
 	return true;
 }
 

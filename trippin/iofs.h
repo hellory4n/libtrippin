@@ -196,6 +196,10 @@ public:
 	[[gnu::format(printf, 2, 3), deprecated("renamed to print lmao skill issue")]]
 	Result<void> printf(const char* fmt, ...);
 
+	// It's just virtual so that tr::File can use a more efficient implementation. Other
+	// print-like functions call this internally.
+	virtual Result<void> print_args(const char* fmt, va_list arg);
+
 	// Writes a formatted string into the stream. So pretty much just fprintf.
 	[[gnu::format(printf, 2, 3)]]
 	Result<void> print(const char* fmt, ...);
@@ -290,6 +294,9 @@ public:
 
 	// Writes bytes into the stream
 	Result<void> write_bytes(Array<const byte> bytes) override;
+
+	// I am printing it <3
+	Result<void> print_args(const char* fmt, va_list arg) override;
 
 	// If true, the file can be read.
 	bool can_read();

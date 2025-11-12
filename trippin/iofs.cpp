@@ -160,15 +160,28 @@ tr::Result<void> tr::Writer::printf(const char* fmt, ...)
 	return this->write_string(str);
 }
 
+tr::Result<void> tr::Writer::print_args(const char* fmt, va_list arg)
+{
+	String str = tr::fmt_args(tr::scratchpad(), fmt, arg);
+	return write_string(str);
+}
+
+tr::Result<void> tr::Writer::print(const char* fmt, ...)
+{
+	va_list args;
+	va_start(args, fmt);
+	Result<void> man = print_args(fmt, args);
+	va_end(args);
+	return man;
+}
+
 tr::Result<void> tr::Writer::println(const char* fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
-	tr::String str = tr::fmt_args(tr::scratchpad(), fmt, args);
+	TR_TRY(print_args(fmt, args));
 	va_end(args);
-
-	TR_TRY(this->write_string(str));
-	return this->write_string("\n");
+	return write_string("\n");
 }
 
 tr::String tr::path(tr::Arena& arena, tr::String path)
@@ -801,6 +814,18 @@ tr::Result<void> tr::File::write_bytes(Array<const byte> bytes)
 	usize bytes_written =
 		fwrite(bytes.buf(), sizeof(byte), bytes.len(), static_cast<FILE*>(this->fptr));
 	if (bytes_written < bytes.len()) {
+		return {tr::_trippin_error_from_errno(), FileOperation::WRITE_FILE, this->path, ""};
+	}
+	return {};
+}
+
+tr::Result<void> tr::File::print_args(const char* fmt, va_list arg)
+{
+	tr::_reset_os_errors();
+	TR_TRY_ASSERT(can_write(), {ERROR_ACCESS_DENIED, FileOperation::WRITE_FILE, path, ""});
+
+	vfprintf(static_cast<FILE*>(fptr), fmt, arg);
+	if (errno != 0) {
 		return {tr::_trippin_error_from_errno(), FileOperation::WRITE_FILE, this->path, ""};
 	}
 	return {};
