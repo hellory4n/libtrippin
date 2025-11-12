@@ -103,7 +103,7 @@ void tr::_log(const char* color, const char* prefix, bool panic, const char* fmt
 		if (file.is_std) {
 			(void)file.write_string(color);
 		}
-		(void)file.printf("[%s] %s%s", timestr, prefix, buf.buf());
+		(void)file.print("[%s] %s%s", timestr, prefix, buf.buf());
 		if (file.is_std) {
 			(void)file.write_string(ConsoleColor::RESET);
 		}

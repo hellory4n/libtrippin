@@ -50,40 +50,34 @@ static HashMap<ErrorType, String (*)(ErrorArgs args)> _error_table{core_arena};
 
 }
 
-bool tr::register_error_type(ErrorType id, String (*msg_func)(ErrorArgs args))
+tr::String tr::Error::message() const
+{
+	return tr::error_message(type, args);
+}
+
+bool tr::register_error_type(ErrorType id, String (*msg_func)(ErrorArgs args), bool override)
 {
 	// quite the mouthful
 	Maybe<String (*&)(ErrorArgs)> perchance = _error_table.try_get(id);
 	if (perchance.is_valid()) {
-		// same ptr = same function
-		// TODO this probably breaks with inline functions
-		if (perchance.unwrap() == msg_func) {
-			return true;
-		}
-		else {
-			tr::warn(
-				"overriding error %lu's message function (from 0x%lx to 0x%lx)",
-				static_cast<uint64>(id),
-				reinterpret_cast<usize>(perchance.unwrap()),
-				reinterpret_cast<usize>(msg_func)
-			);
+		if (override) {
 			perchance.unwrap() = msg_func;
-			return false;
 		}
+		return false;
 	}
 
 	perchance.unwrap() = msg_func;
 	return true;
 }
 
-tr::String tr::error_message(tr::ErrorType id, tr::ErrorArgs meta)
+tr::String tr::error_message(tr::ErrorType id, tr::ErrorArgs args)
 {
 	// quite the mouthful
 	Maybe<String (*&)(ErrorArgs)> perchance = _error_table.try_get(id);
 	if (perchance.is_invalid()) {
 		tr::panic("error type %lu doesn't exist", static_cast<uint64>(id));
 	}
-	return perchance.unwrap()(meta);
+	return perchance.unwrap()(args);
 }
 
 void tr::_reset_os_errors()
@@ -295,114 +289,114 @@ _real_file_errmsg(tr::FileOperation op, tr::String error, tr::String path_a, tr:
 	}
 }
 
-tr::String tr::errmsg_file_not_found(tr::ErrorArgs meta)
+tr::String tr::errmsg_file_not_found(tr::ErrorArgs args)
 {
 	return _real_file_errmsg(
-		static_cast<FileOperation>(meta[0].i32), "no such file or directory", meta[16].str
+		static_cast<FileOperation>(args[0].i32), "no such file or directory", args[16].str
 	);
 }
 
-tr::String tr::errmsg_access_denied(tr::ErrorArgs meta)
+tr::String tr::errmsg_access_denied(tr::ErrorArgs args)
 {
 	return _real_file_errmsg(
-		static_cast<FileOperation>(meta[0].i32), "access denied", meta[1].str
+		static_cast<FileOperation>(args[0].i32), "access denied", args[1].str
 	);
 }
 
-tr::String tr::errmsg_device_or_resource_busy(tr::ErrorArgs meta)
+tr::String tr::errmsg_device_or_resource_busy(tr::ErrorArgs args)
 {
 	return _real_file_errmsg(
-		static_cast<FileOperation>(meta[0].i32), "device or resource busy", meta[1].str
+		static_cast<FileOperation>(args[0].i32), "device or resource busy", args[1].str
 	);
 }
 
-tr::String tr::errmsg_no_space_left(tr::ErrorArgs meta)
+tr::String tr::errmsg_no_space_left(tr::ErrorArgs args)
 {
 	return _real_file_errmsg(
-		static_cast<FileOperation>(meta[0].i32), "no space left on device", meta[1].str
+		static_cast<FileOperation>(args[0].i32), "no space left on device", args[1].str
 	);
 }
 
-tr::String tr::errmsg_file_exists(tr::ErrorArgs meta)
+tr::String tr::errmsg_file_exists(tr::ErrorArgs args)
 {
 	return _real_file_errmsg(
-		static_cast<FileOperation>(meta[0].i32), "file exists", meta[1].str
+		static_cast<FileOperation>(args[0].i32), "file exists", args[1].str
 	);
 }
 
-tr::String tr::errmsg_bad_handle(tr::ErrorArgs meta)
+tr::String tr::errmsg_bad_handle(tr::ErrorArgs args)
 {
 	return _real_file_errmsg(
-		static_cast<FileOperation>(meta[0].i32), "bad file handle", meta[1].str
+		static_cast<FileOperation>(args[0].i32), "bad file handle", args[1].str
 	);
 }
 
-tr::String tr::errmsg_hardware_error_or_unknown(tr::ErrorArgs meta)
+tr::String tr::errmsg_hardware_error_or_unknown(tr::ErrorArgs args)
 {
 	return _real_file_errmsg(
-		static_cast<FileOperation>(meta[0].i32), "I/O error (hardware issue?)", meta[1].str
+		static_cast<FileOperation>(args[0].i32), "I/O error (hardware issue?)", args[1].str
 	);
 }
 
-tr::String tr::errmsg_is_directory(tr::ErrorArgs meta)
+tr::String tr::errmsg_is_directory(tr::ErrorArgs args)
 {
 	return _real_file_errmsg(
-		static_cast<FileOperation>(meta[0].i32), "is directory", meta[1].str
+		static_cast<FileOperation>(args[0].i32), "is directory", args[1].str
 	);
 }
 
-tr::String tr::errmsg_is_not_directory(tr::ErrorArgs meta)
+tr::String tr::errmsg_is_not_directory(tr::ErrorArgs args)
 {
 	return _real_file_errmsg(
-		static_cast<FileOperation>(meta[0].i32), "is not directory", meta[1].str
+		static_cast<FileOperation>(args[0].i32), "is not directory", args[1].str
 	);
 }
 
-tr::String tr::errmsg_too_many_open_files(tr::ErrorArgs meta)
+tr::String tr::errmsg_too_many_open_files(tr::ErrorArgs args)
 {
 	return _real_file_errmsg(
-		static_cast<FileOperation>(meta[0].i32), "too many open files", meta[1].str
+		static_cast<FileOperation>(args[0].i32), "too many open files", args[1].str
 	);
 }
 
-tr::String tr::errmsg_broken_pipe(tr::ErrorArgs meta)
+tr::String tr::errmsg_broken_pipe(tr::ErrorArgs args)
 {
 	return _real_file_errmsg(
-		static_cast<FileOperation>(meta[0].i32), "broken pipe", meta[1].str
+		static_cast<FileOperation>(args[0].i32), "broken pipe", args[1].str
 	);
 }
 
-tr::String tr::errmsg_filename_too_long(tr::ErrorArgs meta)
+tr::String tr::errmsg_filename_too_long(tr::ErrorArgs args)
 {
 	return _real_file_errmsg(
-		static_cast<FileOperation>(meta[0].i32), "filename too long", meta[1].str
+		static_cast<FileOperation>(args[0].i32), "filename too long", args[1].str
 	);
 }
 
-tr::String tr::errmsg_invalid_argument(tr::ErrorArgs meta)
+tr::String tr::errmsg_invalid_argument(tr::ErrorArgs args)
 {
 	return _real_file_errmsg(
-		static_cast<FileOperation>(meta[0].i32), "invalid argument", meta[1].str
+		static_cast<FileOperation>(args[0].i32), "invalid argument", args[1].str
 	);
 }
 
-tr::String tr::errmsg_read_only_filesystem(tr::ErrorArgs meta)
+tr::String tr::errmsg_read_only_filesystem(tr::ErrorArgs args)
 {
 	return _real_file_errmsg(
-		static_cast<FileOperation>(meta[0].i32), "read-only filesystem", meta[1].str
+		static_cast<FileOperation>(args[0].i32), "read-only filesystem", args[1].str
 	);
 }
 
-tr::String tr::errmsg_illegal_seek(tr::ErrorArgs meta)
+tr::String tr::errmsg_illegal_seek(tr::ErrorArgs args)
 {
 	return _real_file_errmsg(
-		static_cast<FileOperation>(meta[0].i32), "illegal seek", meta[1].str
+		static_cast<FileOperation>(args[0].i32), "illegal seek", args[1].str
 	);
 }
 
-tr::String tr::errmsg_directory_not_empty(tr::ErrorArgs meta)
+tr::String tr::errmsg_directory_not_empty(tr::ErrorArgs args)
 {
 	return _real_file_errmsg(
-		static_cast<FileOperation>(meta[0].i32), "directory not empty", meta[1].str
+		static_cast<FileOperation>(args[0].i32), "directory not empty", args[1].str
 	);
 }

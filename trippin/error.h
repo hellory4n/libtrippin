@@ -34,7 +34,9 @@
 
 namespace tr {
 
-// Rust devs cry at such beautiful type safety
+// Rust devs cry at such beautiful type safety. Supported types are all fixed width int/uints (or at
+// least the libtrippin typedefs), floats, enums, strings (`const char*` and `String`), `void*`, and
+// `const void*`.
 union ErrorArg {
 	uint8 u8 = 0;
 	uint16 u16;
@@ -54,7 +56,7 @@ union ErrorArg {
 	const void* const_ptr;
 };
 
-// Error metadata, which is useful for errors that need data. You get 16 slots which can be a
+// Error argsdata, which is useful for errors that need data. You get 16 slots which can be a
 // arithmetic type, string, or void pointer. I can't imagine errors needing more than that.
 using ErrorArgs = List<16, ErrorArg>;
 
@@ -108,11 +110,15 @@ struct Error
 {
 	ErrorArgs args;
 	ErrorType type;
+
+	// shorthand type shit
+	String message() const;
 };
 
 // Registers an error type. How amazing. Returns false if there's already an error with that ID,
-// returns true otherwise.
-bool register_error_type(ErrorType id, String (*msg_func)(ErrorArgs args));
+// returns true otherwise. If `override` is true, it'll override the message function if there
+// already is one (by default it keeps the old one)
+bool register_error_type(ErrorType id, String (*msg_func)(ErrorArgs args), bool override = false);
 
 // Slightly fancy macro to register error types right after the error message is declared, which
 // looks nicer than 5000 `tr::register_error_type` calls in the main function.
@@ -122,7 +128,7 @@ bool register_error_type(ErrorType id, String (*msg_func)(ErrorArgs args));
 
 // Looks up the error type, calls its function, and returns the resulting error message. Panics if
 // the ID is invalid (because it should never happen)
-String error_message(ErrorType id, ErrorArgs meta);
+String error_message(ErrorType id, ErrorArgs args);
 
 // This is just for getting the error message lmao.
 enum class FileOperation : int32
@@ -148,85 +154,85 @@ enum class FileOperation : int32
 
 // some fucking bullshit
 
-String errmsg_file_not_found(ErrorArgs meta);
+String errmsg_file_not_found(ErrorArgs args);
 // args: FileOperation as int32, string path A, string path B
 constexpr ErrorType ERROR_FILE_NOT_FOUND = tr::errtype_from_string("tr::FILE_NOT_FOUND");
 TR_REGISTER_ERROR_TYPE(ERROR_FILE_NOT_FOUND, errmsg_file_not_found);
 
-String errmsg_access_denied(ErrorArgs meta);
+String errmsg_access_denied(ErrorArgs args);
 // args: FileOperation as int32, string path A, string path B
 constexpr ErrorType ERROR_ACCESS_DENIED = tr::errtype_from_string("tr::ACCESS_DENIED");
 TR_REGISTER_ERROR_TYPE(ERROR_ACCESS_DENIED, errmsg_access_denied);
 
-String errmsg_device_or_resource_busy(ErrorArgs meta);
+String errmsg_device_or_resource_busy(ErrorArgs args);
 // args: FileOperation as int32, string path A, string path B
 constexpr ErrorType ERROR_DEVICE_OR_RESOURCE_BUSY =
 	tr::errtype_from_string("tr::DEVICE_OR_RESOURCE_BUSY");
 TR_REGISTER_ERROR_TYPE(ERROR_DEVICE_OR_RESOURCE_BUSY, errmsg_device_or_resource_busy);
 
-String errmsg_no_space_left(ErrorArgs meta);
+String errmsg_no_space_left(ErrorArgs args);
 // args: FileOperation as int32, string path A, string path B
 constexpr ErrorType ERROR_NO_SPACE_LEFT = tr::errtype_from_string("tr::NO_SPACE_LEFT");
 TR_REGISTER_ERROR_TYPE(ERROR_NO_SPACE_LEFT, errmsg_no_space_left);
 
-String errmsg_file_exists(ErrorArgs meta);
+String errmsg_file_exists(ErrorArgs args);
 // args: FileOperation as int32, string path A, string path B
 constexpr ErrorType ERROR_FILE_EXISTS = tr::errtype_from_string("tr::FILE_EXISTS");
 TR_REGISTER_ERROR_TYPE(ERROR_FILE_EXISTS, errmsg_access_denied);
 
-String errmsg_bad_handle(ErrorArgs meta);
+String errmsg_bad_handle(ErrorArgs args);
 // args: FileOperation as int32, string path A, string path B
 constexpr ErrorType ERROR_BAD_HANDLE = tr::errtype_from_string("tr::BAD_HANDLE");
 TR_REGISTER_ERROR_TYPE(ERROR_BAD_HANDLE, errmsg_access_denied);
 
-String errmsg_hardware_error_or_unknown(ErrorArgs meta);
+String errmsg_hardware_error_or_unknown(ErrorArgs args);
 // args: FileOperation as int32, string path A, string path B
 constexpr ErrorType ERROR_HARDWARE_ERROR_OR_UNKNOWN =
 	tr::errtype_from_string("tr::HARDWARE_ERROR_OR_UNKNOWN");
 TR_REGISTER_ERROR_TYPE(ERROR_HARDWARE_ERROR_OR_UNKNOWN, errmsg_hardware_error_or_unknown);
 
-String errmsg_is_directory(ErrorArgs meta);
+String errmsg_is_directory(ErrorArgs args);
 // args: FileOperation as int32, string path A, string path B
 constexpr ErrorType ERROR_IS_DIRECTORY = tr::errtype_from_string("tr::IS_DIRECTORY");
 TR_REGISTER_ERROR_TYPE(ERROR_IS_DIRECTORY, errmsg_is_directory);
 
-String errmsg_is_not_directory(ErrorArgs meta);
+String errmsg_is_not_directory(ErrorArgs args);
 // args: FileOperation as int32, string path A, string path B
 constexpr ErrorType ERROR_IS_NOT_DIRECTORY = tr::errtype_from_string("tr::IS_NOT_DIRECTORY");
 TR_REGISTER_ERROR_TYPE(ERROR_IS_NOT_DIRECTORY, errmsg_is_not_directory);
 
-String errmsg_too_many_open_files(ErrorArgs meta);
+String errmsg_too_many_open_files(ErrorArgs args);
 // args: FileOperation as int32, string path A, string path B
 constexpr ErrorType ERROR_TOO_MANY_OPEN_FILES = tr::errtype_from_string("tr::TOO_MANY_OPEN_FILES");
 TR_REGISTER_ERROR_TYPE(ERROR_TOO_MANY_OPEN_FILES, errmsg_too_many_open_files);
 
-String errmsg_broken_pipe(ErrorArgs meta);
+String errmsg_broken_pipe(ErrorArgs args);
 // args: FileOperation as int32, string path A, string path B
 constexpr ErrorType ERROR_BROKEN_PIPE = tr::errtype_from_string("tr::BROKEN_PIPE");
 TR_REGISTER_ERROR_TYPE(ERROR_BROKEN_PIPE, errmsg_broken_pipe);
 
-String errmsg_filename_too_long(ErrorArgs meta);
+String errmsg_filename_too_long(ErrorArgs args);
 // args: FileOperation as int32, string path A, string path B
 constexpr ErrorType ERROR_FILENAME_TOO_LONG = tr::errtype_from_string("tr::FILENAME_TOO_LONG");
 TR_REGISTER_ERROR_TYPE(ERROR_FILENAME_TOO_LONG, errmsg_filename_too_long);
 
-String errmsg_invalid_argument(ErrorArgs meta);
+String errmsg_invalid_argument(ErrorArgs args);
 // args: FileOperation as int32, string path A, string path B
 constexpr ErrorType ERROR_INVALID_ARGUMENT = tr::errtype_from_string("tr::INVALID_ARGUMENT");
 TR_REGISTER_ERROR_TYPE(ERROR_INVALID_ARGUMENT, errmsg_invalid_argument);
 
-String errmsg_read_only_filesystem(ErrorArgs meta);
+String errmsg_read_only_filesystem(ErrorArgs args);
 // args: FileOperation as int32, string path A, string path B
 constexpr ErrorType ERROR_READ_ONLY_FILESYSTEM =
 	tr::errtype_from_string("tr::READ_ONLY_FILESYSTEM");
 TR_REGISTER_ERROR_TYPE(ERROR_READ_ONLY_FILESYSTEM, errmsg_read_only_filesystem);
 
-String errmsg_illegal_seek(ErrorArgs meta);
+String errmsg_illegal_seek(ErrorArgs args);
 // args: FileOperation as int32, string path A, string path B
 constexpr ErrorType ERROR_ILLEGAL_SEEK = tr::errtype_from_string("tr::ILLEGAL_SEEK");
 TR_REGISTER_ERROR_TYPE(ERROR_ILLEGAL_SEEK, errmsg_illegal_seek);
 
-String errmsg_directory_not_empty(ErrorArgs meta);
+String errmsg_directory_not_empty(ErrorArgs args);
 // args: FileOperation as int32, string path A, string path B
 constexpr ErrorType ERROR_DIRECTORY_NOT_EMPTY = tr::errtype_from_string("tr::DIRECTORY_NOT_EMPTY");
 TR_REGISTER_ERROR_TYPE(ERROR_DIRECTORY_NOT_EMPTY, errmsg_directory_not_empty);
@@ -252,6 +258,10 @@ public:
 
 	constexpr Result(T val)
 		: _value(val)
+	{
+	}
+	constexpr Result(Error error)
+		: _error(error)
 	{
 	}
 	constexpr Result(ErrorType type, ErrorArgs args)
@@ -299,6 +309,40 @@ public:
 				}
 				else if constexpr (std::is_same_v<decltype(arg), float64>) {
 					_error.args[i].f64 = arg;
+				}
+				// enums get passed as ints
+				else if constexpr (std::is_enum_v<decltype(arg)>) {
+					using BaseType = std::underlying_type_t<decltype(arg)>;
+					if constexpr (std::is_same_v<BaseType, int8>) {
+						_error.args[i].i8 = static_cast<int8>(arg);
+					}
+					else if constexpr (std::is_same_v<BaseType, int16>) {
+						_error.args[i].i16 = static_cast<int16>(arg);
+					}
+					else if constexpr (std::is_same_v<BaseType, int32>) {
+						_error.args[i].i32 = static_cast<int32>(arg);
+					}
+					else if constexpr (std::is_same_v<BaseType, int64>) {
+						_error.args[i].i64 = static_cast<int64>(arg);
+					}
+					else if constexpr (std::is_same_v<BaseType, uint8>) {
+						_error.args[i].u8 = static_cast<uint8>(arg);
+					}
+					else if constexpr (std::is_same_v<BaseType, uint16>) {
+						_error.args[i].u16 = static_cast<uint16>(arg);
+					}
+					else if constexpr (std::is_same_v<BaseType, uint32>) {
+						_error.args[i].u32 = static_cast<uint32>(arg);
+					}
+					else if constexpr (std::is_same_v<BaseType, uint64>) {
+						_error.args[i].u64 = static_cast<uint64>(arg);
+					}
+					else {
+						static_assert(
+							false,
+							"unsupported underlying type for enum"
+						);
+					}
 				}
 				else if constexpr (std::is_same_v<decltype(arg), String>) {
 					_error.args[i].str = arg;
@@ -379,6 +423,10 @@ public:
 	using Type = void;
 
 	constexpr Result() {}
+	constexpr Result(Error error)
+		: _error(error)
+	{
+	}
 	constexpr Result(ErrorType type, ErrorArgs args)
 		: _error({.args = args, .type = type})
 	{
@@ -425,8 +473,47 @@ public:
 				else if constexpr (std::is_same_v<decltype(arg), float64>) {
 					_error.args[i].f64 = arg;
 				}
+				// enums get passed as ints
+				else if constexpr (std::is_enum_v<decltype(arg)>) {
+					using BaseType = std::underlying_type_t<decltype(arg)>;
+					if constexpr (std::is_same_v<BaseType, int8>) {
+						_error.args[i].i8 = static_cast<int8>(arg);
+					}
+					else if constexpr (std::is_same_v<BaseType, int16>) {
+						_error.args[i].i16 = static_cast<int16>(arg);
+					}
+					else if constexpr (std::is_same_v<BaseType, int32>) {
+						_error.args[i].i32 = static_cast<int32>(arg);
+					}
+					else if constexpr (std::is_same_v<BaseType, int64>) {
+						_error.args[i].i64 = static_cast<int64>(arg);
+					}
+					else if constexpr (std::is_same_v<BaseType, uint8>) {
+						_error.args[i].u8 = static_cast<uint8>(arg);
+					}
+					else if constexpr (std::is_same_v<BaseType, uint16>) {
+						_error.args[i].u16 = static_cast<uint16>(arg);
+					}
+					else if constexpr (std::is_same_v<BaseType, uint32>) {
+						_error.args[i].u32 = static_cast<uint32>(arg);
+					}
+					else if constexpr (std::is_same_v<BaseType, uint64>) {
+						_error.args[i].u64 = static_cast<uint64>(arg);
+					}
+					else {
+						static_assert(
+							false,
+							"unsupported underlying type for enum"
+						);
+					}
+				}
 				else if constexpr (std::is_same_v<decltype(arg), String>) {
 					_error.args[i].str = arg;
+				}
+				// treat const char* as a string (which is probably what the user
+				// meant anyway)
+				else if constexpr (std::is_same_v<decltype(arg), const char*>) {
+					_error.args[i].str = String{arg};
 				}
 				else if constexpr (std::is_pointer_v<decltype(arg)> &&
 						   std::is_const_v<decltype(arg)>) {
@@ -482,6 +569,78 @@ public:
 		return _error;
 	}
 };
+
+// TR_TRY fuckery
+// these are used for the macro
+[[maybe_unused]]
+static thread_local bool _last_try_failed;
+[[maybe_unused]]
+static thread_local Error _last_try_error;
+
+// i love unions
+template<typename T>
+requires(!std::is_reference_v<T>)
+union _evilTryUnion {
+	T val;
+	unsigned char no_val = 0;
+};
+
+// so Result<void> doesn't break everything
+template<>
+union _evilTryUnion<void> {
+	unsigned char val;
+	unsigned char no_val;
+};
+
+// our most evil macro to date
+// example: int x = TR_TRY(function());
+// note that TR_TRY only works with variables
+// so this is unsupported: function(TR_TRY(other_function()))
+#define TR_TRY(...)                                                                               \
+	/* i know gcc statement expressions exist but unfortunately msvc is a thing */            \
+	/* both gcc and clang can optimize this pretty well (msvc is stupid (probably not */      \
+	/* inling shit properly but i don't care about msvc enough to put __forceinline */        \
+	/* everywhere)) yes i checked the assembly i'm insane */                                  \
+	[&]() {                                                                                   \
+		const auto _TR_UNIQUE_NAME(_tr_try) = (__VA_ARGS__);                              \
+		using _TrTryType = decltype(_TR_UNIQUE_NAME(_tr_try))::Type;                      \
+		if (_TR_UNIQUE_NAME(_tr_try).is_valid()) [[likely]] {                             \
+			/* if constexpr only works properly on templates */                       \
+			/* so use a template lambda which is a thing some reason */               \
+			auto _TR_UNIQUE_NAME(_tr_man) = []<typename _TrTryType2>(                 \
+								_TrTryType2 result                \
+							) {                                       \
+				if constexpr (::std::is_void_v<typename _TrTryType2::Type>) {     \
+					return ::tr::_evilTryUnion<typename _TrTryType2::Type>{}; \
+				}                                                                 \
+				else {                                                            \
+					return ::tr::_evilTryUnion<typename _TrTryType2::Type>{   \
+						.val = result.unwrap(),                           \
+					};                                                        \
+				}                                                                 \
+			};                                                                        \
+			return _TR_UNIQUE_NAME(_tr_man)(_TR_UNIQUE_NAME(_tr_try));                \
+		}                                                                                 \
+		else {                                                                            \
+			::tr::_last_try_failed = true;                                            \
+			::tr::_last_try_error = _TR_UNIQUE_NAME(_tr_try).unwrap_err();            \
+			return ::tr::_evilTryUnion<_TrTryType>{};                                 \
+		}                                                                                 \
+	}()                                                                                       \
+		.val; /* exploiting unions, if the value is invalid we're about to return         \
+			 so it doesn't matter */                                                  \
+	/* pure uncut macro abuse */                                                              \
+	if (::tr::_last_try_failed) {                                                             \
+		::tr::_last_try_failed = false;                                                   \
+		return ::tr::_last_try_error;                                                     \
+	}
+
+// Similar to `TR_ASSERT`, but instead of panicking, it returns an error.
+// example: TR_TRY_ASSERT(false, {ERROR_UH_OH, 61386741});
+#define TR_TRY_ASSERT(X, ...)       \
+	if (!(X)) {                 \
+		return __VA_ARGS__; \
+	}
 
 }
 

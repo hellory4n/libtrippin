@@ -70,10 +70,19 @@ static void test::util()
 	stopwatch.stop();
 	stopwatch.print_time_us("doing nothing");
 
-	// TR_TRY()
-	auto may_fail = [](int a) -> tr::Result<int> {
+	// TR_TRY() and errors
+	auto fucking_error = [](tr::ErrorArgs args) -> tr::String {
+		(void)args;
+		return tr::fmt(tr::scratchpad(), "fuck %s", *args[0].str);
+	};
+	constexpr tr::ErrorType FUCKING_ERROR = tr::errtype_from_string("test::FUCKING_ERROR");
+	tr::log("fucking error's type is %lu", FUCKING_ERROR.id);
+	TR_REGISTER_ERROR_TYPE(FUCKING_ERROR, fucking_error);
+
+	auto may_fail = [FUCKING_ERROR](int a) -> tr::Result<int> {
 		if (a == 67) {
-			return tr::StringError("man %i", a);
+			// couldn't be bothered to make custom errors for this
+			return {FUCKING_ERROR, "thee"};
 		}
 		else {
 			return 234414;
@@ -84,7 +93,7 @@ static void test::util()
 		TR_TRY(may_fail(67));
 		return {};
 	};
-	try_type_shit().unwrap();
+	tr::log("error message: %s", *try_type_shit().unwrap_err().message());
 }
 
 static void test::memory()
@@ -374,7 +383,7 @@ int main(int argc, char* argv[])
 TR_GCC_IGNORE_WARNING(-Wunused-variable) // please shut up
 TR_GCC_IGNORE_WARNING(-Wunused-but-set-variable) // please shut up 2
 #include "test_collection.h" // IWYU pragma: keep
-#include "test_error.h" // IWYU pragma: keep
+// #include "test_error.h" // IWYU pragma: keep
 #include "test_logging.h" // IWYU pragma: keep
 #include "test_math.h" // IWYU pragma: keep
 #include "test_memory.h" // IWYU pragma: keep

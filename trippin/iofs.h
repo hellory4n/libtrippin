@@ -33,6 +33,19 @@
 
 namespace tr {
 
+// additional errors for reader/writer helper functions
+
+inline String errmsg_expected_more_bytes(ErrorArgs args)
+{
+	return tr::fmt(
+		tr::scratchpad(), "expected %li bytes, got %li bytes (might be EOF)", args[0].i64,
+		args[1].i64
+	);
+}
+// args: int64 expected bytes, int64 received bytes
+constexpr ErrorType ERROR_EXPECTED_MORE_BYTES = tr::errtype_from_string("tr::EXPECTED_MORE_BYTES");
+TR_REGISTER_ERROR_TYPE(ERROR_EXPECTED_MORE_BYTES, errmsg_expected_more_bytes);
+
 enum class SeekFrom
 {
 	START,
@@ -70,44 +83,57 @@ public:
 
 	// Wrapper for `read_bytes`, returns null if it couldn't read the struct
 	template<typename T>
+	[[deprecated("renamed to read_type")]]
 	Result<T> read_struct()
 	{
-		T man = nullptr;
+		T man{};
 		int64 bytes_read = TR_TRY(this->read_bytes(&man, sizeof(T), 1));
 
-		if (bytes_read == sizeof(T) && man != nullptr) {
+		if (bytes_read == sizeof(T)) {
 			return man;
 		}
-		return StringError{
-			"expected %li bytes, got %li (might be EOF)", sizeof(T), bytes_read
-		};
+		return {ERROR_EXPECTED_MORE_BYTES, sizeof(T), bytes_read};
+	}
+
+	// Wrapper for `read_bytes`, returns null if it couldn't read the struct
+	template<typename T>
+	Result<T> read_type()
+	{
+		// TODO this might suffer a similar fate as read_array
+		T man{};
+		int64 bytes_read = TR_TRY(this->read_bytes(&man, sizeof(T), 1));
+
+		if (bytes_read == sizeof(T)) {
+			return man;
+		}
+		return {ERROR_EXPECTED_MORE_BYTES, sizeof(T), bytes_read};
 	}
 
 	// Wrapper for `read_bytes`, returns an array of N items or null if it isn't able to read
 	// the stream.
 	template<typename T>
+	[[deprecated("i don't think this even compiles")]]
 	Result<Array<T>> read_array(Arena& arena, int64 items)
 	{
 		T* man = nullptr;
 		int64 bytes_read = TR_TRY(this->read_bytes(&man, sizeof(T), items));
 
 		if (bytes_read == sizeof(T) * items && man != nullptr) {
-			return Array<T>(arena, man, items);
+			return Array<T>{arena, man, items};
 		}
-		return tr::scratchpad().make_ref<StringError>(
-			"expected %li bytes, got %li (might be EOF)", sizeof(T) * items, bytes_read
-		);
+		return {ERROR_EXPECTED_MORE_BYTES, sizeof(T) * items, bytes_read};
 	}
 
-	// Wrapper for `read_bytes`, returns a string or null if it isn't able to read the stream.
+	// Wrapper for `read_bytes`, returns a string or an error as the function declaration
+	// implies.
 	Result<String> read_string(Arena& arena, int64 length);
 
 	// Reads a line of text :) Supports both Unix `\n` and Windows `\r\n`, no one is gonna be
-	// using classic MacOS with this
+	// using classic MacOS files with this
 	Result<String> read_line(Arena& arena);
 
 	// Reads the entire stream as bytes
-	Result<Array<uint8>> read_all_bytes(Arena& arena);
+	Result<Array<byte>> read_all_bytes(Arena& arena);
 
 	// Reads the entire stream as text
 	Result<String> read_all_text(Arena& arena);
@@ -130,23 +156,36 @@ public:
 	virtual Result<void> flush() = 0;
 
 	// Writes bytes into the stream
-	virtual Result<void> write_bytes(Array<uint8> bytes) = 0;
+	virtual Result<void> write_bytes(Array<const byte> bytes) = 0;
 
 	// Writes a struct into the stream
 	template<typename T>
+	[[deprecated("renamed to write_type")]]
 	Result<void> write_struct(T data)
 	{
-		Array<uint8> manfuckyou(reinterpret_cast<uint8*>(&data), sizeof(T));
-		return this->write_bytes(manfuckyou);
+		Array<const byte> manfuckyou{reinterpret_cast<const byte*>(&data), sizeof(T)};
+		return write_bytes(manfuckyou);
+	}
+
+	// Writes C++ data into the stream
+	template<typename T>
+	Result<void> write_type(T data)
+	{
+		// TODO might suffer a similar fate to read_array/write_array
+		Array<const byte> manfuckyou{reinterpret_cast<const byte*>(&data), sizeof(T)};
+		return write_bytes(manfuckyou);
 	}
 
 	// Writes an array into the stream. Note this doesn't include the length or a null
 	// terminator, it just writes pure data into the stream.
 	template<typename T>
+	[[deprecated]]
 	Result<void> write_array(Array<T> array)
 	{
-		Array<uint8> manfuckyou(reinterpret_cast<uint8*>(array.buffer()), array.len());
-		return this->write_bytes(manfuckyou);
+		Array<const byte> manfuckyou{
+			reinterpret_cast<const byte*>(array.buffer()), array.len()
+		};
+		return write_bytes(manfuckyou);
 	}
 
 	// Writes a string into the stream. Note this doesn't include the length or a null
@@ -154,10 +193,14 @@ public:
 	Result<void> write_string(String str);
 
 	// Writes a formatted string into the stream. So pretty much just fprintf.
-	[[gnu::format(printf, 2, 3)]]
+	[[gnu::format(printf, 2, 3), deprecated("renamed to print lmao skill issue")]]
 	Result<void> printf(const char* fmt, ...);
 
-	// Similar to `Writer.printf()`, but it adds a newline at the end.
+	// Writes a formatted string into the stream. So pretty much just fprintf.
+	[[gnu::format(printf, 2, 3)]]
+	Result<void> print(const char* fmt, ...);
+
+	// Similar to `Writer.print()`, but it adds a newline at the end.
 	[[gnu::format(printf, 2, 3)]]
 	Result<void> println(const char* fmt, ...);
 
@@ -246,7 +289,7 @@ public:
 	Result<void> flush() override;
 
 	// Writes bytes into the stream
-	Result<void> write_bytes(Array<uint8> bytes) override;
+	Result<void> write_bytes(Array<const byte> bytes) override;
 
 	// If true, the file can be read.
 	bool can_read();
@@ -300,7 +343,8 @@ Result<bool> is_file(String path);
 // Fancy path utility thing. The `app://` prefix is relative to the exectuable's directory, while
 // `user://` refers to the directory intended for saving user crap (e.g. `%APPDATA%` on windows). If
 // the path has neither prefix, it returns the same string. You should configure this first with
-// `tr::set_paths`
+// `tr::set_paths`. All libtrippin file functions handle this automatically so you (usually) don't
+// have to worry about this.
 String path(Arena& arena, String path);
 
 // Sets the paths used by `tr::path`. For example `tr::set_paths("assets", "handsome_app")`, or even

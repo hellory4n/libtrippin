@@ -82,7 +82,7 @@ tr::Result<tr::String> tr::Reader::read_string(tr::Arena& arena, int64 length)
 	int64 read = TR_TRY(this->read_bytes(str.buf(), sizeof(char), length));
 
 	if (read != int64(length)) {
-		return StringError{"expected %zu bytes, got %li (might be EOF)", length, read};
+		return {ERROR_EXPECTED_MORE_BYTES, length, read};
 	}
 	return static_cast<String>(str);
 }
@@ -244,7 +244,7 @@ static tr::String from_win32_to_trippin_str(WinStrConst str)
 tr::Result<tr::File> tr::File::open(tr::Arena& arena, tr::String path, FileMode mode)
 {
 	path = tr::path(tr::scratchpad(), path);
-	FileError::reset_errors();
+	tr::_reset_os_errors();
 
 	// get mode
 	WinStrConst modefrfr = L"";
@@ -295,7 +295,7 @@ tr::Result<tr::File> tr::File::open(tr::Arena& arena, tr::String path, FileMode 
 
 void tr::File::close()
 {
-	FileError::reset_errors();
+	tr::_reset_os_errors();
 
 	// is_std exists so it doesn't close tr::std_out and company
 	if (!this->is_std && this->fptr != nullptr) {
@@ -306,7 +306,7 @@ void tr::File::close()
 
 tr::Result<int64> tr::File::position()
 {
-	FileError::reset_errors();
+	tr::_reset_os_errors();
 
 	int64 pos = _ftelli64(static_cast<FILE*>(this->fptr));
 	if (pos < 0) {
@@ -317,20 +317,20 @@ tr::Result<int64> tr::File::position()
 
 tr::Result<int64> tr::File::len()
 {
-	FileError::reset_errors();
+	tr::_reset_os_errors();
 	return this->length;
 }
 
 tr::Result<bool> tr::File::eof()
 {
-	FileError::reset_errors();
+	tr::_reset_os_errors();
 
 	return feof(static_cast<FILE*>(this->fptr)) != 0;
 }
 
 tr::Result<void> tr::File::seek(int64 bytes, tr::SeekFrom from)
 {
-	FileError::reset_errors();
+	tr::_reset_os_errors();
 
 	int whence = SEEK_CUR;
 	switch (from) {
@@ -354,7 +354,7 @@ tr::Result<void> tr::File::seek(int64 bytes, tr::SeekFrom from)
 
 tr::Result<void> tr::File::rewind()
 {
-	FileError::reset_errors();
+	tr::_reset_os_errors();
 
 	::rewind(static_cast<FILE*>(this->fptr));
 	if (errno != 0) {
@@ -365,7 +365,7 @@ tr::Result<void> tr::File::rewind()
 
 tr::Result<int64> tr::File::read_bytes(void* out, int64 size, int64 items)
 {
-	FileError::reset_errors();
+	tr::_reset_os_errors();
 	TR_TRY_ASSERT(
 		out != nullptr, tr::scratchpad().make_ref<StringError>(
 					"you dumbass it's supposed to go somewhere if you don't "
@@ -390,7 +390,7 @@ tr::Result<int64> tr::File::read_bytes(void* out, int64 size, int64 items)
 
 tr::Result<void> tr::File::flush()
 {
-	FileError::reset_errors();
+	tr::_reset_os_errors();
 
 	int i = fflush(static_cast<FILE*>(this->fptr));
 	if (i == EOF) {
@@ -401,7 +401,7 @@ tr::Result<void> tr::File::flush()
 
 tr::Result<void> tr::File::write_bytes(Array<uint8> bytes)
 {
-	FileError::reset_errors();
+	tr::_reset_os_errors();
 	TR_TRY_ASSERT(
 		this->can_write(),
 		tr::scratchpad().make_ref<FileError>(
@@ -448,7 +448,7 @@ bool tr::File::can_write()
 tr::Result<void> tr::remove_file(tr::String path)
 {
 	path = tr::path(tr::scratchpad(), path);
-	FileError::reset_errors();
+	tr::_reset_os_errors();
 
 	int i = _wremove(from_trippin_to_win32_str(path));
 	if (i == -1) {
@@ -461,7 +461,7 @@ tr::Result<void> tr::move_file(tr::String from, tr::String to)
 {
 	from = tr::path(tr::scratchpad(), from);
 	to = tr::path(tr::scratchpad(), to);
-	FileError::reset_errors();
+	tr::_reset_os_errors();
 
 	// libc rename() is different on windows and posix
 	// on posix it replaces the destination if it already exists
@@ -495,7 +495,7 @@ bool tr::path_exists(tr::String path)
 tr::Result<void> tr::create_dir(tr::String path)
 {
 	path = tr::path(tr::scratchpad(), path);
-	FileError::reset_errors();
+	tr::_reset_os_errors();
 
 	// it's recursive :)
 	path = path.replace(tr::scratchpad(), '\\', '/');
@@ -534,7 +534,7 @@ tr::Result<void> tr::create_dir(tr::String path)
 tr::Result<void> tr::remove_dir(tr::String path)
 {
 	path = tr::path(tr::scratchpad(), path);
-	FileError::reset_errors();
+	tr::_reset_os_errors();
 
 	if (!RemoveDirectoryW(from_trippin_to_win32_str(path))) {
 		return FileError::from_win32(path, "", FileOperation::REMOVE_DIR);
@@ -645,7 +645,7 @@ void tr::_init_paths()
 tr::Result<tr::File> tr::File::open(tr::Arena& arena, tr::String path, tr::FileMode mode)
 {
 	path = tr::path(tr::scratchpad(), path);
-	FileError::reset_errors();
+	tr::_reset_os_errors();
 
 	// get mode
 	String modefrfr;
@@ -676,7 +676,7 @@ tr::Result<tr::File> tr::File::open(tr::Arena& arena, tr::String path, tr::FileM
 	File file{};
 	file.fptr = fopen(*path, *modefrfr);
 	if (file.fptr == nullptr) {
-		return FileError::from_errno(path, "", FileOperation::OPEN_FILE);
+		return {tr::_trippin_error_from_errno(), FileOperation::OPEN_FILE, path, ""};
 	}
 
 	file.is_std = false;
@@ -693,7 +693,7 @@ tr::Result<tr::File> tr::File::open(tr::Arena& arena, tr::String path, tr::FileM
 
 void tr::File::close()
 {
-	FileError::reset_errors();
+	tr::_reset_os_errors();
 
 	// is_std exists so it doesn't close tr::std_out and company
 	if (!this->is_std && this->fptr != nullptr) {
@@ -704,31 +704,30 @@ void tr::File::close()
 
 tr::Result<int64> tr::File::position()
 {
-	FileError::reset_errors();
+	tr::_reset_os_errors();
 
 	int64 pos = ftell(static_cast<FILE*>(this->fptr));
 	if (pos < 0) {
-		return FileError::from_errno(this->path, "", FileOperation::GET_FILE_POSITION);
+		return {tr::_trippin_error_from_errno(), FileOperation::GET_FILE_POSITION,
+			this->path, ""};
 	}
 	return pos;
 }
 
 tr::Result<int64> tr::File::len()
 {
-	FileError::reset_errors();
-	return this->length;
+	return length;
 }
 
 tr::Result<bool> tr::File::eof()
 {
-	FileError::reset_errors();
-
+	tr::_reset_os_errors();
 	return feof(static_cast<FILE*>(this->fptr)) != 0;
 }
 
 tr::Result<void> tr::File::seek(int64 bytes, tr::SeekFrom from)
 {
-	FileError::reset_errors();
+	tr::_reset_os_errors();
 
 	int whence = SEEK_CUR;
 	switch (from) {
@@ -745,33 +744,29 @@ tr::Result<void> tr::File::seek(int64 bytes, tr::SeekFrom from)
 
 	int i = fseek(static_cast<FILE*>(this->fptr), bytes, whence);
 	if (i != 0) {
-		return FileError::from_errno(this->path, "", FileOperation::SEEK_FILE);
+		return {tr::_trippin_error_from_errno(), FileOperation::SEEK_FILE, this->path, ""};
 	}
 	return {};
 }
 
 tr::Result<void> tr::File::rewind()
 {
-	FileError::reset_errors();
+	tr::_reset_os_errors();
 
 	::rewind(static_cast<FILE*>(this->fptr));
 	if (errno != 0) {
-		return FileError::from_errno(this->path, "", FileOperation::REWIND_FILE);
+		return {tr::_trippin_error_from_errno(), FileOperation::REWIND_FILE, this->path,
+			""};
 	}
 	return {};
 }
 
 tr::Result<int64> tr::File::read_bytes(void* out, int64 size, int64 items)
 {
-	FileError::reset_errors();
+	tr::_reset_os_errors();
+	TR_ASSERT(out != nullptr);
 	TR_TRY_ASSERT(
-		out != nullptr,
-		StringError{"you dumbass it's supposed to go somewhere if you don't "
-			    "want to use it use File::seek() dumbass"}
-	);
-	TR_TRY_ASSERT(
-		this->can_read(),
-		FileError{this->path, "", FileErrorType::ACCESS_DENIED, FileOperation::READ_FILE}
+		this->can_read(), {ERROR_ACCESS_DENIED, FileOperation::READ_FILE, this->path, ""}
 	);
 
 	// TODO 32-bit won't be happy about this
@@ -780,34 +775,33 @@ tr::Result<int64> tr::File::read_bytes(void* out, int64 size, int64 items)
 		      static_cast<FILE*>(this->fptr));
 
 	if (errno != 0) {
-		return FileError::from_errno(this->path, "", FileOperation::READ_FILE);
+		return {tr::_trippin_error_from_errno(), FileOperation::READ_FILE, this->path, ""};
 	}
 	return static_cast<int64>(bytes);
 }
 
 tr::Result<void> tr::File::flush()
 {
-	FileError::reset_errors();
+	tr::_reset_os_errors();
 
 	int i = fflush(static_cast<FILE*>(this->fptr));
 	if (i == EOF) {
-		return FileError::from_errno(this->path, "", FileOperation::FLUSH_FILE);
+		return {tr::_trippin_error_from_errno(), FileOperation::FLUSH_FILE, this->path, ""};
 	}
 	return {};
 }
 
-tr::Result<void> tr::File::write_bytes(Array<uint8> bytes)
+tr::Result<void> tr::File::write_bytes(Array<const byte> bytes)
 {
-	FileError::reset_errors();
+	tr::_reset_os_errors();
 	TR_TRY_ASSERT(
-		this->can_write(),
-		FileError{this->path, "", FileErrorType::ACCESS_DENIED, FileOperation::WRITE_FILE}
+		this->can_write(), {ERROR_ACCESS_DENIED, FileOperation::WRITE_FILE, this->path, ""}
 	);
 
 	usize bytes_written =
-		fwrite(bytes.buf(), sizeof(uint8), bytes.len(), static_cast<FILE*>(this->fptr));
+		fwrite(bytes.buf(), sizeof(byte), bytes.len(), static_cast<FILE*>(this->fptr));
 	if (bytes_written < bytes.len()) {
-		return FileError::from_errno(this->path, "", FileOperation::WRITE_FILE);
+		return {tr::_trippin_error_from_errno(), FileOperation::WRITE_FILE, this->path, ""};
 	}
 	return {};
 }
@@ -844,11 +838,11 @@ bool tr::File::can_write()
 tr::Result<void> tr::remove_file(tr::String path)
 {
 	path = tr::path(tr::scratchpad(), path);
-	FileError::reset_errors();
+	tr::_reset_os_errors();
 
 	int i = remove(*path);
 	if (i == -1) {
-		return FileError::from_errno(path, "", FileOperation::REMOVE_FILE);
+		return {tr::_trippin_error_from_errno(), FileOperation::REMOVE_FILE, path, ""};
 	}
 	return {};
 }
@@ -857,18 +851,18 @@ tr::Result<void> tr::move_file(tr::String from, tr::String to)
 {
 	from = tr::path(tr::scratchpad(), from);
 	to = tr::path(tr::scratchpad(), to);
-	FileError::reset_errors();
+	tr::_reset_os_errors();
 
 	// libc rename() is different on windows and posix
 	// on posix it replaces the destination if it already exists
 	// on windows it fails in that case
 	if (tr::path_exists(to)) {
-		return FileError{from, to, FileErrorType::FILE_EXISTS, FileOperation::MOVE_FILE};
+		return {tr::_trippin_error_from_errno(), FileOperation::MOVE_FILE, from, to};
 	}
 
 	int i = rename(*from, *to);
 	if (i == -1) {
-		return FileError::from_errno(from, to, FileOperation::MOVE_FILE);
+		return {tr::_trippin_error_from_errno(), FileOperation::MOVE_FILE, from, to};
 	}
 	return {};
 }
@@ -876,10 +870,10 @@ tr::Result<void> tr::move_file(tr::String from, tr::String to)
 [[deprecated("use tr::path_exists instead")]]
 bool tr::file_exists(tr::String path)
 {
-	FileError::reset_errors();
+	tr::_reset_os_errors();
 
-	// we could just fopen(path, "r") then check if that's null, but then it would return false
-	// on permission errors, even though it does in fact exist
+	// we could just fopen(path, "r") then check if that's null, but then it would
+	// return false on permission errors, even though it does in fact exist
 	struct stat buffer = {};
 	return stat(*path, &buffer) == 0;
 }
@@ -887,10 +881,10 @@ bool tr::file_exists(tr::String path)
 bool tr::path_exists(tr::String path)
 {
 	path = tr::path(tr::scratchpad(), path);
-	FileError::reset_errors();
+	tr::_reset_os_errors();
 
-	// we could just fopen(path, "r") then check if that's null, but then it would return false
-	// on permission errors, even though it does in fact exist
+	// we could just fopen(path, "r") then check if that's null, but then it would
+	// return false on permission errors, even though it does in fact exist
 	struct stat buffer = {};
 	return stat(*path, &buffer) == 0;
 }
@@ -898,7 +892,7 @@ bool tr::path_exists(tr::String path)
 tr::Result<void> tr::create_dir(tr::String path)
 {
 	path = tr::path(tr::scratchpad(), path);
-	FileError::reset_errors();
+	tr::_reset_os_errors();
 
 	// it's recursive :)
 	Array<String> dirs = path.split(tr::scratchpad(), '/');
@@ -924,16 +918,19 @@ tr::Result<void> tr::create_dir(tr::String path)
 		if (tr::path_exists(full_dir)) {
 			bool is_file = TR_TRY(tr::is_file(full_dir));
 			TR_TRY_ASSERT(
-				!is_file, FileError{
-						  full_dir, "", FileErrorType::IS_NOT_DIRECTORY,
-						  FileOperation::CREATE_DIR
+				!is_file, {
+						  ERROR_IS_NOT_DIRECTORY,
+						  FileOperation::CREATE_DIR,
+						  full_dir,
+						  "",
 					  }
 			);
 			continue;
 		}
 
 		if (mkdir(*full_dir, 0755) == -1) {
-			return FileError::from_errno(full_dir, "", FileOperation::CREATE_DIR);
+			return {tr::_trippin_error_from_errno(), FileOperation::CREATE_DIR,
+				full_dir, ""};
 		}
 	}
 	return {};
@@ -942,10 +939,10 @@ tr::Result<void> tr::create_dir(tr::String path)
 tr::Result<void> tr::remove_dir(tr::String path)
 {
 	path = tr::path(tr::scratchpad(), path);
-	FileError::reset_errors();
+	tr::_reset_os_errors();
 
 	if (rmdir(*path) != 0) {
-		return FileError::from_errno(path, "", FileOperation::REMOVE_DIR);
+		return {tr::_trippin_error_from_errno(), FileOperation::REMOVE_DIR, path, ""};
 	}
 	return {};
 }
@@ -955,11 +952,11 @@ tr::list_dir(tr::Arena& arena, tr::String path, bool include_hidden)
 {
 	// FIXME this might be broken for some fucking reason
 	path = tr::path(tr::scratchpad(), path);
-	FileError::reset_errors();
+	tr::_reset_os_errors();
 
 	DIR* dir = opendir(*path);
 	if (dir == nullptr) {
-		return FileError::from_errno(path, "", FileOperation::LIST_DIR);
+		return {tr::_trippin_error_from_errno(), FileOperation::LIST_DIR, path, ""};
 	}
 
 	Array<String> entries{arena};
@@ -988,15 +985,15 @@ tr::list_dir(tr::Arena& arena, tr::String path, bool include_hidden)
 tr::Result<bool> tr::is_file(tr::String path)
 {
 	path = tr::path(tr::scratchpad(), path);
-	FileError::reset_errors();
+	tr::_reset_os_errors();
 
 	struct stat statma = {};
 	if (stat(*path, &statma) != 0) {
-		return FileError::from_errno(path, "", FileOperation::IS_FILE);
+		return {tr::_trippin_error_from_errno(), FileOperation::IS_FILE, path, ""};
 	}
 
-	// TODO there's other types but they're similar to files so i'm counting all of them as
-	// files too
+	// TODO there's other types but they're similar to files so i'm counting all of them
+	// as files too
 	if (S_ISDIR(statma.st_mode)) {
 		return false;
 	}
@@ -1015,8 +1012,8 @@ void tr::_init_paths()
 	}
 	else {
 		exedir[static_cast<usize>(len)] = '\0';
-		// FIXME this copies the data twice for no reason, when it could just go through
-		// StringBuilder directly
+		// FIXME this copies the data twice for no reason, when it could just go
+		// through StringBuilder directly
 		exedir = {
 			tr::core_arena,
 			String{*exedir, static_cast<usize>(len)}
