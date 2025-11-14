@@ -58,6 +58,7 @@ static inline void _error_table_init()
 	if (!initialized) {
 		tr::_error_table =
 			tr::HashMap<tr::ErrorType, tr::String (*)(tr::ErrorArgs)>{tr::core_arena};
+		initialized = true;
 	}
 }
 
@@ -85,6 +86,7 @@ bool tr::register_error_type(ErrorType id, String (*msg_func)(ErrorArgs args), b
 
 tr::String tr::error_message(tr::ErrorType id, tr::ErrorArgs args)
 {
+	_error_table_init();
 	// quite the mouthful
 	Maybe<String (*&)(ErrorArgs)> perchance = _error_table.try_get(id);
 	if (perchance.is_invalid()) {

@@ -111,6 +111,13 @@ public:
 		this->buffer = static_cast<Bucket*>(
 			this->src_arena->alloc(this->settings.initial_capacity * sizeof(Bucket))
 		);
+
+		// is it already zero-initialized?
+		if (reinterpret_cast<const byte*>(this->buffer)[0] != 0) {
+			tr::strlib::explicit_memset(
+				this->buffer, this->settings.initial_capacity * sizeof(Bucket), 0
+			);
+		}
 	}
 
 	explicit HashMap(Arena& arena)
@@ -137,6 +144,11 @@ public:
 			this->src_arena->alloc(this->capacity * sizeof(Bucket))
 		);
 
+		// is it already zero-initialized?
+		if (reinterpret_cast<const byte*>(new_buffer)[0] != 0) {
+			tr::strlib::explicit_memset(new_buffer, this->capacity * sizeof(Bucket), 0);
+		}
+
 		// changing the capacity fucks with the hashing
 		// so we have to copy everything to new indexes
 		for (usize i = 0; i < old_cap; i++) {
@@ -147,7 +159,6 @@ public:
 
 			usize idx = this->get_index(old_bucket.key);
 
-			// linear probe with wrap‑around
 			for (usize probe = idx;; probe = (probe + 1) % this->capacity) {
 				Bucket& new_bucket = new_buffer[probe];
 				if (!new_bucket.occupied) {
