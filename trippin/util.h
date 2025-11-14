@@ -76,10 +76,10 @@ class HashMap
 
 	struct Bucket
 	{
-		RefWrapper<K> key;
-		RefWrapper<V> value;
-		bool occupied;
-		bool dead;
+		RefWrapper<K> key{};
+		RefWrapper<V> value{};
+		bool occupied = false;
+		bool dead = false;
 	};
 
 	HashMapSettings<K> settings;
@@ -94,7 +94,7 @@ class HashMap
 
 	void _validate() const
 	{
-		if (buffer == nullptr) {
+		if (buffer == nullptr || capacity == 0) {
 			tr::panic("uninitialized tr::HashMap<K, V>!");
 		}
 	}
@@ -111,13 +111,9 @@ public:
 		this->buffer = static_cast<Bucket*>(
 			this->src_arena->alloc(this->settings.initial_capacity * sizeof(Bucket))
 		);
-
-		// is it already zero-initialized?
-		if (reinterpret_cast<const byte*>(this->buffer)[0] != 0) {
-			tr::strlib::explicit_memset(
-				this->buffer, this->settings.initial_capacity * sizeof(Bucket), 0
-			);
-		}
+		tr::strlib::explicit_memset(
+			this->buffer, this->settings.initial_capacity * sizeof(Bucket), 0
+		);
 	}
 
 	explicit HashMap(Arena& arena)
@@ -143,11 +139,7 @@ public:
 		Bucket* new_buffer = static_cast<Bucket*>(
 			this->src_arena->alloc(this->capacity * sizeof(Bucket))
 		);
-
-		// is it already zero-initialized?
-		if (reinterpret_cast<const byte*>(new_buffer)[0] != 0) {
-			tr::strlib::explicit_memset(new_buffer, this->capacity * sizeof(Bucket), 0);
-		}
+		tr::strlib::explicit_memset(new_buffer, this->capacity * sizeof(Bucket), 0);
 
 		// changing the capacity fucks with the hashing
 		// so we have to copy everything to new indexes

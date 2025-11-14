@@ -82,9 +82,6 @@ struct ErrorType
 	}
 };
 
-// yea
-constexpr ErrorType ERROR_OK = ErrorType{0};
-
 // Does exactly what the name says. Manually choosing number values is gonna eventually cause
 // collisions, so instead we use a hashing algorithm where that won't happen until we have a
 // gazillion different error types (we don't)

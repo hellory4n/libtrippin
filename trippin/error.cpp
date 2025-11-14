@@ -46,20 +46,20 @@
 namespace tr {
 
 extern Arena core_arena;
-static HashMap<ErrorType, String (*)(ErrorArgs args)> _error_table;
 
-}
-
-// you can't control the order in which static vars are initialized, so instead of initializing
-// _error_table where it's defined, we initialize it when the first error is registered
-static inline void _error_table_init()
+// wrap it in a weird fucking function so we don't get a race condition with how static vars are
+// initialized (since you can't control the order for that)
+tr::HashMap<tr::ErrorType, tr::String (*)(tr::ErrorArgs args)>& _error_table()
 {
 	static bool initialized = false;
+	static tr::HashMap<tr::ErrorType, tr::String (*)(tr::ErrorArgs)> error_table;
 	if (!initialized) {
-		tr::_error_table =
-			tr::HashMap<tr::ErrorType, tr::String (*)(tr::ErrorArgs)>{tr::core_arena};
+		error_table = tr::HashMap<tr::ErrorType, tr::String (*)(tr::ErrorArgs)>{core_arena};
 		initialized = true;
 	}
+	return error_table;
+}
+
 }
 
 tr::String tr::Error::message() const
@@ -69,10 +69,8 @@ tr::String tr::Error::message() const
 
 bool tr::register_error_type(ErrorType id, String (*msg_func)(ErrorArgs args), bool override)
 {
-	_error_table_init();
-
 	// quite the mouthful
-	Maybe<String (*&)(ErrorArgs)> perchance = _error_table.try_get(id);
+	Maybe<String (*&)(ErrorArgs)> perchance = tr::_error_table().try_get(id);
 	if (perchance.is_valid()) {
 		if (override) {
 			perchance.unwrap() = msg_func;
@@ -80,15 +78,14 @@ bool tr::register_error_type(ErrorType id, String (*msg_func)(ErrorArgs args), b
 		return false;
 	}
 
-	_error_table[id] = msg_func;
+	tr::_error_table()[id] = msg_func;
 	return true;
 }
 
 tr::String tr::error_message(tr::ErrorType id, tr::ErrorArgs args)
 {
-	_error_table_init();
 	// quite the mouthful
-	Maybe<String (*&)(ErrorArgs)> perchance = _error_table.try_get(id);
+	Maybe<String (*&)(ErrorArgs)> perchance = tr::_error_table().try_get(id);
 	if (perchance.is_invalid()) {
 		tr::panic("error type %lu doesn't exist", static_cast<uint64>(id));
 	}
