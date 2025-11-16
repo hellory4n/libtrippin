@@ -35,14 +35,17 @@
 #include "trippin/iofs.h"
 #include "trippin/log.h"
 #include "trippin/memory.h"
-#include "trippin/util.h"
+/* clang-format off */
+// man
+#undef _TRIPPIN_BITS_STATE_H
+#define _TR_BULLSHIT_SO_THAT_IT_WORKS
+#include "trippin/bits/state.h"
+/* clang-format on */
 
 namespace tr {
 
-extern Arena core_arena;
-extern Array<File> logfiles;
-extern Signal<bool> the_new_all_on_quit;
 extern bool panicking;
+// so it doesn't keep emitting the signal forever
 extern bool panicked_on_quit;
 
 void _log(const char* color, const char* prefix, bool panic, const char* fmt, va_list arg);
@@ -51,12 +54,12 @@ void _log(const char* color, const char* prefix, bool panic, const char* fmt, va
 
 void tr::use_log_file(String path)
 {
-	Result<File> f = File::open(core_arena, path, FileMode::WRITE_TEXT);
+	Result<File> f = File::open(_tr::core_arena(), path, FileMode::WRITE_TEXT);
 	if (!f.is_valid()) {
 		tr::warn("couldn't use log file '%s': %s", *path, *f.unwrap_err().message());
 	}
 	File file = f.unwrap();
-	logfiles.add(file);
+	_tr::logfiles().add(file);
 	tr::info("using log file '%s'", *path);
 }
 
@@ -98,7 +101,7 @@ void tr::_log(const char* color, const char* prefix, bool panic, const char* fmt
 	String buf = tr::fmt_args(tr::scratchpad(), fmt, argmaballs);
 	va_end(argmaballs);
 
-	for (auto [_, file] : tr::logfiles) {
+	for (auto [_, file] : _tr::logfiles()) {
 		// idk if we care enough about logs to crash if it fails?
 		if (file.is_std) {
 			(void)file.write_string(color);

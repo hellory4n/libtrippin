@@ -128,6 +128,45 @@ static void test::memory()
 
 	tr::log("capacity: %zu KB, allocated: %zu KB", tr::bytes_to_kb(arena.capacity()),
 		tr::bytes_to_kb(arena.allocated()));
+
+	// scratchpad arena
+	{
+		tr::ScratchArena scratch{};
+		TR_DEFER(scratch.free());
+
+		auto& stig = scratch.make_ref<MaBalls>();
+		stig.waste[61] = '}';
+		scratch.reset();
+		TR_ASSERT(sig.waste[61] == 0);
+	}
+
+	// scratchpad pages
+	{
+		tr::ScratchArena scratch{};
+		TR_DEFER(scratch.free());
+
+		char* shitfuck1 = scratch.alloc<char*>(tr::mb_to_bytes(1));
+		shitfuck1[6161] = '3';
+		char* shitfuck2 = scratch.alloc<char*>(tr::mb_to_bytes(1));
+		shitfuck2[6267] = '.';
+		usize allocated_before = scratch.allocated();
+		usize capacity_before = scratch.capacity();
+
+		{
+			// this is a scratchpad that would use 2 pages
+			tr::ScratchArena scratchma{};
+			TR_DEFER(scratchma.free());
+
+			char* shitfuck3 = scratchma.alloc<char*>(tr::kb_to_bytes(256));
+			shitfuck3['s' + 't' + 'o' + 'p'] = '"';
+			char* shitfuck4 = scratchma.alloc<char*>(tr::mb_to_bytes(4));
+			shitfuck4[782723] = 'z';
+		}
+
+		tr::log("%c", shitfuck2[6267]);
+		TR_ASSERT(allocated_before == scratch.allocated());
+		TR_ASSERT(capacity_before = scratch.capacity());
+	}
 }
 
 static void test::arrays()

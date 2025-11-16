@@ -40,27 +40,12 @@
 #include <cerrno>
 
 #include "trippin/error.h"
-
-// TODO there's no way this is thread safe
-
-namespace tr {
-
-extern Arena core_arena;
-
-// wrap it in a weird fucking function so we don't get a race condition with how static vars are
-// initialized (since you can't control the order for that)
-tr::HashMap<tr::ErrorType, tr::String (*)(tr::ErrorArgs args)>& _error_table()
-{
-	static bool initialized = false;
-	static tr::HashMap<tr::ErrorType, tr::String (*)(tr::ErrorArgs)> error_table;
-	if (!initialized) {
-		error_table = tr::HashMap<tr::ErrorType, tr::String (*)(tr::ErrorArgs)>{core_arena};
-		initialized = true;
-	}
-	return error_table;
-}
-
-}
+/* clang-format off */
+// man
+#undef _TRIPPIN_BITS_STATE_H
+#define _TR_BULLSHIT_SO_THAT_IT_WORKS
+#include "trippin/bits/state.h"
+/* clang-format on */
 
 tr::String tr::Error::message() const
 {
@@ -70,7 +55,7 @@ tr::String tr::Error::message() const
 bool tr::register_error_type(ErrorType id, String (*msg_func)(ErrorArgs args), bool override)
 {
 	// quite the mouthful
-	Maybe<String (*&)(ErrorArgs)> perchance = tr::_error_table().try_get(id);
+	Maybe<String (*&)(ErrorArgs)> perchance = _tr::error_table().try_get(id);
 	if (perchance.is_valid()) {
 		if (override) {
 			perchance.unwrap() = msg_func;
@@ -78,14 +63,14 @@ bool tr::register_error_type(ErrorType id, String (*msg_func)(ErrorArgs args), b
 		return false;
 	}
 
-	tr::_error_table()[id] = msg_func;
+	_tr::error_table()[id] = msg_func;
 	return true;
 }
 
 tr::String tr::error_message(tr::ErrorType id, tr::ErrorArgs args)
 {
 	// quite the mouthful
-	Maybe<String (*&)(ErrorArgs)> perchance = tr::_error_table().try_get(id);
+	Maybe<String (*&)(ErrorArgs)> perchance = _tr::error_table().try_get(id);
 	if (perchance.is_invalid()) {
 		tr::panic("error type %lu doesn't exist", static_cast<uint64>(id));
 	}

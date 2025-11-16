@@ -262,6 +262,7 @@ constexpr usize SCRATCH_BACKING_BUFFER_SIZE = tr::mb_to_bytes(4);
 // zero overhead. It works a lot like the stack, except it can't overflow.
 class ScratchArena : public Arena
 {
+public:
 	// :)
 	ScratchArena();
 
@@ -271,6 +272,16 @@ class ScratchArena : public Arena
 	// Allocates some crap on the arena.
 	[[nodiscard, gnu::malloc]]
 	void* alloc(usize size, usize align = alignof(max_align_t)) TR_LIFETIMEBOUND override;
+
+	// Like `.alloc()` but without an `static_cast<T*>`. Mind-boggling. You're required to use a
+	// pointer so that it's not confused with `.make_ptr()`, this is the evil low-level version.
+	template<typename T>
+	requires std::is_pointer_v<T>
+	[[nodiscard, gnu::malloc]]
+	auto* alloc(usize size, usize align = alignof(std::remove_pointer_t<T>)) TR_LIFETIMEBOUND
+	{
+		return static_cast<T>(alloc(size, align));
+	}
 
 	// Does the same as freeing the arena then making a new one
 	void reset() override;
@@ -294,7 +305,7 @@ private:
 };
 
 // Temporary arena intended for temporary allocations. In other words, a sane `alloca()`.
-[[deprecated("use tr::ScratchArena")]]
+// [[deprecated("use tr::ScratchArena")]]
 Arena& scratchpad();
 
 // This is just for iterators
@@ -305,10 +316,10 @@ struct ArrayItem
 	T val;
 };
 
-// std::initializer_list<T> doesn't live very long. to prevent fucking (dangling ptrs), we have to
-// copy the data somewhere that lasts longer, and trap them in purgatory for as long as the program
-// is open.
-extern Arena _consty_arena;
+// do you ever think about whether you've gone too far
+} // namespace tr
+#include "trippin/bits/state.h"
+namespace tr {
 
 // man
 enum class ArrayClearBehavior
@@ -445,7 +456,7 @@ public:
 
 	Array(std::initializer_list<RefWrapper<const T>> initlist)
 		// std::initializer_list<T> doesn't live very long so we have to copy it
-		: Array(tr::_consty_arena, initlist)
+		: Array(_tr::consty_arena(), initlist)
 	{
 		// using an arena for this would make the rest of the class assume you can
 		// grow it later but nuh uh you can't

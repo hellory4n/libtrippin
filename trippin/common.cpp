@@ -46,33 +46,27 @@
 	#undef TRANSPARENT
 #endif
 
+#include "trippin/bits/state.cpp" // john
 #include "trippin/iofs.h"
 #include "trippin/log.h"
 #include "trippin/memory.h"
-#include "trippin/util.h"
 
 // they have to live somewhere
 namespace tr {
-
-Arena core_arena{};
-Arena _consty_arena{};
-Array<File> logfiles{core_arena};
 
 File std_in{};
 File std_out{};
 File std_err{};
 
-// yes it's spelled that on purpose
-Signal<bool> the_new_all_on_quit{core_arena};
 bool panicking = false;
 // so it doesn't keep emitting the signal forever
 bool panicked_on_quit = false;
 
-}
+} // namespace tr
 
 void tr::init()
 {
-	// man.
+	// TODO figure out a way to initialize this before tr::init idk
 	tr::std_in = File{};
 	tr::std_in.fptr = stdin;
 	tr::std_in.length = -1;
@@ -91,7 +85,7 @@ void tr::init()
 	tr::std_err.is_std = true;
 	tr::std_err.mode = FileMode::WRITE_BINARY;
 
-	logfiles.add(tr::std_out);
+	_tr::logfiles().add(tr::std_out);
 
 #ifdef TR_OS_WINDOWS
 	SetConsoleOutputCP(CP_UTF8);
@@ -110,13 +104,13 @@ void tr::free()
 		abort();
 	}
 
-	tr::the_new_all_on_quit.emit(tr::panicking);
+	_tr::on_quit().emit(tr::panicking);
 	tr::info("deinitialized libtrippin");
 
 	// FIXME since tr::scratchpad is thread_local, there is no way to properly free it
 	// from all the threads (or at least afaik)
-	core_arena.free();
-	_consty_arena.free();
+	_tr::core_arena().free();
+	_tr::consty_arena().free();
 	tr::scratchpad().free();
 }
 
@@ -129,5 +123,5 @@ void tr::quit(int32 error_code)
 
 void tr::call_on_quit(const std::function<void(bool is_panic)>& func)
 {
-	tr::the_new_all_on_quit.connect(func);
+	_tr::on_quit().connect(func);
 }

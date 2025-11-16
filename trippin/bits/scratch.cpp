@@ -51,10 +51,6 @@ public:
 		this->free();
 	}
 
-	void* alloc(usize size, usize align = alignof(max_align_t)) TR_LIFETIMEBOUND override;
-	usize allocated() const override;
-	usize capacity() const override;
-
 	[[noreturn]]
 	void reset() override
 	{
@@ -76,6 +72,8 @@ tr::ScratchArena::ScratchArena()
 
 void tr::ScratchArena::free()
 {
+	// FIXME this doesn't handle destructors but i can't be bothered
+
 	// did everything happen on the same page?
 	if (_start_page == tr::_scratch_buffer._page) {
 		tr::strlib::explicit_memset(
@@ -111,6 +109,8 @@ void tr::ScratchArena::free()
 		_start_page->alloc_pos = reinterpret_cast<usize>(_start_alloc_pos) -
 					 reinterpret_cast<usize>(tr::_scratch_buffer._page);
 	}
+
+	tr::_scratch_buffer._allocated -= _allocated;
 }
 
 void* tr::ScratchArena::alloc(usize size, usize align)

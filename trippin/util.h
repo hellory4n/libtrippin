@@ -355,6 +355,7 @@ class Signal
 	Array<SignalFunc> listeners;
 
 public:
+	Signal() {}
 	Signal(Arena& arena)
 		: listeners(arena)
 	{

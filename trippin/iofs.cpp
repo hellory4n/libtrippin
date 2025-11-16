@@ -63,10 +63,11 @@
 
 #include "trippin/iofs.h"
 #include "trippin/log.h"
+/* clang-format off */
+#include "trippin/bits/state.h"
+/* clang-format on */
 
 namespace tr {
-
-extern Arena core_arena;
 
 String exe_dir;
 String appdata_dir;
@@ -205,8 +206,8 @@ tr::String tr::path(tr::Arena& arena, tr::String path)
 
 void tr::set_paths(tr::String appdir, tr::String userdir)
 {
-	tr::app_dir = appdir.duplicate(tr::core_arena);
-	tr::user_dir = userdir.duplicate(tr::core_arena);
+	tr::app_dir = appdir.duplicate(_tr::core_arena());
+	tr::user_dir = userdir.duplicate(_tr::core_arena());
 }
 
 // TODO use only windows APIs (massive pain in the ass)
@@ -1029,7 +1030,7 @@ void tr::_init_paths()
 {
 	// TODO macOS exists
 	// TODO bsd exists
-	StringBuilder exedir{tr::core_arena, PATH_MAX - 1};
+	StringBuilder exedir{_tr::core_arena(), PATH_MAX - 1};
 	isize len = readlink("/proc/self/exe", *exedir, exedir.len());
 	if (len < 1) {
 		tr::warn("couldn't get executable directory, using relative paths for app://");
@@ -1040,15 +1041,15 @@ void tr::_init_paths()
 		// FIXME this copies the data twice for no reason, when it could just go
 		// through StringBuilder directly
 		exedir = {
-			tr::core_arena,
+			_tr::core_arena(),
 			String{*exedir, static_cast<usize>(len)}
-                        .directory(tr::core_arena)
+                        .directory(_tr::core_arena())
 		};
 	}
 
 	tr::exe_dir = exedir;
 	char* home = getenv("HOME");
-	tr::appdata_dir = tr::fmt(tr::core_arena, "%s/.local/share", home);
+	tr::appdata_dir = tr::fmt(_tr::core_arena(), "%s/.local/share", home);
 }
 
 #endif
