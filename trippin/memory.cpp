@@ -27,6 +27,7 @@
 
 #include <cstdlib>
 
+#include "trippin/bits/scratch.cpp" // yea
 #include "trippin/common.h"
 #include "trippin/log.h"
 #include "trippin/math.h"
@@ -81,7 +82,7 @@ usize tr::ArenaPage::available_space() const
 
 void* tr::ArenaPage::alloc(usize size, usize align)
 {
-	byte* base = static_cast<byte*>(this->buffer);
+	byte* base = static_cast<byte*>(buffer);
 	byte* ptr = base + this->alloc_pos;
 	usize address = reinterpret_cast<usize>(ptr);
 
@@ -90,16 +91,16 @@ void* tr::ArenaPage::alloc(usize size, usize align)
 	usize padding = misalignment != 0 ? (align - misalignment) : 0;
 
 	// consider not segfaulting
-	if (this->available_space() < padding + size) {
+	if (available_space() < padding + size) {
 		return nullptr;
 	}
 
 	// ma
-	this->alloc_pos += padding;
-	void* aligned_ptr = base + this->alloc_pos;
+	alloc_pos += padding;
+	void* aligned_ptr = base + alloc_pos;
 	// it's accessible now
 	TR_ASAN_UNPOISON_MEMORY(aligned_ptr, size);
-	this->alloc_pos += size;
+	alloc_pos += size;
 	return aligned_ptr;
 }
 
@@ -122,14 +123,14 @@ tr::Arena::Arena(ArenaSettings settings)
 void tr::Arena::free()
 {
 	// it doesn't make a page until you allocate something
-	if (this->_page == nullptr) {
+	if (_page == nullptr) {
 		return;
 	}
 
 	// :)
-	this->_call_destructors();
+	_call_destructors();
 
-	ArenaPage* head = this->_page;
+	ArenaPage* head = _page;
 	while (head->prev != nullptr) {
 		head = head->prev;
 	}
@@ -142,7 +143,7 @@ void tr::Arena::free()
 	}
 }
 
-bool tr::Arena::_initialized()
+bool tr::Arena::_initialized() const
 {
 	return _page != nullptr;
 }
@@ -150,10 +151,10 @@ bool tr::Arena::_initialized()
 void* tr::Arena::alloc(usize size, usize align)
 {
 	// does it fit in the current page?
-	if (this->_page != nullptr) {
-		void* ptr = this->_page->alloc(size, align);
+	if (_page != nullptr) {
+		void* ptr = _page->alloc(size, align);
 		if (ptr != nullptr) {
-			this->_allocated += size;
+			_allocated += size;
 			return ptr;
 		}
 	}
@@ -190,7 +191,7 @@ void* tr::Arena::alloc(usize size, usize align)
 	_pages++;
 
 	// actually allocate frfrfrfr no cap ong icl
-	void* ptr = this->_page->alloc(size, align);
+	void* ptr = _page->alloc(size, align);
 	if (ptr == nullptr) {
 		if (_settings.error_behavior == ArenaSettings::ErrorBehavior::PANIC) {
 			tr::panic(
@@ -202,32 +203,32 @@ void* tr::Arena::alloc(usize size, usize align)
 			return nullptr;
 		}
 	};
-	this->_allocated += size;
+	_allocated += size;
 	return ptr;
 }
 
 void tr::Arena::_call_destructors()
 {
 	// yea
-	while (this->_destructors != nullptr) {
+	while (_destructors != nullptr) {
 		// idfk why it does that
-		if (this->_destructors->object == nullptr) {
+		if (_destructors->object == nullptr) {
 			break;
 		}
 
-		this->_destructors->func(this->_destructors->object);
-		this->_destructors = this->_destructors->next;
+		_destructors->func(_destructors->object);
+		_destructors = _destructors->next;
 	}
 }
 
 void tr::Arena::reset()
 {
 	// it doesn't make a page until you allocate something
-	if (this->_page == nullptr) {
+	if (_page == nullptr) {
 		return;
 	}
 
-	ArenaPage* head = this->_page;
+	ArenaPage* head = _page;
 	while (head->prev != nullptr) {
 		head = head->prev;
 	}
@@ -236,7 +237,7 @@ void tr::Arena::reset()
 	// i just can't be bothered to fix Arena::alloc() to support that
 	ArenaPage* headfrfr = head;
 	while (head != nullptr && head != headfrfr) {
-		this->_capacity -= head->bufsize;
+		_capacity -= head->bufsize;
 		ArenaPage* next = head->next;
 		head->free();
 		std::free(head);
@@ -244,14 +245,16 @@ void tr::Arena::reset()
 	}
 
 	// we keep the first page :)
-	this->_page = headfrfr;
+	_page = headfrfr;
 	if (_settings.zero_initialize) {
+		TR_ASAN_UNPOISON_MEMORY(headfrfr->buffer, headfrfr->bufsize);
 		tr::strlib::explicit_memset(headfrfr->buffer, headfrfr->bufsize, 0);
+		TR_ASAN_POISON_MEMORY(headfrfr->buffer, headfrfr->bufsize);
 	}
 	headfrfr->alloc_pos = 0;
 	headfrfr->prev = nullptr;
 	headfrfr->next = nullptr;
-	this->_allocated = 0;
+	_allocated = 0;
 }
 
 usize tr::Arena::allocated() const

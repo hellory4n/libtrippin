@@ -97,8 +97,8 @@ struct ArenaSettings
 	usize page_size = tr::kb_to_bytes(4);
 	// null = no limit (grows infinitely)
 	Maybe<usize> max_pages = {};
-	// If false, the pages will be left with random garbage (like malloc/operator
-	// new). Maybe you want that, idk
+	// If false, the pages will be left with random garbage (like malloc). Maybe you want that,
+	// idk
 	bool zero_initialize = true;
 	// What should happen on allocation errors
 	ErrorBehavior error_behavior = ArenaSettings::ErrorBehavior::PANIC;
@@ -132,19 +132,9 @@ struct DestructorCall
 	DestructorCall* next;
 };
 
-// Life changing allocator.
+// An arena allocator that grows infinitely through pages. Good enough 90% of the time. Saucy.
 class Arena
 {
-	ArenaSettings _settings = {};
-	usize _capacity = 0;
-	usize _allocated = 0;
-	usize _pages = 0;
-	ArenaPage* _page = nullptr;
-	DestructorCall* _destructors = nullptr;
-
-	bool _initialized();
-	void _call_destructors();
-
 public:
 	// :)
 	Arena()
@@ -163,24 +153,24 @@ public:
 	}
 
 	// Frees the arena.
-	void free();
+	virtual void free();
 
 	// Allocates some crap on the arena.
 	[[nodiscard, gnu::malloc]]
-	void* alloc(usize size, usize align = alignof(max_align_t)) TR_LIFETIMEBOUND;
+	virtual void* alloc(usize size, usize align = alignof(max_align_t)) TR_LIFETIMEBOUND;
 
 	// Like `.alloc()` but without an `static_cast<T*>`. Mind-boggling. You're required to use a
 	// pointer so that it's not confused with `.make_ptr()`, this is the evil low-level version.
 	template<typename T>
 	requires std::is_pointer_v<T>
 	[[nodiscard, gnu::malloc]]
-	auto* alloc(usize size, usize align = alignof(T)) TR_LIFETIMEBOUND
+	auto* alloc(usize size, usize align = alignof(std::remove_pointer_t<T>)) TR_LIFETIMEBOUND
 	{
 		return static_cast<T>(alloc(size, align));
 	}
 
 	// Reuses the entire arena and sets everything to 0 :)
-	void reset();
+	virtual void reset();
 
 	// Kinda like `new`/`malloc` but for arenas. The funky variadic templates
 	// allow you to pass any arguments here to the actual constructor. Note this
@@ -245,14 +235,66 @@ public:
 	}
 
 	// Returns how much has already been allocated in the arena, in bytes.
-	usize allocated() const;
+	virtual usize allocated() const;
 
 	// Returns how many bytes the arena can hold before expanding, in bytes.
-	usize capacity() const;
+	virtual usize capacity() const;
+
+protected:
+	// inheritance based as a bit of a hack so i don't have to change Arena& to Allocator& or
+	// whatever everywhere, + all the allocators are arena-like anyway
+	ArenaSettings _settings = {};
+	usize _capacity = 0;
+	usize _allocated = 0;
+	usize _pages = 0;
+	ArenaPage* _page = nullptr;
+	DestructorCall* _destructors = nullptr;
+
+	virtual bool _initialized() const;
+	void _call_destructors();
 };
 
-// Temporary arena intended for temporary allocations. In other words, a sane
-// `alloca()`.
+// This is a page size (it can use multiple pages)
+constexpr usize SCRATCH_BACKING_BUFFER_SIZE = tr::mb_to_bytes(4);
+
+// Looks like an arena, can be passed as an arena, but is actually not really, instead it shares a
+// buffer with other ScratchArenas so that it can be used for temporary allocations with pratically
+// zero overhead. It works a lot like the stack, except it can't overflow.
+class ScratchArena : public Arena
+{
+	// :)
+	ScratchArena();
+
+	// Frees the arena.
+	void free() override;
+
+	// Allocates some crap on the arena.
+	[[nodiscard, gnu::malloc]]
+	void* alloc(usize size, usize align = alignof(max_align_t)) TR_LIFETIMEBOUND override;
+
+	// Does the same as freeing the arena then making a new one
+	void reset() override;
+
+	// Returns how much has already been allocated in the arena, in bytes.
+	usize allocated() const override;
+
+	// Returns the size of the underlying buffer. Note these can still expand (like a regular
+	// arena does), you can allocate more than whatever this returns.
+	usize capacity() const override;
+
+private:
+	byte* _start_alloc_pos = nullptr;
+	byte* _end_alloc_pos = nullptr;
+	ArenaPage* _start_page = nullptr;
+
+	bool _initialized() const override
+	{
+		return _start_alloc_pos != nullptr;
+	}
+};
+
+// Temporary arena intended for temporary allocations. In other words, a sane `alloca()`.
+[[deprecated("use tr::ScratchArena")]]
 Arena& scratchpad();
 
 // This is just for iterators
@@ -263,9 +305,9 @@ struct ArrayItem
 	T val;
 };
 
-// std::initializer_list<T> doesn't live very long. to prevent fucking (dangling
-// ptrs), we have to copy the data somewhere that lasts longer, and trap them in
-// purgatory for as long as the program is open.
+// std::initializer_list<T> doesn't live very long. to prevent fucking (dangling ptrs), we have to
+// copy the data somewhere that lasts longer, and trap them in purgatory for as long as the program
+// is open.
 extern Arena _consty_arena;
 
 // man
@@ -275,14 +317,13 @@ enum class ArrayClearBehavior
 	DO_NOTHING
 };
 
-// used for when you don't set the length (which you usually do if you're just
-// gonna use .add())
+// used for when you don't set the length (which you usually do if you're just gonna use .add())
 static constexpr usize ARRAY_INITIAL_CAPACITY = 16;
 
 // A slice of memory, usually from an arena but can point to anywhere. Similar to a Go slice, or
 // other examples. Arrays don't own the value and don't use fancy RAII faffery, so you can pass them
 // by value. Arrays can be used both as a vector (`tr::Array<T>` ~= `std::vector<T>`), and, as an
-// immutable view (`tr::Array<const T>` ~= `const T*`)
+// immutable view (`tr::Array<const T>` ~= `const T*` or `std::span<T>`)
 template<typename T>
 class Array
 {
