@@ -143,11 +143,6 @@ void tr::Arena::free()
 	}
 }
 
-bool tr::Arena::_initialized() const
-{
-	return _page != nullptr;
-}
-
 void* tr::Arena::alloc(usize size, usize align)
 {
 	// does it fit in the current page?
@@ -227,6 +222,8 @@ void tr::Arena::reset()
 	if (_page == nullptr) {
 		return;
 	}
+
+	_call_destructors();
 
 	ArenaPage* head = _page;
 	while (head->prev != nullptr) {

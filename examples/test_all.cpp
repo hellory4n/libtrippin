@@ -123,7 +123,8 @@ static void test::memory()
 	sig.waste[37] = 'm';
 
 	arena.reset();
-	TR_ASSERT_MSG(sig.waste[37] == 0, "it didn't reset properly :(");
+	// if asan is enabled it'll be poisoned and crash and die
+	// TR_ASSERT_MSG(sig.waste[37] == 0, "it didn't reset properly :(");
 	(void)arena.alloc(tr::mb_to_bytes(1));
 
 	tr::log("capacity: %zu KB, allocated: %zu KB", tr::bytes_to_kb(arena.capacity()),
@@ -137,7 +138,7 @@ static void test::memory()
 		auto& stig = scratch.make_ref<MaBalls>();
 		stig.waste[61] = '}';
 		scratch.reset();
-		TR_ASSERT(sig.waste[61] == 0);
+		// TR_ASSERT(sig.waste[61] == 0);
 	}
 
 	// scratchpad pages

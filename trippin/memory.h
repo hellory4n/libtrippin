@@ -72,7 +72,7 @@ static constexpr usize bytes_to_gb(usize x)
 // memcpy is evil and breaks vtables :(
 template<typename T>
 requires(!std::is_const_v<T>)
-void _copy_items(RefWrapper<T>* dst, const RefWrapper<T>* src, usize len)
+constexpr void _copy_items(RefWrapper<T>* dst, const RefWrapper<T>* src, usize len)
 {
 	for (usize i = 0; i < len; i++) {
 		if constexpr (std::is_reference_v<T> || std::is_trivially_copyable_v<T>) {
@@ -250,7 +250,6 @@ protected:
 	ArenaPage* _page = nullptr;
 	DestructorCall* _destructors = nullptr;
 
-	virtual bool _initialized() const;
 	void _call_destructors();
 };
 
@@ -294,14 +293,9 @@ public:
 	usize capacity() const override;
 
 private:
-	byte* _start_alloc_pos = nullptr;
-	byte* _end_alloc_pos = nullptr;
 	ArenaPage* _start_page = nullptr;
-
-	bool _initialized() const override
-	{
-		return _start_alloc_pos != nullptr;
-	}
+	usize _start_offset = 0;
+	usize _allocated = 0;
 };
 
 // Temporary arena intended for temporary allocations. In other words, a sane `alloca()`.
@@ -769,7 +763,8 @@ public:
 	constexpr List() {}
 	constexpr List(std::initializer_list<const T> initlist)
 	{
-		tr::_copy_items<T>(_array, initlist.begin(), tr::min(initlist.size(), N));
+		static_assert(initlist.size() <= N, "you buffoon the sizes don't match");
+		tr::_copy_items<T>(_array, initlist.begin(), initlist.size());
 	}
 
 	constexpr Maybe<const T&> try_get(usize idx) const TR_LIFETIMEBOUND

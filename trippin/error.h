@@ -56,7 +56,7 @@ union ErrorArg {
 	const void* const_ptr;
 };
 
-// Error argsdata, which is useful for errors that need data. You get 16 slots which can be a
+// Error arguments, which is useful for errors that need data. You get 16 slots which can be an
 // arithmetic type, string, or void pointer. I can't imagine errors needing more than that.
 using ErrorArgs = List<16, ErrorArg>;
 

@@ -31,7 +31,7 @@
 
 namespace tr {
 
-// implementation for the scratch arena's backing buffer except not really bcuz half of it is
+// implementation for the scratch arena's backing buffer except not really bcuz half (most) of it is
 // implemented in ScratchArena
 class _scratchBuffer : public Arena
 {
@@ -39,22 +39,21 @@ class _scratchBuffer : public Arena
 
 public:
 	_scratchBuffer()
+		: Arena(ArenaSettings{
+			  .page_size = SCRATCH_BACKING_BUFFER_SIZE,
+			  .max_pages = {},
+			  .zero_initialize = true,
+			  .error_behavior = ArenaSettings::ErrorBehavior::PANIC,
+		  })
 	{
-		void* page_ptr = malloc(sizeof(ArenaPage));
-		TR_ASSERT_MSG(page_ptr != nullptr, "minor inconvenience");
-		_page = new (page_ptr) ArenaPage(ArenaSettings{}, SCRATCH_BACKING_BUFFER_SIZE);
+		// ScratchArena expects *some* page to exist, force the base arena to make one
+		(void)alloc(1);
 	}
 
 	// so it's automatically freed as a static var
 	~_scratchBuffer()
 	{
 		this->free();
-	}
-
-	[[noreturn]]
-	void reset() override
-	{
-		tr::panic("dumbass you can't do that on a tr::_scratchBuffer");
 	}
 };
 
@@ -64,60 +63,62 @@ thread_local _scratchBuffer _scratch_buffer{};
 
 tr::ScratchArena::ScratchArena()
 {
-	_start_alloc_pos = tr::_scratch_buffer._page->alloc_pos +
-			   reinterpret_cast<byte*>(tr::_scratch_buffer._page);
-	_end_alloc_pos = _start_alloc_pos;
-	_start_page = tr::_scratch_buffer._page;
+	_start_page = _scratch_buffer._page;
+	_start_offset = _start_page->alloc_pos;
+	_allocated = 0;
 }
 
 void tr::ScratchArena::free()
 {
 	// FIXME this doesn't handle destructors but i can't be bothered
 
-	// did everything happen on the same page?
-	if (_start_page == tr::_scratch_buffer._page) {
-		tr::strlib::explicit_memset(
-			reinterpret_cast<void*>(_start_alloc_pos),
-			static_cast<usize>(_end_alloc_pos - _start_alloc_pos), 0
-		);
-		// scratcharena's alloc pos includes the page's address, the page doesn't do that
-		_start_page->alloc_pos = static_cast<usize>(
-			_start_alloc_pos - reinterpret_cast<byte*>(tr::_scratch_buffer._page)
-		);
-	}
-	else {
-		ArenaPage* head = tr::_scratch_buffer._page;
-		// tr::_scratchBuffer can't have a null page, it always has smth allocated
-		while (head->prev != _start_page) {
-			// TODO reuse the pages
-			// for now i dont wanna deal with making _scratchBuffer::alloc() or
-			// Arena::alloc support that, so just delete them
-			ArenaPage* old_head = head;
-			head = head->prev;
+	ArenaPage* current = _scratch_buffer._page;
 
-			tr::_scratch_buffer._capacity -= old_head->bufsize;
-			old_head->free();
-			std::free(old_head);
+	// if everything happened on the same page, just go back
+	if (current == _start_page) {
+		byte* base = static_cast<byte*>(_start_page->buffer);
+		byte* start_ptr = base + _start_offset;
+		byte* end_ptr = base + _start_page->alloc_pos;
+
+		TR_ASAN_UNPOISON_MEMORY(start_ptr, static_cast<usize>(end_ptr - start_ptr));
+		tr::strlib::explicit_memset(start_ptr, static_cast<usize>(end_ptr - start_ptr), 0);
+		TR_ASAN_POISON_MEMORY(start_ptr, static_cast<usize>(end_ptr - start_ptr));
+
+		_start_page->alloc_pos = _start_offset;
+	}
+	// if it used more pages then free those
+	else {
+		while (current != _start_page) {
+			ArenaPage* prev = current->prev;
+
+			_scratch_buffer._capacity -= current->bufsize;
+			current->free();
+			std::free(current);
+
+			current = prev;
 		}
 
-		tr::strlib::explicit_memset(
-			_start_alloc_pos,
-			_start_page->bufsize - reinterpret_cast<usize>(_start_alloc_pos) -
-				reinterpret_cast<usize>(_start_page),
-			0
-		);
-		_start_page->alloc_pos = reinterpret_cast<usize>(_start_alloc_pos) -
-					 reinterpret_cast<usize>(tr::_scratch_buffer._page);
+		// then go back at the starting page
+		byte* base = static_cast<byte*>(_start_page->buffer);
+		byte* start_ptr = base + _start_offset;
+		byte* end_ptr = base + _start_page->alloc_pos;
+
+		TR_ASAN_UNPOISON_MEMORY(start_ptr, static_cast<usize>(end_ptr - start_ptr));
+		tr::strlib::explicit_memset(start_ptr, static_cast<usize>(end_ptr - start_ptr), 0);
+		TR_ASAN_POISON_MEMORY(start_ptr, static_cast<usize>(end_ptr - start_ptr));
+
+		_start_page->alloc_pos = _start_offset;
+		_start_page->next = nullptr;
+		_scratch_buffer._page = _start_page;
 	}
 
-	tr::_scratch_buffer._allocated -= _allocated;
+	_scratch_buffer._allocated -= _allocated;
+	_allocated = 0;
 }
 
 void* tr::ScratchArena::alloc(usize size, usize align)
 {
 	void* ptr = tr::_scratch_buffer.alloc(size, align);
-	_end_alloc_pos = tr::_scratch_buffer._page->alloc_pos +
-			 reinterpret_cast<byte*>(tr::_scratch_buffer._page);
 
 	// ArenaPage::alloc except without the alloc part
 	usize address = reinterpret_cast<usize>(ptr);
