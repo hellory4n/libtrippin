@@ -161,11 +161,12 @@ tr::String tr::String::substr(tr::Arena& arena, usize start, usize end) const
 	else {
 		end = tr::clamp(end, start, len());
 	}
+	end++; // hack for compatibility
 
-	char* newstr = arena.alloc<char*>(end - start + 1);
-	memcpy(newstr, buf() + start, end);
-	tr::strlib::explicit_memset(newstr + end, 1, 0);
-	return {newstr, end - start + 1};
+	char* newstr = arena.alloc<char*>(end - start + 2);
+	memcpy(newstr, buf() + start, end - start);
+	newstr[end - start] = 0;
+	return {newstr, end - start};
 }
 
 tr::Array<usize> tr::String::find(tr::Arena& arena, char c, usize start, usize end) const
@@ -177,7 +178,7 @@ tr::Array<usize> tr::String::find(tr::Arena& arena, char c, usize start, usize e
 	if (end == 0) {
 		end = len();
 	}
-	end = tr::clamp(end, start, len()) + 1;
+	end = tr::clamp(end, start, len());
 
 	Array<usize> indexes{arena};
 	for (usize i = start; i < end; i++) {
@@ -205,6 +206,10 @@ tr::Array<usize> tr::String::find(tr::Arena& arena, tr::String str, usize start,
 
 	Array<usize> indexes{arena};
 	for (usize i = start; i < end; i++) {
+		if (i + str.len() > len()) {
+			continue;
+		}
+
 		if (memcmp(&buf()[i], *str, str.len()) == 0) {
 			indexes.add(i);
 		}
@@ -220,7 +225,7 @@ tr::String tr::String::concat(tr::Arena& arena, tr::String other) const
 	StringBuilder out{arena, len() + other.len()};
 	memcpy(*out, buf(), len());
 	memcpy(*out + len(), *other, other.len());
-	tr::strlib::explicit_memset(*out + len() + other.len() + 1, 1, 0);
+	(*out)[len() + other.len()] = 0;
 	return out;
 }
 
@@ -228,6 +233,10 @@ bool tr::String::starts_with(tr::String str) const
 {
 	_validate();
 	str._validate();
+	// if you try to do "abc".starts_with("abcd") it should return false
+	if (str.len() > len()) {
+		return false;
+	}
 
 	usize substr_len = tr::clamp(str.len(), 0u, len());
 	return String{buf(), substr_len} == String{*str, substr_len};
@@ -237,6 +246,10 @@ bool tr::String::ends_with(tr::String str) const
 {
 	_validate();
 	str._validate();
+	// if you try to do "abc".ends_with("abcd") it should return false
+	if (str.len() > len()) {
+		return false;
+	}
 
 	usize substr_len = tr::clamp(str.len(), 0u, len());
 	return String{buf() + len() - substr_len, substr_len} == String{*str, substr_len};
@@ -266,7 +279,7 @@ tr::String tr::String::directory(tr::Arena& arena) const
 	// TODO consider not
 	for (usize i = len() - 1; i < len(); i--) {
 		if (buf()[i] == '/' || buf()[i] == '\\') {
-			return substr(arena, 0, i);
+			return substr(arena, 0, i - 1);
 		}
 	}
 
