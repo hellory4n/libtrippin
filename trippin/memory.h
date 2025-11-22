@@ -142,6 +142,8 @@ public:
 	{
 	}
 
+	virtual ~Arena() {} // shutu p
+
 	explicit Arena(ArenaSettings settings);
 
 	// Initializes the arena. `page_size` is the base size for the buffers, you

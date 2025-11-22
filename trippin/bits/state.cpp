@@ -23,6 +23,9 @@
  *
  */
 
+#include <atomic>
+#include <memory>
+
 #include "trippin/error.h"
 #include "trippin/iofs.h"
 #include "trippin/memory.h"
@@ -35,42 +38,58 @@
 #include "trippin/bits/state.h"
 /* clang-format on */
 
+// TODO this has to be thread-safe somehow
+// you could use a thread_local variable but freeing becomes fucky and some state has to be shared
+// so i'm just using an std::atomic<std::shared_ptr<T>> here, along with some helper functions so
+// that it gets freed properly
+// there's probably a better way but this is good enough for now
+
+void free_arena(tr::Arena* arena)
+{
+	arena->free();
+	delete arena;
+}
+
 tr::Arena& tr::_tr::core_arena()
 {
 	static bool initialized = false;
-	static Arena core_arena;
+	// THE HORROR HAS BECOME TOO GREAT FOR ANY ONE MIND TO BARE
+	static std::atomic<std::shared_ptr<Arena>> core_arena;
 	if (!initialized) {
-		core_arena = Arena{};
+		core_arena = std::shared_ptr<Arena>{new Arena(), free_arena};
 		initialized = true;
 	}
-	return core_arena;
+	return *static_cast<std::shared_ptr<Arena>>(core_arena);
 }
 
 tr::Arena& tr::_tr::consty_arena()
 {
 	static bool initialized = false;
-	static Arena consty_arena;
+	// THE HORROR HAS BECOME TOO GREAT FOR ANY ONE MIND TO BARE
+	static std::atomic<std::shared_ptr<Arena>> consty_arena;
 	if (!initialized) {
-		consty_arena = Arena{};
+		consty_arena = std::shared_ptr<Arena>{new Arena(), free_arena};
 		initialized = true;
 	}
-	return consty_arena;
+	return *static_cast<std::shared_ptr<Arena>>(consty_arena);
 }
 
 tr::Array<tr::File>& tr::_tr::logfiles()
 {
 	static bool initialized = false;
-	static Array<File> logfiles;
+	// THE HORROR HAS BECOME TOO GREAT FOR ANY ONE MIND TO BARE
+	static std::atomic<std::shared_ptr<Array<File>>> logfiles;
 	if (!initialized) {
-		logfiles = Array<File>{tr::_tr::core_arena()};
+		logfiles = std::shared_ptr<Array<File>>{new Array<File>{core_arena()}};
 		initialized = true;
 	}
-	return logfiles;
+	return *static_cast<std::shared_ptr<Array<File>>>(logfiles);
 }
 
 tr::Signal<bool>& tr::_tr::on_quit()
 {
 	static bool initialized = false;
+	// THE HORROR HAS BECOME TOO GREAT FOR ANY ONE MIND TO BARE
 	static Signal<bool> on_quit;
 	if (!initialized) {
 		on_quit = Signal<bool>{tr::_tr::core_arena()};
@@ -82,21 +101,29 @@ tr::Signal<bool>& tr::_tr::on_quit()
 tr::WrapArena& tr::_tr::tmp_strings()
 {
 	static bool initialized = false;
-	static WrapArena arena;
+	// THE HORROR HAS BECOME TOO GREAT FOR ANY ONE MIND TO BARE
+	static std::atomic<std::shared_ptr<WrapArena>> arena;
 	if (!initialized) {
-		arena = WrapArena{MAX_TEMP_STRING_SIZE};
+		arena = std::shared_ptr<WrapArena>{new WrapArena(MAX_TEMP_STRING_SIZE), free_arena};
 		initialized = true;
 	}
-	return arena;
+	return *static_cast<std::shared_ptr<WrapArena>>(arena);
 }
 
 tr::HashMap<tr::ErrorType, tr::String (*)(tr::ErrorArgs args)>& tr::_tr::error_table()
 {
 	static bool initialized = false;
-	static HashMap<ErrorType, String (*)(ErrorArgs args)> error_table;
+	// THE HORROR HAS BECOME TOO GREAT FOR ANY ONE MIND TO BARE
+	static std::atomic<std::shared_ptr<HashMap<ErrorType, String (*)(ErrorArgs args)>>>
+		error_table;
 	if (!initialized) {
-		error_table = HashMap<ErrorType, String (*)(ErrorArgs)>{tr::_tr::core_arena()};
+		// AND YOU MAY FIND YOURSELF
+		error_table = std::shared_ptr<HashMap<ErrorType, String (*)(ErrorArgs)>>{
+			new HashMap<ErrorType, String (*)(ErrorArgs args)>(tr::_tr::core_arena())
+		};
 		initialized = true;
 	}
-	return error_table;
+	return *static_cast<std::shared_ptr<HashMap<ErrorType, String (*)(ErrorArgs args)>>>(
+		error_table
+	);
 }

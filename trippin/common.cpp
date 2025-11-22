@@ -107,10 +107,12 @@ void tr::free()
 	_tr::on_quit().emit(tr::panicking);
 	tr::info("deinitialized libtrippin");
 
+	for (auto [_, file] : _tr::logfiles()) {
+		file.close();
+	}
+
 	// FIXME since tr::scratchpad is thread_local, there is no way to properly free it
 	// from all the threads (or at least afaik)
-	_tr::core_arena().free();
-	_tr::consty_arena().free();
 	tr::scratchpad().free();
 }
 
