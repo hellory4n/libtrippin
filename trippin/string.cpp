@@ -29,6 +29,7 @@
 #include <cstdio>
 #include <cstring>
 
+#include "trippin/bits/state.h"
 #include "trippin/common.h"
 #include "trippin/log.h"
 #include "trippin/math.h"
@@ -513,6 +514,22 @@ tr::String tr::fmt(tr::Arena& arena, const char* fmt, ...)
 	va_list args;
 	va_start(args, fmt);
 	String str = tr::fmt_args(arena, fmt, args);
+	va_end(args);
+	return str;
+}
+
+tr::TempString tr::tmp_fmt(const char* fmt, ...)
+{
+	va_list args;
+	va_start(args, fmt);
+
+	// sanity check
+	usize len = tr::strlib::sprintf_len(fmt, args);
+	if (len > MAX_TEMP_STRING_SIZE) {
+		tr::panic("temp string too big (expected <=256 KB, got %zu B)", len);
+	}
+
+	TempString str = tr::fmt_args(_tr::tmp_strings(), fmt, args);
 	va_end(args);
 	return str;
 }

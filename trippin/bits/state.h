@@ -51,6 +51,8 @@ namespace _tr {
 	#if defined(_TRIPPIN_IOFS_H) && defined(_TR_BULLSHIT_SO_THAT_IT_WORKS)
 	Array<File>& logfiles();
 	#endif
+
+	WrapArena& tmp_strings();
 #endif
 
 #if defined(_TRIPPIN_UTIL_H) && defined(_TR_BULLSHIT_SO_THAT_IT_WORKS)

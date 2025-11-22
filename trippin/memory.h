@@ -295,11 +295,38 @@ public:
 private:
 	ArenaPage* _start_page = nullptr;
 	usize _start_offset = 0;
-	usize _allocated = 0;
+};
+
+// An arena that wraps around once it's joever. Really just used for `tr::tmp_fmt`'s implementation.
+class WrapArena : public Arena
+{
+public:
+	// :)
+	WrapArena() {}
+
+	// :)
+	explicit WrapArena(usize size);
+
+	// Frees the arena.
+	void free() override;
+
+	// Allocates some crap on the arena.
+	[[nodiscard, gnu::malloc]]
+	void* alloc(usize size, usize align = alignof(max_align_t)) TR_LIFETIMEBOUND override;
+
+	// Like `.alloc()` but without an `static_cast<T*>`. Mind-boggling. You're required to use a
+	// pointer so that it's not confused with `.make_ptr()`, this is the evil low-level version.
+	template<typename T>
+	requires std::is_pointer_v<T>
+	[[nodiscard, gnu::malloc]]
+	auto* alloc(usize size, usize align = alignof(std::remove_pointer_t<T>)) TR_LIFETIMEBOUND
+	{
+		return static_cast<T>(alloc(size, align));
+	}
 };
 
 // Temporary arena intended for temporary allocations. In other words, a sane `alloca()`.
-// [[deprecated("use tr::ScratchArena")]]
+// [[deprecated("use tr::ScratchArena or, tr::tmp_fmt for strings")]]
 Arena& scratchpad();
 
 // This is just for iterators

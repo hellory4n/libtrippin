@@ -264,6 +264,43 @@ usize tr::Arena::capacity() const
 	return this->_capacity;
 }
 
+tr::WrapArena::WrapArena(usize size)
+	: Arena(ArenaSettings{
+		  .page_size = size,
+		  .max_pages = 1,
+		  .zero_initialize = true,
+		  .error_behavior = ArenaSettings::ErrorBehavior::PANIC,
+	  })
+{
+	// force the underlying arena to make a page already
+	(void)Arena::alloc(1);
+}
+
+void tr::WrapArena::free()
+{
+	Arena::free();
+}
+
+void* tr::WrapArena::alloc(usize size, usize align)
+{
+	TR_ASSERT(_page);
+
+	void* ptr = _page->alloc(size, align);
+	if (ptr != nullptr) {
+		return ptr;
+	}
+
+	// it busted
+	if (capacity() < size) {
+		tr::panic("can't allocate %zu B in wrap arena of %zu B", size, capacity());
+	}
+
+	// TODO slowly poison the memory which is about to be overwritten
+	// for now i can't be bothered
+	_page->alloc_pos = 0;
+	return _page->alloc(size, align);
+}
+
 tr::Arena& tr::scratchpad()
 {
 	return tr::_the_real_scratchpad;

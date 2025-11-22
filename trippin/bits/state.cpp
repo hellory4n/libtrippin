@@ -23,12 +23,13 @@
  *
  */
 
-/* clang-format off */
-#include "trippin/memory.h"
-#include "trippin/iofs.h"
-#include "trippin/util.h"
 #include "trippin/error.h"
+#include "trippin/iofs.h"
+#include "trippin/memory.h"
+#include "trippin/string.h"
+#include "trippin/util.h"
 // man
+/* clang-format off */
 #undef _TRIPPIN_BITS_STATE_H
 #define _TR_BULLSHIT_SO_THAT_IT_WORKS
 #include "trippin/bits/state.h"
@@ -76,6 +77,17 @@ tr::Signal<bool>& tr::_tr::on_quit()
 		initialized = true;
 	}
 	return on_quit;
+}
+
+tr::WrapArena& tr::_tr::tmp_strings()
+{
+	static bool initialized = false;
+	static WrapArena arena;
+	if (!initialized) {
+		arena = WrapArena{MAX_TEMP_STRING_SIZE};
+		initialized = true;
+	}
+	return arena;
 }
 
 tr::HashMap<tr::ErrorType, tr::String (*)(tr::ErrorArgs args)>& tr::_tr::error_table()

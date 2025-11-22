@@ -564,13 +564,18 @@ String fmt_args(Arena& arena, const char* fmt, va_list arg);
 [[gnu::format(printf, 2, 3)]]
 String fmt(Arena& arena, const char* fmt, ...);
 
+// Used to indicate that this string should be used as soon as possible, if you need it for longer,
+// use `String::duplicate`.
+using TempString = String;
+
+constexpr usize MAX_TEMP_STRING_SIZE = tr::kb_to_bytes(256);
+
 // Uses fancy allocation technology to return a temporary string from printf-like formatting with
 // near zero overhead. However, the strings are very much temporary, so they should be used as soon
-// as possible, otherwise the strings will get poisoned (using the constant 0xbebebebe...), and then
-// eventually overwritten as the program runs. If you need a string that lives longer, duplicate the
-// string, or use the regular `tr::fmt`.
+// as possible. If you need a string that lives longer, duplicate the string, or use the regular
+// `tr::fmt`.
 [[gnu::format(printf, 1, 2)]]
-String tmp_fmt(const char* fmt, ...);
+TempString tmp_fmt(const char* fmt, ...);
 
 }
 

@@ -264,6 +264,15 @@ static void test::strings()
 		memcmp(utf8.to_utf32(tr::scratchpad()).buf(), U"изгиб tbh😀😀😀🕴️🕴️",
 		       sizeof(U"изгиб tbh😀😀😀🕴️🕴️")) == 0
 	);
+
+	// temp strings
+	tr::TempString tmp1 = tr::tmp_fmt("thi%s", "ng");
+	TR_ASSERT(tmp1 == "thing"); // just make sure it doesn't segfault
+	// test wrapping
+	for (usize i = 0; i < 50'000; i++) {
+		tr::tmp_fmt("HOME DEPOT");
+	}
+	TR_ASSERT(tmp1 != "thing"); // should be overwritten by now
 }
 
 static void test::hashmaps()
