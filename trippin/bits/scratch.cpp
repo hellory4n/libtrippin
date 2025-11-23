@@ -91,6 +91,7 @@ void tr::ScratchArena::free()
 		while (current != _start_page) {
 			ArenaPage* prev = current->prev;
 
+			_scratch_buffer._pages--;
 			_scratch_buffer._capacity -= current->bufsize;
 			current->free();
 			std::free(current);

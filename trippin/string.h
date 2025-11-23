@@ -577,6 +577,9 @@ constexpr usize MAX_TEMP_STRING_SIZE = tr::kb_to_bytes(256);
 [[gnu::format(printf, 1, 2)]]
 TempString tmp_fmt(const char* fmt, ...);
 
+// doo doo doo
+TempString tmp_fmt_args(const char* fmt, va_list arg);
+
 }
 
 #endif

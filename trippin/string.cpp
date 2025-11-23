@@ -410,7 +410,6 @@ tr::Array<tr::String> tr::String::split(tr::Arena& arena, char delimiter) const
 
 tr::ArrayItem<char32> tr::StringBuilder::Iterator::operator*() const
 {
-	// TODO all this calculation crap could be done once since strings are immutable
 	int32 codepoint;
 	utf8proc_iterate(
 		reinterpret_cast<const uint8*>(_ptr), static_cast<isize>(_len), &codepoint
@@ -470,7 +469,7 @@ void tr::StringBuilder::append(tr::String s)
 		return;
 	}
 
-	_array.reserve(s.len());
+	_array.reserve(s.len() + 1);
 	for (usize i = 0; i < s.len(); i++) {
 		append((*s)[i]);
 	}
@@ -481,11 +480,9 @@ void tr::StringBuilder::appendf(const char* fmt, ...)
 	va_list arg;
 	va_start(arg, fmt);
 
-	// mild evilness
-	usize len = tr::strlib::sprintf_len(fmt, arg);
-	char* tmpstr = tr::scratchpad().alloc<char*>(len + 1);
-	std::vsnprintf(tmpstr, len + 1, fmt, arg);
-	append(String{tmpstr, len});
+	tr::Arena another_fucking_arena{};
+	append(tr::fmt_args(another_fucking_arena, fmt, arg));
+	another_fucking_arena.free();
 
 	va_end(arg);
 }
@@ -518,18 +515,22 @@ tr::String tr::fmt(tr::Arena& arena, const char* fmt, ...)
 	return str;
 }
 
-tr::TempString tr::tmp_fmt(const char* fmt, ...)
+tr::TempString tr::tmp_fmt_args(const char* fmt, va_list arg)
 {
-	va_list args;
-	va_start(args, fmt);
-
 	// sanity check
-	usize len = tr::strlib::sprintf_len(fmt, args);
+	usize len = tr::strlib::sprintf_len(fmt, arg);
 	if (len > MAX_TEMP_STRING_SIZE) {
 		tr::panic("temp string too big (expected <=256 KB, got %zu B)", len);
 	}
 
-	TempString str = tr::fmt_args(_tr::tmp_strings(), fmt, args);
+	return tr::fmt_args(_tr::tmp_strings(), fmt, arg);
+}
+
+tr::TempString tr::tmp_fmt(const char* fmt, ...)
+{
+	va_list args;
+	va_start(args, fmt);
+	TempString man = tr::tmp_fmt_args(fmt, args);
 	va_end(args);
-	return str;
+	return man;
 }

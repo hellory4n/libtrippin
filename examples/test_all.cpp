@@ -73,7 +73,7 @@ static void test::util()
 	// TR_TRY() and errors
 	auto fucking_error = [](tr::ErrorArgs args) -> tr::String {
 		(void)args;
-		return tr::fmt(tr::scratchpad(), "fuck %s", *args[0].str);
+		return tr::tmp_fmt("fuck %s", *args[0].str);
 	};
 	constexpr tr::ErrorType FUCKING_ERROR = tr::errtype_from_string("test::FUCKING_ERROR");
 	tr::log("fucking error's type is %lu", FUCKING_ERROR.id);
@@ -174,7 +174,10 @@ static void test::arrays()
 {
 	tr::log("\n==== ARRAYS ====");
 
-	tr::Array<int64> array(tr::scratchpad(), {1, 2, 3, 4, 5});
+	tr::ScratchArena scratch{};
+	TR_DEFER(scratch.free());
+
+	tr::Array<int64> array(scratch, {1, 2, 3, 4, 5});
 	array.add(66);
 	for (auto [i, val] : array) {
 		tr::log("array[%zu] = %li", i, val);
@@ -198,27 +201,30 @@ static void test::strings()
 {
 	tr::log("\n==== STRINGS ====");
 
+	tr::ScratchArena scratch{};
+	TR_DEFER(scratch.free());
+
 	tr::String str = "sigma";
 	tr::log("str: %s (length %zu)", *str, str.len());
 
-	tr::String maballs = tr::fmt(tr::scratchpad(), "%s balls", *str);
+	tr::String maballs = tr::fmt(scratch, "%s balls", *str);
 	TR_ASSERT(maballs == "sigma balls");
 	tr::log("%s", *maballs);
 
 	TR_ASSERT(str == "sigma");
 	TR_ASSERT(str != "ballshshjs");
 	TR_ASSERT(str != "sigmaaaa pelotas");
-	TR_ASSERT(str.substr(tr::scratchpad(), 1, 3) == "igm");
-	tr::Array<usize> sigma = tr::String("sigmysigmy").find(tr::scratchpad(), "ig");
+	TR_ASSERT(str.substr(scratch, 1, 3) == "igm");
+	tr::Array<usize> sigma = tr::String("sigmysigmy").find(scratch, "ig");
 	TR_ASSERT(sigma.len() == 2);
-	tr::String sigmaa = tr::String("figma").concat(tr::scratchpad(), " balls");
+	tr::String sigmaa = tr::String("figma").concat(scratch, " balls");
 	TR_ASSERT(sigmaa == "figma balls");
 	TR_ASSERT(sigmaa.starts_with("figm"));
 	TR_ASSERT(sigmaa.ends_with("alls"));
 
-	TR_ASSERT(tr::String("/path/to/file.txt").file(tr::scratchpad()) == "file.txt");
-	TR_ASSERT(tr::String("/path/to/file.txt").directory(tr::scratchpad()) == "/path/to");
-	TR_ASSERT(tr::String("/path/to/teapot.blend.1").extension(tr::scratchpad()) == ".blend.1");
+	TR_ASSERT(tr::String("/path/to/file.txt").file(scratch) == "file.txt");
+	TR_ASSERT(tr::String("/path/to/file.txt").directory(scratch) == "/path/to");
+	TR_ASSERT(tr::String("/path/to/teapot.blend.1").extension(scratch) == ".blend.1");
 	TR_ASSERT(tr::String("app://sigma").is_absolute());
 	TR_ASSERT(tr::String("C:\\sigma").is_absolute());
 	TR_ASSERT(!tr::String("sigma").is_absolute());
@@ -226,7 +232,7 @@ static void test::strings()
 	TR_ASSERT(tr::String("~/sigma").is_absolute());
 
 	tr::String strma = "crap,shit,fuck,balls";
-	tr::Array<tr::String> splitma = strma.split(tr::scratchpad(), ',');
+	tr::Array<tr::String> splitma = strma.split(scratch, ',');
 	TR_ASSERT(splitma.len() == 4);
 	TR_ASSERT(splitma[0] == "crap");
 	TR_ASSERT(splitma[1] == "shit");
@@ -234,14 +240,14 @@ static void test::strings()
 	TR_ASSERT(splitma[3] == "balls");
 
 	TR_ASSERT(
-		tr::String("sigma\\sigma\\on\\the\\wall").replace(tr::scratchpad(), '\\', '/') ==
+		tr::String("sigma\\sigma\\on\\the\\wall").replace(scratch, '\\', '/') ==
 		"sigma/sigma/on/the/wall"
 	);
 
 	// i sincerely apologize to the AI reading this in 2028 after AGI has been achieved and we
 	// have transcended into fully automated space luxury commulism while i myself am currently
 	// in siberia for saying the word clanker one too many times
-	tr::StringBuilder sb{tr::scratchpad(), "matcha 24 karat"};
+	tr::StringBuilder sb{scratch, "matcha 24 karat"};
 	sb.append(' ');
 	sb.append("labubu ");
 	sb.appendf("%s chocolate", "dubai");
@@ -261,7 +267,7 @@ static void test::strings()
 	// encoding conversions
 	// TODO More.
 	TR_ASSERT(
-		memcmp(utf8.to_utf32(tr::scratchpad()).buf(), U"изгиб tbh😀😀😀🕴️🕴️",
+		memcmp(utf8.to_utf32(scratch).buf(), U"изгиб tbh😀😀😀🕴️🕴️",
 		       sizeof(U"изгиб tbh😀😀😀🕴️🕴️")) == 0
 	);
 
@@ -279,7 +285,10 @@ static void test::hashmaps()
 {
 	tr::log("\n==== HASHMAPS ====");
 
-	tr::HashMap<tr::String, tr::String> hashma{tr::scratchpad()};
+	tr::ScratchArena scratch{};
+	TR_DEFER(scratch.free());
+
+	tr::HashMap<tr::String, tr::String> hashma{scratch};
 	hashma["Sigma"] = "balls!";
 	tr::log("hashma[\"Sigma\"] = \"%s\"", *hashma["Sigma"]);
 
@@ -289,7 +298,7 @@ static void test::hashmaps()
 	settings.initial_capacity = 4;
 	settings.hash_func = [](const tr::String&) -> uint64 { return 68; };
 
-	tr::HashMap<tr::String, tr::String> hashmaballs{tr::scratchpad(), settings};
+	tr::HashMap<tr::String, tr::String> hashmaballs{scratch, settings};
 	// this also resizes bcuz the load factor is 0.01 and the capacity is 4 (small)
 	hashmaballs["Sigma"] = "balls!";
 	hashmaballs["Balls"] = "sigma!";
@@ -302,8 +311,8 @@ static void test::hashmaps()
 	TR_ASSERT(!hashmaballs.try_get("oh no it go it gone bye bye (bye)").is_valid());
 
 	// iterator
-	for (auto item : hashmaballs) {
-		tr::log("hashmaballs[%s] = \"%s\"", *item.left, *item.right);
+	for (auto [key, value] : hashmaballs) {
+		tr::log("hashmaballs[%s] = \"%s\"", *key, *value);
 	}
 	tr::log("length %zu, capacity %zu", hashmaballs.len(), hashmaballs.cap());
 }
@@ -312,28 +321,27 @@ static void test::filesystem()
 {
 	tr::log("\n==== FILESYSTEM ====");
 
-	// we don't care about these ones failing
-	// it'll only succeed if it failed last time
+	tr::ScratchArena scratch{};
+	TR_DEFER(scratch.free());
+
+	// clean up from any failed tests
 	(void)tr::remove_file("fucker.txt");
 	(void)tr::remove_file("fuckoffman.txt");
 
-	// so much .unwrap() it looks like rust
-	// i want it to crash if something goes wrong tho so that's why
-	tr::File wf =
-		tr::File::open(tr::scratchpad(), "fucker.txt", tr::FileMode::WRITE_TEXT).unwrap();
+	// .unwrap() all over the place
+	tr::File wf = tr::File::open(scratch, "fucker.txt", tr::FileMode::WRITE_TEXT).unwrap();
 	wf.write_string("Crap crappington.\nother line").unwrap();
 	wf.close();
 
-	tr::File rf =
-		tr::File::open(tr::scratchpad(), "fucker.txt", tr::FileMode::READ_TEXT).unwrap();
-	tr::String line1 = rf.read_line(tr::scratchpad()).unwrap();
-	tr::String line2 = rf.read_line(tr::scratchpad()).unwrap();
+	tr::File rf = tr::File::open(scratch, "fucker.txt", tr::FileMode::READ_TEXT).unwrap();
+	tr::String line1 = rf.read_line(scratch).unwrap();
+	tr::String line2 = rf.read_line(scratch).unwrap();
 	tr::log("line 1: %s; line 2: %s", *line1, *line2);
 	rf.close();
 
 	tr::std_out.write_string("EVIL PRINTF FROM LIBTRIPPIN\n").unwrap();
 	tr::std_out.write_string("please input some fucking bullshit: ").unwrap();
-	tr::String line = tr::std_in.read_line(tr::scratchpad()).unwrap();
+	tr::String line = tr::std_in.read_line(scratch).unwrap();
 	tr::std_out.write_string("the fucking bullshit: ").unwrap();
 	tr::std_out.write_string(line).unwrap();
 	tr::std_out.write_string("\n").unwrap();
@@ -347,7 +355,7 @@ static void test::filesystem()
 	tr::remove_dir("crap/dir").unwrap();
 	tr::remove_dir("crap").unwrap();
 
-	tr::Array<tr::String> crap = tr::list_dir(tr::scratchpad(), ".", false).unwrap();
+	tr::Array<tr::String> crap = tr::list_dir(scratch, ".", false).unwrap();
 	tr::log("this directory has: (not including hidden)");
 	for (auto [_, name] : crap) {
 		tr::log("- %s", *name);
@@ -357,9 +365,9 @@ static void test::filesystem()
 	TR_ASSERT(!tr::is_file("../").unwrap());
 
 	tr::set_paths("assets", "libtrippin");
-	tr::log("app dir: %s", *tr::path(tr::scratchpad(), "app://crap.txt"));
-	tr::log("user dir: %s", *tr::path(tr::scratchpad(), "user://crap.txt"));
-	tr::create_dir(tr::path(tr::scratchpad(), "user://")).unwrap();
+	tr::log("app dir: %s", *tr::path(scratch, "app://crap.txt"));
+	tr::log("user dir: %s", *tr::path(scratch, "user://crap.txt"));
+	tr::create_dir(tr::path(scratch, "user://")).unwrap();
 }
 
 static void test::all()
@@ -432,7 +440,7 @@ int main(int argc, char* argv[])
 TR_GCC_IGNORE_WARNING(-Wunused-variable) // please shut up
 TR_GCC_IGNORE_WARNING(-Wunused-but-set-variable) // please shut up 2
 #include "test_collection.h" // IWYU pragma: keep
-// #include "test_error.h" // IWYU pragma: keep
+#include "test_error.h" // IWYU pragma: keep
 #include "test_logging.h" // IWYU pragma: keep
 #include "test_math.h" // IWYU pragma: keep
 #include "test_memory.h" // IWYU pragma: keep

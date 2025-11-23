@@ -109,13 +109,15 @@ struct Error
 	ErrorType type;
 
 	// shorthand type shit
-	String message() const;
+	TempString message() const;
 };
 
 // Registers an error type. How amazing. Returns false if there's already an error with that ID,
 // returns true otherwise. If `override` is true, it'll override the message function if there
 // already is one (by default it keeps the old one)
-bool register_error_type(ErrorType id, String (*msg_func)(ErrorArgs args), bool override = false);
+bool register_error_type(
+	ErrorType id, TempString (*msg_func)(ErrorArgs args), bool override = false
+);
 
 // Slightly fancy macro to register error types right after the error message is declared, which
 // looks nicer than 5000 `tr::register_error_type` calls in the main function.
@@ -125,7 +127,7 @@ bool register_error_type(ErrorType id, String (*msg_func)(ErrorArgs args), bool 
 
 // Looks up the error type, calls its function, and returns the resulting error message. Panics if
 // the ID is invalid (because it should never happen)
-String error_message(ErrorType id, ErrorArgs args);
+TempString error_message(ErrorType id, ErrorArgs args);
 
 // This is just for getting the error message lmao.
 enum class FileOperation : int32
@@ -151,85 +153,85 @@ enum class FileOperation : int32
 
 // some fucking bullshit
 
-String errmsg_file_not_found(ErrorArgs args);
+TempString errmsg_file_not_found(ErrorArgs args);
 // args: FileOperation as int32, string path A, string path B
 constexpr ErrorType ERROR_FILE_NOT_FOUND = tr::errtype_from_string("tr::FILE_NOT_FOUND");
 TR_REGISTER_ERROR_TYPE(ERROR_FILE_NOT_FOUND, errmsg_file_not_found);
 
-String errmsg_access_denied(ErrorArgs args);
+TempString errmsg_access_denied(ErrorArgs args);
 // args: FileOperation as int32, string path A, string path B
 constexpr ErrorType ERROR_ACCESS_DENIED = tr::errtype_from_string("tr::ACCESS_DENIED");
 TR_REGISTER_ERROR_TYPE(ERROR_ACCESS_DENIED, errmsg_access_denied);
 
-String errmsg_device_or_resource_busy(ErrorArgs args);
+TempString errmsg_device_or_resource_busy(ErrorArgs args);
 // args: FileOperation as int32, string path A, string path B
 constexpr ErrorType ERROR_DEVICE_OR_RESOURCE_BUSY =
 	tr::errtype_from_string("tr::DEVICE_OR_RESOURCE_BUSY");
 TR_REGISTER_ERROR_TYPE(ERROR_DEVICE_OR_RESOURCE_BUSY, errmsg_device_or_resource_busy);
 
-String errmsg_no_space_left(ErrorArgs args);
+TempString errmsg_no_space_left(ErrorArgs args);
 // args: FileOperation as int32, string path A, string path B
 constexpr ErrorType ERROR_NO_SPACE_LEFT = tr::errtype_from_string("tr::NO_SPACE_LEFT");
 TR_REGISTER_ERROR_TYPE(ERROR_NO_SPACE_LEFT, errmsg_no_space_left);
 
-String errmsg_file_exists(ErrorArgs args);
+TempString errmsg_file_exists(ErrorArgs args);
 // args: FileOperation as int32, string path A, string path B
 constexpr ErrorType ERROR_FILE_EXISTS = tr::errtype_from_string("tr::FILE_EXISTS");
 TR_REGISTER_ERROR_TYPE(ERROR_FILE_EXISTS, errmsg_access_denied);
 
-String errmsg_bad_handle(ErrorArgs args);
+TempString errmsg_bad_handle(ErrorArgs args);
 // args: FileOperation as int32, string path A, string path B
 constexpr ErrorType ERROR_BAD_HANDLE = tr::errtype_from_string("tr::BAD_HANDLE");
 TR_REGISTER_ERROR_TYPE(ERROR_BAD_HANDLE, errmsg_access_denied);
 
-String errmsg_hardware_error_or_unknown(ErrorArgs args);
+TempString errmsg_hardware_error_or_unknown(ErrorArgs args);
 // args: FileOperation as int32, string path A, string path B
 constexpr ErrorType ERROR_HARDWARE_ERROR_OR_UNKNOWN =
 	tr::errtype_from_string("tr::HARDWARE_ERROR_OR_UNKNOWN");
 TR_REGISTER_ERROR_TYPE(ERROR_HARDWARE_ERROR_OR_UNKNOWN, errmsg_hardware_error_or_unknown);
 
-String errmsg_is_directory(ErrorArgs args);
+TempString errmsg_is_directory(ErrorArgs args);
 // args: FileOperation as int32, string path A, string path B
 constexpr ErrorType ERROR_IS_DIRECTORY = tr::errtype_from_string("tr::IS_DIRECTORY");
 TR_REGISTER_ERROR_TYPE(ERROR_IS_DIRECTORY, errmsg_is_directory);
 
-String errmsg_is_not_directory(ErrorArgs args);
+TempString errmsg_is_not_directory(ErrorArgs args);
 // args: FileOperation as int32, string path A, string path B
 constexpr ErrorType ERROR_IS_NOT_DIRECTORY = tr::errtype_from_string("tr::IS_NOT_DIRECTORY");
 TR_REGISTER_ERROR_TYPE(ERROR_IS_NOT_DIRECTORY, errmsg_is_not_directory);
 
-String errmsg_too_many_open_files(ErrorArgs args);
+TempString errmsg_too_many_open_files(ErrorArgs args);
 // args: FileOperation as int32, string path A, string path B
 constexpr ErrorType ERROR_TOO_MANY_OPEN_FILES = tr::errtype_from_string("tr::TOO_MANY_OPEN_FILES");
 TR_REGISTER_ERROR_TYPE(ERROR_TOO_MANY_OPEN_FILES, errmsg_too_many_open_files);
 
-String errmsg_broken_pipe(ErrorArgs args);
+TempString errmsg_broken_pipe(ErrorArgs args);
 // args: FileOperation as int32, string path A, string path B
 constexpr ErrorType ERROR_BROKEN_PIPE = tr::errtype_from_string("tr::BROKEN_PIPE");
 TR_REGISTER_ERROR_TYPE(ERROR_BROKEN_PIPE, errmsg_broken_pipe);
 
-String errmsg_filename_too_long(ErrorArgs args);
+TempString errmsg_filename_too_long(ErrorArgs args);
 // args: FileOperation as int32, string path A, string path B
 constexpr ErrorType ERROR_FILENAME_TOO_LONG = tr::errtype_from_string("tr::FILENAME_TOO_LONG");
 TR_REGISTER_ERROR_TYPE(ERROR_FILENAME_TOO_LONG, errmsg_filename_too_long);
 
-String errmsg_invalid_argument(ErrorArgs args);
+TempString errmsg_invalid_argument(ErrorArgs args);
 // args: FileOperation as int32, string path A, string path B
 constexpr ErrorType ERROR_INVALID_ARGUMENT = tr::errtype_from_string("tr::INVALID_ARGUMENT");
 TR_REGISTER_ERROR_TYPE(ERROR_INVALID_ARGUMENT, errmsg_invalid_argument);
 
-String errmsg_read_only_filesystem(ErrorArgs args);
+TempString errmsg_read_only_filesystem(ErrorArgs args);
 // args: FileOperation as int32, string path A, string path B
 constexpr ErrorType ERROR_READ_ONLY_FILESYSTEM =
 	tr::errtype_from_string("tr::READ_ONLY_FILESYSTEM");
 TR_REGISTER_ERROR_TYPE(ERROR_READ_ONLY_FILESYSTEM, errmsg_read_only_filesystem);
 
-String errmsg_illegal_seek(ErrorArgs args);
+TempString errmsg_illegal_seek(ErrorArgs args);
 // args: FileOperation as int32, string path A, string path B
 constexpr ErrorType ERROR_ILLEGAL_SEEK = tr::errtype_from_string("tr::ILLEGAL_SEEK");
 TR_REGISTER_ERROR_TYPE(ERROR_ILLEGAL_SEEK, errmsg_illegal_seek);
 
-String errmsg_directory_not_empty(ErrorArgs args);
+TempString errmsg_directory_not_empty(ErrorArgs args);
 // args: FileOperation as int32, string path A, string path B
 constexpr ErrorType ERROR_DIRECTORY_NOT_EMPTY = tr::errtype_from_string("tr::DIRECTORY_NOT_EMPTY");
 TR_REGISTER_ERROR_TYPE(ERROR_DIRECTORY_NOT_EMPTY, errmsg_directory_not_empty);

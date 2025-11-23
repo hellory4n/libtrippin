@@ -328,7 +328,7 @@ public:
 };
 
 // Temporary arena intended for temporary allocations. In other words, a sane `alloca()`.
-// [[deprecated("use tr::ScratchArena or, tr::tmp_fmt for strings")]]
+[[deprecated("use tr::ScratchArena or, tr::tmp_fmt for strings")]]
 Arena& scratchpad();
 
 // This is just for iterators

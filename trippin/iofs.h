@@ -35,11 +35,10 @@ namespace tr {
 
 // additional errors for reader/writer helper functions
 
-inline String errmsg_expected_more_bytes(ErrorArgs args)
+inline TempString errmsg_expected_more_bytes(ErrorArgs args)
 {
-	return tr::fmt(
-		tr::scratchpad(), "expected %li bytes, got %li bytes (might be EOF)", args[0].i64,
-		args[1].i64
+	return tr::tmp_fmt(
+		"expected %li bytes, got %li bytes (might be EOF)", args[0].i64, args[1].i64
 	);
 }
 // args: int64 expected bytes, int64 received bytes

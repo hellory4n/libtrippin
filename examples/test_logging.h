@@ -1,6 +1,7 @@
 #pragma once
 #include <trippin/common.h>
 #include <trippin/log.h>
+#include <trippin/string.h>
 
 [[noreturn /* shut up */]]
 void test_logging()

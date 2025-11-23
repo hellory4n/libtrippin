@@ -82,6 +82,9 @@ void tr::_log(const char* color, const char* prefix, bool panic, const char* fmt
 		tr::panicking = true;
 	}
 
+	ScratchArena scratch{};
+	TR_DEFER(scratch.free());
+
 	// you understand mechanical hands are the ruler of everything (ah)
 	// TODO tr::time?? idfk
 	char timestr[32];
@@ -98,7 +101,7 @@ void tr::_log(const char* color, const char* prefix, bool panic, const char* fmt
 
 	va_list argmaballs;
 	va_copy(argmaballs, arg);
-	String buf = tr::fmt_args(tr::scratchpad(), fmt, argmaballs);
+	String buf = tr::fmt_args(scratch, fmt, argmaballs);
 	va_end(argmaballs);
 
 	for (auto [_, file] : _tr::logfiles()) {
@@ -183,10 +186,11 @@ void tr::panic(const char* fmt, ...)
 	va_list args;
 	va_start(args, fmt);
 	_log(tr::ConsoleColor::ERROR, "panic: ", true, fmt, args);
-	// Function declared 'noreturn' should not return
-	// (this will never happen because __log panics first)
-	exit(1);
 	va_end(args);
+
+	// Function declared 'noreturn' should not return
+	// (this will never happen because _log panics first)
+	exit(1);
 }
 
 #if defined(TR_GCC_OR_CLANG) && !defined(TR_ONLY_MINGW_GCC)
@@ -198,9 +202,9 @@ void tr::_impl_assert(const char* expr, const char* fmt, ...)
 	va_list args;
 	va_start(args, fmt);
 
-	String prefix = tr::fmt(tr::scratchpad(), "failed assert \"%s\": ", expr);
-
+	String prefix = tr::tmp_fmt("failed assert \"%s\": ", expr);
 	_log(tr::ConsoleColor::ERROR, *prefix, true, fmt, args);
+
 	va_end(args);
 	// straight up [[noreturn]]ing it
 	exit(1);

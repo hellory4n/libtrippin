@@ -113,7 +113,9 @@ void tr::free()
 
 	// FIXME since tr::scratchpad is thread_local, there is no way to properly free it
 	// from all the threads (or at least afaik)
+	TR_GCC_IGNORE_WARNING(-Wdeprecated-declarations)
 	tr::scratchpad().free();
+	TR_GCC_RESTORE()
 }
 
 [[noreturn]]
@@ -123,7 +125,7 @@ void tr::quit(int32 error_code)
 	exit(error_code);
 }
 
-void tr::call_on_quit(const std::function<void(bool is_panic)>& func)
+void tr::call_on_quit(std::function<void(bool is_panic)> func)
 {
 	_tr::on_quit().connect(func);
 }

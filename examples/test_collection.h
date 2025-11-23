@@ -3,8 +3,11 @@
 
 void test_collection()
 {
+	tr::ScratchArena scratch{};
+	TR_DEFER(scratch.free());
+
 	// hashmaps are hashmaps lmao
-	tr::HashMap<tr::String, tr::String> map(tr::scratchpad());
+	tr::HashMap<tr::String, tr::String> map{scratch};
 	map["john"] = "bob";
 	map["bob"] = "greg";
 	map["greg"] = "craig";
@@ -18,7 +21,7 @@ void test_collection()
 	}
 
 	// there's also signals so that's cool
-	tr::Signal<int64> signa(tr::scratchpad());
+	tr::Signal<int64> signa{scratch};
 	signa.connect([&](int64) { tr::log("SOMETHING HAS HAPPENED???"); });
 	signa.emit(759823);
 }

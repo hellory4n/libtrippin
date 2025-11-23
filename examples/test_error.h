@@ -2,17 +2,22 @@
 #include <trippin/error.h>
 #include <trippin/memory.h>
 
-#include "trippin/iofs.h"
+#include "trippin/string.h"
+
+// make your own error types
+// you can read the documentation for each thing for more detail
+tr::TempString errmsg_unexpected_happening(tr::ErrorArgs args)
+{
+	return tr::tmp_fmt("unexpected happening it is happening unexpectedly: %s", *args[0].str);
+}
+constexpr tr::ErrorType ERROR_UNEXPECTED_HAPPENING =
+	tr::errtype_from_string("app::UNEXPECTED_HAPPENING");
+TR_REGISTER_ERROR_TYPE(ERROR_UNEXPECTED_HAPPENING, errmsg_unexpected_happening);
 
 tr::Result<int32> example_function()
 {
-	// test
-	tr::File test = tr::File::open(tr::scratchpad(), "z", tr::FileMode::READ_TEXT).unwrap();
-	// tr::File test = TR_TRY(tr::File::open(tr::scratchpad(), "z", tr::FileMode::READ_TEXT));
-
 	// on error
-	// you can use any type that implements tr::Error
-	return tr::StringError{"unexpected happening it is happening unexpectedly"};
+	return {ERROR_UNEXPECTED_HAPPENING, "this is unfortunate"};
 
 	// on success you can just return as usual
 	return 946259;
@@ -33,11 +38,10 @@ tr::Result<void> trippin_main()
 		return tmp.unwrap_err();
 	}
 	int32 z = tmp.unwrap();
-	// but you can only use that macros in functions that return tr::Result<T>
+	// but you can only use TR_TRY in functions that return tr::Result<T>
 
 	// also, TR_TRY is only for variables
-	// so this won't work
-	// function(TR_TRY(other_function()));
+	// so this won't work: function(TR_TRY(other_function()));
 
 	return {};
 }

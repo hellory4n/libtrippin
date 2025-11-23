@@ -93,7 +93,7 @@ void free();
 void quit(int32 error_code);
 
 // Adds a function to run when the program quits/panics.
-void call_on_quit(const std::function<void(bool is_panic)>& func);
+void call_on_quit(std::function<void(bool is_panic)> func);
 
 // mingw gcc complains about %zu and %li even tho it works fine
 // TODO this WILL break

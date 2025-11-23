@@ -23,11 +23,6 @@
  *
  */
 
-#include "trippin/common.h"
-#include "trippin/error.h"
-#include "trippin/memory.h"
-#include "trippin/string.h"
-
 // :(
 // TODO macOS exists
 // though macOS should be easier as it supports posix
@@ -61,8 +56,12 @@
 	#include <unistd.h>
 #endif
 
+#include "trippin/common.h"
+#include "trippin/error.h"
 #include "trippin/iofs.h"
 #include "trippin/log.h"
+#include "trippin/memory.h"
+#include "trippin/string.h"
 /* clang-format off */
 #include "trippin/bits/state.h"
 /* clang-format on */
@@ -90,7 +89,9 @@ tr::Result<tr::String> tr::Reader::read_string(tr::Arena& arena, int64 length)
 
 tr::Result<tr::String> tr::Reader::read_line(Arena& arena)
 {
-	Array<char> linema{tr::scratchpad(), 0};
+	ScratchArena scratch{};
+	TR_DEFER(scratch.free());
+	Array<char> linema{scratch, 0};
 
 	while (true) {
 		char byte = '\0';
@@ -155,7 +156,9 @@ tr::Result<void> tr::Writer::printf(const char* fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
-	String str = tr::fmt_args(tr::scratchpad(), fmt, args);
+	ScratchArena scratch{};
+	TR_DEFER(scratch.free());
+	String str = tr::fmt_args(scratch, fmt, args);
 	va_end(args);
 
 	return this->write_string(str);
@@ -163,7 +166,9 @@ tr::Result<void> tr::Writer::printf(const char* fmt, ...)
 
 tr::Result<void> tr::Writer::print_args(const char* fmt, va_list arg)
 {
-	String str = tr::fmt_args(tr::scratchpad(), fmt, arg);
+	ScratchArena scratch{};
+	TR_DEFER(scratch.free());
+	String str = tr::fmt_args(scratch, fmt, arg);
 	return write_string(str);
 }
 
@@ -187,15 +192,18 @@ tr::Result<void> tr::Writer::println(const char* fmt, ...)
 
 tr::String tr::path(tr::Arena& arena, tr::String path)
 {
+	ScratchArena scratch{};
+	TR_DEFER(scratch.free());
+
 	if (path.starts_with("app://")) {
-		String pathfrfr = path.substr(tr::scratchpad(), sizeof("app://") - 1, path.len());
+		String pathfrfr = path.substr(scratch, sizeof("app://") - 1, path.len());
 		return tr::fmt(
 			arena, "%s/%s/%s", tr::exe_dir.buf(), tr::app_dir.buf(), pathfrfr.buf()
 		);
 	}
 
 	if (path.starts_with("user://")) {
-		String pathfrfr = path.substr(tr::scratchpad(), sizeof("user://") - 1, path.len());
+		String pathfrfr = path.substr(scratch, sizeof("user://") - 1, path.len());
 		return tr::fmt(
 			arena, "%s/%s/%s", tr::appdata_dir.buf(), tr::user_dir.buf(), pathfrfr.buf()
 		);
@@ -658,7 +666,9 @@ void tr::_init_paths()
 
 tr::Result<tr::File> tr::File::open(tr::Arena& arena, tr::String path, tr::FileMode mode)
 {
-	path = tr::path(tr::scratchpad(), path);
+	ScratchArena scratch{};
+	TR_DEFER(scratch.free());
+	path = tr::path(scratch, path);
 	tr::_reset_os_errors();
 
 	// get mode
@@ -863,7 +873,9 @@ bool tr::File::can_write()
 
 tr::Result<void> tr::remove_file(tr::String path)
 {
-	path = tr::path(tr::scratchpad(), path);
+	ScratchArena scratch{};
+	TR_DEFER(scratch.free());
+	path = tr::path(scratch, path);
 	tr::_reset_os_errors();
 
 	int i = remove(*path);
@@ -875,8 +887,10 @@ tr::Result<void> tr::remove_file(tr::String path)
 
 tr::Result<void> tr::move_file(tr::String from, tr::String to)
 {
-	from = tr::path(tr::scratchpad(), from);
-	to = tr::path(tr::scratchpad(), to);
+	ScratchArena scratch{};
+	TR_DEFER(scratch.free());
+	from = tr::path(scratch, from);
+	to = tr::path(scratch, to);
 	tr::_reset_os_errors();
 
 	// libc rename() is different on windows and posix
@@ -906,7 +920,9 @@ bool tr::file_exists(tr::String path)
 
 bool tr::path_exists(tr::String path)
 {
-	path = tr::path(tr::scratchpad(), path);
+	ScratchArena scratch{};
+	TR_DEFER(scratch.free());
+	path = tr::path(scratch, path);
 	tr::_reset_os_errors();
 
 	// we could just fopen(path, "r") then check if that's null, but then it would
@@ -917,11 +933,13 @@ bool tr::path_exists(tr::String path)
 
 tr::Result<void> tr::create_dir(tr::String path)
 {
-	path = tr::path(tr::scratchpad(), path);
+	ScratchArena scratch{};
+	TR_DEFER(scratch.free());
+	path = tr::path(scratch, path);
 	tr::_reset_os_errors();
 
 	// it's recursive :)
-	Array<String> dirs = path.split(tr::scratchpad(), '/');
+	Array<String> dirs = path.split(scratch, '/');
 	if (dirs.len() == 0) {
 		tr::warn("couldn't create directory '%s', path is likely corrupted/invalid", *path);
 		return {};
@@ -930,7 +948,7 @@ tr::Result<void> tr::create_dir(tr::String path)
 	// help
 	String full_dir;
 	if (path.starts_with("/")) {
-		full_dir = tr::fmt(tr::scratchpad(), "/%s", *dirs[0]);
+		full_dir = tr::fmt(scratch, "/%s", *dirs[0]);
 	}
 	else {
 		full_dir = dirs[0];
@@ -938,7 +956,7 @@ tr::Result<void> tr::create_dir(tr::String path)
 
 	for (auto [i, dir] : dirs) {
 		if (i > 0) {
-			full_dir = tr::fmt(tr::scratchpad(), "%s/%s", *full_dir, *dir);
+			full_dir = tr::fmt(scratch, "%s/%s", *full_dir, *dir);
 		}
 
 		if (tr::path_exists(full_dir)) {
@@ -964,7 +982,9 @@ tr::Result<void> tr::create_dir(tr::String path)
 
 tr::Result<void> tr::remove_dir(tr::String path)
 {
-	path = tr::path(tr::scratchpad(), path);
+	ScratchArena scratch{};
+	TR_DEFER(scratch.free());
+	path = tr::path(scratch, path);
 	tr::_reset_os_errors();
 
 	if (rmdir(*path) != 0) {
@@ -977,7 +997,9 @@ tr::Result<tr::Array<tr::String>>
 tr::list_dir(tr::Arena& arena, tr::String path, bool include_hidden)
 {
 	// FIXME this might be broken for some fucking reason
-	path = tr::path(tr::scratchpad(), path);
+	ScratchArena scratch{};
+	TR_DEFER(scratch.free());
+	path = tr::path(scratch, path);
 	tr::_reset_os_errors();
 
 	DIR* dir = opendir(*path);
@@ -1010,7 +1032,9 @@ tr::list_dir(tr::Arena& arena, tr::String path, bool include_hidden)
 
 tr::Result<bool> tr::is_file(tr::String path)
 {
-	path = tr::path(tr::scratchpad(), path);
+	ScratchArena scratch{};
+	TR_DEFER(scratch.free());
+	path = tr::path(scratch, path);
 	tr::_reset_os_errors();
 
 	struct stat statma = {};
