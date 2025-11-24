@@ -480,9 +480,9 @@ void tr::StringBuilder::appendf(const char* fmt, ...)
 	va_list arg;
 	va_start(arg, fmt);
 
-	tr::Arena another_fucking_arena{};
-	append(tr::fmt_args(another_fucking_arena, fmt, arg));
-	another_fucking_arena.free();
+	ScratchArena scratch{};
+	append(tr::fmt_args(scratch, fmt, arg));
+	scratch.free();
 
 	va_end(arg);
 }

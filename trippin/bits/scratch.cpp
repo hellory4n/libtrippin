@@ -23,7 +23,9 @@
  *
  */
 
+#include <atomic>
 #include <cstdlib>
+#include <memory>
 
 #include "trippin/common.h"
 #include "trippin/memory.h"
@@ -57,13 +59,25 @@ public:
 	}
 };
 
-thread_local _scratchBuffer _scratch_buffer{};
+// see state.cpp for an explanation on why one would ever do such atrocity
+namespace _tr {
+	static _scratchBuffer& scratch_buffer()
+	{
+		static bool initialized = false;
+		static std::atomic<std::shared_ptr<_scratchBuffer>> scratch_buffer;
+		if (!initialized) {
+			scratch_buffer = std::shared_ptr<_scratchBuffer>{new _scratchBuffer()};
+			initialized = true;
+		}
+		return *static_cast<std::shared_ptr<_scratchBuffer>>(scratch_buffer);
+	}
+} // namespace _tr
 
 } // namespace tr
 
 tr::ScratchArena::ScratchArena()
 {
-	_start_page = _scratch_buffer._page;
+	_start_page = _tr::scratch_buffer()._page;
 	_start_offset = _start_page->alloc_pos;
 	_allocated = 0;
 }
@@ -72,7 +86,7 @@ void tr::ScratchArena::free()
 {
 	// FIXME this doesn't handle destructors but i can't be bothered
 
-	ArenaPage* current = _scratch_buffer._page;
+	ArenaPage* current = _tr::scratch_buffer()._page;
 
 	// if everything happened on the same page, just go back
 	if (current == _start_page) {
@@ -91,8 +105,8 @@ void tr::ScratchArena::free()
 		while (current != _start_page) {
 			ArenaPage* prev = current->prev;
 
-			_scratch_buffer._pages--;
-			_scratch_buffer._capacity -= current->bufsize;
+			_tr::scratch_buffer()._pages--;
+			_tr::scratch_buffer()._capacity -= current->bufsize;
 			current->free();
 			std::free(current);
 
@@ -110,16 +124,16 @@ void tr::ScratchArena::free()
 
 		_start_page->alloc_pos = _start_offset;
 		_start_page->next = nullptr;
-		_scratch_buffer._page = _start_page;
+		_tr::scratch_buffer()._page = _start_page;
 	}
 
-	_scratch_buffer._allocated -= _allocated;
+	_tr::scratch_buffer()._allocated -= _allocated;
 	_allocated = 0;
 }
 
 void* tr::ScratchArena::alloc(usize size, usize align)
 {
-	void* ptr = tr::_scratch_buffer.alloc(size, align);
+	void* ptr = _tr::scratch_buffer().alloc(size, align);
 
 	// ArenaPage::alloc except without the alloc part
 	usize address = reinterpret_cast<usize>(ptr);
@@ -137,7 +151,7 @@ usize tr::ScratchArena::allocated() const
 
 usize tr::ScratchArena::capacity() const
 {
-	return tr::_scratch_buffer.capacity();
+	return _tr::scratch_buffer().capacity();
 }
 
 void tr::ScratchArena::reset()

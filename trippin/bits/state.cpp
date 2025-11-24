@@ -42,6 +42,8 @@
 // you could use a thread_local variable but freeing becomes fucky and some state has to be shared
 // so i'm just using an std::atomic<std::shared_ptr<T>> here, along with some helper functions so
 // that it gets freed properly
+// the std::shared_ptr is because otherwise it doesn't work on classes with vtables, also i can't
+// get a reference out of std::atomic without that?
 // there's probably a better way but this is good enough for now
 
 void free_arena(tr::Arena* arena)
