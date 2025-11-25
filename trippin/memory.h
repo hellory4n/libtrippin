@@ -122,6 +122,9 @@ public:
 
 	// Allocates something in the page lmao. Returns null on failure
 	void* alloc(usize size, usize align);
+
+	// Returns how much padding is needed to align a pointer
+	static usize align_ptr(const void* base, usize align);
 };
 
 // Internal utility to manage calling destructors :)
@@ -295,8 +298,8 @@ public:
 	usize capacity() const override;
 
 private:
-	ArenaPage* _start_page = nullptr;
-	usize _start_offset = 0;
+	byte* _start_pos = nullptr;
+	Arena _fallback_arena{};
 };
 
 // An arena that wraps around once it's joever. Really just used for `tr::tmp_fmt`'s implementation.

@@ -80,15 +80,18 @@ usize tr::ArenaPage::available_space() const
 	return this->bufsize - this->alloc_pos;
 }
 
+usize tr::ArenaPage::align_ptr(const void* base, usize align)
+{
+	usize address = reinterpret_cast<usize>(base);
+	usize misalignment = address & (align - 1);
+	return misalignment != 0 ? (align - misalignment) : 0;
+}
+
 void* tr::ArenaPage::alloc(usize size, usize align)
 {
 	byte* base = static_cast<byte*>(buffer);
 	byte* ptr = base + this->alloc_pos;
-	usize address = reinterpret_cast<usize>(ptr);
-
-	// fucking padding aligning fuckery
-	usize misalignment = address & (align - 1);
-	usize padding = misalignment != 0 ? (align - misalignment) : 0;
+	usize padding = tr::ArenaPage::align_ptr(ptr, align);
 
 	// consider not segfaulting
 	if (available_space() < padding + size) {
