@@ -48,7 +48,7 @@
 #endif
 
 // slightly esoteric compiler variants
-#if defined(__GNUC__) && defined(_WIN32)
+#if defined(__GNUC__) && (defined(__MINGW32__) || defined(__MINGW64__))
 	#define TR_ONLY_MINGW_GCC
 #endif
 #if defined(_MSC_VER) && defined(__clang__)
@@ -56,6 +56,11 @@
 #endif
 #if defined(__clang__) && defined(__apple_build_version__)
 	#define TR_ONLY_APPLE_CLANG
+#endif
+
+// disable msvc's stupid errors with libc functions
+#ifndef _CRT_SECURE_NO_WARNINGS
+	#define _CRT_SECURE_NO_WARNINGS
 #endif
 
 // os
@@ -145,9 +150,9 @@
 	#endif
 #endif
 
-// weirdly msvc only defines __cplusplus as c++98, that is unless you either set a
-// compile flag, or, use another macro, which isn't defined in all versions (so
-// we'll assume if it's not defined, it's too old for c++20 anyway)
+// weirdly msvc only defines __cplusplus as c++98, that is unless you either set a compiler flag,
+// or, use another macro, which isn't defined in all versions (so we'll assume if it's not defined,
+// it's too old for c++20 anyway)
 #ifndef TR_ONLY_MSVC
 	#define TR_CPLUSPLUS __cplusplus
 #else
@@ -217,6 +222,7 @@
 // used for detecting dangling references and pointers and stuff
 // e.g. void* alloc_memory(Arena& arena TR_LIFETIMEBOUND)
 // or void* Arena::alloc() TR_LIFETIMEBOUND
+// TODO does this even do anything? i can't tell
 #ifdef TR_ONLY_CLANG
 	#define TR_LIFETIMEBOUND [[clang::lifetimebound]]
 #elif defined(TR_ONLY_MSVC)
@@ -226,6 +232,14 @@
 	#pragma warning(default : 26815)
 #else
 	#define TR_LIFETIMEBOUND
+#endif
+
+// it's annoying me over %li and %zu like the shut the fuck up i swear to fucking god
+// TODO consider not
+#if defined(TR_GCC_OR_CLANG) && !defined(TR_OS_WINDOWS)
+	#define _TR_PRINTF_ATTR(FmtIdx, ArgIdx) [[gnu::format(printf, FmtIdx, ArgIdx)]]
+#else
+	#define _TR_PRINTF_ATTR(FmtIdx, ArgIdx)
 #endif
 
 #endif

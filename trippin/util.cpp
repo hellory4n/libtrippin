@@ -23,28 +23,15 @@
  *
  */
 
-#ifdef _WIN32
-	#define WIN32_LEAN_AND_MEAN
-	#define NOSERVICE
-	#define NOMCX
-	#define NOIME
-	// mingw gcc already defines that by default??
-	#ifndef NOMINMAX
-		#define NOMINMAX
-	#endif
-	#include <windows.h>
+#include "trippin/util.h"
 
-	// conflicts :D
-	#undef ERROR
-	#undef TRANSPARENT
-	#undef far
-	#undef near
-#else // posix
+#ifdef TR_OS_WINDOWS
+	#include "trippin/antiwindows.h"
+#else
 	#include <ctime>
 #endif
 
 #include "trippin/common.h"
-#include "trippin/util.h"
 
 constexpr uint64 FNV_OFFSET_BASIS = 0xcbf29ce484222325;
 // IM IN MY PRIME™ AND THIS AINT EVEN FINAL FORM
@@ -68,11 +55,11 @@ int64 tr::Stopwatch::_time_now_us()
 	LARGE_INTEGER freq, counter;
 	QueryPerformanceFrequency(&freq);
 	QueryPerformanceCounter(&counter);
-	return (counter.QuadPart * 1000000LL) / freq.QuadPart;
+	return (counter.QuadPart * 1'000'000ll) / freq.QuadPart;
 #else
 	struct timespec ts{};
 	clock_gettime(CLOCK_REALTIME, &ts);
-	return int64(ts.tv_sec) * 1000000 + ts.tv_nsec / 1000;
+	return int64(ts.tv_sec) * 1'000'000 + ts.tv_nsec / 1'000;
 #endif
 }
 

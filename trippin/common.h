@@ -30,6 +30,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+// TODO this includes <vector>, <array>, and <unordered_map> for some reason (not ideal)
 #include <functional>
 #include <type_traits>
 #include <utility>
@@ -73,7 +74,7 @@ static_assert(sizeof(float64) == 8, "double must be 64-bits");
 namespace tr {
 
 // I sure love versions.
-constexpr const char* VERSION = "v2.8.0-dev";
+constexpr const char* VERSION = "v2.8.0";
 
 // I sure love versions. Format is XYYZZ
 constexpr uint32 VERSION_NUM = 2'08'00;

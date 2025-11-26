@@ -141,7 +141,7 @@ static void test::memory()
 		// TR_ASSERT(sig.waste[61] == 0);
 	}
 
-	// scratchpad pages
+	// massive... allocations on the scratchpad
 	{
 		tr::ScratchArena scratch{};
 		TR_DEFER(scratch.free());

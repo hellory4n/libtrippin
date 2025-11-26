@@ -574,7 +574,7 @@ constexpr usize MAX_TEMP_STRING_SIZE = tr::kb_to_bytes(256);
 // near zero overhead. However, the strings are very much temporary, so they should be used as soon
 // as possible. If you need a string that lives longer, duplicate the string, or use the regular
 // `tr::fmt`.
-[[gnu::format(printf, 1, 2)]]
+_TR_PRINTF_ATTR(1, 2)
 TempString tmp_fmt(const char* fmt, ...);
 
 // doo doo doo

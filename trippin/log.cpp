@@ -83,7 +83,7 @@ void tr::_log(const char* color, const char* prefix, bool panic, const char* fmt
 	}
 
 	ScratchArena scratch{};
-	// TR_DEFER(scratch.free());
+	TR_DEFER(scratch.free());
 
 	// you understand mechanical hands are the ruler of everything (ah)
 	// TODO tr::time?? idfk

@@ -81,7 +81,7 @@ usize tr::ScratchArena::allocated() const
 
 usize tr::ScratchArena::capacity() const
 {
-	return SCRATCH_BACKING_BUFFER_SIZE;
+	return SCRATCH_BACKING_BUFFER_SIZE + _fallback_arena.capacity();
 }
 
 void tr::ScratchArena::reset()

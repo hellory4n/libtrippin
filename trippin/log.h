@@ -54,14 +54,6 @@ class String;
 // Sets the log file to somewhere. There can be multiple log files.
 void use_log_file(String path);
 
-// it's annoying me over %li and %zu like the shut the fuck up i swear to fucking god
-// TODO consider not
-#if defined(TR_GCC_OR_CLANG) && !defined(TR_OS_WINDOWS)
-	#define _TR_PRINTF_ATTR(FmtIdx, ArgIdx) [[gnu::format(printf, FmtIdx, ArgIdx)]]
-#else
-	#define _TR_PRINTF_ATTR(FmtIdx, ArgIdx)
-#endif
-
 // Log.
 _TR_PRINTF_ATTR(1, 2)
 void log(const char* fmt, ...);

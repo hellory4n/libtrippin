@@ -23,23 +23,16 @@
  *
  */
 
-#include "trippin/memory.h"
-#include "trippin/string.h"
-#include "trippin/util.h"
-#ifdef _WIN32
-	#define WIN32_LEAN_AND_MEAN
-	#define NOSERVICE
-	#define NOMCX
-	#define NOIME
-	#define NOMINMAX
-	#include <windows.h>
-	#undef ERROR
-	#undef TRANSPARENT
-#endif
+#include "trippin/error.h"
 
 #include <cerrno>
 
-#include "trippin/error.h"
+#ifdef TR_OS_WINDOWS
+	#include "trippin/antiwindows.h"
+#endif
+#include "trippin/memory.h"
+#include "trippin/string.h"
+#include "trippin/util.h"
 /* clang-format off */
 // man
 #undef _TRIPPIN_BITS_STATE_H
@@ -143,76 +136,69 @@ tr::ErrorType tr::_trippin_error_from_errno()
 	return t;
 }
 
-#ifdef _WIN32
-// Checks Windows' `GetLastError` for errors :)
-tr::FileError
-tr::FileError::from_win32(tr::String patha, tr::String pathb, tr::FileOperation operation)
+#ifdef TR_OS_WINDOWS
+tr::ErrorType tr::_trippin_error_from_win32()
 {
-	FileError man{};
-	man.path_a = patha;
-	man.path_b = pathb;
-	man.op = operation;
-	man.win32_code = GetLastError();
-	FileErrorType t = FileErrorType::UNKNOWN;
+	ErrorType t;
 
 	// TODO i think i missed some because win32 is a horrendous affront to mankind
-	switch (man.win32_code) {
-	case ERROR_FILE_NOT_FOUND:
-		t = FileErrorType::NOT_FOUND;
+	// errors prefixed with WIN32 are like that so that they don't conflict with libtrippin's
+	// own errors
+	switch (GetLastError()) {
+	case WIN32_ERROR_FILE_NOT_FOUND:
+		t = ERROR_FILE_NOT_FOUND;
 		break;
-	case ERROR_ACCESS_DENIED:
-		t = FileErrorType::ACCESS_DENIED;
+	case WIN32_ERROR_ACCESS_DENIED:
+		t = ERROR_ACCESS_DENIED;
 		break;
 	case ERROR_SHARING_VIOLATION:
 	case ERROR_BUSY:
-		t = FileErrorType::DEVICE_OR_RESOURCE_BUSY;
+		t = ERROR_DEVICE_OR_RESOURCE_BUSY;
 		break;
 	case ERROR_DISK_FULL:
-		t = FileErrorType::NO_SPACE_LEFT;
+		t = ERROR_NO_SPACE_LEFT;
 		break;
-	case ERROR_FILE_EXISTS:
+	case WIN32_ERROR_FILE_EXISTS:
 	case ERROR_ALREADY_EXISTS:
-		t = FileErrorType::FILE_EXISTS;
+		t = ERROR_FILE_EXISTS;
 		break;
 	case ERROR_INVALID_HANDLE:
-		t = FileErrorType::BAD_HANDLE;
+		t = ERROR_BAD_HANDLE;
 		break;
 	case ERROR_GEN_FAILURE:
 	case ERROR_IO_DEVICE:
-		t = FileErrorType::HARDWARE_ERROR_OR_UNKNOWN;
+		t = ERROR_HARDWARE_ERROR_OR_UNKNOWN;
 		break;
 	case ERROR_CANNOT_MAKE:
-		t = FileErrorType::IS_DIRECTORY;
+		t = ERROR_IS_DIRECTORY;
 		break;
 	// TODO its not really that but i dont care
 	case ERROR_PATH_NOT_FOUND:
-		t = FileErrorType::IS_NOT_DIRECTORY;
+		t = ERROR_IS_NOT_DIRECTORY;
 		break;
-	case ERROR_TOO_MANY_OPEN_FILES:
-		t = FileErrorType::TOO_MANY_OPEN_FILES;
+	case WIN32_ERROR_TOO_MANY_OPEN_FILES:
+		t = ERROR_TOO_MANY_OPEN_FILES;
 		break;
-	case ERROR_BROKEN_PIPE:
-		t = FileErrorType::BROKEN_PIPE;
+	case WIN32_ERROR_BROKEN_PIPE:
+		t = ERROR_BROKEN_PIPE;
 		break;
 	case ERROR_FILENAME_EXCED_RANGE:
-		t = FileErrorType::FILENAME_TOO_LONG;
+		t = ERROR_FILENAME_TOO_LONG;
 		break;
 	case ERROR_INVALID_PARAMETER:
-		t = FileErrorType::INVALID_ARGUMENT;
+		t = ERROR_INVALID_ARGUMENT;
 		break;
 	case ERROR_WRITE_PROTECT:
-		t = FileErrorType::READ_ONLY_FILESYSTEM;
+		t = ERROR_READ_ONLY_FILESYSTEM;
 		break;
 	case ERROR_NEGATIVE_SEEK:
-		t = FileErrorType::ILLEGAL_SEEK;
+		t = ERROR_ILLEGAL_SEEK;
 		break;
 	case ERROR_DIR_NOT_EMPTY:
-		t = FileErrorType::DIRECTORY_NOT_EMPTY;
+		t = ERROR_DIRECTORY_NOT_EMPTY;
 		break;
 	}
-
-	man.type = t;
-	return man;
+	return t;
 }
 #endif
 

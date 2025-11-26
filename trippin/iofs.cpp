@@ -23,28 +23,16 @@
  *
  */
 
-// :(
+#include "trippin/iofs.h"
+
 // TODO macOS exists
 // though macOS should be easier as it supports posix
 #ifdef _WIN32
-	#define WIN32_LEAN_AND_MEAN
-	#define NOSERVICE
-	#define NOMCX
-	#define NOIME
-	// mingw gcc already defines that by default??
-	#ifndef NOMINMAX
-		#define NOMINMAX
-	#endif
-	#include <windows.h>
-
-	// conflicts :D
-	#undef ERROR
-	#undef TRANSPARENT
-
 	#include <cstdio>
-
 	// windows and its consequences have been a disaster for the human race
 	#include <direct.h>
+
+	#include "trippin/antiwindows.h"
 #else
 	#include <cerrno>
 	#include <cstdio>
@@ -58,7 +46,6 @@
 
 #include "trippin/common.h"
 #include "trippin/error.h"
-#include "trippin/iofs.h"
 #include "trippin/log.h"
 #include "trippin/memory.h"
 #include "trippin/string.h"
@@ -233,7 +220,7 @@ using WinStrConst = LPCWSTR;
 using WinStrMut = LPWSTR;
 
 // windows uses utf-16 :(
-static WinStrConst from_trippin_to_win32_str(tr::String str)
+static WinStrConst from_trippin_to_win32_str(tr::Arena& arena, tr::String str)
 {
 	// conveniently microsoft knows this is torture and gives a function for this exact purpose
 	int size = MultiByteToWideChar(CP_UTF8, 0, str.buf(), -1, nullptr, 0);
@@ -243,20 +230,18 @@ static WinStrConst from_trippin_to_win32_str(tr::String str)
 	// *smashes table* YEAHHHHHHHHHHHHHH https://www.youtube.com/watch?v=WGFLPbpdMS8
 	TR_ASSERT_MSG(size != 0, "blame it on windows");
 
-	WinStrMut new_str = static_cast<WinStrMut>(
-		tr::scratchpad().alloc(static_cast<usize>(size + 1) * sizeof(wchar_t))
-	);
+	WinStrMut new_str = arena.alloc<WinStrMut>(static_cast<usize>(size + 1) * sizeof(wchar_t));
 	int result = MultiByteToWideChar(CP_UTF8, 0, str.buf(), -1, new_str, size);
 	TR_ASSERT_MSG(result != 0, "blame it on windows");
 	return new_str;
 }
 
-static tr::String from_win32_to_trippin_str(WinStrConst str)
+static tr::String from_win32_to_trippin_str(tr::Arena& arena, WinStrConst str)
 {
 	int size = WideCharToMultiByte(CP_UTF8, 0, str, -1, nullptr, 0, nullptr, nullptr);
 	TR_ASSERT_MSG(size != 0, "blame it on windows");
 
-	tr::StringBuilder new_str{tr::scratchpad(), static_cast<usize>(size)};
+	tr::StringBuilder new_str{arena, static_cast<usize>(size)};
 	int result =
 		WideCharToMultiByte(CP_UTF8, 0, str, -1, new_str.buf(), size, nullptr, nullptr);
 	TR_ASSERT_MSG(result != 0, "blame it on windows");
@@ -265,7 +250,9 @@ static tr::String from_win32_to_trippin_str(WinStrConst str)
 
 tr::Result<tr::File> tr::File::open(tr::Arena& arena, tr::String path, FileMode mode)
 {
-	path = tr::path(tr::scratchpad(), path);
+	ScratchArena scratch{};
+	TR_DEFER(scratch.free());
+	path = tr::path(scratch, path);
 	tr::_reset_os_errors();
 
 	// get mode
@@ -294,13 +281,10 @@ tr::Result<tr::File> tr::File::open(tr::Arena& arena, tr::String path, FileMode 
 		break;
 	}
 
-	File file = arena.make_ref<File>();
-	// normal fopen gives an error on visual studio??
-	errno_t ohno = _wfopen_s(
-		reinterpret_cast<FILE**>(&file.fptr), from_trippin_to_win32_str(path), modefrfr
-	);
-	if (ohno != 0) {
-		return FileError::from_errno(path, "", FileOperation::OPEN_FILE);
+	File file{};
+	file.fptr = _wfopen(from_trippin_to_win32_str(scratch, path), modefrfr);
+	if (errno != 0) {
+		return {_trippin_error_from_errno(), FileOperation::OPEN_FILE, path, ""};
 	}
 
 	file.is_std = false;
@@ -320,10 +304,10 @@ void tr::File::close()
 	tr::_reset_os_errors();
 
 	// is_std exists so it doesn't close tr::std_out and company
-	if (!this->is_std && this->fptr != nullptr) {
-		fclose(static_cast<FILE*>(this->fptr));
+	if (!is_std && fptr != nullptr) {
+		fclose(static_cast<FILE*>(fptr));
 	}
-	this->fptr = nullptr;
+	fptr = nullptr;
 }
 
 tr::Result<int64> tr::File::position()
@@ -332,7 +316,7 @@ tr::Result<int64> tr::File::position()
 
 	int64 pos = _ftelli64(static_cast<FILE*>(this->fptr));
 	if (pos < 0) {
-		return FileError::from_errno(this->path, "", FileOperation::GET_FILE_POSITION);
+		return {_trippin_error_from_errno(), FileOperation::GET_FILE_POSITION, path, ""};
 	}
 	return pos;
 }
@@ -340,13 +324,12 @@ tr::Result<int64> tr::File::position()
 tr::Result<int64> tr::File::len()
 {
 	tr::_reset_os_errors();
-	return this->length;
+	return length;
 }
 
 tr::Result<bool> tr::File::eof()
 {
 	tr::_reset_os_errors();
-
 	return feof(static_cast<FILE*>(this->fptr)) != 0;
 }
 
@@ -367,9 +350,9 @@ tr::Result<void> tr::File::seek(int64 bytes, tr::SeekFrom from)
 		break;
 	}
 
-	int i = _fseeki64(static_cast<FILE*>(this->fptr), bytes, whence);
+	int i = _fseeki64(static_cast<FILE*>(fptr), bytes, whence);
 	if (i != 0) {
-		return FileError::from_errno(this->path, "", FileOperation::SEEK_FILE);
+		return {_trippin_error_from_errno(), FileOperation::SEEK_FILE, path, ""};
 	}
 	return {};
 }
@@ -378,9 +361,9 @@ tr::Result<void> tr::File::rewind()
 {
 	tr::_reset_os_errors();
 
-	::rewind(static_cast<FILE*>(this->fptr));
+	::rewind(static_cast<FILE*>(fptr));
 	if (errno != 0) {
-		return FileError::from_errno(this->path, "", FileOperation::REWIND_FILE);
+		return {_trippin_error_from_errno(), FileOperation::REWIND_FILE, path, ""};
 	}
 	return {};
 }
@@ -388,24 +371,14 @@ tr::Result<void> tr::File::rewind()
 tr::Result<int64> tr::File::read_bytes(void* out, int64 size, int64 items)
 {
 	tr::_reset_os_errors();
-	TR_TRY_ASSERT(
-		out != nullptr, tr::scratchpad().make_ref<StringError>(
-					"you dumbass it's supposed to go somewhere if you don't "
-					"want to use it use File::seek() dumbass"
-				)
-	);
-	TR_TRY_ASSERT(
-		this->can_read(),
-		tr::scratchpad().make_ref<FileError>(
-			this->path, "", FileErrorType::ACCESS_DENIED, FileOperation::READ_FILE
-		)
-	);
+	TR_ASSERT(out != nullptr);
+	TR_TRY_ASSERT(can_read(), {ERROR_ACCESS_DENIED, FileOperation::READ_FILE, path, ""});
 
 	usize bytes =
 		fread(out, static_cast<usize>(size), static_cast<usize>(items),
-		      static_cast<FILE*>(this->fptr));
+		      static_cast<FILE*>(fptr));
 	if (errno != 0) {
-		return FileError::from_errno(this->path, "", FileOperation::READ_FILE);
+		return {_trippin_error_from_errno(), path, "", FileOperation::READ_FILE};
 	}
 	return static_cast<int64>(bytes);
 }
@@ -414,40 +387,46 @@ tr::Result<void> tr::File::flush()
 {
 	tr::_reset_os_errors();
 
-	int i = fflush(static_cast<FILE*>(this->fptr));
+	int i = fflush(static_cast<FILE*>(fptr));
 	if (i == EOF) {
-		return FileError::from_errno(this->path, "", FileOperation::FLUSH_FILE);
+		return {_trippin_error_from_errno(), FileOperation::FLUSH_FILE, path, ""};
 	}
 	return {};
 }
 
-tr::Result<void> tr::File::write_bytes(Array<uint8> bytes)
+tr::Result<void> tr::File::write_bytes(Array<const uint8> bytes)
 {
 	tr::_reset_os_errors();
-	TR_TRY_ASSERT(
-		this->can_write(),
-		tr::scratchpad().make_ref<FileError>(
-			this->path, "", FileErrorType::ACCESS_DENIED, FileOperation::WRITE_FILE
-		)
-	);
+	TR_TRY_ASSERT(can_write(), {ERROR_ACCESS_DENIED, FileOperation::WRITE_FILE, path, ""});
 
 	usize bytes_written =
-		fwrite(bytes.buf(), sizeof(uint8), bytes.len(), static_cast<FILE*>(this->fptr));
+		fwrite(bytes.buf(), sizeof(uint8), bytes.len(), static_cast<FILE*>(fptr));
 	if (bytes_written < bytes.len()) {
-		return FileError::from_errno(this->path, "", FileOperation::WRITE_FILE);
+		return {_trippin_error_from_errno(), FileOperation::WRITE_FILE, path, ""};
+	}
+	return {};
+}
+
+tr::Result<void> tr::File::print_args(const char* fmt, va_list arg)
+{
+	tr::_reset_os_errors();
+	TR_TRY_ASSERT(can_write(), {ERROR_ACCESS_DENIED, FileOperation::WRITE_FILE, path, ""});
+
+	vfprintf(static_cast<FILE*>(fptr), fmt, arg);
+	if (errno != 0) {
+		return {tr::_trippin_error_from_errno(), FileOperation::WRITE_FILE, this->path, ""};
 	}
 	return {};
 }
 
 bool tr::File::can_read()
 {
-	switch (this->mode) {
+	switch (mode) {
 	case FileMode::READ_TEXT:
 	case FileMode::READ_BINARY:
 	case FileMode::READ_WRITE_TEXT:
 	case FileMode::READ_WRITE_BINARY:
 		return true;
-
 	default:
 		return false;
 	}
@@ -455,13 +434,12 @@ bool tr::File::can_read()
 
 bool tr::File::can_write()
 {
-	switch (this->mode) {
+	switch (mode) {
 	case FileMode::WRITE_TEXT:
 	case FileMode::WRITE_BINARY:
 	case FileMode::READ_WRITE_TEXT:
 	case FileMode::READ_WRITE_BINARY:
 		return true;
-
 	default:
 		return false;
 	}
@@ -469,32 +447,38 @@ bool tr::File::can_write()
 
 tr::Result<void> tr::remove_file(tr::String path)
 {
-	path = tr::path(tr::scratchpad(), path);
+	ScratchArena scratch{};
+	TR_DEFER(scratch.free());
+	path = tr::path(scratch, path);
 	tr::_reset_os_errors();
 
-	int i = _wremove(from_trippin_to_win32_str(path));
+	int i = _wremove(from_trippin_to_win32_str(scratch, path));
 	if (i == -1) {
-		return FileError::from_errno(path, "", FileOperation::REMOVE_FILE);
+		return {_trippin_error_from_errno(), FileOperation::REMOVE_FILE, path, ""};
 	}
 	return {};
 }
 
 tr::Result<void> tr::move_file(tr::String from, tr::String to)
 {
-	from = tr::path(tr::scratchpad(), from);
-	to = tr::path(tr::scratchpad(), to);
+	ScratchArena scratch{};
+	TR_DEFER(scratch.free());
+	from = tr::path(scratch, from);
+	to = tr::path(scratch, to);
 	tr::_reset_os_errors();
 
 	// libc rename() is different on windows and posix
 	// on posix it replaces the destination if it already exists
 	// on windows it fails in that case
 	if (tr::path_exists(to)) {
-		return FileError(from, to, FileErrorType::FILE_EXISTS, FileOperation::MOVE_FILE);
+		return {ERROR_FILE_EXISTS, FileOperation::MOVE_FILE, from, to};
 	}
 
-	int i = _wrename(from_trippin_to_win32_str(from), from_trippin_to_win32_str(to));
+	int i = _wrename(
+		from_trippin_to_win32_str(scratch, from), from_trippin_to_win32_str(scratch, to)
+	);
 	if (i == -1) {
-		return FileError::from_errno(from, to, FileOperation::MOVE_FILE);
+		return {_trippin_error_from_errno(), FileOperation::MOVE_FILE, from, to};
 	}
 	return {};
 }
@@ -502,26 +486,32 @@ tr::Result<void> tr::move_file(tr::String from, tr::String to)
 [[deprecated("use tr::path_exists instead")]]
 bool tr::file_exists(tr::String path)
 {
-	path = tr::path(tr::scratchpad(), path);
-	DWORD attr = GetFileAttributesW(from_trippin_to_win32_str(path));
+	ScratchArena scratch{};
+	TR_DEFER(scratch.free());
+	path = tr::path(scratch, path);
+	DWORD attr = GetFileAttributesW(from_trippin_to_win32_str(scratch, path));
 	return attr != INVALID_FILE_ATTRIBUTES;
 }
 
 bool tr::path_exists(tr::String path)
 {
-	path = tr::path(tr::scratchpad(), path);
-	DWORD attr = GetFileAttributesW(from_trippin_to_win32_str(path));
+	ScratchArena scratch{};
+	TR_DEFER(scratch.free());
+	path = tr::path(scratch, path);
+	DWORD attr = GetFileAttributesW(from_trippin_to_win32_str(scratch, path));
 	return attr != INVALID_FILE_ATTRIBUTES;
 }
 
 tr::Result<void> tr::create_dir(tr::String path)
 {
-	path = tr::path(tr::scratchpad(), path);
+	ScratchArena scratch{};
+	TR_DEFER(scratch.free());
+	path = tr::path(scratch, path);
 	tr::_reset_os_errors();
 
 	// it's recursive :)
-	path = path.replace(tr::scratchpad(), '\\', '/');
-	Array<String> dirs = path.split(tr::scratchpad(), '/');
+	path = path.replace(scratch, '\\', '/');
+	Array<String> dirs = path.split(scratch, '/');
 	if (dirs.len() == 0) {
 		tr::warn("couldn't create directory '%s', path is likely corrupted/invalid", *path);
 		return {};
@@ -531,23 +521,26 @@ tr::Result<void> tr::create_dir(tr::String path)
 
 	for (auto [i, dir] : dirs) {
 		if (i > 0) {
-			full_dir = tr::fmt(tr::scratchpad(), "%s/%s", *full_dir, *dir);
+			full_dir = tr::tmp_fmt("%s/%s", *full_dir, *dir);
 		}
 
 		if (tr::path_exists(full_dir)) {
 			bool is_file = TR_TRY(tr::is_file(full_dir));
 
 			TR_TRY_ASSERT(
-				!is_file, tr::scratchpad().make_ref<FileError>(
-						  full_dir, "", FileErrorType::IS_NOT_DIRECTORY,
-						  FileOperation::CREATE_DIR
-					  )
+				!is_file, {
+						  ERROR_IS_NOT_DIRECTORY,
+						  FileOperation::CREATE_DIR,
+						  full_dir,
+						  "",
+					  }
 			);
 			continue;
 		}
 
-		if (_wmkdir(from_trippin_to_win32_str(full_dir)) == -1) {
-			return FileError::from_win32(full_dir, "", FileOperation::CREATE_DIR);
+		if (_wmkdir(from_trippin_to_win32_str(scratch, full_dir)) == -1) {
+			return {_trippin_error_from_errno(), FileOperation::CREATE_DIR, full_dir,
+				""};
 		}
 	}
 	return {};
@@ -555,11 +548,13 @@ tr::Result<void> tr::create_dir(tr::String path)
 
 tr::Result<void> tr::remove_dir(tr::String path)
 {
-	path = tr::path(tr::scratchpad(), path);
+	ScratchArena scratch{};
+	TR_DEFER(scratch.free());
+	path = tr::path(scratch, path);
 	tr::_reset_os_errors();
 
-	if (!RemoveDirectoryW(from_trippin_to_win32_str(path))) {
-		return FileError::from_win32(path, "", FileOperation::REMOVE_DIR);
+	if (!RemoveDirectoryW(from_trippin_to_win32_str(scratch, path))) {
+		return {_trippin_error_from_win32(), FileOperation::REMOVE_DIR, path, ""};
 	}
 	return {};
 }
@@ -567,18 +562,20 @@ tr::Result<void> tr::remove_dir(tr::String path)
 tr::Result<tr::Array<tr::String>>
 tr::list_dir(tr::Arena& arena, tr::String path, bool include_hidden)
 {
-	path = tr::path(tr::scratchpad(), path);
+	ScratchArena scratch{};
+	TR_DEFER(scratch.free());
+	path = tr::path(scratch, path);
 	// this looks so horrible what the fuck is wrong with you bill gates
 	WIN32_FIND_DATAW find_file_data;
 	HANDLE hfind;
 
-	hfind = FindFirstFileW(from_trippin_to_win32_str(path), &find_file_data);
+	hfind = FindFirstFileW(from_trippin_to_win32_str(scratch, path), &find_file_data);
 
 	if (hfind == INVALID_HANDLE_VALUE) {
-		return FileError::from_win32(path, "", FileOperation::LIST_DIR);
+		return {_trippin_error_from_win32(), FileOperation::LIST_DIR, path, ""};
 	}
 
-	Array<String> entries(arena);
+	Array<String> entries{arena};
 
 	// idk why it uses do-while i stole this
 	do {
@@ -595,7 +592,7 @@ tr::list_dir(tr::Arena& arena, tr::String path, bool include_hidden)
 			}
 		}
 
-		entries.add(from_win32_to_trippin_str(find_file_data.cFileName));
+		entries.add(from_win32_to_trippin_str(scratch, find_file_data.cFileName));
 	} while (FindNextFileW(hfind, &find_file_data) != 0);
 
 	FindClose(hfind);
@@ -604,11 +601,13 @@ tr::list_dir(tr::Arena& arena, tr::String path, bool include_hidden)
 
 tr::Result<bool> tr::is_file(tr::String path)
 {
-	path = tr::path(tr::scratchpad(), path);
-	DWORD attributes = GetFileAttributesW(from_trippin_to_win32_str(path));
+	ScratchArena scratch{};
+	TR_DEFER(scratch.free());
+	path = tr::path(scratch, path);
+	DWORD attributes = GetFileAttributesW(from_trippin_to_win32_str(scratch, path));
 
 	if (attributes == INVALID_FILE_ATTRIBUTES) {
-		return FileError::from_win32(path, "", FileOperation::IS_FILE);
+		return {_trippin_error_from_win32(), FileOperation::IS_FILE, path, ""};
 	}
 
 	return !(attributes & FILE_ATTRIBUTE_DIRECTORY);
@@ -616,8 +615,11 @@ tr::Result<bool> tr::is_file(tr::String path)
 
 void tr::_init_paths()
 {
+	ScratchArena scratch{};
+	TR_DEFER(scratch.free());
+
 	// we're first getting it as utf-16 then converting it back to utf-8 just in case lmao
-	WinStrMut exedir = static_cast<WinStrMut>(tr::core_arena.alloc(MAX_PATH * sizeof(wchar_t)));
+	WinStrMut exedir = _tr::core_arena().alloc<WinStrMut>(MAX_PATH * sizeof(wchar_t));
 	HMODULE hmodule = GetModuleHandle(nullptr);
 	if (hmodule != nullptr) {
 		DWORD len = GetModuleFileNameW(hmodule, exedir, MAX_PATH);
@@ -634,8 +636,8 @@ void tr::_init_paths()
 			}
 
 			// utfma balls guys amirite
-			tr::exe_dir = from_win32_to_trippin_str(exedir);
-			tr::exe_dir = tr::exe_dir.directory(tr::core_arena);
+			tr::exe_dir = from_win32_to_trippin_str(scratch, exedir);
+			tr::exe_dir = tr::exe_dir.directory(_tr::core_arena());
 		}
 	}
 	else {
@@ -643,20 +645,14 @@ void tr::_init_paths()
 		tr::exe_dir = ".";
 	}
 
-	// msvc complains about getenv
-	#ifdef TR_ONLY_MSVC
-	auto* buf = static_cast<wchar_t*>(tr::scratchpad().alloc(MAX_PATH * sizeof(wchar_t)));
+	wchar_t* buf = scratch.alloc<wchar_t*>(MAX_PATH * sizeof(wchar_t));
 	_wdupenv_s(&buf, nullptr, L"APPDATA");
-	tr::appdata_dir = from_win32_to_trippin_str(buf).duplicate(tr::core_arena);
-	#else
-	char* appdata = getenv("APPDATA");
-	tr::appdata_dir = String(appdata).duplicate(tr::core_arena);
-	#endif
+	tr::appdata_dir = from_win32_to_trippin_str(scratch, buf).duplicate(_tr::core_arena());
 
 	// normalize path separators
 	// just in case
-	tr::exe_dir = tr::exe_dir.replace(tr::core_arena, '\\', '/');
-	tr::appdata_dir = tr::appdata_dir.replace(tr::core_arena, '\\', '/');
+	tr::exe_dir = tr::exe_dir.replace(_tr::core_arena(), '\\', '/');
+	tr::appdata_dir = tr::appdata_dir.replace(_tr::core_arena(), '\\', '/');
 }
 
 #else
