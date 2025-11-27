@@ -308,7 +308,7 @@ public:
 	// `end` are NOT in codepoints but instead in indexes (bytes for UTF-8, 2 bytes for UTF-16,
 	// 4 bytes for UTF-32)
 	[[nodiscard]]
-	String substr(Arena& arena, usize start, usize end) const;
+	String substr(Arena& arena, usize start, usize end = 0) const;
 
 	// Returns an array with all of the indexes containing that character (the index is where it
 	// starts). Note that the indexes and `start` and `end` are NOT in codepoints.

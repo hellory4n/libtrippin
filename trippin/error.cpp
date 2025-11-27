@@ -274,7 +274,7 @@ _real_file_errmsg(tr::FileOperation op, tr::String error, tr::String path_a, tr:
 tr::TempString tr::errmsg_file_not_found(tr::ErrorArgs args)
 {
 	return _real_file_errmsg(
-		static_cast<FileOperation>(args[0].i32), "no such file or directory", args[16].str
+		static_cast<FileOperation>(args[0].i32), "no such file or directory", args[1].str
 	);
 }
 

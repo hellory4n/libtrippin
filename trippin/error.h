@@ -177,12 +177,12 @@ TR_REGISTER_ERROR_TYPE(ERROR_NO_SPACE_LEFT, errmsg_no_space_left);
 TempString errmsg_file_exists(ErrorArgs args);
 // args: FileOperation as int32, string path A, string path B
 constexpr ErrorType ERROR_FILE_EXISTS = tr::errtype_from_string("tr::FILE_EXISTS");
-TR_REGISTER_ERROR_TYPE(ERROR_FILE_EXISTS, errmsg_access_denied);
+TR_REGISTER_ERROR_TYPE(ERROR_FILE_EXISTS, errmsg_file_exists);
 
 TempString errmsg_bad_handle(ErrorArgs args);
 // args: FileOperation as int32, string path A, string path B
 constexpr ErrorType ERROR_BAD_HANDLE = tr::errtype_from_string("tr::BAD_HANDLE");
-TR_REGISTER_ERROR_TYPE(ERROR_BAD_HANDLE, errmsg_access_denied);
+TR_REGISTER_ERROR_TYPE(ERROR_BAD_HANDLE, errmsg_bad_handle);
 
 TempString errmsg_hardware_error_or_unknown(ErrorArgs args);
 // args: FileOperation as int32, string path A, string path B

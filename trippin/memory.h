@@ -826,21 +826,11 @@ public:
 
 	constexpr T& operator[](usize idx) TR_LIFETIMEBOUND
 	{
-		// exploiting constexpr to get compile-time errors
-		if (std::is_constant_evaluated()) {
-			throw "skill";
-			if (idx >= N) {
-				throw "index out of range";
-			}
-			return _array[idx];
+		Maybe<T&> item = try_get(idx);
+		if (item.is_valid()) {
+			return item.unwrap();
 		}
-		else {
-			Maybe<T&> item = try_get(idx);
-			if (item.is_valid()) {
-				return item.unwrap();
-			}
-			tr::panic("index out of range: list[%zu] when the length is %zu", idx, N);
-		}
+		tr::panic("index out of range: list[%zu] when the length is %zu", idx, N);
 	}
 
 	constexpr const T* buf() const TR_LIFETIMEBOUND

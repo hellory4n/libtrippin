@@ -54,14 +54,14 @@
 /* clang-format on */
 
 namespace tr {
+namespace _tr {
+	static String _exe_dir = "exe/dir/real";
+	static String _appdata_dir = "appdata/dir/real";
 
-String exe_dir;
-String appdata_dir;
-
-String app_dir;
-String user_dir;
-
-}
+	static String _app_dir_name;
+	static String _user_dir_name;
+} // namespace _tr
+} // namespace tr
 
 tr::Result<tr::String> tr::Reader::read_string(tr::Arena& arena, int64 length)
 {
@@ -179,30 +179,27 @@ tr::Result<void> tr::Writer::println(const char* fmt, ...)
 
 tr::String tr::path(tr::Arena& arena, tr::String path)
 {
-	ScratchArena scratch{};
-	TR_DEFER(scratch.free());
+	return path.duplicate(arena);
+	// ScratchArena scratch{};
+	// TR_DEFER(scratch.free());
 
-	if (path.starts_with("app://")) {
-		String pathfrfr = path.substr(scratch, sizeof("app://") - 1, path.len());
-		return tr::fmt(
-			arena, "%s/%s/%s", tr::exe_dir.buf(), tr::app_dir.buf(), pathfrfr.buf()
-		);
-	}
-
-	if (path.starts_with("user://")) {
-		String pathfrfr = path.substr(scratch, sizeof("user://") - 1, path.len());
-		return tr::fmt(
-			arena, "%s/%s/%s", tr::appdata_dir.buf(), tr::user_dir.buf(), pathfrfr.buf()
-		);
-	}
-
-	return path;
+	// if (path.starts_with("app://")) {
+	// 	String path_real = path.substr(scratch, sizeof("app://") - 1);
+	// 	return tr::fmt(arena, "%s/%s", *_tr::_exe_dir, *path_real);
+	// }
+	// else if (path.starts_with("user://")) {
+	// 	String path_real = path.substr(scratch, sizeof("user://") - 1);
+	// 	return tr::fmt(arena, "%s/%s", *_tr::_appdata_dir, *path_real);
+	// }
+	// else {
+	// 	return path.duplicate(arena);
+	// }
 }
 
 void tr::set_paths(tr::String appdir, tr::String userdir)
 {
-	tr::app_dir = appdir.duplicate(_tr::core_arena());
-	tr::user_dir = userdir.duplicate(_tr::core_arena());
+	_tr::_app_dir_name = appdir.duplicate(_tr::core_arena());
+	_tr::_user_dir_name = userdir.duplicate(_tr::core_arena());
 }
 
 // TODO use only windows APIs (massive pain in the ass)
@@ -463,19 +460,20 @@ tr::Result<void> tr::move_file(tr::String from, tr::String to)
 {
 	ScratchArena scratch{};
 	TR_DEFER(scratch.free());
-	from = tr::path(scratch, from);
-	to = tr::path(scratch, to);
+	String fromfrfr = tr::path(scratch, from);
+	String tofrfr = tr::path(scratch, to);
 	tr::_reset_os_errors();
 
 	// libc rename() is different on windows and posix
 	// on posix it replaces the destination if it already exists
 	// on windows it fails in that case
-	if (tr::path_exists(to)) {
+	if (tr::path_exists(tofrfr)) {
 		return {ERROR_FILE_EXISTS, FileOperation::MOVE_FILE, from, to};
 	}
 
 	int i = _wrename(
-		from_trippin_to_win32_str(scratch, from), from_trippin_to_win32_str(scratch, to)
+		from_trippin_to_win32_str(scratch, fromfrfr),
+		from_trippin_to_win32_str(scratch, tofrfr)
 	);
 	if (i == -1) {
 		return {_trippin_error_from_errno(), FileOperation::MOVE_FILE, from, to};
@@ -653,6 +651,7 @@ void tr::_init_paths()
 	// just in case
 	tr::exe_dir = tr::exe_dir.replace(_tr::core_arena(), '\\', '/');
 	tr::appdata_dir = tr::appdata_dir.replace(_tr::core_arena(), '\\', '/');
+	tr::log("exe dir = %s", *tr::exe_dir);
 }
 
 #else
@@ -885,19 +884,20 @@ tr::Result<void> tr::move_file(tr::String from, tr::String to)
 {
 	ScratchArena scratch{};
 	TR_DEFER(scratch.free());
-	from = tr::path(scratch, from);
-	to = tr::path(scratch, to);
+	String fromfrfr = tr::path(scratch, from);
+	String tofrfr = tr::path(scratch, to);
 	tr::_reset_os_errors();
 
 	// libc rename() is different on windows and posix
 	// on posix it replaces the destination if it already exists
 	// on windows it fails in that case
-	if (tr::path_exists(to)) {
-		return {tr::_trippin_error_from_errno(), FileOperation::MOVE_FILE, from, to};
+	if (tr::path_exists(tofrfr)) {
+		return {ERROR_FILE_EXISTS, FileOperation::MOVE_FILE, from, to};
 	}
 
-	int i = rename(*from, *to);
+	int i = rename(*fromfrfr, *tofrfr);
 	if (i == -1) {
+		tr::log("SKILL ISSUE from %s to %s", *fromfrfr, *tofrfr);
 		return {tr::_trippin_error_from_errno(), FileOperation::MOVE_FILE, from, to};
 	}
 	return {};
@@ -1046,30 +1046,6 @@ tr::Result<bool> tr::is_file(tr::String path)
 	return true;
 }
 
-void tr::_init_paths()
-{
-	// TODO macOS exists
-	// TODO bsd exists
-	StringBuilder exedir{_tr::core_arena(), PATH_MAX - 1};
-	isize len = readlink("/proc/self/exe", *exedir, exedir.len());
-	if (len < 1) {
-		tr::warn("couldn't get executable directory, using relative paths for app://");
-		tr::exe_dir = ".";
-	}
-	else {
-		exedir[static_cast<usize>(len)] = '\0';
-		// FIXME this copies the data twice for no reason, when it could just go
-		// through StringBuilder directly
-		exedir = {
-			_tr::core_arena(),
-			String{*exedir, static_cast<usize>(len)}
-                        .directory(_tr::core_arena())
-		};
-	}
-
-	tr::exe_dir = exedir;
-	char* home = getenv("HOME");
-	tr::appdata_dir = tr::fmt(_tr::core_arena(), "%s/.local/share", home);
-}
+void tr::_init_paths() {}
 
 #endif
