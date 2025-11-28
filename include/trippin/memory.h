@@ -33,15 +33,15 @@
 
 namespace tr {
 
-/// Allocates memory on the heap, and returns null on failure. You should usually use the higher
+/// Allocates memory on the heap, and returns null on failure. You should probably use the higher
 /// level allocators such as `tr::HeapAlloc`
-void* memnew(usize size, usize align = alignof(max_align_t));
+void* memnew(usize size);
 
 /// `tr::memnew<char>(123)` looks better than `(char*)tr::memnew(123)`, I think
 template<typename T>
 TR_ALWAYS_INLINE T* memnew(usize size)
 {
-	return (T*)memnew(size, alignof(T));
+	return (T*)memnew(size);
 }
 
 // the reference fucks with the type system so we have to use a template :(

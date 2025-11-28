@@ -2,7 +2,7 @@ import os
 
 
 srcs = [
-	"src/implementation.cpp",
+	"src/memory.cpp",
 ]
 
 includes = [".", "..", "include"]
@@ -20,8 +20,8 @@ def input_stuff():
 
 	print("libtrippin auto configurator 3000++")
 	cxx = input("* compiler [g++, clang++]: ")
-	compile_commands = input("* compile mode [debug/release]: ")
-	assert compile_commands == "debug" or compile_commands == "release"
+	compmode = input("* compile mode [debug/release]: ")
+	assert compmode == "debug" or compmode == "release"
 	platform = input("* platform [windows/linux]: ")
 	assert platform == "windows" or platform == "linux"
 	sanitize = input("* [optional] use a sanitizer: ")

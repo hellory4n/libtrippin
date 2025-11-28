@@ -2,8 +2,8 @@
  * libtrippin: Most massive library of all time
  * https://github.com/hellory4n/libtrippin
  *
- * trippin/implementation.cpp
- * Update-proof way of including libtrippin into projects
+ * trippin/memory.cpp
+ * Low-level memory utilities
  *
  * Copyright (C) 2025 by hellory4n <hellory4n@gmail.com>
  *
@@ -23,4 +23,22 @@
  *
  */
 
-#include "memory.cpp"
+#include "trippin/memory.h"
+
+#include <cstdlib>
+
+#include "trippin/platform.h" // IWYU pragma: keep
+
+void* tr::memnew(usize size)
+{
+	// TODO do something more interesting here
+	// this is underwhelming
+
+	return std::malloc(size);
+}
+
+void tr::_impl_memfree(void*& ptr)
+{
+	std::free(ptr);
+	ptr = nullptr;
+}

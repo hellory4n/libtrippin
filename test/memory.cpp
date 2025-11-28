@@ -12,5 +12,5 @@ int main()
 	TR_DEFER(memfree(buffer));
 
 	memcpy(buffer, "heheheha", sizeof("heheheha"));
-	printf("%s", buffer);
+	printf("%s\n", buffer);
 }
