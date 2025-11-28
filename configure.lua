@@ -1,7 +1,4 @@
 #!/bin/lua
-local test_srcs = {
-	"examples/test_all.cpp",
-}
 local srcs = {
 	"trippin/common.cpp",
 	"trippin/error.cpp",
@@ -13,7 +10,7 @@ local srcs = {
 	"trippin/util.cpp",
 }
 
-local includes = {".", ".."}
+local includes = {".", "..", "include"}
 
 io.write("libtrippin auto configurator 3000++\n")
 
