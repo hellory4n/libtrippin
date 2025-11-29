@@ -28,6 +28,9 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <type_traits>
+
+#include "trippin/platform.h"
 
 namespace tr {
 
@@ -51,8 +54,8 @@ using char8 = char8_t;
 using char16 = char16_t;
 using char32 = char32_t;
 
-/// A byte makes it clear you're working with bytes (e.g. low level faffery), while an uint8 may
-/// just be an unsigned int that happens to be 8 bits for whatever reason
+// A byte makes it clear you're working with bytes (e.g. low level faffery), while an uint8 may
+// just be an unsigned int that happens to be 8 bits for whatever reason
 using byte = uint8_t;
 
 // it's usually true, but not guaranteed by the standard
@@ -61,9 +64,65 @@ static_assert(sizeof(usize) == sizeof(isize), "size_t and ptrdiff_t must be the 
 static_assert(sizeof(float32) == 4, "float must be 32-bits");
 static_assert(sizeof(float64) == 8, "double must be 64-bits");
 
+// It's a number duh
+template<typename T>
+concept Number = std::is_integral_v<T> || std::is_floating_point_v<T>;
+
+// C++'s type system refuses to treat a reference as a fancy pointer
+template<typename T>
+struct RefWrapper
+{
+	using WrapT = std::conditional_t<std::is_reference_v<T>, std::remove_reference_t<T>*, T>;
+	WrapT val{};
+
+	TR_ALWAYS_INLINE RefWrapper(T v)
+	requires(!std::is_reference_v<T>)
+		: val(v)
+	{
+	}
+
+	TR_ALWAYS_INLINE RefWrapper(T v)
+	requires(std::is_reference_v<T>)
+		: val(&v)
+	{
+	}
+
+	TR_ALWAYS_INLINE operator T()
+	{
+		if constexpr (std::is_reference_v<T>) {
+			return *val;
+		}
+		else {
+			return val;
+		}
+	}
+
+	TR_ALWAYS_INLINE operator const T() const
+	{
+		if constexpr (std::is_reference_v<T>) {
+			return *val;
+		}
+		else {
+			return val;
+		}
+	}
+
+	TR_ALWAYS_INLINE operator WrapT*()
+	requires std::is_reference_v<T>
+	{
+		return val;
+	}
+
+	TR_ALWAYS_INLINE operator const WrapT*() const
+	requires std::is_reference_v<T>
+	{
+		return val;
+	}
+};
+
 // version crap
 constexpr const char* VERSION_STR = "v3.0.0-dev";
-/// Format is XYYZZ
+// Format is XYYZZ
 constexpr uint32 VERSION_NUM = 3'00'00;
 constexpr uint32 VERSION_MAJOR = 3;
 constexpr uint32 VERSION_MINOR = 0;

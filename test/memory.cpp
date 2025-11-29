@@ -1,5 +1,4 @@
-#include <cstdio>
-#include <cstring>
+#include <cassert>
 
 #include <trippin/macros.h>
 #include <trippin/memory.h>
@@ -11,6 +10,6 @@ int main()
 	char* buffer = memnew<char>(sizeof("heheheha"));
 	TR_DEFER(memfree(buffer));
 
-	memcpy(buffer, "heheheha", sizeof("heheheha"));
-	printf("%s\n", buffer);
+	memcopy(buffer, "heheheha", sizeof("heheheha"));
+	assert(memequal(buffer, sizeof("heheheha"), "heheheha", sizeof("heheheha")));
 }

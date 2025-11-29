@@ -26,32 +26,115 @@
 #ifndef _TRIPPIN_MEMORY_H
 #define _TRIPPIN_MEMORY_H
 
-#include <cstddef>
+#include <cstring>
+#include <new> // IWYU pragma: keep
 
 #include "trippin/platform.h"
 #include "trippin/typedef.h"
 
 namespace tr {
 
-/// Allocates memory on the heap, and returns null on failure. You should probably use the higher
-/// level allocators such as `tr::HeapAlloc`
+template<Number T>
+constexpr T kb_to_bytes(T x)
+{
+	return x * 1024;
+}
+template<Number T>
+constexpr T mb_to_bytes(T x)
+{
+	return tr::kb_to_bytes(x) * 1024;
+}
+template<Number T>
+constexpr T gb_to_bytes(T x)
+{
+	return tr::mb_to_bytes(x) * 1024;
+}
+
+template<Number T>
+constexpr T bytes_to_kb(T x)
+{
+	return x / 1024;
+}
+template<Number T>
+constexpr T bytes_to_mb(T x)
+{
+	return tr::bytes_to_kb(x) / 1024;
+}
+template<Number T>
+constexpr T bytes_to_gb(T x)
+{
+	return tr::bytes_to_mb(x) / 1024;
+}
+
+// Allocates memory on the heap, and returns null on failure. You should probably use the higher
+// level allocators such as `tr::HeapAlloc`
+[[nodiscard, gnu::malloc]]
 void* memnew(usize size);
 
-/// `tr::memnew<char>(123)` looks better than `(char*)tr::memnew(123)`, I think
+// `tr::memnew<char>(123)` looks better than `(char*)tr::memnew(123)`, I think
 template<typename T>
+[[nodiscard, gnu::malloc]]
 TR_ALWAYS_INLINE T* memnew(usize size)
 {
-	return (T*)memnew(size);
+	return static_cast<T*>(tr::memnew(size));
 }
 
 // the reference fucks with the type system so we have to use a template :(
 void _impl_memfree(void*& ptr);
 
-/// Deletes a pointer and sets it to null.
+// Deletes a pointer and sets it to null.
 template<typename T>
 TR_ALWAYS_INLINE void memfree(T* ptr)
 {
-	_impl_memfree((void*&)ptr);
+	tr::_impl_memfree((void*&)ptr);
+}
+
+// memcpy fucks with some c++ types such as anything with a vtable
+template<typename T>
+constexpr void memcopy(RefWrapper<T>* dst, const RefWrapper<T>* src, usize len)
+{
+	for (usize i = 0; i < len; i++) {
+		if constexpr (std::is_reference_v<T> || std::is_trivially_copyable_v<T>) {
+			dst[i] = src[i];
+		}
+		else {
+			new (&dst[i]) T(src[i]);
+		}
+	}
+}
+
+// memcpy fucks with some c++ types such as anything with a vtable
+template<typename T>
+constexpr void memcopy(T* dst, const T* src, usize len)
+{
+	for (usize i = 0; i < len; i++) {
+		// hopefully the compiler can optimize this
+		new (&dst[i]) T(src[i]);
+	}
+}
+
+// `memset` can be optimized away, this can't (hopefully)
+inline void memmagic(void* dst, usize len, byte val)
+{
+	volatile byte* ptr = (volatile byte*)dst;
+	for (usize i = 0; i < len; i++) {
+		ptr[i] = val;
+	}
+}
+
+// Sets all the bytes in a buffer to 0
+inline void memzero(void* dst, usize len)
+{
+	tr::memmagic(dst, len, 0);
+}
+
+// Returns true if the contents of 2 buffers are equal
+inline bool memequal(const void* buf1, usize len1, const void* buf2, usize len2)
+{
+	if (len1 != len2) {
+		return false;
+	}
+	return std::memcmp(buf1, buf2, len1) == 0;
 }
 
 } // namespace tr

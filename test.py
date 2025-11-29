@@ -1,4 +1,12 @@
 import os
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+srcs_should_work = [
+	"test/memory.cpp",
+	"test/memory_references.cpp",
+]
+srcs_shouldnt_work = []
+srcs_shouldnt_compile = []
 
 COLOR_RESET = "\033[0m"
 COLOR_RED = "\033[0;91m"
@@ -11,7 +19,7 @@ tests_succeeded = 0
 total_tests = 0
 
 def main():
-	global cxx, cflags, ldflags
+	global cxx, cflags, ldflags, srcs_should_work, srcs_shouldnt_work, srcs_shouldnt_compile
 
 	if not os.path.exists("build.ninja"):
 		raise Exception("please run configure.py first")
@@ -25,12 +33,25 @@ def main():
 
 	assert os.system("ninja") == 0
 
-	# testma<3
-	should_run_and_work("test/memory.cpp")
+	# some fuckery to run them in parallel
+	# TODO this will take a while once we have 5 billion trillion tests
+	max_workers = len(srcs_should_work) + len(srcs_shouldnt_work) + len(srcs_shouldnt_compile)
+	with ThreadPoolExecutor(max_workers=max_workers) as executor:
+		futures = []
+		for s in srcs_should_work:
+			futures.append(executor.submit(should_work, s))
+		for s in srcs_shouldnt_work:
+			futures.append(executor.submit(shouldnt_work, s))
+		for s in srcs_shouldnt_compile:
+			futures.append(executor.submit(shouldnt_compile, s))
+
+		# wait for everything to finish
+		for future in as_completed(futures):
+			pass
 
 	print(f"\n{tests_succeeded}/{total_tests} tests succeeded")
 
-def should_run_and_work(src):
+def should_work(src):
 	global cxx, cflags, ldflags, tests_succeeded, total_tests
 	total_tests += 1
 
@@ -44,7 +65,7 @@ def should_run_and_work(src):
 	print(f"{COLOR_GREEN}* OK:     {src}{COLOR_RESET}")
 	tests_succeeded += 1
 
-def should_run_and_not_work(src):
+def shouldnt_work(src):
 	global cxx, cflags, ldflags, tests_succeeded, total_tests
 	total_tests += 1
 
