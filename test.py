@@ -3,7 +3,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 srcs_should_work = [
 	"test/memory.cpp",
-	"test/memory_references.cpp",
+	"test/memory_refwrapper.cpp",
 ]
 srcs_shouldnt_work = []
 srcs_shouldnt_compile = []

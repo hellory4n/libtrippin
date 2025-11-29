@@ -2,8 +2,9 @@
  * libtrippin: Most massive library of all time
  * https://github.com/hellory4n/libtrippin
  *
- * trippin/implementation.cpp
- * Update-proof way of including libtrippin into projects
+ * trippin/process.h
+ * The life of a program: start, have children, panic, and
+ * then get killed.
  *
  * Copyright (C) 2025 by hellory4n <hellory4n@gmail.com>
  *
@@ -23,5 +24,20 @@
  *
  */
 
-#include "memory.cpp"
-#include "process.cpp"
+#ifndef _TRIPPIN_PROCESS_H
+#define _TRIPPIN_PROCESS_H
+
+#include "trippin/typedef.h"
+
+namespace tr {
+
+[[noreturn]]
+void quit(int32 status);
+
+// Placeholder panic function until I make better formatting shit
+[[noreturn, gnu::format(printf, 1, 2)]]
+void panicf(const char* fmt, ...);
+
+} // namespace tr
+
+#endif

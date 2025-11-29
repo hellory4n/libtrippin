@@ -3,6 +3,7 @@ import os
 
 srcs = [
 	"src/memory.cpp",
+	"src/process.cpp",
 ]
 
 includes = [".", "..", "include"]

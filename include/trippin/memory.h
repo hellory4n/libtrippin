@@ -29,7 +29,6 @@
 #include <cstring>
 #include <new> // IWYU pragma: keep
 
-#include "trippin/platform.h"
 #include "trippin/typedef.h"
 
 namespace tr {
@@ -74,7 +73,7 @@ void* memnew(usize size);
 // `tr::memnew<char>(123)` looks better than `(char*)tr::memnew(123)`, I think
 template<typename T>
 [[nodiscard, gnu::malloc]]
-TR_ALWAYS_INLINE T* memnew(usize size)
+inline T* memnew(usize size)
 {
 	return static_cast<T*>(tr::memnew(size));
 }
@@ -84,7 +83,7 @@ void _impl_memfree(void*& ptr);
 
 // Deletes a pointer and sets it to null.
 template<typename T>
-TR_ALWAYS_INLINE void memfree(T* ptr)
+inline void memfree(T* ptr)
 {
 	tr::_impl_memfree((void*&)ptr);
 }
@@ -122,10 +121,13 @@ inline void memmagic(void* dst, usize len, byte val)
 	}
 }
 
-// Sets all the bytes in a buffer to 0
-inline void memzero(void* dst, usize len)
+// Sets all the items in a buffer to its default value (which may be 0 or something else entirely)
+template<typename T>
+constexpr void memreset(T* dst, usize len)
 {
-	tr::memmagic(dst, len, 0);
+	for (usize i = 0; i < len; i++) {
+		dst[i] = T{};
+	}
 }
 
 // Returns true if the contents of 2 buffers are equal
