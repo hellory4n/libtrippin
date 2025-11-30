@@ -47,3 +47,13 @@ void tr::panicf(const char* fmt, ...)
 	std::printf("\n");
 	std::abort();
 }
+
+void tr::unreachable(const char* ctx)
+{
+	tr::panicf("unreachable code has been reached. this is bad. context: '%s'", ctx);
+}
+
+void tr::todo(const char* ctx)
+{
+	tr::panicf("unimplemented code: '%s'", ctx);
+}

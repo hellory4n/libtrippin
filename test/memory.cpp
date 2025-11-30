@@ -14,7 +14,7 @@ int main()
 	assert(memequal(buffer, LEN, "heheheha", LEN));
 
 	memreset(buffer, LEN);
-	char* empty_buffer_type_shit[LEN] = {};
+	char empty_buffer_type_shit[LEN] = {};
 	assert(memequal(buffer, LEN, empty_buffer_type_shit, LEN));
 
 	memfree(buffer);

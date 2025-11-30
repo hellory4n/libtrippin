@@ -44,16 +44,21 @@ enum class BufferInit : int8
 // Basically a pointer + length, which could point anywhere, and doesn't own the memory. Why would
 // you use this instead of a pointer + length? Because of safety, and stuff, including:
 // - no nullptr allowed
+// - opt-out instead of opt-in default initialization
 // - operator[] actually checks the size
 // - memory.h functions such as memcopy also check the size
+// - signed integer support so that it's easier to find an overflow
 //
-// Mind-boggling technology, I know.
+// Mind-boggling technology, I know. It doesn't make such bugs impossible, but it does make creating
+// them much harder and fixing them much easier. It's not that much overhead either, or at least for
+// any CPU made in the last decade.
 template<typename T>
 struct Buffer
 {
 	Buffer() {}
 
-	Buffer(T* ptr, usize len, BufferInit init = BufferInit::KEEP_VALUES)
+	constexpr Buffer(T* ptr, usize len, BufferInit init)
+	requires(!std::is_const_v<T>)
 		: _ptr(ptr)
 		, _len(len)
 	{
@@ -66,13 +71,53 @@ struct Buffer
 		}
 	}
 
-	TR_ALWAYS_INLINE T* buf()
+	constexpr Buffer(T* ptr, isize len, BufferInit init)
+	requires(!std::is_const_v<T>)
+		: _ptr(ptr)
 	{
 		_validate();
-		return _ptr;
+		if (len < 0) {
+			tr::panicf("buffer length can't be negative (expected >=0, got %zu", len);
+		}
+		else {
+			_len = as<usize>(len);
+		}
+
+		if (init == BufferInit::DEFAULT_INIT) {
+			for (usize i = 0; i < len; i++) {
+				_ptr[i] = T{};
+			}
+		}
 	}
 
-	TR_ALWAYS_INLINE const T* buf() const
+	constexpr Buffer(T* ptr, usize len)
+		: _ptr(ptr)
+		, _len(len)
+	{
+		_validate();
+	}
+
+	constexpr Buffer(T* ptr, isize len)
+		: _ptr(ptr)
+	{
+		_validate();
+		if (len < 0) {
+			tr::panicf("buffer length can't be negative (expected >=0, got %zu", len);
+		}
+		else {
+			_len = as<usize>(len);
+		}
+	}
+
+	// mild fuckery so that you can pass a static array
+	template<usize N>
+	constexpr Buffer(T (&arr)[N])
+		: _ptr(arr)
+		, _len(N)
+	{
+	}
+
+	TR_ALWAYS_INLINE T* buf() const
 	{
 		_validate();
 		return _ptr;
@@ -83,35 +128,37 @@ struct Buffer
 		return _len;
 	}
 
-	TR_ALWAYS_INLINE T& operator[](usize idx)
-	requires std::is_const_v<T>
+	TR_ALWAYS_INLINE T& operator[](usize idx) const
 	{
 		_validate();
-		if (idx <= len()) {
+		if (idx >= len()) {
 			tr::panicf(
-				"index out of range: buffer[%zu] when the length is only %zu", len()
+				"index out of range: buffer[%zu] when the length is only %zu", idx,
+				len()
 			);
 		}
 		return _ptr[idx];
 	}
 
-	TR_ALWAYS_INLINE const T& operator[](usize idx) const
+	TR_ALWAYS_INLINE T& operator[](isize idx) const
 	{
 		_validate();
-		if (idx <= len()) {
+		if (idx >= len()) {
 			tr::panicf(
-				"index out of range: buffer[%zu] when the length is only %zu", len()
+				"index out of range: buffer[%zu] when the length is only %zu", idx,
+				len()
 			);
 		}
 		return _ptr[idx];
 	}
 
 	// typed buffer to buffer of bytes
+	// TODO should this be explicit? idk
 	operator Buffer<byte>()
 	requires(!std::is_const_v<T> && !std::is_same_v<T, byte>)
 	{
 		_validate();
-		return {reinterpret_cast<byte*>(_ptr), _len};
+		return {reinterpret<byte*>(_ptr), _len};
 	}
 
 	// typed buffer to buffer of const bytes
@@ -119,20 +166,44 @@ struct Buffer
 	requires(!std::is_same_v<T, byte>)
 	{
 		_validate();
-		return {reinterpret_cast<const byte*>(_ptr), _len};
+		return {reinterpret<const byte*>(_ptr), _len};
 	}
 
-	// mutable buffer to const buffer
-	operator Buffer<const T>() const
-	requires(!std::is_const_v<T>)
+	// utility functions
+	constexpr bool is_empty() const
 	{
-		_validate();
-		return {_ptr, _len};
+		return _len == 0;
+	}
+
+	TR_ALWAYS_INLINE T& first() const
+	{
+		return (*this)[0];
+	}
+
+	TR_ALWAYS_INLINE T& last() const
+	{
+		return (*this)[len() - 1];
+	}
+
+	// Returns a smaller part of a buffer
+	TR_ALWAYS_INLINE Buffer<T> sub(isize start, isize end) const
+	{
+		if (start < 0 || start >= len() || end >= len()) {
+			tr::panicf(
+				"index out of range: buffer.slice(%zu, %zu) when the length is "
+				"only %zu",
+				start, end, len()
+			);
+		}
 	}
 
 private:
 	TR_ALWAYS_INLINE void _validate() const
 	{
+		// used by memfree to indicate use after free instead of an uninitialized buffer
+		if (_len == as<usize>(-1)) [[unlikely]] {
+			tr::panicf("tr::Buffer<T> has already been freed");
+		}
 		if (_ptr == nullptr) [[unlikely]] {
 			tr::panicf("tr::Buffer<T> can't be null");
 		}
@@ -140,7 +211,35 @@ private:
 
 	T* _ptr = nullptr;
 	usize _len = 0;
+
+	template<typename T2>
+	friend void memfree(Buffer<T2>& buf);
 };
+
+// deduction guidema
+template<class T, usize N>
+Buffer(T (&)[N]) -> Buffer<T>;
+
+// Allocates heap memory. Size is NOT in bytes
+template<typename T>
+inline Buffer<T> memnew_buffer(usize size)
+{
+	return Buffer<T>{memnew<T>(size), size};
+}
+
+template<typename T>
+inline void memfree(Buffer<T>& buf)
+{
+	// len of -1 == already freed
+	if (buf.len() == as<usize>(-1)) {
+		return;
+	}
+
+	T* ineedareferenceposthasteotherwisethecompilercries = buf.buf();
+	tr::memfree(ineedareferenceposthasteotherwisethecompilercries);
+	buf._ptr = nullptr;
+	buf._len = as<usize>(-1);
+}
 
 // Copies a Buffer<T> into somewhere else. Amazing.
 template<typename T>
@@ -157,21 +256,26 @@ constexpr void memcopy(Buffer<T> dst, Buffer<const T> src)
 }
 
 template<typename T>
-constexpr void memdefault(Buffer<T> dst, usize len)
+constexpr void memreset(Buffer<T> dst)
 {
-	for (usize i = 0; i < len; i++) {
+	for (usize i = 0; i < dst.len(); i++) {
 		dst[i] = T{};
 	}
 }
 
 template<typename T1, typename T2>
-requires std::is_same_v<std::remove_cv_t<T1>, std::remove_cv_t<T2>>
-bool memequal(Buffer<T1> a, Buffer<T2> b)
+constexpr bool memequal(Buffer<T1> a, Buffer<T2> b)
 {
 	if (a.len() != b.len()) {
 		return false;
 	}
-	return std::memcmp(a.buf(), b.buf(), a.len()) == 0;
+
+	for (usize i = 0; i < a.len(); i++) {
+		if (a[i] != b[i]) {
+			return false;
+		}
+	}
+	return true;
 }
 
 } // namespace tr

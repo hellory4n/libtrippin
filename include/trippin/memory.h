@@ -75,7 +75,7 @@ template<typename T>
 [[nodiscard, gnu::malloc]]
 inline T* memnew(usize size)
 {
-	return static_cast<T*>(tr::memnew(size));
+	return as<T*>(tr::memnew(size));
 }
 
 // the reference fucks with the type system so we have to use a template :(
@@ -83,7 +83,7 @@ void _impl_memfree(void*& ptr);
 
 // Deletes a pointer and sets it to null.
 template<typename T>
-inline void memfree(T* ptr)
+inline void memfree(T*& ptr)
 {
 	tr::_impl_memfree((void*&)ptr);
 }

@@ -2,6 +2,7 @@ import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 srcs_should_work = [
+	"test/buffer.cpp",
 	"test/memory.cpp",
 	"test/memory_refwrapper.cpp",
 ]

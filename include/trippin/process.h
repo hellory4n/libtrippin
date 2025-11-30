@@ -38,6 +38,14 @@ void quit(int32 status);
 [[noreturn, gnu::format(printf, 1, 2)]]
 void panicf(const char* fmt, ...);
 
+// Marks somewhere as unreachable so that the compiler stops whining
+[[noreturn]]
+void unreachable(const char* ctx = "unknown");
+
+// TODO write a description for this function not funny
+[[noreturn]]
+void todo(const char* ctx = "unknown");
+
 } // namespace tr
 
 #endif

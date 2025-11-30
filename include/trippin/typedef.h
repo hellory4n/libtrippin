@@ -29,6 +29,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <type_traits>
+#include <utility>
 
 #include "trippin/platform.h"
 
@@ -120,6 +121,25 @@ struct RefWrapper
 	}
 };
 
+// the casts have ridiculous names and i don't care what you think
+// cmon literally every other language on this beautiful blue planet has a shorter cast
+template<typename To, typename From>
+[[nodiscard]]
+constexpr To as(From val)
+{
+	return static_cast<To>(std::forward<From>(val));
+}
+
+// im not scared of the computer i will reinterpret all over the place
+template<typename To, typename From>
+[[nodiscard]]
+TR_ALWAYS_INLINE To reinterpret(From val)
+{
+	return reinterpret_cast<To>(std::forward<From>(val));
+}
+
+// dynamic_cast isn't very common and const_cast is evil so they're not included here
+
 // version crap
 constexpr const char* VERSION_STR = "v3.0.0-dev";
 // Format is XYYZZ
@@ -132,6 +152,7 @@ constexpr uint32 VERSION_PATCH = 0;
 
 // tr:: even for numbers is a bit much imo tbh ong frfr
 #ifndef TR_NO_USING_TYPEDEFS
+using tr::as;
 using tr::byte;
 using tr::char16;
 using tr::char32;
@@ -143,6 +164,7 @@ using tr::int32;
 using tr::int64;
 using tr::int8;
 using tr::isize;
+using tr::reinterpret;
 using tr::uint16;
 using tr::uint32;
 using tr::uint64;
