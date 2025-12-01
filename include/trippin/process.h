@@ -35,7 +35,7 @@ namespace tr {
 void quit(int32 status);
 
 // Placeholder panic function until I make better formatting shit
-[[noreturn, gnu::format(printf, 1, 2)]]
+[[noreturn]]
 void panicf(const char* fmt, ...);
 
 // Marks somewhere as unreachable so that the compiler stops whining

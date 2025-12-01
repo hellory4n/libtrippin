@@ -2,8 +2,8 @@
  * libtrippin: Most massive library of all time
  * https://github.com/hellory4n/libtrippin
  *
- * trippin/memory.cpp
- * Low-level memory utilities
+ * trippin/math.h
+ * Basic math functions
  *
  * Copyright (C) 2025 by hellory4n <hellory4n@gmail.com>
  *
@@ -23,24 +23,56 @@
  *
  */
 
-#include "trippin/memory.h"
+#ifndef _TRIPPIN_MATH_H
+#define _TRIPPIN_MATH_H
 
-#include <cstdlib>
+#include <cmath> // IWYU pragma: export
 
-#include "trippin/platform.h" // IWYU pragma: keep
+namespace tr {
 
-void* tr::memnew(usize size)
+// to make the compiler happy
+template<typename T>
+constexpr T min(T a)
 {
-	// TODO do something more interesting here
-	// this is underwhelming
-	// maybe switch to mimalloc? (though it'd be slightly useless since the whole design of the
-	// library is made to avoid individual allocations, the exact thing mimalloc optimizes)
-
-	return std::malloc(size);
+	return a;
 }
 
-void tr::_impl_memfree(void*& ptr)
+// Picks the smallest of a set of numbers
+template<typename T, typename... Ts>
+constexpr T min(T a, Ts... args)
 {
-	std::free(ptr);
-	ptr = nullptr;
+	T b = min(args...);
+	return (a < b ? a : b);
 }
+
+// to make the compiler happy
+template<typename T>
+constexpr T max(T a)
+{
+	return a;
+}
+
+// Picks the smallest of a set of numbers
+template<typename T, typename... Ts>
+constexpr T max(T a, Ts... args)
+{
+	T b = max(args...);
+	return (a > b ? a : b);
+}
+
+// clamp
+template<typename T>
+constexpr T clamp(T n, T min, T max)
+{
+	if (n < min) {
+		n = min;
+	}
+	if (n > max) {
+		n = max;
+	}
+	return max;
+}
+
+} // namespace tr
+
+#endif

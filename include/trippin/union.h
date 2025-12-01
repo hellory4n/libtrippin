@@ -2,8 +2,8 @@
  * libtrippin: Most massive library of all time
  * https://github.com/hellory4n/libtrippin
  *
- * trippin/memory.cpp
- * Low-level memory utilities
+ * trippin/union.h
+ * Type-safe unions
  *
  * Copyright (C) 2025 by hellory4n <hellory4n@gmail.com>
  *
@@ -23,24 +23,13 @@
  *
  */
 
-#include "trippin/memory.h"
+#ifndef _TRIPPIN_UNION_H
+#define _TRIPPIN_UNION_H
 
-#include <cstdlib>
-
-#include "trippin/platform.h" // IWYU pragma: keep
-
-void* tr::memnew(usize size)
+// A type-safe union. Amazing.
+template<typename... Ts>
+struct Union
 {
-	// TODO do something more interesting here
-	// this is underwhelming
-	// maybe switch to mimalloc? (though it'd be slightly useless since the whole design of the
-	// library is made to avoid individual allocations, the exact thing mimalloc optimizes)
+};
 
-	return std::malloc(size);
-}
-
-void tr::_impl_memfree(void*& ptr)
-{
-	std::free(ptr);
-	ptr = nullptr;
-}
+#endif

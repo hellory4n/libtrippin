@@ -15,6 +15,9 @@ int main()
 
 	memcopy(buffer, {"heheheha"});
 	assert(memequal(buffer, other_buffer));
+	buffer.first() = 'H';
+	buffer.last() = 'A';
+	assert(!memequal(buffer, other_buffer));
 
 	memreset(buffer);
 	char empty_buffer_type_shit[LEN] = {};

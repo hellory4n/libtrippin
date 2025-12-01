@@ -26,6 +26,7 @@
 #ifndef _TRIPPIN_BUFFER_H
 #define _TRIPPIN_BUFFER_H
 
+#include <concepts>
 #include <type_traits>
 
 #include "trippin/memory.h"
@@ -35,7 +36,7 @@
 
 namespace tr {
 
-enum class BufferInit : int8
+enum class BufferInit : uint8
 {
 	DEFAULT_INIT,
 	KEEP_VALUES,
@@ -55,23 +56,10 @@ enum class BufferInit : int8
 template<typename T>
 struct Buffer
 {
-	Buffer() {}
+	constexpr Buffer() {}
 
-	constexpr Buffer(T* ptr, usize len, BufferInit init)
-	requires(!std::is_const_v<T>)
-		: _ptr(ptr)
-		, _len(len)
-	{
-		_validate();
-
-		if (init == BufferInit::DEFAULT_INIT) {
-			for (usize i = 0; i < len; i++) {
-				_ptr[i] = T{};
-			}
-		}
-	}
-
-	constexpr Buffer(T* ptr, isize len, BufferInit init)
+	template<std::integral NType>
+	constexpr Buffer(T* ptr, NType len, BufferInit init)
 	requires(!std::is_const_v<T>)
 		: _ptr(ptr)
 	{
@@ -90,14 +78,8 @@ struct Buffer
 		}
 	}
 
-	constexpr Buffer(T* ptr, usize len)
-		: _ptr(ptr)
-		, _len(len)
-	{
-		_validate();
-	}
-
-	constexpr Buffer(T* ptr, isize len)
+	template<std::integral NType>
+	constexpr Buffer(T* ptr, NType len)
 		: _ptr(ptr)
 	{
 		_validate();
@@ -128,22 +110,11 @@ struct Buffer
 		return _len;
 	}
 
-	TR_ALWAYS_INLINE T& operator[](usize idx) const
+	template<std::integral NType>
+	TR_ALWAYS_INLINE T& operator[](NType idx) const
 	{
 		_validate();
-		if (idx >= len()) {
-			tr::panicf(
-				"index out of range: buffer[%zu] when the length is only %zu", idx,
-				len()
-			);
-		}
-		return _ptr[idx];
-	}
-
-	TR_ALWAYS_INLINE T& operator[](isize idx) const
-	{
-		_validate();
-		if (idx >= len()) {
+		if (idx < 0 || idx >= len()) {
 			tr::panicf(
 				"index out of range: buffer[%zu] when the length is only %zu", idx,
 				len()
@@ -190,7 +161,7 @@ struct Buffer
 	{
 		if (start < 0 || start >= len() || end >= len()) {
 			tr::panicf(
-				"index out of range: buffer.slice(%zu, %zu) when the length is "
+				"index out of range: buffer.sub(%zu, %zu) when the length is "
 				"only %zu",
 				start, end, len()
 			);
@@ -217,14 +188,14 @@ private:
 };
 
 // deduction guidema
-template<class T, usize N>
+template<typename T, usize N>
 Buffer(T (&)[N]) -> Buffer<T>;
 
 // Allocates heap memory. Size is NOT in bytes
 template<typename T>
 inline Buffer<T> memnew_buffer(usize size)
 {
-	return Buffer<T>{memnew<T>(size), size};
+	return Buffer<T>{memnew<T>(size), size, BufferInit::DEFAULT_INIT};
 }
 
 template<typename T>

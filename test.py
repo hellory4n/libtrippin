@@ -2,11 +2,16 @@ import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 srcs_should_work = [
-	"test/buffer.cpp",
+	"test/array.cpp",
+	#"test/buffer.cpp",
+	"test/math.cpp",
 	"test/memory.cpp",
 	"test/memory_refwrapper.cpp",
 ]
-srcs_shouldnt_work = []
+srcs_shouldnt_work = [
+	#"test/buffer_overflow.cpp",
+	#"test/buffer_use_after_free.cpp",
+]
 srcs_shouldnt_compile = []
 
 COLOR_RESET = "\033[0m"

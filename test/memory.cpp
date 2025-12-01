@@ -1,6 +1,5 @@
 #include <cassert>
 
-#include <trippin/macros.h>
 #include <trippin/memory.h>
 
 using namespace tr;
