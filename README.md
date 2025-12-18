@@ -2,6 +2,9 @@
 
 # libtrippin
 
+> [!WARNING]
+> This is horribly broken and no longer maintained. C++ sucks.
+
 The most biggest most massive library of all time. I'm insane.
 
 ## Featuring
